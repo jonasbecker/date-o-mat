@@ -1,12 +1,15 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { after } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
 import { applySettingsToOpenCycle, ensureCurrentCycle } from "@/server/cycles";
-import { cancelDate, confirmDate, markNotHappened, saveDate } from "@/server/dates";
+import { cancelDate, confirmDate, getDate, markNotHappened, saveDate } from "@/server/dates";
+import { notifyPartner, type PartnerEvent } from "@/server/notifications";
+import type { CoupleContext } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { suggestions } from "@/server/db/schema";
 import { DATE_ERROR_MESSAGES } from "@/lib/date-errors";
@@ -43,6 +46,12 @@ export async function rejectSuggestionAction(suggestionId: string) {
 
 // --- Dates ------------------------------------------------------------------------
 
+/** Push to the partner after the response has been sent. */
+async function tellPartner(ctx: CoupleContext, event: PartnerEvent, dateId: string) {
+  const date = await getDate(ctx.coupleId, dateId);
+  if (date) after(() => notifyPartner(ctx, event, date));
+}
+
 export type ActionResult = { ok: boolean; message?: string };
 
 const dateIdSchema = z.uuid();
@@ -53,6 +62,7 @@ export async function confirmDateAction(dateId: string): Promise<ActionResult> {
   const id = dateIdSchema.safeParse(dateId);
   const now = coupleNow(await getCoupleSettings(ctx.coupleId));
   const ok = id.success && (await confirmDate(ctx, id.data, now));
+  if (ok) await tellPartner(ctx, "confirmed", id.data);
   refresh();
   return ok ? { ok } : { ok, message: "Das Date wurde inzwischen geändert – schau nochmal drauf." };
 }
@@ -62,6 +72,7 @@ export async function cancelDateAction(dateId: string): Promise<ActionResult> {
   const id = dateIdSchema.safeParse(dateId);
   const now = coupleNow(await getCoupleSettings(ctx.coupleId));
   const ok = id.success && (await cancelDate(ctx, id.data, now));
+  if (ok) await tellPartner(ctx, "cancelled", id.data);
   refresh();
   return { ok };
 }
@@ -100,6 +111,7 @@ export async function acceptSuggestionAction(suggestionId: string): Promise<Acti
     undefined,
     suggestion.id,
   );
+  if (result.ok) await tellPartner(ctx, "planned", result.dateId);
   refresh();
   return result.ok ? { ok: true } : { ok: false, message: DATE_ERROR_MESSAGES[result.error] };
 }

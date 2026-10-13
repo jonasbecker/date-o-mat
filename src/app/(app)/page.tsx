@@ -9,7 +9,9 @@ import { ConnectCalendarCard } from "@/components/connect-calendar";
 import { CycleHero, CycleHistory } from "@/components/cycle";
 import { DateCard } from "@/components/date-card";
 import { SparkleIcon } from "@/components/icons";
+import { PushNudge } from "@/components/push-nudge";
 import { SuggestionCard } from "@/components/suggestion-card";
+import { countSubscriptions } from "@/server/push";
 import { requireCouple } from "@/server/auth/dal";
 import { calendarStates } from "@/server/availability";
 import { coupleNow } from "@/server/clock";
@@ -35,11 +37,12 @@ async function Home() {
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
   const cycle = await ensureCurrentCycle(coupleId, now);
-  const [ideaCount, calendars, history, nextDate] = await Promise.all([
+  const [ideaCount, calendars, history, nextDate, pushDevices] = await Promise.all([
     countIdeas(coupleId),
     calendarStates(ctx),
     cycleHistory(coupleId),
     upcomingDate(coupleId, now),
+    countSubscriptions(user.id),
   ]);
   const roundDate = cycle?.status === "done" ? await activeDateOf(cycle.id) : undefined;
   const calendarsReady = calendars.every((person) => person.state === "connected");
@@ -115,6 +118,8 @@ async function Home() {
       )}
 
       {!calendarsReady && <ConnectCalendarCard people={calendars} next="/" />}
+
+      <PushNudge subscribed={pushDevices > 0} />
 
       <CycleHistory history={history} currentId={cycle.id} />
 

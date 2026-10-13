@@ -14,6 +14,9 @@ const schema = z.object({
   GOOGLE_API_BASE_URL: z.url().default("https://www.googleapis.com"),
   CRON_SECRET: z.string().min(16).optional(),
   ENABLE_DEV_TOOLS: z.enum(["0", "1"]).optional(),
+  VAPID_PUBLIC_KEY: z.string().min(1).optional(),
+  VAPID_PRIVATE_KEY: z.string().min(1).optional(),
+  VAPID_SUBJECT: z.string().min(1).optional(),
 });
 
 export type Env = {
@@ -26,6 +29,8 @@ export type Env = {
   googleApiBaseUrl: string;
   cronSecret: string | null;
   devTools: boolean;
+  /** Null when push is not configured (VAPID keys missing). */
+  vapid: { publicKey: string; privateKey: string; subject: string } | null;
 };
 
 let cached: Env | undefined;
@@ -49,6 +54,10 @@ export function env(): Env {
     googleApiBaseUrl: e.GOOGLE_API_BASE_URL.replace(/\/+$/, ""),
     cronSecret: e.CRON_SECRET ?? null,
     devTools: e.ENABLE_DEV_TOOLS === "1",
+    vapid:
+      e.VAPID_PUBLIC_KEY && e.VAPID_PRIVATE_KEY
+        ? { publicKey: e.VAPID_PUBLIC_KEY, privateKey: e.VAPID_PRIVATE_KEY, subject: e.VAPID_SUBJECT ?? e.APP_URL }
+        : null,
   };
   return cached;
 }

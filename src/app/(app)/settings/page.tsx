@@ -15,6 +15,8 @@ import { coupleNow } from "@/server/clock";
 import { env } from "@/server/env";
 import { devClockAction, logoutAction } from "./actions";
 import { CycleSettingsForm } from "./cycle-settings-form";
+import { PushSettings } from "@/components/push-settings";
+import { getPrefs, pushPublicKey } from "@/server/push";
 import { CalendarSection } from "./calendar-section";
 import { SlotSettingsForm } from "./slot-settings-form";
 
@@ -36,10 +38,11 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
   const { user, partner, coupleId } = ctx;
   const { calendar: message } = await searchParams;
 
-  const [people, googleConnection, settings] = await Promise.all([
+  const [people, googleConnection, settings, prefs] = await Promise.all([
     calendarStates(ctx),
     getConnection(user.id),
     getCoupleSettings(coupleId),
+    getPrefs(user.id),
   ]);
   const me = people.find((p) => p.isMe)!;
   const other = people.find((p) => !p.isMe)!;
@@ -62,6 +65,15 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
           <CycleSettingsForm
             values={{ rhythm: settings.rhythm, mode: settings.mode, deadlineDaysBeforeEnd: settings.deadlineDaysBeforeEnd }}
           />
+        </Card>
+      </section>
+
+      <section id="push" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="push-heading">
+        <h2 id="push-heading" className="text-[21px] font-semibold">
+          Erinnerungen
+        </h2>
+        <Card>
+          <PushSettings publicKey={pushPublicKey()} prefs={prefs} partnerName={partner.name} />
         </Card>
       </section>
 

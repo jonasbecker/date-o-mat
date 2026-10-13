@@ -196,7 +196,7 @@ Danach neu deployen, denn Variablen gelten erst für neue Deployments:
 ## 6. cron-job.org (ab Meilenstein 4)
 
 Ruft alle 5 Minuten die App auf, damit Runden wechseln, Vorschläge bereitliegen und
-(ab Meilenstein 6) Erinnerungen rausgehen. Ohne Cron läuft die App trotzdem: Runden werden
+Erinnerungen rausgehen. Ohne Cron läuft die App trotzdem: Runden werden
 dann beim nächsten Öffnen nachgezogen – nur Push-Erinnerungen bräuchten den Cron.
 
 Voraussetzung: `CRON_SECRET` ist in Vercel eingetragen (Schritt 4).
@@ -223,6 +223,31 @@ Voraussetzung: `CRON_SECRET` ist in Vercel eingetragen (Schritt 4).
 3. **Alles zurücksetzen** stellt die echte Zeit ein und löscht die Test-Runden.
 4. Danach `ENABLE_DEV_TOOLS` wieder entfernen (oder `0`) und neu deployen.
 
+### Meilenstein 6 testen: Push-Erinnerungen
+
+Voraussetzung: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` und `VAPID_SUBJECT` sind in Vercel
+eingetragen (Schritt 4). Fehlen sie, zeigen die Einstellungen „Push ist auf dem Server noch
+nicht eingerichtet“.
+
+**iPhone (iOS 16.4 oder neuer):**
+
+1. Die App in **Safari** öffnen → unten **Teilen** → **Zum Home-Bildschirm** → **Hinzufügen**.
+2. Den Date-O-Mat über das neue Icon öffnen (nicht mehr über Safari) und einloggen.
+3. **Einstellungen → Erinnerungen → Push aktivieren** → Mitteilungen **Erlauben**.
+4. **Test-Push** tippen → nach wenigen Sekunden kommt „Date-O-Mat“ als Mitteilung.
+
+**Android (Chrome):** App öffnen → **Einstellungen → Erinnerungen → Push aktivieren** →
+erlauben → **Test-Push**. Optional über das Chrome-Menü **App installieren**.
+
+Danach:
+
+- Eine Person plant ein Date → die andere bekommt sofort „… hat ein Date geplant 🎉“.
+- Mit der Dev-Uhr (siehe oben) lassen sich Rundenstart, „Noch 24 Stunden“, „Morgen ist
+  Date-Tag“ und „In 2 Stunden“ auslösen: Uhr vorstellen, dann in cron-job.org **Testlauf**.
+- Jede Art lässt sich unter „Erinnere mich an …“ einzeln ausschalten.
+- Kommt nichts an: Mitteilungen für die App in den Systemeinstellungen erlaubt? Fokus/„Nicht
+  stören“ aus? Auf dem iPhone die App einmal vom Home-Bildschirm aus öffnen.
+
 ## 7. Lokal entwickeln (optional)
 
 1. In Neon: **Branches → Create branch** `dev`. Dessen Connection Strings nutzen, damit lokale
@@ -238,6 +263,7 @@ Voraussetzung: `CRON_SECRET` ist in Vercel eingetragen (Schritt 4).
 
 | Meldung | Ursache / Lösung |
 |---|---|
+| Push aktivieren tut auf dem iPhone nichts | App muss vom Home-Bildschirm geöffnet werden, nicht in Safari (iOS 16.4+). |
 | `redirect_uri_mismatch` bei Google | Die Weiterleitungs-URI im OAuth-Client muss exakt `APP_URL` + `/api/auth/google/callback` sein (https, keine Leerzeichen). |
 | „Zugriff blockiert: … nur für Testnutzer“ | App ist noch im Testmodus → Schritt 3.3, Punkt 7. |
 | „Diese Google-Adresse ist nicht freigeschaltet“ | Tippfehler in `ALLOWED_EMAILS`? Nach dem Ändern neu deployen. |

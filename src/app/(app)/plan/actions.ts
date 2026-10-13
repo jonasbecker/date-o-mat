@@ -1,12 +1,14 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { IDEA_SIZES } from "@/lib/domain";
 import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
 import { DATE_ERROR_MESSAGES } from "@/lib/date-errors";
-import { saveDate } from "@/server/dates";
+import { getDate, saveDate } from "@/server/dates";
+import { notifyPartner } from "@/server/notifications";
 import { getCoupleSettings } from "@/server/settings";
 
 export type SaveDateState = { status: "idle" | "saved" | "error"; message?: string; savedAt?: number };
@@ -47,6 +49,8 @@ export async function saveDateAction(_prev: SaveDateState, formData: FormData): 
     data.dateId,
   );
   if (!result.ok) return { status: "error", message: DATE_ERROR_MESSAGES[result.error] };
+  const saved = await getDate(ctx.coupleId, result.dateId);
+  if (saved) after(() => notifyPartner(ctx, data.dateId ? "rescheduled" : "planned", saved));
   refresh();
   return { status: "saved", savedAt: Date.now() };
 }

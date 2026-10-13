@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito } from "next/font/google";
+import { ServiceWorkerRegistration } from "@/components/service-worker";
 import "./globals.css";
 
 const fredoka = Fredoka({ subsets: ["latin"], variable: "--font-fredoka" });
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
   title: "Date-O-Mat",
   description: "Damit aus „wir sollten mal wieder …“ ein echtes Date wird.",
   applicationName: "Date-O-Mat",
+  appleWebApp: { capable: true, title: "Date-O-Mat", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -26,7 +28,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="de" className={`${fredoka.variable} ${nunito.variable} antialiased`}>
-      <body className="min-h-dvh">{children}</body>
+      <body className="min-h-dvh">
+        {children}
+        <ServiceWorkerRegistration />
+      </body>
     </html>
   );
 }

@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { PLAN_MODES, RHYTHMS } from "@/lib/domain";
+import { NOTIFICATION_TYPES, PLAN_MODES, RHYTHMS } from "@/lib/domain";
 import { parseSlotSettings, type SlotSettingsErrors } from "@/lib/slot-settings";
 import { requireCouple } from "@/server/auth/dal";
 import { destroySession } from "@/server/auth/session";
@@ -13,6 +13,7 @@ import { coupleNow } from "@/server/clock";
 import { applySettingsToOpenCycle } from "@/server/cycles";
 import { env } from "@/server/env";
 import { getCoupleSettings, resetDevClock, setDevClockOffset, updateCycleSettings, updateSlotSettings } from "@/server/settings";
+import { removeSubscription, saveSubscription, sendToUser, setPref } from "@/server/push";
 import { tickCouple } from "@/server/tick";
 
 export async function logoutAction() {
@@ -86,4 +87,43 @@ export async function devClockAction(formData: FormData) {
   }
   await tickCouple(coupleId);
   refresh();
+}
+
+// --- Push ---------------------------------------------------------------------------
+
+const subscriptionSchema = z.object({
+  endpoint: z.url(),
+  keys: z.object({ p256dh: z.string().min(1), auth: z.string().min(1) }),
+});
+
+export async function savePushSubscriptionAction(subscription: unknown, userAgent: string): Promise<{ ok: boolean }> {
+  const { user } = await requireCouple();
+  const parsed = subscriptionSchema.safeParse(subscription);
+  if (!parsed.success) return { ok: false };
+  await saveSubscription(user.id, parsed.data, userAgent.slice(0, 300));
+  refresh();
+  return { ok: true };
+}
+
+export async function removePushSubscriptionAction(endpoint: string): Promise<void> {
+  const { user } = await requireCouple();
+  await removeSubscription(user.id, endpoint);
+  refresh();
+}
+
+export async function setNotificationPrefAction(type: string, enabled: boolean): Promise<void> {
+  const { user } = await requireCouple();
+  const parsed = z.enum(NOTIFICATION_TYPES).safeParse(type);
+  if (parsed.success) await setPref(user.id, parsed.data, enabled);
+  refresh();
+}
+
+export async function sendTestPushAction(): Promise<{ delivered: number }> {
+  const { user } = await requireCouple();
+  const delivered = await sendToUser(
+    user.id,
+    { title: "Hallo vom Date-O-Mat 👋", body: "So sehen eure Erinnerungen aus.", url: "/", tag: "test" },
+    "test",
+  );
+  return { delivered };
 }

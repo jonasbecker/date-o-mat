@@ -16,7 +16,7 @@ gemeinsame Ideen-Wunschliste.
 | M3 | Kalender verbinden, Kalenderauswahl, Slot-Finder, Slot-Einstellungen | ✅ |
 | M4 | Rhythmus, Modi (abwechselnd/Vorschlag), Runden, Startseite, Cron-Tick, Dev-Uhr | ✅ |
 | M5 | Date festlegen, Google-Termin mit Einladung, Passt!/Ändern/Absagen synchron | ✅ |
-| M6 | Push-Erinnerungen | ⏳ |
+| M6 | Web Push, Erinnerungen, iPhone-Installationshilfe, App-Manifest | ✅ |
 | M7 | Politur & PWA | ⏳ |
 
 ## Tech-Stack
@@ -36,7 +36,7 @@ gemeinsame Ideen-Wunschliste.
 Handy (PWA) ──HTTPS──▶ Next.js auf Vercel ──▶ Neon Postgres
                          ├─▶ Google OAuth / Calendar API
                          └─▶ Web Push
-cron-job.org ── alle 5 Min ──▶ /api/cron/tick   (Runden weiterschalten, Vorschläge; ab M6 Erinnerungen)
+cron-job.org ── alle 5 Min ──▶ /api/cron/tick   (Runden weiterschalten, Vorschläge, Erinnerungen)
 ```
 
 ```
@@ -77,7 +77,7 @@ scripts/              Migration beim Build, Secret-Generator
   sichtbar ist. Server Actions rufen nach Änderungen `refresh()` auf.
 - **Bottom Sheets** basieren auf dem nativen `<dialog>` (`src/components/sheet.tsx`):
   Fokus, Escape und Hintergrund-Klick macht der Browser.
-- **Kernlogik ohne I/O** (`src/core`: Slots, ab M4 Zyklen und Erinnerungen) liegt als reine
+- **Kernlogik ohne I/O** (`src/core`: Slots, Zyklen, Erinnerungen) liegt als reine
   Funktionen vor und ist mit Tests abgedeckt, inklusive Zeitumstellung, Terminen über
   Mitternacht, ganztägigen Terminen und vollen Kalendern.
 - **Google nur bei echten Anfragen:** Next.js rendert Seiten für das Prefetching vorab.
@@ -117,6 +117,22 @@ scripts/              Migration beim Build, Secret-Generator
   ändern oder löschen). Die Event-ID wird aus der Date-ID abgeleitet, deshalb kann ein
   Wiederholungsversuch nie einen doppelten Termin erzeugen. Fehlgeschlagene Syncs versucht der
   Cron-Tick erneut (bis zu 10-mal); bis dahin zeigt die Startseite einen Hinweis.
+
+### Erinnerungen in Kürze
+
+- **Web Push** mit VAPID (`web-push`), eigener Service Worker `public/sw.js`. Jede Person kann
+  mehrere Geräte anmelden; tote Abos (404/410) räumt der Server beim Senden selbst weg.
+- **iPhone:** Push gibt es nur, wenn die App auf dem Home-Bildschirm installiert ist (iOS 16.4+).
+  In Safari zeigen Startseite und Einstellungen deshalb eine Schritt-für-Schritt-Anleitung.
+- **Arten** (je Person einzeln abschaltbar): Du bist dran (Rundenstart, frühestens 9 Uhr),
+  Deadline in 24 Std., Partner:in plant/bestätigt/sagt ab, Date morgen (19 Uhr am Vortag),
+  Date in 2 Stunden.
+- **Wann:** `src/core/reminders.ts` berechnet rein aus Runde, Date und Uhrzeit, was fällig ist.
+  Ruhezeit 22–8 Uhr (außer „Date in 2 Stunden“); was mehr als 2 Std. zu spät wäre, entfällt.
+- **Genau einmal:** Vor dem Senden wird jede Erinnerung in `notification_log` eingetragen
+  (eindeutiger Schlüssel). Nur wenn das klappt, geht sie raus – parallele Ticks senden nie doppelt.
+- Partner-Nachrichten gehen sofort nach der Aktion raus (`after()`), unabhängig von der Ruhezeit,
+  weil die andere Person ja gerade selbst aktiv ist.
 
 ### Slot-Finder in Kürze
 

@@ -8,6 +8,7 @@ import { ensureCurrentCycle } from "@/server/cycles";
 import { pullGoogleChanges, retryPendingSyncs } from "@/server/dates";
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema";
+import { sendDueReminders } from "@/server/notifications";
 import { getCoupleSettings } from "@/server/settings";
 import { currentSuggestion } from "@/server/suggestions";
 
@@ -21,6 +22,7 @@ export async function tickCouple(coupleId: string): Promise<void> {
   await pullGoogleChanges(coupleId, now);
   const cycle = await ensureCurrentCycle(coupleId, now);
   if (!cycle) return;
+  await sendDueReminders(coupleId, now);
 
   // Suggestion mode: prepare the round's proposal, so it is ready when someone opens the app.
   if (cycle.mode === "suggestion" && cycle.status === "open") {
