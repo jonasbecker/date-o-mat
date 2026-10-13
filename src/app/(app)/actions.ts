@@ -1,10 +1,15 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
 import { applySettingsToOpenCycle, ensureCurrentCycle } from "@/server/cycles";
+import { cancelDate, confirmDate, markNotHappened, saveDate } from "@/server/dates";
+import { db } from "@/server/db";
+import { suggestions } from "@/server/db/schema";
+import { DATE_ERROR_MESSAGES } from "@/lib/date-errors";
 import { getCoupleSettings, setFirstPlanner } from "@/server/settings";
 import { rejectSuggestion } from "@/server/suggestions";
 
@@ -34,4 +39,67 @@ export async function rejectSuggestionAction(suggestionId: string) {
     await rejectSuggestion(cycle.id, id.data, user.id, now);
   }
   refresh();
+}
+
+// --- Dates ------------------------------------------------------------------------
+
+export type ActionResult = { ok: boolean; message?: string };
+
+const dateIdSchema = z.uuid();
+
+/** "Passt!" */
+export async function confirmDateAction(dateId: string): Promise<ActionResult> {
+  const ctx = await requireCouple();
+  const id = dateIdSchema.safeParse(dateId);
+  const now = coupleNow(await getCoupleSettings(ctx.coupleId));
+  const ok = id.success && (await confirmDate(ctx, id.data, now));
+  refresh();
+  return ok ? { ok } : { ok, message: "Das Date wurde inzwischen geändert – schau nochmal drauf." };
+}
+
+export async function cancelDateAction(dateId: string): Promise<ActionResult> {
+  const ctx = await requireCouple();
+  const id = dateIdSchema.safeParse(dateId);
+  const now = coupleNow(await getCoupleSettings(ctx.coupleId));
+  const ok = id.success && (await cancelDate(ctx, id.data, now));
+  refresh();
+  return { ok };
+}
+
+export async function notHappenedAction(dateId: string): Promise<void> {
+  const ctx = await requireCouple();
+  const id = dateIdSchema.safeParse(dateId);
+  if (id.success) await markNotHappened(ctx, id.data);
+  refresh();
+}
+
+/** Suggestion mode: take the proposal as it is – you become the organizer. */
+export async function acceptSuggestionAction(suggestionId: string): Promise<ActionResult> {
+  const ctx = await requireCouple();
+  const id = z.uuid().safeParse(suggestionId);
+  const now = coupleNow(await getCoupleSettings(ctx.coupleId));
+  const cycle = await ensureCurrentCycle(ctx.coupleId, now);
+  if (!id.success || !cycle) return { ok: false };
+  const [suggestion] = await db
+    .select()
+    .from(suggestions)
+    .where(and(eq(suggestions.id, id.data), eq(suggestions.cycleId, cycle.id), eq(suggestions.status, "pending")))
+    .limit(1);
+  if (!suggestion) return { ok: false, message: "Diesen Vorschlag gibt es nicht mehr." };
+  const result = await saveDate(
+    ctx,
+    {
+      start: suggestion.startsAt,
+      end: suggestion.endsAt,
+      size: suggestion.size,
+      ideaId: suggestion.ideaId,
+      customTitle: suggestion.ideaId ? null : "Zeit zu zweit",
+      customLocation: null,
+    },
+    now,
+    undefined,
+    suggestion.id,
+  );
+  refresh();
+  return result.ok ? { ok: true } : { ok: false, message: DATE_ERROR_MESSAGES[result.error] };
 }

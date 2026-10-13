@@ -6,17 +6,20 @@ import { formatShortDate, slotView } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
 import { searchSlots } from "@/server/availability";
 import { coupleNow } from "@/server/clock";
-import { ensureCurrentCycle } from "@/server/cycles";
+import { activeDateOf, ensureCurrentCycle } from "@/server/cycles";
 import { getCoupleSettings } from "@/server/settings";
 import { searchUntil } from "@/server/suggestions";
-import { SlotPicker } from "./slot-picker";
+import { formatCost } from "@/lib/idea-input";
+import { getDate } from "@/server/dates";
+import { ideaCandidates } from "@/server/idea-sources";
+import { PlanForm, type IdeaOption, type RescheduleInfo } from "./plan-form";
 
 export default function PlanPage({ searchParams }: PageProps<"/plan">) {
   return (
     <div className="flex flex-col gap-5">
       <div>
         <h1 className="text-[30px] font-bold leading-tight">Date planen</h1>
-        <p className="font-bold text-muted">Wann habt ihr beide Zeit?</p>
+        <p className="font-bold text-muted">Zeit und Idee wählen – fertig.</p>
       </div>
       <Suspense fallback={<SlotsSkeleton />}>
         <Plan searchParams={searchParams} />
@@ -31,23 +34,50 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
   const settings = await getCoupleSettings(ctx.coupleId);
   const now = coupleNow(settings);
   const cycle = await ensureCurrentCycle(ctx.coupleId, now);
-  const later = (await searchParams).later === "1";
+  const params = await searchParams;
+  const later = params.later === "1";
+  const rescheduleId = typeof params.reschedule === "string" ? params.reschedule : undefined;
+  // An explicit ?reschedule=…, or – if this round already has a date – that one.
+  const existing =
+    rescheduleId && /^[0-9a-f-]{36}$/.test(rescheduleId)
+      ? await getDate(ctx.coupleId, rescheduleId)
+      : cycle && (cycle.status === "planned" || cycle.status === "confirmed")
+        ? await activeDateOf(cycle.id)
+        : undefined;
+  const reschedule: RescheduleInfo | undefined =
+    existing && (existing.status === "planned" || existing.status === "confirmed")
+      ? { dateId: existing.id, size: existing.size, ideaId: existing.ideaId, title: existing.title, location: existing.location }
+      : undefined;
   // Normally only within the current round; "later" searches the whole horizon.
   const until = cycle && !later ? searchUntil(cycle, now, settings.horizonDays) : undefined;
   const search = await searchSlots(ctx, now, until);
   const roundInfo = cycle && (
     <p className="-mt-3 text-sm font-extrabold text-muted">
-      Runde {cycle.seq}
+      {reschedule ? "Termin ändern · " : ""}Runde {cycle.seq}
       {cycle.mode === "alternating" &&
         (cycle.plannerId === ctx.user.id ? " · du bist dran" : ` · ${ctx.partner.name} ist dran`)}
       {cycle.mode === "suggestion" && " · Vorschlag-Modus"}
     </p>
   );
   const scopeLink = cycle && (
-    <Link href={later ? "/plan" : "/plan?later=1"} className="self-center text-sm font-extrabold underline">
+    <Link
+      href={`/plan?${new URLSearchParams({ ...(later ? {} : { later: "1" }), ...(reschedule ? { reschedule: reschedule.dateId } : {}) })}`}
+      className="self-center text-sm font-extrabold underline"
+    >
       {later ? "Nur in dieser Runde suchen" : "Auch nach dem Rundenende suchen"}
     </Link>
   );
+
+  // Longest waiting first – the same order the suggestion mode uses.
+  const ideas: IdeaOption[] = (await ideaCandidates({ coupleId: ctx.coupleId }))
+    .filter((c) => c.ideaId)
+    .sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime())
+    .map((c) => ({
+      id: c.ideaId!,
+      title: c.title,
+      size: c.size,
+      meta: [formatCost(c.costEur), c.location && `📍 ${c.location}`].filter(Boolean).join(" · ") || null,
+    }));
 
   if (search.status === "not_connected") return <ConnectCalendarCard people={search.people} next="/plan" />;
   if (search.status === "google_error") {
@@ -67,12 +97,15 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
           werden und zählen gerade nicht mit. Prüft die Auswahl in den Einstellungen.
         </p>
       )}
-      <SlotPicker
+      <PlanForm
         small={search.small.map(slotView)}
         large={search.large.map(slotView)}
+        ideas={ideas}
         untilLabel={formatShortDate(search.until)}
+        partnerName={ctx.partner.name}
+        reschedule={reschedule}
+        searchScopeLink={scopeLink}
       />
-      {scopeLink}
     </>
   );
 }

@@ -1,18 +1,20 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { swapTurnAction } from "./actions";
+import { notHappenedAction, swapTurnAction } from "./actions";
 import { AppHeader, PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { buttonClass } from "@/components/button";
 import { ConnectCalendarCard } from "@/components/connect-calendar";
 import { CycleHero, CycleHistory } from "@/components/cycle";
+import { DateCard } from "@/components/date-card";
 import { SparkleIcon } from "@/components/icons";
 import { SuggestionCard } from "@/components/suggestion-card";
 import { requireCouple } from "@/server/auth/dal";
 import { calendarStates } from "@/server/availability";
 import { coupleNow } from "@/server/clock";
-import { cycleHistory, ensureCurrentCycle } from "@/server/cycles";
+import { activeDateOf, cycleHistory, ensureCurrentCycle } from "@/server/cycles";
+import { upcomingDate } from "@/server/dates";
 import { countIdeas } from "@/server/ideas";
 import { getCoupleSettings } from "@/server/settings";
 import { currentSuggestion } from "@/server/suggestions";
@@ -33,7 +35,13 @@ async function Home() {
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
   const cycle = await ensureCurrentCycle(coupleId, now);
-  const [ideaCount, calendars, history] = await Promise.all([countIdeas(coupleId), calendarStates(ctx), cycleHistory(coupleId)]);
+  const [ideaCount, calendars, history, nextDate] = await Promise.all([
+    countIdeas(coupleId),
+    calendarStates(ctx),
+    cycleHistory(coupleId),
+    upcomingDate(coupleId, now),
+  ]);
+  const roundDate = cycle?.status === "done" ? await activeDateOf(cycle.id) : undefined;
   const calendarsReady = calendars.every((person) => person.state === "connected");
   if (!cycle) return null;
 
@@ -49,6 +57,16 @@ async function Home() {
       <p className="text-[17px] font-bold text-muted">Hey {user.name}!</p>
 
       <CycleHero cycle={cycle} me={user} partner={partner} now={now} />
+
+      {nextDate && <DateCard date={nextDate} me={user} partner={partner} />}
+
+      {roundDate?.status === "done" && (
+        <form action={notHappenedAction.bind(null, roundDate.id)} className="-mt-2 self-center">
+          <button type="submit" className="text-sm font-extrabold text-muted underline">
+            „{roundDate.title}“ hat doch nicht geklappt?
+          </button>
+        </form>
+      )}
 
       {isOpen && myTurn && (
         <div className="flex flex-col items-center gap-2">

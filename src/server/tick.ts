@@ -5,6 +5,7 @@ import { eq, isNotNull } from "drizzle-orm";
 import type { CoupleContext } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
 import { ensureCurrentCycle } from "@/server/cycles";
+import { pullGoogleChanges, retryPendingSyncs } from "@/server/dates";
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema";
 import { getCoupleSettings } from "@/server/settings";
@@ -15,6 +16,9 @@ export type TickResult = { couples: number; errors: number };
 export async function tickCouple(coupleId: string): Promise<void> {
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
+  // Google first: failed syncs, accepted invitations, events deleted in Google Calendar.
+  await retryPendingSyncs(coupleId);
+  await pullGoogleChanges(coupleId, now);
   const cycle = await ensureCurrentCycle(coupleId, now);
   if (!cycle) return;
 

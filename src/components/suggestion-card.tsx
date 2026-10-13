@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { rejectSuggestionAction } from "@/app/(app)/actions";
+import { acceptSuggestionAction, rejectSuggestionAction } from "@/app/(app)/actions";
 import { formatCost } from "@/lib/idea-input";
 import { formatLongDate, formatTimeRange } from "@/lib/format";
 import type { SuggestionRow } from "@/server/db/schema";
 import type { SuggestionIdea } from "@/server/suggestions";
 import { Button } from "./button";
 import { Card } from "./card";
+import { ConfettiActionButton } from "./confetti";
 import { CalendarIcon, ClockIcon } from "./icons";
 import { SizeChip } from "./size-chip";
 
@@ -35,6 +36,10 @@ export function SuggestionCard({ suggestion, idea }: { suggestion: SuggestionRow
           Auf eurer Wunschliste ist gerade keine passende Idee – tragt welche über das gelbe + ein.
         </p>
       )}
+      <ConfettiActionButton action={acceptSuggestionAction.bind(null, suggestion.id)} variant="primary" size="md" className="w-full">
+        Übernehmen 🎉
+      </ConfettiActionButton>
+      <p className="-mt-1 text-center text-xs font-bold text-muted">Du wirst Organisator:in, die Einladung geht per Google raus.</p>
       <div className="flex flex-wrap items-center gap-3">
         <form action={rejectSuggestionAction.bind(null, suggestion.id)}>
           <Button type="submit" variant="secondary" size="sm">

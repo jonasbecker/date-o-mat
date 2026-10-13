@@ -23,8 +23,11 @@ async function send(path: string, token: string, init?: RequestInit): Promise<Re
   });
 }
 
-/** Calls the API as `userId`; retries once with a refreshed token on 401. */
-export async function calendarRequest<T>(userId: string, path: string, init?: RequestInit): Promise<T> {
+/**
+ * Calls the API as `userId` and returns the raw response. Retries once with a
+ * refreshed token on 401; flags the connection when access is really gone.
+ */
+async function calendarFetch(userId: string, path: string, init?: RequestInit): Promise<Response> {
   // Never talk to Google while Next.js prerenders/prefetches a page – only for real requests.
   await connection();
   let response = await send(path, await getAccessToken(userId), init);
@@ -35,15 +38,21 @@ export async function calendarRequest<T>(userId: string, path: string, init?: Re
     await markNeedsReauth(userId);
     throw new CalendarNotConnectedError(userId, "reauth");
   }
-  if (!response.ok) {
-    const body = await response.text();
+  if (response.status === 403) {
+    const body = await response.clone().text();
     // A permission the person later removed in their Google account.
-    if (response.status === 403 && body.includes("insufficient")) {
+    if (body.includes("insufficient")) {
       await markNeedsReauth(userId);
       throw new CalendarNotConnectedError(userId, "reauth");
     }
-    throw new GoogleApiError(response.status, body);
   }
+  return response;
+}
+
+/** Like calendarFetch, but expects success and parses JSON. */
+export async function calendarRequest<T>(userId: string, path: string, init?: RequestInit): Promise<T> {
+  const response = await calendarFetch(userId, path, init);
+  if (!response.ok) throw new GoogleApiError(response.status, await response.text());
   return (await response.json()) as T;
 }
 
@@ -85,4 +94,47 @@ export async function queryFreeBusy(userId: string, calendarIds: string[], from:
     }
   }
   return { busy, failedCalendarIds };
+}
+
+// --- Events (the date invitation) ------------------------------------------------
+
+export type GoogleEvent = {
+  id: string;
+  status?: "confirmed" | "tentative" | "cancelled";
+  attendees?: Array<{ email: string; responseStatus?: "needsAction" | "declined" | "tentative" | "accepted" }>;
+};
+
+const EVENTS = "/calendars/primary/events";
+
+/** Creates the event with our own id. Returns false if it already exists (a retry). */
+export async function insertEvent(userId: string, eventId: string, body: object): Promise<boolean> {
+  const response = await calendarFetch(userId, `${EVENTS}?sendUpdates=all`, {
+    method: "POST",
+    body: JSON.stringify({ id: eventId, ...body }),
+  });
+  if (response.status === 409) return false;
+  if (!response.ok) throw new GoogleApiError(response.status, await response.text());
+  return true;
+}
+
+export async function patchEvent(userId: string, eventId: string, body: object): Promise<GoogleEvent> {
+  return calendarRequest<GoogleEvent>(userId, `${EVENTS}/${eventId}?sendUpdates=all`, {
+    method: "PATCH",
+    body: JSON.stringify({ ...body, status: "confirmed" }),
+  });
+}
+
+/** Deletes the event and notifies the guest. Already gone counts as success. */
+export async function deleteEvent(userId: string, eventId: string): Promise<void> {
+  const response = await calendarFetch(userId, `${EVENTS}/${eventId}?sendUpdates=all`, { method: "DELETE" });
+  if (response.ok || response.status === 404 || response.status === 410) return;
+  throw new GoogleApiError(response.status, await response.text());
+}
+
+/** The event, or null if it does not exist (anymore). */
+export async function getEvent(userId: string, eventId: string): Promise<GoogleEvent | null> {
+  const response = await calendarFetch(userId, `${EVENTS}/${eventId}`);
+  if (response.status === 404 || response.status === 410) return null;
+  if (!response.ok) throw new GoogleApiError(response.status, await response.text());
+  return (await response.json()) as GoogleEvent;
 }

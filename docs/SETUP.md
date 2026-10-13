@@ -182,6 +182,17 @@ Danach neu deployen, denn Variablen gelten erst für neue Deployments:
    auf der Planen-Seite ein gelber Hinweis „Kalender konnte nicht gelesen werden“, sag mir
    Bescheid, welcher Kalender es ist.
 
+### Meilenstein 5 testen: Date festlegen
+
+1. **Planen** öffnen: Top-Tipp und eine Idee sind schon ausgewählt → **Date festlegen 🎉**.
+2. In deinem Google Kalender steht jetzt „💞 Date: …“, deine Freundin bekommt eine Einladung
+   (per Mail und in ihrem Kalender).
+3. Sie öffnet die App → **Passt! 💚** → Konfetti, beide sehen „Date steht!“.
+   (Nimmt sie stattdessen die Einladung in Google an, zeigt die App das spätestens nach dem
+   nächsten Cron-Lauf als bestätigt.)
+4. **Ändern** → anderen Slot wählen → der Termin verschiebt sich in beiden Kalendern.
+5. **Absagen** → der Termin verschwindet, sie bekommt eine Absage von Google.
+
 ## 6. cron-job.org (ab Meilenstein 4)
 
 Ruft alle 5 Minuten die App auf, damit Runden wechseln, Vorschläge bereitliegen und

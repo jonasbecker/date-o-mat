@@ -199,6 +199,8 @@ export const datePlans = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     status: text({ enum: DATE_STATUSES }).notNull().default("planned"),
+    // Who chose the current time – the other person confirms ("Passt!").
+    proposedById: uuid().references(() => users.id, { onDelete: "set null" }),
     confirmedById: uuid().references(() => users.id, { onDelete: "set null" }),
     confirmedAt: timestamptz(),
     cancelledAt: timestamptz(),

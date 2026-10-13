@@ -15,7 +15,7 @@ gemeinsame Ideen-Wunschliste.
 | M2 | Wunschliste mit Schnell-Erfassen, Filter, Bearbeiten | ✅ |
 | M3 | Kalender verbinden, Kalenderauswahl, Slot-Finder, Slot-Einstellungen | ✅ |
 | M4 | Rhythmus, Modi (abwechselnd/Vorschlag), Runden, Startseite, Cron-Tick, Dev-Uhr | ✅ |
-| M5 | Google-Termine mit Einladung | ⏳ |
+| M5 | Date festlegen, Google-Termin mit Einladung, Passt!/Ändern/Absagen synchron | ✅ |
 | M6 | Push-Erinnerungen | ⏳ |
 | M7 | Politur & PWA | ⏳ |
 
@@ -56,6 +56,7 @@ src/
     cycles.ts         Runden-Engine (anlegen, abschließen, Status)
     suggestions.ts    Vorschlag-Modus
     idea-sources/     austauschbare Ideen-Quellen (V1: Wunschliste)
+    dates.ts          Dates planen/ändern/bestätigen/absagen + Abgleich mit Google
     tick.ts           der periodische Job hinter /api/cron/tick
   proxy.ts            schickt Besucher ohne Session-Cookie zur Login-Seite
 drizzle/              SQL-Migrationen (generiert)
@@ -100,6 +101,22 @@ scripts/              Migration beim Build, Secret-Generator
   Runde offen ist.
 - **Dev-Uhr:** Mit `ENABLE_DEV_TOOLS=1` erscheint in den Einstellungen „Dev-Uhr“: Zeit um
   Tage oder Wochen vorstellen, damit lassen sich mehrere Runden in Minuten durchspielen.
+
+### Google-Termin in Kürze
+
+- **Festlegen:** Wer festlegt, wird Organisator:in; der Termin landet in dessen Hauptkalender, die
+  andere Person wird als Gast eingeladen (`sendUpdates=all`, also mit Google-Einladung).
+  Kurz vor dem Speichern prüft die App per FreeBusy noch einmal, ob der Slot frei ist.
+- **Bestätigen:** Die Person, die die Zeit *nicht* vorgeschlagen hat, tippt „Passt!“. Nimmt sie
+  die Einladung stattdessen in Google an, übernimmt der Cron-Tick das als Bestätigung.
+- **Ändern:** Beide können Zeit und Idee ändern. Der Termin wird verschoben (gleiches Event),
+  danach muss die jeweils andere Person wieder bestätigen.
+- **Absagen:** Das Event wird gelöscht (Google schickt die Absage), die Runde ist wieder offen.
+  Löscht die organisierende Person den Termin direkt in Google, sagt der Tick das Date in der App ab.
+- **Robust:** `syncDate()` bringt das Google-Event immer auf den Stand der Datenbank (anlegen,
+  ändern oder löschen). Die Event-ID wird aus der Date-ID abgeleitet, deshalb kann ein
+  Wiederholungsversuch nie einen doppelten Termin erzeugen. Fehlgeschlagene Syncs versucht der
+  Cron-Tick erneut (bis zu 10-mal); bis dahin zeigt die Startseite einen Hinweis.
 
 ### Slot-Finder in Kürze
 
