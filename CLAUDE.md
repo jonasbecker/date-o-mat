@@ -15,6 +15,7 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - Status-like columns are `text` with TS enums from `src/lib/domain.ts` – never Postgres enums.
 - Schema change → `npm run db:generate` → commit the SQL in `drizzle/`.
 - Mutations are server actions that call `refresh()`; pages that show shared data render `<AutoRefresh />`.
+- Google Calendar calls go through `calendarRequest()` (`src/server/google/calendar-api.ts`), which awaits `connection()` first so prefetch/prerender never hits Google. Call `connection()` before any try/catch around live Google data.
 - Design tokens are in `src/app/globals.css` (`sticker`, `press` utilities); bright fills use `text-tinte`.
 
 ## Checks before pushing

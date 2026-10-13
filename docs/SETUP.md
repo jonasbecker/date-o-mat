@@ -96,12 +96,16 @@ Mit **deinem** Google-Konto anmelden. Deine Freundin braucht hier nichts zu tun.
    - In der Liste anhaken: `…/auth/userinfo.email`, `…/auth/userinfo.profile`, `openid`
    - Unten bei **Bereiche manuell hinzufügen** diese drei Zeilen einfügen → **Zur Tabelle hinzufügen**:
      ```
-     https://www.googleapis.com/auth/calendar.freebusy
+     https://www.googleapis.com/auth/calendar.events.freebusy
      https://www.googleapis.com/auth/calendar.calendarlist.readonly
      https://www.googleapis.com/auth/calendar.events.owned
      ```
    - **Aktualisieren** → **Speichern**.
-     (Die Kalender-Bereiche nutzt die App erst ab Meilenstein 3.)
+   - Was die drei bedeuten: Belegt-Zeiten lesen (ohne Titel oder Details), die Namen deiner
+     Kalender sehen (für die Auswahl) und Termine in deinen eigenen Kalendern anlegen
+     (die Date-Einladung).
+   - Falls du früher schon `calendar.freebusy` eingetragen hast: kannst du drinlassen oder
+     entfernen, die App nutzt ihn nicht.
 7. Links **Zielgruppe** → bei Veröffentlichungsstatus „Testen“ auf **App veröffentlichen** → bestätigen.
    Der Status ist jetzt **In Produktion**.
    - Google weist darauf hin, dass eine Überprüfung nötig sein kann → **nicht** zur Überprüfung einreichen.
@@ -164,6 +168,19 @@ Danach neu deployen, denn Variablen gelten erst für neue Deployments:
    nach ein paar Sekunden von selbst weiter.
 6. Gegenprobe: Mit einer dritten Google-Adresse, die nicht in `ALLOWED_EMAILS` steht,
    kommt „Diese Google-Adresse ist nicht freigeschaltet“.
+
+### Meilenstein 3 testen: Kalender & freie Zeiten
+
+1. Am Handy **Planen** öffnen → **Kalender verbinden** → Google fragt nach den drei
+   Kalender-Berechtigungen → alle Häkchen setzen → **Weiter**.
+2. Deine Freundin macht dasselbe auf ihrem Handy.
+3. **Planen** zeigt jetzt bis zu fünf gemeinsame freie Zeiten für ☕ klein und 🎡 groß.
+   Gegenprobe: Trag dir in Google einen Termin in einen der vorgeschlagenen Slots ein und lade
+   die Seite neu. Der Slot (plus 30 Minuten Puffer) muss verschwinden.
+4. Unter **Einstellungen → Kalender** wählst du, welche Kalender als „belegt“ zählen.
+   Abonnierte Kalender (z. B. ein Uni-Stundenplan) sind standardmäßig an. Erscheint
+   auf der Planen-Seite ein gelber Hinweis „Kalender konnte nicht gelesen werden“, sag mir
+   Bescheid, welcher Kalender es ist.
 
 ## 6. cron-job.org (ab Meilenstein 4)
 

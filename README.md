@@ -13,7 +13,7 @@ gemeinsame Ideen-Wunschliste.
 |---|---|---|
 | M1 | Google-Login, Allowlist, Paar-Kopplung per Einladungscode | ✅ |
 | M2 | Wunschliste mit Schnell-Erfassen, Filter, Bearbeiten | ✅ |
-| M3 | Kalender & Slot-Finder | ⏳ |
+| M3 | Kalender verbinden, Kalenderauswahl, Slot-Finder, Slot-Einstellungen | ✅ |
 | M4 | Rhythmus, Modi, Zyklen, Startseite | ⏳ |
 | M5 | Google-Termine mit Einladung | ⏳ |
 | M6 | Push-Erinnerungen | ⏳ |
@@ -46,10 +46,13 @@ src/
     login/, pair/     Login und Kopplung
     api/auth/google/  OAuth-Start und -Callback
   components/         UI-Bausteine (Button, Card, Avatar, Logo …)
-  lib/                reine Hilfsfunktionen ohne Server-Zugriff (getestet)
+  core/               Kernlogik ohne I/O: Slot-Finder, Zeitbereiche, Kalender-Regeln (getestet)
+  lib/                kleine Hilfsfunktionen ohne Server-Zugriff (getestet)
   server/             alles mit DB, Secrets oder Google
     auth/             Sessions, Data Access Layer (requireUser/requireCouple), OAuth
     db/               Drizzle-Client und Schema
+    google/           Token-Verwaltung (verschlüsselt, Refresh) und Calendar-API per fetch
+    availability.ts   FreeBusy beider Kalender → Slot-Finder
   proxy.ts            schickt Besucher ohne Session-Cookie zur Login-Seite
 drizzle/              SQL-Migrationen (generiert)
 scripts/              Migration beim Build, Secret-Generator
@@ -69,8 +72,22 @@ scripts/              Migration beim Build, Secret-Generator
   sichtbar ist. Server Actions rufen nach Änderungen `refresh()` auf.
 - **Bottom Sheets** basieren auf dem nativen `<dialog>` (`src/components/sheet.tsx`):
   Fokus, Escape und Hintergrund-Klick macht der Browser.
-- **Kernlogik ohne I/O** (Slots, Zyklen, Erinnerungen ab M3/M4) liegt als reine Funktionen
-  vor und ist mit Tests abgedeckt.
+- **Kernlogik ohne I/O** (`src/core`: Slots, ab M4 Zyklen und Erinnerungen) liegt als reine
+  Funktionen vor und ist mit Tests abgedeckt, inklusive Zeitumstellung, Terminen über
+  Mitternacht, ganztägigen Terminen und vollen Kalendern.
+- **Google nur bei echten Anfragen:** Next.js rendert Seiten für das Prefetching vorab.
+  Jeder Calendar-API-Aufruf beginnt deshalb mit `await connection()`, damit Google nur bei
+  echten Seitenaufrufen gefragt wird.
+
+### Slot-Finder in Kürze
+
+1. FreeBusy für beide Personen und alle ausgewählten Kalender (nur Belegt-Zeiten, nichts wird gespeichert).
+2. Puffer um jeden Termin legen, alles vereinigen.
+3. Pro Tag im Zeitfenster (z. B. Start 10–21 Uhr, Ende spätestens 23 Uhr) die Lücken bestimmen,
+   Startzeiten im 30-Minuten-Raster prüfen.
+4. Jeden Kandidaten bewerten (`scoreSlot`): klein → Abende und Wochenend-Nachmittage,
+   groß → Wochenende und viel Zeit am Stück; früher ist leicht besser, etwas Luft drumherum auch.
+5. Bester Slot pro Tag, davon die fünf besten. Platz 1 ist der „Top-Tipp“.
 
 ## Datenmodell
 

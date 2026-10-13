@@ -60,7 +60,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 |---|---|---|
 | M1 | Grundgerüst, Google-Login, Allowlist, Paar-Kopplung, Schema | ✅ |
 | M2 | Wunschliste mit Schnell-Erfassen | ✅ |
-| M3 | Kalender verbinden, FreeBusy, Slot-Finder | |
+| M3 | Kalender verbinden, FreeBusy, Slot-Finder | ✅ |
 | M4 | Einstellungen, Zyklus-Engine, Startseite, Vorschlag-Modus, Cron-Tick | |
 | M5 | Google-Event mit Einladung, Sync bei Änderung/Absage | |
 | M6 | Web Push, iOS-Onboarding, Erinnerungen | |
@@ -74,3 +74,6 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 4. Ganztägige Termine blockieren nur, wenn sie in Google auf „Beschäftigt“ stehen (FreeBusy-only-Scope).
 5. Das Google-Event entsteht schon bei „geplant“, nicht erst bei „bestätigt“.
 6. Dev-Uhr (nur in Dev-Builds) zum Vorspulen über mehrere Zyklen.
+7. FreeBusy-Scope `calendar.events.freebusy` statt `calendar.freebusy`, weil er laut Google auch
+   Kalender abdeckt, auf die man nur Zugriff hat (z. B. abonnierte Uni-Kalender).
+8. Calendar API per `fetch` statt `@googleapis/calendar`: drei Endpunkte, kein großes SDK nötig.

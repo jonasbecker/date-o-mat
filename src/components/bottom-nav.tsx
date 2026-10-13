@@ -4,17 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 import { cn } from "@/lib/cn";
-import { BulbIcon, HomeIcon, SlidersIcon } from "./icons";
+import { BulbIcon, CalendarIcon, HomeIcon, SlidersIcon } from "./icons";
 import { QuickAdd } from "./quick-add";
 
 type NavItem = { href: string; label: string; Icon: ComponentType<SVGProps<SVGSVGElement>> };
 
-// "Planen" joins the right-hand side in milestone 3.
 const LEFT: NavItem[] = [
   { href: "/", label: "Start", Icon: HomeIcon },
   { href: "/ideas", label: "Ideen", Icon: BulbIcon },
 ];
-const RIGHT: NavItem[] = [{ href: "/settings", label: "Einstellungen", Icon: SlidersIcon }];
+const RIGHT: NavItem[] = [
+  { href: "/plan", label: "Planen", Icon: CalendarIcon },
+  { href: "/settings", label: "Einstellungen", Icon: SlidersIcon },
+];
 
 function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);

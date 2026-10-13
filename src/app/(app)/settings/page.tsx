@@ -1,27 +1,86 @@
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { PageSkeleton } from "@/components/app-header";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
+import type { CalendarListEntry } from "@/core/calendars";
 import { requireCouple } from "@/server/auth/dal";
+import { calendarStates } from "@/server/availability";
+import { listCalendars } from "@/server/google/calendar-api";
+import { getConnection } from "@/server/google/connection";
+import { getCoupleSettings } from "@/server/settings";
 import { logoutAction } from "./actions";
+import { CalendarSection } from "./calendar-section";
+import { SlotSettingsForm } from "./slot-settings-form";
 
-export default function SettingsPage() {
+export default function SettingsPage({ searchParams }: PageProps<"/settings">) {
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <h1 className="text-[30px] font-bold">Einstellungen</h1>
       <Suspense fallback={<PageSkeleton />}>
-        <Settings />
+        <Settings searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function Settings() {
-  const { user, partner } = await requireCouple();
+async function Settings({ searchParams }: { searchParams: PageProps<"/settings">["searchParams"] }) {
+  const ctx = await requireCouple();
+  const { user, partner, coupleId } = ctx;
+  const { calendar: message } = await searchParams;
+
+  const [people, googleConnection, settings] = await Promise.all([
+    calendarStates(ctx),
+    getConnection(user.id),
+    getCoupleSettings(coupleId),
+  ]);
+  const me = people.find((p) => p.isMe)!;
+  const other = people.find((p) => !p.isMe)!;
+
+  let calendars: CalendarListEntry[] | null = null;
+  if (me.state === "connected") {
+    await connection(); // live Google data – only for real requests, not prefetches
+    calendars = await listCalendars(user.id).catch((error) => {
+      console.warn("[settings] calendar list unavailable", error);
+      return null;
+    });
+  }
 
   return (
     <>
+      <CalendarSection
+        me={me}
+        partner={other}
+        email={user.email}
+        calendars={calendars}
+        busyCalendarIds={googleConnection?.busyCalendarIds ?? []}
+        message={typeof message === "string" ? message : undefined}
+      />
+
+      <section className="flex flex-col gap-3" aria-labelledby="slots-heading">
+        <h2 id="slots-heading" className="text-[21px] font-semibold">
+          Freie Zeiten finden
+        </h2>
+        <Card>
+          <SlotSettingsForm
+            values={{
+              smallDurationMinutes: settings.smallDurationMinutes,
+              smallStartFromMinute: settings.smallStartFromMinute,
+              smallStartUntilMinute: settings.smallStartUntilMinute,
+              largeMinDurationMinutes: settings.largeMinDurationMinutes,
+              largeStartFromMinute: settings.largeStartFromMinute,
+              largeStartUntilMinute: settings.largeStartUntilMinute,
+              latestEndMinute: settings.latestEndMinute,
+              minLeadHours: settings.minLeadHours,
+              bufferMinutes: settings.bufferMinutes,
+              horizonDays: settings.horizonDays,
+            }}
+          />
+        </Card>
+        <p className="px-1 text-sm font-semibold text-muted">Gilt für euch beide.</p>
+      </section>
+
       <section className="flex flex-col gap-3" aria-labelledby="couple-heading">
         <h2 id="couple-heading" className="text-[21px] font-semibold">
           Ihr zwei

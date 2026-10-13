@@ -4,7 +4,9 @@ import { AppHeader, PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { Avatar } from "@/components/avatar";
 import { Card } from "@/components/card";
+import { ConnectCalendarCard } from "@/components/connect-calendar";
 import { requireCouple } from "@/server/auth/dal";
+import { calendarStates } from "@/server/availability";
 import { countIdeas } from "@/server/ideas";
 
 export default function HomePage() {
@@ -16,8 +18,10 @@ export default function HomePage() {
 }
 
 async function Home() {
-  const { user, partner, coupleId } = await requireCouple();
-  const ideaCount = await countIdeas(coupleId);
+  const ctx = await requireCouple();
+  const { user, partner, coupleId } = ctx;
+  const [ideaCount, calendars] = await Promise.all([countIdeas(coupleId), calendarStates(ctx)]);
+  const calendarsReady = calendars.every((person) => person.state === "connected");
 
   return (
     <div className="flex flex-col gap-5">
@@ -38,6 +42,8 @@ async function Home() {
         </h1>
         <p className="font-bold">Ihr seid gekoppelt. Der Date-O-Mat gehört jetzt euch zwei.</p>
       </Card>
+
+      {!calendarsReady && <ConnectCalendarCard people={calendars} next="/" />}
 
       <Link
         href="/ideas"

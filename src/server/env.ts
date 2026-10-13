@@ -10,6 +10,8 @@ const schema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().min(1),
   ALLOWED_EMAILS: z.string().min(1, "ALLOWED_EMAILS must list your two Google addresses"),
   TOKEN_ENCRYPTION_KEY: z.string().min(1),
+  // Only for tests: point Calendar API calls at a mock server.
+  GOOGLE_API_BASE_URL: z.url().default("https://www.googleapis.com"),
 });
 
 export type Env = {
@@ -19,6 +21,7 @@ export type Env = {
   googleClientSecret: string;
   allowedEmails: Set<string>;
   tokenKey: Buffer;
+  googleApiBaseUrl: string;
 };
 
 let cached: Env | undefined;
@@ -39,6 +42,7 @@ export function env(): Env {
     googleClientSecret: e.GOOGLE_CLIENT_SECRET,
     allowedEmails: parseAllowlist(e.ALLOWED_EMAILS),
     tokenKey: parseKey(e.TOKEN_ENCRYPTION_KEY),
+    googleApiBaseUrl: e.GOOGLE_API_BASE_URL.replace(/\/+$/, ""),
   };
   return cached;
 }
