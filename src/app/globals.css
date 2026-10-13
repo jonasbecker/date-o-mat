@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Date-O-Mat design tokens
+   Fixed brand colors keep their value in dark mode; the semantic colors
+   (bg, surface, ink, muted, line) switch with the color scheme.
+   --------------------------------------------------------------------------- */
+
+@theme {
+  --color-himbeere: #ff4f8b;
+  --color-himbeere-soft: #ffe3ec;
+  --color-zitrone: #ffd93d;
+  --color-zitrone-soft: #fff1b8;
+  --color-lavendel: #a98bff;
+  --color-minze: #3ddc97;
+  --color-minze-soft: #e9f9f1;
+  --color-mandarine: #ff9f43;
+  --color-himmel: #4cc3f5;
+  --color-tinte: #2a1b3d;
+
+  --font-display: var(--font-fredoka), ui-rounded, system-ui, sans-serif;
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sticker: 1.5rem;
+}
+
+:root {
+  --bg: #fff6ec;
+  --surface: #ffffff;
+  --ink: #2a1b3d;
+  --muted: #5e4f70;
+  --line: #2a1b3d;
+  --track: #d9cbbb;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1530;
+    --surface: #2b2040;
+    --ink: #fff6ec;
+    --muted: #cbbfdd;
+    --line: #0f0a18;
+    --track: #4a3d5e;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-track: var(--track);
+}
+
+/* Sticker look: thick outline + hard offset shadow */
+@utility sticker {
+  border: 2.5px solid var(--line);
+  box-shadow: 4px 4px 0 var(--line);
+}
+
+/* Buttons sink into their shadow when pressed */
+@utility press {
+  transition:
+    transform 120ms ease-out,
+    box-shadow 120ms ease-out;
+  &:active:not(:disabled) {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 var(--line);
+  }
+}
+
+@layer base {
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-himbeere);
+    outline-offset: 2px;
+  }
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(8deg);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility animate-wiggle {
+  animation: wiggle 1.6s ease-in-out infinite;
+}
+
+@utility animate-pop-in {
+  animation: pop-in 280ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

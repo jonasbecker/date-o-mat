@@ -1,0 +1,30 @@
+import type { Metadata, Viewport } from "next";
+import { Fredoka, Nunito } from "next/font/google";
+import "./globals.css";
+
+const fredoka = Fredoka({ subsets: ["latin"], variable: "--font-fredoka" });
+const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito" });
+
+export const metadata: Metadata = {
+  title: "Date-O-Mat",
+  description: "Damit aus „wir sollten mal wieder …“ ein echtes Date wird.",
+  applicationName: "Date-O-Mat",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fff6ec" },
+    { media: "(prefers-color-scheme: dark)", color: "#1e1530" },
+  ],
+};
+
+export default function RootLayout({ children }: LayoutProps<"/">) {
+  return (
+    <html lang="de" className={`${fredoka.variable} ${nunito.variable} antialiased`}>
+      <body className="min-h-dvh">{children}</body>
+    </html>
+  );
+}

@@ -1,0 +1,44 @@
+import "server-only";
+import { z } from "zod";
+import { parseAllowlist } from "@/lib/allowlist";
+import { parseKey } from "@/lib/crypto";
+
+const schema = z.object({
+  APP_URL: z.url().transform((url) => url.replace(/\/+$/, "")),
+  DATABASE_URL: z.string().min(1),
+  GOOGLE_CLIENT_ID: z.string().min(1),
+  GOOGLE_CLIENT_SECRET: z.string().min(1),
+  ALLOWED_EMAILS: z.string().min(1, "ALLOWED_EMAILS must list your two Google addresses"),
+  TOKEN_ENCRYPTION_KEY: z.string().min(1),
+});
+
+export type Env = {
+  appUrl: string;
+  secureCookies: boolean;
+  googleClientId: string;
+  googleClientSecret: string;
+  allowedEmails: Set<string>;
+  tokenKey: Buffer;
+};
+
+let cached: Env | undefined;
+
+/** Validated server configuration. Parsed lazily so `next build` works without secrets. */
+export function env(): Env {
+  if (cached) return cached;
+  const result = schema.safeParse(process.env);
+  if (!result.success) {
+    const fields = result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`);
+    throw new Error(`Invalid environment configuration (see .env.example):\n- ${fields.join("\n- ")}`);
+  }
+  const e = result.data;
+  cached = {
+    appUrl: e.APP_URL,
+    secureCookies: e.APP_URL.startsWith("https://"),
+    googleClientId: e.GOOGLE_CLIENT_ID,
+    googleClientSecret: e.GOOGLE_CLIENT_SECRET,
+    allowedEmails: parseAllowlist(e.ALLOWED_EMAILS),
+    tokenKey: parseKey(e.TOKEN_ENCRYPTION_KEY),
+  };
+  return cached;
+}
