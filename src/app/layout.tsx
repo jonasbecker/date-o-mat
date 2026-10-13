@@ -15,6 +15,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  // Android: shrink the layout when the keyboard opens, so bottom sheets stay visible.
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#fff6ec" },
     { media: "(prefers-color-scheme: dark)", color: "#1e1530" },

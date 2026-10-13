@@ -59,7 +59,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | | Inhalt | Status |
 |---|---|---|
 | M1 | Grundgerüst, Google-Login, Allowlist, Paar-Kopplung, Schema | ✅ |
-| M2 | Wunschliste mit Schnell-Erfassen | |
+| M2 | Wunschliste mit Schnell-Erfassen | ✅ |
 | M3 | Kalender verbinden, FreeBusy, Slot-Finder | |
 | M4 | Einstellungen, Zyklus-Engine, Startseite, Vorschlag-Modus, Cron-Tick | |
 | M5 | Google-Event mit Einladung, Sync bei Änderung/Absage | |

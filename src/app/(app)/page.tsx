@@ -1,8 +1,11 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { AppHeader, PageSkeleton } from "@/components/app-header";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { Avatar } from "@/components/avatar";
 import { Card } from "@/components/card";
 import { requireCouple } from "@/server/auth/dal";
+import { countIdeas } from "@/server/ideas";
 
 export default function HomePage() {
   return (
@@ -13,10 +16,12 @@ export default function HomePage() {
 }
 
 async function Home() {
-  const { user, partner } = await requireCouple();
+  const { user, partner, coupleId } = await requireCouple();
+  const ideaCount = await countIdeas(coupleId);
 
   return (
     <div className="flex flex-col gap-5">
+      <AutoRefresh />
       <AppHeader user={user} partner={partner} />
       <p className="text-[17px] font-bold text-muted">Hey {user.name}!</p>
 
@@ -33,6 +38,23 @@ async function Home() {
         </h1>
         <p className="font-bold">Ihr seid gekoppelt. Der Date-O-Mat gehört jetzt euch zwei.</p>
       </Card>
+
+      <Link
+        href="/ideas"
+        className="press sticker flex items-center gap-4 rounded-[22px] bg-zitrone-soft px-4 py-3.5 text-tinte"
+      >
+        <span className="text-3xl" aria-hidden="true">
+          💡
+        </span>
+        <span className="flex flex-col">
+          <span className="font-display text-lg font-semibold">
+            {ideaCount === 0 ? "Noch keine Ideen" : `${ideaCount} ${ideaCount === 1 ? "Idee" : "Ideen"} auf eurer Wunschliste`}
+          </span>
+          <span className="text-sm font-bold">
+            {ideaCount === 0 ? "Tippt auf das gelbe + und schreibt die erste auf." : "Ansehen und ergänzen"}
+          </span>
+        </span>
+      </Link>
     </div>
   );
 }

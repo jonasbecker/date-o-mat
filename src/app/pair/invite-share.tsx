@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/button";
 import { ShareIcon } from "@/components/icons";
 
@@ -30,16 +29,4 @@ export function InviteShare({ code, joinUrl }: { code: string; joinUrl: string }
       {copied ? "Kopiert!" : "Code teilen"}
     </Button>
   );
-}
-
-/** Re-checks every few seconds whether the partner joined; the page then redirects home. */
-export function PartnerWatcher() {
-  const router = useRouter();
-  useEffect(() => {
-    const id = setInterval(() => {
-      if (document.visibilityState === "visible") router.refresh();
-    }, 4000);
-    return () => clearInterval(id);
-  }, [router]);
-  return null;
 }

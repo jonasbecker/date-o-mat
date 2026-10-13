@@ -12,7 +12,7 @@ gemeinsame Ideen-Wunschliste.
 | Meilenstein | Inhalt | |
 |---|---|---|
 | M1 | Google-Login, Allowlist, Paar-Kopplung per Einladungscode | ✅ |
-| M2 | Wunschliste | ⏳ |
+| M2 | Wunschliste mit Schnell-Erfassen, Filter, Bearbeiten | ✅ |
 | M3 | Kalender & Slot-Finder | ⏳ |
 | M4 | Rhythmus, Modi, Zyklen, Startseite | ⏳ |
 | M5 | Google-Termine mit Einladung | ⏳ |
@@ -64,6 +64,11 @@ scripts/              Migration beim Build, Secret-Generator
   `<Suspense>`-Grenze innerhalb der Seite. Layouts bleiben statisch.
 - **Kein DB-Enum:** Statuswerte sind `text`-Spalten mit TypeScript-Typen (`src/lib/domain.ts`).
   Neue Werte brauchen daher keine Migration.
+- **Frische Daten ohne Websockets:** `AutoRefresh` (`src/components/auto-refresh.tsx`) lädt
+  die Seite neu, wenn die App wieder in den Vordergrund kommt, und alle 15 s, solange sie
+  sichtbar ist. Server Actions rufen nach Änderungen `refresh()` auf.
+- **Bottom Sheets** basieren auf dem nativen `<dialog>` (`src/components/sheet.tsx`):
+  Fokus, Escape und Hintergrund-Klick macht der Browser.
 - **Kernlogik ohne I/O** (Slots, Zyklen, Erinnerungen ab M3/M4) liegt als reine Funktionen
   vor und ist mit Tests abgedeckt.
 

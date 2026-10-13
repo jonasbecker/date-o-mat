@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { PageSkeleton } from "@/components/app-header";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { LogoMark } from "@/components/logo";
@@ -10,7 +11,7 @@ import { requireUser } from "@/server/auth/dal";
 import { countMembers, getCouple } from "@/server/couples";
 import { env } from "@/server/env";
 import { createCoupleAction, renewInviteAction } from "./actions";
-import { InviteShare, PartnerWatcher } from "./invite-share";
+import { InviteShare } from "./invite-share";
 import { JoinForm } from "./join-form";
 
 export default function PairPage({ searchParams }: PageProps<"/pair">) {
@@ -62,7 +63,8 @@ async function Pairing({ searchParams }: { searchParams: PageProps<"/pair">["sea
 
   return (
     <>
-      <PartnerWatcher />
+      {/* Re-checks every few seconds whether the partner joined; the page then redirects home. */}
+      <AutoRefresh intervalMs={4000} />
       <Card tone="mandarine" size="lg" className="flex flex-col items-center gap-4 text-center">
         {expired ? (
           <>
