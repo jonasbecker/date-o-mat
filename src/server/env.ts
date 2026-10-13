@@ -12,6 +12,8 @@ const schema = z.object({
   TOKEN_ENCRYPTION_KEY: z.string().min(1),
   // Only for tests: point Calendar API calls at a mock server.
   GOOGLE_API_BASE_URL: z.url().default("https://www.googleapis.com"),
+  CRON_SECRET: z.string().min(16).optional(),
+  ENABLE_DEV_TOOLS: z.enum(["0", "1"]).optional(),
 });
 
 export type Env = {
@@ -22,6 +24,8 @@ export type Env = {
   allowedEmails: Set<string>;
   tokenKey: Buffer;
   googleApiBaseUrl: string;
+  cronSecret: string | null;
+  devTools: boolean;
 };
 
 let cached: Env | undefined;
@@ -43,6 +47,8 @@ export function env(): Env {
     allowedEmails: parseAllowlist(e.ALLOWED_EMAILS),
     tokenKey: parseKey(e.TOKEN_ENCRYPTION_KEY),
     googleApiBaseUrl: e.GOOGLE_API_BASE_URL.replace(/\/+$/, ""),
+    cronSecret: e.CRON_SECRET ?? null,
+    devTools: e.ENABLE_DEV_TOOLS === "1",
   };
   return cached;
 }

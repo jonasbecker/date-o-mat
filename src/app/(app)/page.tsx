@@ -1,13 +1,21 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
+import { swapTurnAction } from "./actions";
 import { AppHeader, PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { Avatar } from "@/components/avatar";
-import { Card } from "@/components/card";
+import { buttonClass } from "@/components/button";
 import { ConnectCalendarCard } from "@/components/connect-calendar";
+import { CycleHero, CycleHistory } from "@/components/cycle";
+import { SparkleIcon } from "@/components/icons";
+import { SuggestionCard } from "@/components/suggestion-card";
 import { requireCouple } from "@/server/auth/dal";
 import { calendarStates } from "@/server/availability";
+import { coupleNow } from "@/server/clock";
+import { cycleHistory, ensureCurrentCycle } from "@/server/cycles";
 import { countIdeas } from "@/server/ideas";
+import { getCoupleSettings } from "@/server/settings";
+import { currentSuggestion } from "@/server/suggestions";
 
 export default function HomePage() {
   return (
@@ -19,9 +27,20 @@ export default function HomePage() {
 
 async function Home() {
   const ctx = await requireCouple();
+  // Time-based and writes the round state – only for real requests, not prefetches.
+  await connection();
   const { user, partner, coupleId } = ctx;
-  const [ideaCount, calendars] = await Promise.all([countIdeas(coupleId), calendarStates(ctx)]);
+  const settings = await getCoupleSettings(coupleId);
+  const now = coupleNow(settings);
+  const cycle = await ensureCurrentCycle(coupleId, now);
+  const [ideaCount, calendars, history] = await Promise.all([countIdeas(coupleId), calendarStates(ctx), cycleHistory(coupleId)]);
   const calendarsReady = calendars.every((person) => person.state === "connected");
+  if (!cycle) return null;
+
+  const isOpen = cycle.status === "open";
+  const myTurn = cycle.mode === "alternating" && cycle.plannerId === user.id;
+  const previous = history.at(-2);
+  const suggestion = isOpen && cycle.mode === "suggestion" && calendarsReady ? await currentSuggestion(ctx, cycle, now) : null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -29,26 +48,59 @@ async function Home() {
       <AppHeader user={user} partner={partner} />
       <p className="text-[17px] font-bold text-muted">Hey {user.name}!</p>
 
-      <Card tone="minze" size="lg" className="animate-pop-in flex flex-col items-center gap-4 text-center">
-        <div className="flex items-center gap-3">
-          <Avatar person={user} size={64} className="animate-wiggle" />
-          <span className="text-3xl" aria-hidden="true">
-            💞
-          </span>
-          <Avatar person={partner} size={64} />
+      <CycleHero cycle={cycle} me={user} partner={partner} now={now} />
+
+      {isOpen && myTurn && (
+        <div className="flex flex-col items-center gap-2">
+          <Link href="/plan" className={buttonClass("primary", "lg", "w-full")}>
+            <SparkleIcon />
+            Date planen
+          </Link>
+          <form action={swapTurnAction}>
+            <button type="submit" className="text-sm font-extrabold text-muted underline">
+              Diese Runde an {partner.name} abgeben
+            </button>
+          </form>
         </div>
-        <h1 className="text-[32px] font-bold leading-tight">
-          {user.name} &amp; {partner.name}
-        </h1>
-        <p className="font-bold">Ihr seid gekoppelt. Der Date-O-Mat gehört jetzt euch zwei.</p>
-      </Card>
+      )}
+
+      {isOpen && cycle.mode === "alternating" && !myTurn && (
+        <div className="flex flex-col gap-3 rounded-[22px] border-2 border-dashed border-line px-4 py-3.5">
+          <p className="font-bold">
+            {partner.name} plant diese Runde. Du kannst schon mal Ideen auf die Wunschliste setzen – oder einspringen.
+          </p>
+          <form action={swapTurnAction}>
+            <button type="submit" className={buttonClass("secondary", "sm")}>
+              Ich übernehme diese Runde
+            </button>
+          </form>
+        </div>
+      )}
+
+      {suggestion?.status === "ok" && <SuggestionCard suggestion={suggestion.suggestion} idea={suggestion.idea} />}
+      {suggestion?.status === "no_slots" && (
+        <p className="rounded-[20px] border-2 border-dashed border-line px-4 py-3 font-bold">
+          Diese Runde findet der Date-O-Mat keine gemeinsame Lücke mehr. Schaut unter „Planen“, ob ihr später Zeit habt.
+        </p>
+      )}
+
+      {isOpen && previous?.status === "skipped" && (
+        <div className="flex items-start gap-3 rounded-[20px] border-2 border-line bg-zitrone-soft px-4 py-3.5 text-tinte">
+          <span className="text-2xl leading-none" aria-hidden="true">
+            🌦️
+          </span>
+          <p>
+            <strong className="block font-extrabold">Runde {previous.seq} ist ausgefallen – passiert!</strong>
+            <span className="font-semibold">Kein Stress. Diese Runde holt ihr&apos;s nach.</span>
+          </p>
+        </div>
+      )}
 
       {!calendarsReady && <ConnectCalendarCard people={calendars} next="/" />}
 
-      <Link
-        href="/ideas"
-        className="press sticker flex items-center gap-4 rounded-[22px] bg-zitrone-soft px-4 py-3.5 text-tinte"
-      >
+      <CycleHistory history={history} currentId={cycle.id} />
+
+      <Link href="/ideas" className="press sticker flex items-center gap-4 rounded-[22px] bg-zitrone-soft px-4 py-3.5 text-tinte">
         <span className="text-3xl" aria-hidden="true">
           💡
         </span>

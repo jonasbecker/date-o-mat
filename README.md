@@ -14,7 +14,7 @@ gemeinsame Ideen-Wunschliste.
 | M1 | Google-Login, Allowlist, Paar-Kopplung per Einladungscode | ✅ |
 | M2 | Wunschliste mit Schnell-Erfassen, Filter, Bearbeiten | ✅ |
 | M3 | Kalender verbinden, Kalenderauswahl, Slot-Finder, Slot-Einstellungen | ✅ |
-| M4 | Rhythmus, Modi, Zyklen, Startseite | ⏳ |
+| M4 | Rhythmus, Modi (abwechselnd/Vorschlag), Runden, Startseite, Cron-Tick, Dev-Uhr | ✅ |
 | M5 | Google-Termine mit Einladung | ⏳ |
 | M6 | Push-Erinnerungen | ⏳ |
 | M7 | Politur & PWA | ⏳ |
@@ -36,7 +36,7 @@ gemeinsame Ideen-Wunschliste.
 Handy (PWA) ──HTTPS──▶ Next.js auf Vercel ──▶ Neon Postgres
                          ├─▶ Google OAuth / Calendar API
                          └─▶ Web Push
-cron-job.org ── alle 5 Min ──▶ /api/cron/tick   (ab M4)
+cron-job.org ── alle 5 Min ──▶ /api/cron/tick   (Runden weiterschalten, Vorschläge; ab M6 Erinnerungen)
 ```
 
 ```
@@ -53,6 +53,10 @@ src/
     db/               Drizzle-Client und Schema
     google/           Token-Verwaltung (verschlüsselt, Refresh) und Calendar-API per fetch
     availability.ts   FreeBusy beider Kalender → Slot-Finder
+    cycles.ts         Runden-Engine (anlegen, abschließen, Status)
+    suggestions.ts    Vorschlag-Modus
+    idea-sources/     austauschbare Ideen-Quellen (V1: Wunschliste)
+    tick.ts           der periodische Job hinter /api/cron/tick
   proxy.ts            schickt Besucher ohne Session-Cookie zur Login-Seite
 drizzle/              SQL-Migrationen (generiert)
 scripts/              Migration beim Build, Secret-Generator
@@ -78,6 +82,24 @@ scripts/              Migration beim Build, Secret-Generator
 - **Google nur bei echten Anfragen:** Next.js rendert Seiten für das Prefetching vorab.
   Jeder Calendar-API-Aufruf beginnt deshalb mit `await connection()`, damit Google nur bei
   echten Seitenaufrufen gefragt wird.
+
+### Runden in Kürze
+
+- Rhythmus: jede Woche (Mo–So), alle 2 Wochen, 2× im Monat (1.–15. / 16.–Ende), jeden Monat.
+  Grenzen sind immer 00:00 Uhr Berlin, die Zeitumstellung ist berücksichtigt (`src/core/cycles.ts`).
+- Runden schließen lückenlos aneinander an. Den nächsten Rundenwechsel legen der Cron-Tick
+  oder der nächste Seitenaufruf an, je nachdem, was zuerst kommt (idempotent).
+- **Abwechselnd:** Runde 1 gehört der Person, die das Paar gestartet hat, danach wird
+  abgewechselt, auch nach ausgefallenen Runden. „Ich übernehme diese Runde“ tauscht die
+  Reihenfolge ab sofort.
+- **Vorschlag:** Pro Runde gibt es einen gemeinsamen Vorschlag (bester freier Slot + die
+  Idee, die am längsten auf der Wunschliste wartet; jede zweite Runde bevorzugt groß).
+  „Anderer Vorschlag“ verwirft ihn, verworfene Slots und Ideen kommen nicht wieder.
+- Status: offen → geplant → bestätigt → stattgefunden; ohne Date am Rundenende: übersprungen.
+- Neuer Rhythmus gilt ab der nächsten Runde; Modus und Deadline gelten sofort, solange die
+  Runde offen ist.
+- **Dev-Uhr:** Mit `ENABLE_DEV_TOOLS=1` erscheint in den Einstellungen „Dev-Uhr“: Zeit um
+  Tage oder Wochen vorstellen, damit lassen sich mehrere Runden in Minuten durchspielen.
 
 ### Slot-Finder in Kürze
 
@@ -124,6 +146,17 @@ npm run dev
 Schema ändern: `src/server/db/schema.ts` anpassen → `npm run db:generate` → die erzeugte
 SQL-Datei committen. Vercel wendet sie beim nächsten Deploy an.
 
+## Erweiterungen (nach V1)
+
+Bewusst nicht in V1, aber vorbereitet:
+
+| Idee | So würde man sie andocken |
+|---|---|
+| **Kuratierte Ideen für Köln** | Neue Datei `src/server/idea-sources/curated.ts`, die `IdeaSourceProvider` implementiert (z. B. aus einer JSON-Datei oder Tabelle mit `ideas.source = 'curated'`), und in `PROVIDERS` in `src/server/idea-sources/index.ts` eintragen. Vorschlag-Modus und Planen nutzen sie dann automatisch. |
+| **KI-Vorschläge** (Budget, Wetter, Dauer, Stimmung) | Ebenfalls ein `IdeaSourceProvider` (`source = 'ai'`), der aus Kontext (Slot-Größe, Wetter-API, Budget) Kandidaten erzeugt; erzeugte Ideen können mit `external_ref` in `ideas` gespeichert werden. |
+| **Zufall („Überrasch uns“)** | Eine kleine Funktion neben `pickSuggestion` (`src/core/suggestion.ts`), die statt der ältesten eine zufällige Idee aus `ideaCandidates()` zieht, plus ein Button auf der Startseite. |
+| **Rückblick nach dem Date** | `date_plans.rating` und `review_note` existieren schon; für Fotos kommt eine neue Tabelle `date_photos` dazu. Nur UI nötig. |
+
 ## Sicherheit & Datenschutz
 
 - Login nur für Adressen in `ALLOWED_EMAILS`. Danach gilt die Kopplung per Einladungscode;
@@ -132,3 +165,4 @@ SQL-Datei committen. Vercel wendet sie beim nächsten Deploy an.
 - Google-Tokens werden AES-256-GCM-verschlüsselt gespeichert (`TOKEN_ENCRYPTION_KEY`).
 - Aus den Kalendern liest die App nur Belegt-Zeiten (FreeBusy) und speichert keine Termindetails.
 - Alle Secrets liegen nur in Umgebungsvariablen (`.env.example` als Vorlage).
+- `/api/cron/tick` verlangt `Authorization: Bearer <CRON_SECRET>` (zeitkonstanter Vergleich).

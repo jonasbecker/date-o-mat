@@ -1,11 +1,17 @@
+import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { ConnectCalendarCard } from "@/components/connect-calendar";
 import { formatShortDate, slotView } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
 import { searchSlots } from "@/server/availability";
+import { coupleNow } from "@/server/clock";
+import { ensureCurrentCycle } from "@/server/cycles";
+import { getCoupleSettings } from "@/server/settings";
+import { searchUntil } from "@/server/suggestions";
 import { SlotPicker } from "./slot-picker";
 
-export default function PlanPage() {
+export default function PlanPage({ searchParams }: PageProps<"/plan">) {
   return (
     <div className="flex flex-col gap-5">
       <div>
@@ -13,15 +19,35 @@ export default function PlanPage() {
         <p className="font-bold text-muted">Wann habt ihr beide Zeit?</p>
       </div>
       <Suspense fallback={<SlotsSkeleton />}>
-        <Plan />
+        <Plan searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function Plan() {
+async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["searchParams"] }) {
   const ctx = await requireCouple();
-  const search = await searchSlots(ctx, new Date());
+  await connection();
+  const settings = await getCoupleSettings(ctx.coupleId);
+  const now = coupleNow(settings);
+  const cycle = await ensureCurrentCycle(ctx.coupleId, now);
+  const later = (await searchParams).later === "1";
+  // Normally only within the current round; "later" searches the whole horizon.
+  const until = cycle && !later ? searchUntil(cycle, now, settings.horizonDays) : undefined;
+  const search = await searchSlots(ctx, now, until);
+  const roundInfo = cycle && (
+    <p className="-mt-3 text-sm font-extrabold text-muted">
+      Runde {cycle.seq}
+      {cycle.mode === "alternating" &&
+        (cycle.plannerId === ctx.user.id ? " · du bist dran" : ` · ${ctx.partner.name} ist dran`)}
+      {cycle.mode === "suggestion" && " · Vorschlag-Modus"}
+    </p>
+  );
+  const scopeLink = cycle && (
+    <Link href={later ? "/plan" : "/plan?later=1"} className="self-center text-sm font-extrabold underline">
+      {later ? "Nur in dieser Runde suchen" : "Auch nach dem Rundenende suchen"}
+    </Link>
+  );
 
   if (search.status === "not_connected") return <ConnectCalendarCard people={search.people} next="/plan" />;
   if (search.status === "google_error") {
@@ -34,6 +60,7 @@ async function Plan() {
 
   return (
     <>
+      {roundInfo}
       {search.failedCalendars > 0 && (
         <p className="rounded-[20px] border-2 border-line bg-zitrone-soft px-4 py-3 text-sm font-bold text-tinte">
           {search.failedCalendars === 1 ? "Ein Kalender konnte" : `${search.failedCalendars} Kalender konnten`} nicht gelesen
@@ -45,6 +72,7 @@ async function Plan() {
         large={search.large.map(slotView)}
         untilLabel={formatShortDate(search.until)}
       />
+      {scopeLink}
     </>
   );
 }

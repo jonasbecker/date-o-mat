@@ -18,6 +18,9 @@ export type IdeaSource = (typeof IDEA_SOURCES)[number];
 export const RHYTHMS = ["weekly", "biweekly", "semimonthly", "monthly"] as const;
 export type Rhythm = (typeof RHYTHMS)[number];
 
+/** Recommended planning deadline (days before the round ends) per rhythm. */
+export const DEFAULT_DEADLINE_DAYS: Record<Rhythm, number> = { weekly: 3, biweekly: 5, semimonthly: 5, monthly: 10 };
+
 export const PLAN_MODES = ["alternating", "suggestion"] as const;
 export type PlanMode = (typeof PLAN_MODES)[number];
 

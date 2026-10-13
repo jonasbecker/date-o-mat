@@ -1,9 +1,10 @@
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/cn";
 
+// Bright fills always get dark ink text; the neutral button follows the color scheme.
 const VARIANT = {
-  primary: "bg-himbeere",
-  success: "bg-minze",
+  primary: "bg-himbeere text-tinte",
+  success: "bg-minze text-tinte",
   secondary: "bg-surface text-ink",
 } as const;
 
@@ -19,7 +20,7 @@ export type ButtonSize = keyof typeof SIZE;
 /** Class names for anything that should look like a button (also links). */
 export function buttonClass(variant: ButtonVariant = "primary", size: ButtonSize = "md", className?: string) {
   return cn(
-    "sticker press inline-flex items-center justify-center gap-2.5 font-display font-semibold text-tinte",
+    "sticker press inline-flex items-center justify-center gap-2.5 font-display font-semibold",
     "disabled:cursor-not-allowed disabled:opacity-60",
     VARIANT[variant],
     SIZE[size],

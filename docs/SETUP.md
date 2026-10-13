@@ -184,8 +184,11 @@ Danach neu deployen, denn Variablen gelten erst für neue Deployments:
 
 ## 6. cron-job.org (ab Meilenstein 4)
 
-Ruft alle 5 Minuten die App auf, damit Zyklen wechseln und Erinnerungen rausgehen.
-Ich sage Bescheid, wenn es so weit ist.
+Ruft alle 5 Minuten die App auf, damit Runden wechseln, Vorschläge bereitliegen und
+(ab Meilenstein 6) Erinnerungen rausgehen. Ohne Cron läuft die App trotzdem: Runden werden
+dann beim nächsten Öffnen nachgezogen – nur Push-Erinnerungen bräuchten den Cron.
+
+Voraussetzung: `CRON_SECRET` ist in Vercel eingetragen (Schritt 4).
 
 1. <https://console.cron-job.org/signup> → Konto anlegen.
 2. **Cronjob erstellen**
@@ -195,7 +198,19 @@ Ich sage Bescheid, wenn es so weit ist.
 3. Tab **Erweitert**
    - Anfragemethode: **POST**
    - Header hinzufügen: Name `Authorization`, Wert `Bearer DEIN_CRON_SECRET`
-4. **Erstellen** → **Testlauf**. Erwartet: Status 200.
+4. **Erstellen** → **Testlauf**. Erwartet: Status 200 und `{"ok":true,"couples":1,…}`.
+   Status 401 = falsches Secret, 503 = `CRON_SECRET` fehlt in Vercel.
+
+### Meilenstein 4 testen: Runden über mehrere Wochen
+
+1. Startseite: Wer zuerst das Paar gestartet hat, sieht „Du bist dran!“ mit Deadline, die
+   andere Person „… ist dran“ und kann mit „Ich übernehme diese Runde“ einspringen.
+2. Zum Durchspielen mehrerer Runden in Vercel vorübergehend `ENABLE_DEV_TOOLS=1` setzen
+   und neu deployen. Dann gibt es in den Einstellungen die **Dev-Uhr**:
+   „+1 Woche“ → Runde 2, die andere Person ist dran, Runde 1 erscheint freundlich als
+   ausgefallen. Rhythmus und Modus umstellen und weiter vorspulen.
+3. **Alles zurücksetzen** stellt die echte Zeit ein und löscht die Test-Runden.
+4. Danach `ENABLE_DEV_TOOLS` wieder entfernen (oder `0`) und neu deployen.
 
 ## 7. Lokal entwickeln (optional)
 

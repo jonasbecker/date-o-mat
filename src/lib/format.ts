@@ -52,3 +52,31 @@ export function slotView(slot: Slot): SlotView {
     endIso: slot.end.toISOString(),
   };
 }
+
+/** Round dates: "12.–18. Okt" or "26. Okt – 1. Nov" (end is exclusive). */
+export function formatCycleRange(start: Date, end: Date): string {
+  const from = inZone(start);
+  const to = inZone(new Date(end.getTime() - 1));
+  if (from.month === to.month) return `${from.toFormat("d.")}–${to.toFormat("d. LLL")}`;
+  return `${from.toFormat("d. LLL")} – ${to.toFormat("d. LLL")}`;
+}
+
+/** "Do, 15. Okt · 20:00" */
+export function formatDeadline(date: Date): string {
+  return inZone(date).toFormat("ccc, d. LLL · HH:mm");
+}
+
+/** "noch 2 Tage", "noch 5 Std.", "noch < 1 Std.", "vorbei" */
+export function timeLeftLabel(now: Date, until: Date): string {
+  const hours = (until.getTime() - now.getTime()) / 3_600_000;
+  if (hours <= 0) return "vorbei";
+  if (hours < 1) return "noch < 1 Std.";
+  if (hours < 24) return `noch ${Math.floor(hours)} Std.`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? "noch 1 Tag" : `noch ${days} Tage`;
+}
+
+/** "18:30 – 20:30" */
+export function formatTimeRange(start: Date, end: Date): string {
+  return `${inZone(start).toFormat("HH:mm")} – ${inZone(end).toFormat("HH:mm")}`;
+}

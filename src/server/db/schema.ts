@@ -121,6 +121,8 @@ export const coupleSettings = pgTable("couple_settings", {
   horizonDays: smallint().notNull().default(14),
   quietHoursStartMinute: smallint().notNull().default(22 * 60),
   quietHoursEndMinute: smallint().notNull().default(8 * 60),
+  // Dev clock (only used when ENABLE_DEV_TOOLS=1): shifts "now" to test many rounds.
+  devClockOffsetMinutes: integer().notNull().default(0),
   updatedAt: updatedAt(),
 });
 
@@ -289,3 +291,6 @@ export const notificationLog = pgTable(
 export type User = typeof users.$inferSelect;
 export type Couple = typeof couples.$inferSelect;
 export type CoupleSettings = typeof coupleSettings.$inferSelect;
+export type Cycle = typeof cycles.$inferSelect;
+export type DatePlan = typeof datePlans.$inferSelect;
+export type SuggestionRow = typeof suggestions.$inferSelect;

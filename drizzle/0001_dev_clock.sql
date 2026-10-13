@@ -1,0 +1,1 @@
+ALTER TABLE "couple_settings" ADD COLUMN "dev_clock_offset_minutes" integer DEFAULT 0 NOT NULL;

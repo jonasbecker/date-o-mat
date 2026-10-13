@@ -16,6 +16,8 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - Schema change → `npm run db:generate` → commit the SQL in `drizzle/`.
 - Mutations are server actions that call `refresh()`; pages that show shared data render `<AutoRefresh />`.
 - Google Calendar calls go through `calendarRequest()` (`src/server/google/calendar-api.ts`), which awaits `connection()` first so prefetch/prerender never hits Google. Call `connection()` before any try/catch around live Google data.
+- "Now" for a couple is `coupleNow(settings)` (`src/server/clock.ts`), never `new Date()` in round/slot logic – the dev clock shifts it.
+- Pages that use time or write round state call `await connection()` right after `requireCouple()`.
 - Design tokens are in `src/app/globals.css` (`sticker`, `press` utilities); bright fills use `text-tinte`.
 
 ## Checks before pushing

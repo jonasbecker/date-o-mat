@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import type { SlotRules } from "@/core/slots";
 import type { SlotSettingsValues } from "@/lib/slot-settings";
 import { db } from "@/server/db";
-import { coupleSettings, type CoupleSettings } from "@/server/db/schema";
+import { coupleSettings, cycles, type CoupleSettings } from "@/server/db/schema";
 
 /** The couple's settings; creates the default row if it is missing. */
 export async function getCoupleSettings(coupleId: string): Promise<CoupleSettings> {
@@ -31,4 +31,25 @@ export function slotRulesFrom(settings: CoupleSettings): SlotRules {
     minLeadHours: settings.minLeadHours,
     bufferMinutes: settings.bufferMinutes,
   };
+}
+
+export type CycleSettingsValues = Pick<CoupleSettings, "rhythm" | "mode" | "deadlineDaysBeforeEnd">;
+
+export async function updateCycleSettings(coupleId: string, values: CycleSettingsValues): Promise<void> {
+  await getCoupleSettings(coupleId);
+  await db.update(coupleSettings).set(values).where(eq(coupleSettings.coupleId, coupleId));
+}
+
+export async function setFirstPlanner(coupleId: string, userId: string): Promise<void> {
+  await db.update(coupleSettings).set({ firstPlannerId: userId }).where(eq(coupleSettings.coupleId, coupleId));
+}
+
+export async function setDevClockOffset(coupleId: string, minutes: number): Promise<void> {
+  await db.update(coupleSettings).set({ devClockOffsetMinutes: minutes }).where(eq(coupleSettings.coupleId, coupleId));
+}
+
+/** Dev tools only: back to real time and start the rounds from scratch. */
+export async function resetDevClock(coupleId: string): Promise<void> {
+  await db.delete(cycles).where(eq(cycles.coupleId, coupleId));
+  await setDevClockOffset(coupleId, 0);
 }
