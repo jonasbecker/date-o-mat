@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
+      // Private photos: images only, nothing that could run (overrides the CSP above).
+      {
+        source: "/api/photos/:id",
+        headers: [{ key: "Content-Security-Policy", value: "default-src 'none'; sandbox; frame-ancestors 'none'" }],
+      },
       // Browsers must always pick up a new service worker right away.
       {
         source: "/sw.js",
@@ -26,6 +31,10 @@ const nextConfig: NextConfig = {
     ];
   },
   cacheComponents: true,
+  experimental: {
+    // Photo uploads (already resized in the browser, ~0.5 MB each). Vercel caps requests at 4.5 MB.
+    serverActions: { bodySizeLimit: "4mb" },
+  },
   partialPrefetching: true,
   turbopack: {
     rules: {

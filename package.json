@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
+    "@vercel/blob": "^2.8.2",
     "drizzle-orm": "^0.45.4",
     "google-auth-library": "^11.3.0",
     "luxon": "^3.7.2",

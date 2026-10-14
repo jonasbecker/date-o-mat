@@ -7,6 +7,7 @@ import { parseReview } from "@/core/reviews";
 import { requireCouple } from "@/server/auth/dal";
 import { notifyPartnerReviewed } from "@/server/notifications";
 import { pastDate, saveReview } from "@/server/reviews";
+import { addPhoto, deletePhoto } from "@/server/photos";
 
 export type ReviewFormState = { status: "idle" | "saved" | "error"; message?: string; savedAt?: number };
 
@@ -28,4 +29,37 @@ export async function saveReviewAction(_prev: ReviewFormState, formData: FormDat
   }
   refresh();
   return { status: "saved", savedAt: Date.now() };
+}
+
+const PHOTO_ERRORS = {
+  off: "Fotos sind auf dem Server noch nicht eingerichtet.",
+  not_found: "Dieses Date gibt es nicht (mehr).",
+  full: "Mehr Fotos passen zu diesem Date nicht.",
+  invalid: "Dieses Bild konnte nicht gelesen werden.",
+  storage: "Der Foto-Speicher hakt gerade. Versuch es gleich nochmal.",
+} as const;
+
+/** One photo per call (full + thumbnail, both resized in the browser). */
+export async function uploadPhotoAction(formData: FormData): Promise<{ ok: boolean; message?: string }> {
+  const ctx = await requireCouple();
+  const dateId = z.uuid().safeParse(formData.get("dateId"));
+  const full = formData.get("full");
+  const thumb = formData.get("thumb");
+  if (!dateId.success || !(full instanceof File) || !(thumb instanceof File)) return { ok: false, message: PHOTO_ERRORS.invalid };
+  const result = await addPhoto(ctx, {
+    dateId: dateId.data,
+    full,
+    thumb,
+    width: Number(formData.get("width")),
+    height: Number(formData.get("height")),
+  });
+  if (result.ok) refresh();
+  return result.ok ? { ok: true } : { ok: false, message: PHOTO_ERRORS[result.error] };
+}
+
+export async function deletePhotoAction(photoId: string): Promise<void> {
+  const ctx = await requireCouple();
+  const id = z.uuid().safeParse(photoId);
+  if (id.success) await deletePhoto(ctx, id.data);
+  refresh();
 }

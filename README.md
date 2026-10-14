@@ -20,7 +20,7 @@ gemeinsame Ideen-Wunschliste.
 | M7 | Fehler-/Offline-Seiten, App-Kurzbefehle, Sicherheits-Härtung, Aufräum-Job, Doku | ✅ |
 | **V2** | | |
 | M8 | Rückblick: „Wie war's?“-Erinnerung, Herzen + Notiz je Person, Seite „Unsere Dates“ | ✅ |
-| M9 | Fotos zum Rückblick (Vercel Blob, privat) | ⏳ |
+| M9 | Fotos zum Rückblick (Vercel Blob, privat) | ✅ |
 | M10 | Kuratierte Köln-Ideen, „Überrasch uns“ | ⏳ |
 | M11 | KI-Vorschläge (Claude Haiku 5.5, Wetter von Open-Meteo) | ⏳ |
 | M12 | Event-Quellen: Lieblings-Seiten täglich lesen, „Was läuft“ mit Frei-Prüfung | ✅ |
@@ -159,6 +159,19 @@ scripts/              Migration beim Build, Secret-Generator
   und Lieblingsdate. Die Einstellungen sind dafür aus der unteren Leiste in den Kopf der
   Startseite gewandert (Regler-Symbol).
 
+### Fotos in Kürze
+
+- Auf der Seite eines vergangenen Dates: **📷 Fotos hinzufügen** (mehrere auf einmal, bis 24).
+- Der Browser verkleinert jedes Foto vor dem Hochladen (`src/lib/resize-image.ts`): 1600 px
+  plus 480-px-Vorschau als JPEG. Dabei fallen EXIF-Daten wie der GPS-Ort weg.
+- Der Server prüft die echten Bytes (`sniffImageType()`), nicht den Dateinamen, und legt die
+  Dateien in einem **privaten Vercel Blob Store** ab, unter zufälligen Namen pro Paar.
+- Ausgeliefert wird nur über `/api/photos/[id]` – mit Login- und Paar-Prüfung; der Browser darf
+  die Bilder privat cachen. Antippen öffnet die Großansicht mit Blättern und Löschen.
+- Das erste Foto ist das Titelbild auf „Unsere Dates“.
+- Lokal (mit `ENABLE_DEV_TOOLS=1` ohne Blob-Token) landen Fotos in `.data/photos`
+  (`src/server/photos/store.ts`).
+
 ### Event-Quellen in Kürze
 
 - In den **Einstellungen → Event-Quellen** tragt ihr Seiten ein (Veranstaltungskalender oder
@@ -197,6 +210,7 @@ scripts/              Migration beim Build, Secret-Generator
 | `ideas` | Wunschliste |
 | `cycles`, `date_plans`, `suggestions` | Runden, geplante Dates, App-Vorschläge |
 | `date_reviews` | Herzen + Notiz je Person und Date |
+| `date_photos` | Fotos je Date (nur Pfade; die Dateien liegen im privaten Blob Store) |
 | `event_sources`, `events` | gefolgte Seiten (mit Abruf-Status) und was dort gefunden wurde |
 | `push_subscriptions`, `notification_prefs`, `notification_log` | Push |
 
@@ -237,6 +251,8 @@ Bewusst nicht in V1, aber vorbereitet:
 
 ## Sicherheit & Datenschutz
 
+- **Fotos:** privater Blob Store, Auslieferung nur nach Login- und Paar-Prüfung, eigene
+  strenge CSP für die Bild-Route, Dateityp anhand der Bytes geprüft, EXIF wird entfernt.
 - **Event-Quellen:** Der Server ruft nur öffentliche `https`-Adressen ab (keine IPs, keine
   internen Namen); jede Weiterleitung und die DNS-Auflösung werden erneut geprüft, private
   Netze sind gesperrt (`src/lib/url-safety.ts`). Seiten werden auf 3 MB und 15 s begrenzt.

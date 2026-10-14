@@ -13,6 +13,9 @@ import { requireCouple } from "@/server/auth/dal";
 import type { User } from "@/server/db/schema";
 import { pastDate } from "@/server/reviews";
 import { ReviewForm } from "../review-form";
+import { PhotoSection } from "../photo-section";
+import { listPhotos } from "@/server/photos";
+import { env } from "@/server/env";
 
 export default function DatePage({ params }: PageProps<"/dates/[id]">) {
   return (
@@ -28,6 +31,7 @@ async function DateDetail({ params }: { params: PageProps<"/dates/[id]">["params
   const date = /^[0-9a-f-]{36}$/.test(id) ? await pastDate(coupleId, id) : undefined;
   if (!date) notFound();
   const { mine, partner: theirs, partnerHidden } = visibleReviews(date.reviews, user.id);
+  const photos = await listPhotos(coupleId, date.id);
 
   return (
     <div className="flex flex-col gap-5">
@@ -54,6 +58,12 @@ async function DateDetail({ params }: { params: PageProps<"/dates/[id]">["params
         {mine && <ReviewBlock person={user} review={mine} />}
         <ReviewForm key={mine?.rating ?? 0} dateId={date.id} rating={mine?.rating ?? null} note={mine?.note ?? null} />
       </section>
+
+      <PhotoSection
+        dateId={date.id}
+        photos={photos.map((p) => ({ id: p.id, width: p.width, height: p.height }))}
+        enabled={env().photoStorage !== null}
+      />
 
       <section aria-labelledby="partner-heading" className="flex flex-col gap-3 rounded-[24px] border-[2.5px] border-dashed border-line p-5">
         <h2 id="partner-heading" className="text-[19px] font-bold">

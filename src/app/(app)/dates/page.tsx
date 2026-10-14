@@ -11,6 +11,7 @@ import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
 import type { User } from "@/server/db/schema";
 import { pastDates, type PastDate } from "@/server/reviews";
+import { coverPhotos } from "@/server/photos";
 import { getCoupleSettings } from "@/server/settings";
 
 export default function DatesPage() {
@@ -26,6 +27,7 @@ async function Dates() {
   await connection();
   const now = coupleNow(await getCoupleSettings(coupleId));
   const dates = await pastDates(coupleId);
+  const covers = await coverPhotos(coupleId, dates.map((d) => d.id));
   const stats = reviewStats(
     dates.map((d) => ({ id: d.id, title: d.title, startsAt: d.startsAt, ratings: d.reviews.map((r) => r.rating) })),
     now,
@@ -68,7 +70,7 @@ async function Dates() {
           <ul className="flex flex-col gap-3.5">
             {dates.map((date) => (
               <li key={date.id}>
-                <DateRow date={date} me={user} partner={partner} />
+                <DateRow date={date} me={user} partner={partner} cover={covers.get(date.id)} />
               </li>
             ))}
           </ul>
@@ -87,10 +89,14 @@ function Stat({ label, value, tone }: { label: string; value: string; tone: stri
   );
 }
 
-function DateRow({ date, me, partner }: { date: PastDate; me: User; partner: User }) {
+function DateRow({ date, me, partner, cover }: { date: PastDate; me: User; partner: User; cover?: string }) {
   const { mine, partner: theirs, partnerHidden } = visibleReviews(date.reviews, me.id);
   return (
-    <Link href={`/dates/${date.id}`} className="press sticker flex flex-col gap-2 rounded-[20px] bg-surface p-3.5">
+    <Link href={`/dates/${date.id}`} className="press sticker flex flex-col gap-2 overflow-hidden rounded-[20px] bg-surface p-3.5">
+      {cover && (
+        // eslint-disable-next-line @next/next/no-img-element -- private photo route
+        <img src={`/api/photos/${cover}?size=thumb`} alt="" loading="lazy" className="-mx-3.5 -mt-3.5 mb-1 h-36 w-[calc(100%+1.75rem)] max-w-none border-b-2 border-line object-cover" />
+      )}
       <span className="flex items-start justify-between gap-3">
         <span className="font-display text-lg font-semibold leading-snug">{date.title}</span>
         {!mine && <span className="shrink-0 rounded-full border-2 border-line bg-himbeere px-2.5 py-0.5 text-xs font-extrabold text-tinte">Bewerten</span>}

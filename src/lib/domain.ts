@@ -65,3 +65,6 @@ export type FetchStatus = (typeof FETCH_STATUSES)[number];
 
 export const EVENT_KINDS = ["event", "tip"] as const;
 export type EventKind = (typeof EVENT_KINDS)[number];
+
+/** Photos after a date: resized in the browser, stored privately. */
+export const PHOTO_LIMITS = { perDate: 24, fullEdge: 1600, thumbEdge: 480, maxBytes: 3 * 1024 * 1024 } as const;

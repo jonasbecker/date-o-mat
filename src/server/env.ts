@@ -19,6 +19,8 @@ const schema = z.object({
   VAPID_SUBJECT: z.string().min(1).optional(),
   // Claude reads the event sources. Without a key the feature is off.
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  // Photos (Vercel Blob, private store). Vercel sets it when the store is connected.
+  BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
   // Only for tests (and only with ENABLE_DEV_TOOLS=1): event sources on localhost/http.
   ALLOW_PRIVATE_EVENT_URLS: z.enum(["0", "1"]).optional(),
 });
@@ -38,6 +40,8 @@ export type Env = {
   /** Claude is configured (event sources are read). */
   ai: boolean;
   allowPrivateEventUrls: boolean;
+  /** Where photos go: Vercel Blob, a local folder (dev only) or nowhere (feature off). */
+  photoStorage: "blob" | "local" | null;
 };
 
 let cached: Env | undefined;
@@ -67,6 +71,7 @@ export function env(): Env {
         : null,
     ai: Boolean(e.ANTHROPIC_API_KEY),
     allowPrivateEventUrls: e.ENABLE_DEV_TOOLS === "1" && e.ALLOW_PRIVATE_EVENT_URLS === "1",
+    photoStorage: e.BLOB_READ_WRITE_TOKEN ? "blob" : e.ENABLE_DEV_TOOLS === "1" ? "local" : null,
   };
   return cached;
 }

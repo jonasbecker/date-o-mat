@@ -260,6 +260,19 @@ Danach:
    (Dev-Uhr auf 11:05 am Folgetag, dann cron-job.org **Testlauf**).
 4. Die Einstellungen liegen jetzt hinter dem Regler-Symbol oben rechts auf der Startseite.
 
+### Meilenstein 9 einrichten: Fotos
+
+1. In Vercel im Projekt **Storage → Create Database → Blob** wählen, Name z. B.
+   `date-o-mat-fotos`, Zugriff **Private**, Region **Frankfurt (fra1)**.
+2. Den Store mit dem Projekt verbinden (**Connect Project**, alle Umgebungen). Vercel trägt
+   `BLOB_READ_WRITE_TOKEN` dabei selbst ein.
+3. Neu deployen (**Deployments → … → Redeploy**).
+4. Test: Unter **Dates** ein vergangenes Date öffnen → **📷 Fotos hinzufügen**. Das Foto
+   erscheint in der Vorschau und als Titelbild in der Liste.
+
+Platz: Ein Foto braucht mit Vorschau etwa 0,2–0,5 MB. Im Hobby-Plan ist 1 GB frei, das
+reicht für einige tausend Fotos. Stand unter **Storage → date-o-mat-fotos**.
+
 ### Meilenstein 12 einrichten: Event-Quellen
 
 1. Auf [console.anthropic.com](https://console.anthropic.com) ein Konto anlegen, unter

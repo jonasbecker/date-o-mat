@@ -77,7 +77,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | | Inhalt | Status |
 |---|---|---|
 | M8 | Rückblick: Herzen + Notiz je Person, „Wie war's?“-Push, Seite „Unsere Dates“ | ✅ |
-| M9 | Fotos zum Rückblick | ⏳ |
+| M9 | Fotos zum Rückblick | ✅ |
 | M10 | Kuratierte Köln-Ideen, „Überrasch uns“ | ⏳ |
 | M11 | KI-Vorschläge | ⏳ |
 | M12 | Event-Quellen (rausgegangen, koeln.de, KölnTourismus, Mit Vergnügen) – vorgezogen | ✅ |
