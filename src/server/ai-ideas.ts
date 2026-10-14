@@ -2,10 +2,11 @@
 import "server-only";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
-import { AI_DAILY_LIMIT, AI_SYSTEM_PROMPT, buildIdeaPrompt, cleanAiIdeas, type AiIdea, type Budget, type Mood, type SettingPref } from "@/core/ai-ideas";
+import { AI_SYSTEM_PROMPT, buildIdeaPrompt, cleanAiIdeas, type AiIdea, type Budget, type Mood, type SettingPref } from "@/core/ai-ideas";
 import type { IdeaSize } from "@/lib/domain";
+import { visibleRatings } from "@/core/reviews";
 import type { CoupleContext } from "@/server/auth/dal";
-import { aiRequestsToday, anthropic, recordAiUsage } from "@/server/anthropic";
+import { AI_LIMITS, aiRequestsToday, anthropic, recordAiUsage, reserveAiRequest } from "@/server/anthropic";
 import { env } from "@/server/env";
 import { listIdeas } from "@/server/ideas";
 import { pastDates } from "@/server/reviews";
@@ -35,8 +36,8 @@ export async function generateIdeas(
   now: Date,
 ): Promise<IdeasResult> {
   if (!env().ai) return { ok: false, error: "off" };
-  const used = await aiRequestsToday(ctx.coupleId, "ideas", now);
-  if (used >= AI_DAILY_LIMIT) return { ok: false, error: "limit" };
+  const requestId = await reserveAiRequest({ coupleId: ctx.coupleId, userId: ctx.user.id, kind: "ideas", model: IDEAS_MODEL, now });
+  if (!requestId) return { ok: false, error: "limit" };
 
   const [wishlist, past, weather] = await Promise.all([
     listIdeas(ctx.coupleId),
@@ -45,10 +46,11 @@ export async function generateIdeas(
   ]);
   const wishlistTitles = wishlist.map((i) => i.title);
   // Only titles and hearts – no names, notes or calendar data leave the app.
-  const pastDatesForPrompt = past.map((d) => ({
-    title: d.title,
-    hearts: d.reviews.length ? Math.round((d.reviews.reduce((sum, r) => sum + r.rating, 0) / d.reviews.length) * 10) / 10 : null,
-  }));
+  // Only hearts this person may see: a partner's hidden rating must not shape (or show up in) the answer.
+  const pastDatesForPrompt = past.map((d) => {
+    const ratings = visibleRatings(d.reviews, ctx.user.id);
+    return { title: d.title, hearts: ratings.length ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10 : null };
+  });
   const prompt = buildIdeaPrompt({ now, slot: prefs.slot, weather, budget: prefs.budget, mood: prefs.mood, setting: prefs.setting, size: prefs.size, wishlist: wishlistTitles, pastDates: pastDatesForPrompt });
 
   try {
@@ -59,11 +61,12 @@ export async function generateIdeas(
       system: AI_SYSTEM_PROMPT,
       messages: [{ role: "user", content: prompt }],
     });
-    await recordAiUsage({ coupleId: ctx.coupleId, userId: ctx.user.id, kind: "ideas", model: IDEAS_MODEL, usage: response.usage });
+    await recordAiUsage(requestId, response.usage);
     if (response.stop_reason === "refusal" || !response.parsed_output) return { ok: false, error: "failed" };
     const ideas = cleanAiIdeas(response.parsed_output.ideas, wishlistTitles, prefs.size);
     if (ideas.length === 0) return { ok: false, error: "failed" };
-    return { ok: true, ideas, weather, left: AI_DAILY_LIMIT - used - 1 };
+    const left = Math.max(0, AI_LIMITS.ideas - (await aiRequestsToday(ctx.coupleId, "ideas", now)));
+    return { ok: true, ideas, weather, left };
   } catch (error) {
     console.error("[ai] idea suggestions failed", error instanceof Error ? error.message : error);
     return { ok: false, error: "failed" };

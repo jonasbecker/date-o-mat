@@ -30,8 +30,10 @@ export const maxDuration = 120;
 
 function sourceView(source: EventSource, now: Date): SourceView {
   const base = { id: source.id, label: source.label, url: source.url, kind: source.kind };
-  if (source.fetchStartedAt && now.getTime() - source.fetchStartedAt.getTime() < 5 * 60_000) {
-    return { ...base, status: "Wird gerade gelesen …", tone: "busy" };
+  if (source.fetchStartedAt) {
+    return now.getTime() - source.fetchStartedAt.getTime() < 5 * 60_000
+      ? { ...base, status: "Wird gerade gelesen …", tone: "busy" }
+      : { ...base, status: "⚠️ Lesen wurde abgebrochen (Seite zu groß oder zu langsam?)", tone: "warn" };
   }
   if (!source.lastFetchedAt) return { ...base, status: "Wird gleich gelesen …", tone: "new" };
   const ago = agoLabel(now, source.lastFetchedAt);

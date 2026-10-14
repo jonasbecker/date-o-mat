@@ -13,7 +13,8 @@ import { env } from "@/server/env";
 import { queryFreeBusy } from "@/server/google/calendar-api";
 import { getConnection } from "@/server/google/connection";
 import { getCoupleSettings } from "@/server/settings";
-import { extractItems } from "./extract";
+import { EXTRACTION_MODEL, extractItems } from "./extract";
+import { reserveAiRequest } from "@/server/anthropic";
 import { fetchPage, FetchPageError } from "./fetch-page";
 
 export const MAX_SOURCES = 12;
@@ -64,7 +65,8 @@ export async function removeSource(coupleId: string, sourceId: string): Promise<
 async function claim(sourceId: string, now: Date): Promise<EventSource | undefined> {
   const [row] = await db
     .update(eventSources)
-    .set({ fetchStartedAt: now })
+    // lastFetchedAt right away: a run that gets killed still counts as an attempt (no retry storm).
+    .set({ fetchStartedAt: now, lastFetchedAt: now })
     .where(
       and(
         eq(eventSources.id, sourceId),
@@ -86,7 +88,9 @@ async function itemsFor(source: EventSource, now: Date): Promise<CleanItem[]> {
   }
   const text = htmlToText(page.html, page.url);
   if (text.length < 200) throw new FetchPageError("Seite ist fast leer (lädt ihre Inhalte vermutlich per JavaScript)");
-  const extracted = cleanItems(await extractItems({ coupleId: source.coupleId, pageText: text, url: page.url, kind: source.kind, now }), options);
+  const requestId = await reserveAiRequest({ coupleId: source.coupleId, kind: "events", model: EXTRACTION_MODEL, now });
+  if (!requestId) throw new FetchPageError("Tageslimit für die KI-Auswertung erreicht – morgen geht's weiter");
+  const extracted = cleanItems(await extractItems({ requestId, pageText: text, url: page.url, kind: source.kind, now }), options);
   // JSON-LD first: it is exact, Claude's entries only add what is missing.
   return cleanItems([...structured, ...extracted].map(toRaw), options);
 }
@@ -103,6 +107,9 @@ function toRaw(item: CleanItem) {
     summary: item.summary,
   };
 }
+
+/** "Jetzt lesen" is ignored if the source was read this recently. */
+export const MANUAL_REFRESH_COOLDOWN_MS = 10 * 60_000;
 
 /** Reads one source now and replaces its events. Returns false if it was already running. */
 export async function refreshSource(sourceId: string, now: Date): Promise<boolean> {

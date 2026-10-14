@@ -4,7 +4,6 @@
 import { DateTime } from "luxon";
 import { APP_TIMEZONE, type IdeaSize } from "@/lib/domain";
 
-export const AI_DAILY_LIMIT = 20;
 export const AI_IDEA_COUNT = 3;
 
 export const BUDGETS = ["free", "low", "medium", "any"] as const;

@@ -11,7 +11,7 @@ import { coupleNow } from "@/server/clock";
 import { getDate, saveDate } from "@/server/dates";
 import { db } from "@/server/db";
 import { ideas } from "@/server/db/schema";
-import { addSource, COLOGNE_SOURCES, getEvent, listSources, refreshSource, removeSource } from "@/server/events";
+import { addSource, COLOGNE_SOURCES, getEvent, listSources, MANUAL_REFRESH_COOLDOWN_MS, refreshSource, removeSource } from "@/server/events";
 import { notifyPartner } from "@/server/notifications";
 import { getCoupleSettings } from "@/server/settings";
 
@@ -64,9 +64,10 @@ export async function refreshSourceAction(sourceId: string): Promise<void> {
   const { coupleId } = await requireCouple();
   const id = z.uuid().safeParse(sourceId);
   const now = await nowFor(coupleId);
-  if (id.success && (await listSources(coupleId)).some((s) => s.id === id.data)) {
-    after(() => refreshSource(id.data, now));
-  }
+  const source = id.success ? (await listSources(coupleId)).find((s) => s.id === id.data) : undefined;
+  // Each read can cost a Claude call – not more often than every 10 minutes per source.
+  const recent = source?.lastFetchedAt && now.getTime() - source.lastFetchedAt.getTime() < MANUAL_REFRESH_COOLDOWN_MS;
+  if (source && !recent) after(() => refreshSource(source.id, now));
   refresh();
 }
 

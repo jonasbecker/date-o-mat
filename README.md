@@ -282,12 +282,19 @@ Bewusst nicht in V1, aber vorbereitet:
 - **Fotos:** privater Blob Store, Auslieferung nur nach Login- und Paar-Prüfung, eigene
   strenge CSP für die Bild-Route, Dateityp anhand der Bytes geprüft, EXIF wird entfernt.
 - **Event-Quellen:** Der Server ruft nur öffentliche `https`-Adressen ab (keine IPs, keine
-  internen Namen); jede Weiterleitung und die DNS-Auflösung werden erneut geprüft, private
-  Netze sind gesperrt (`src/lib/url-safety.ts`). Seiten werden auf 3 MB und 15 s begrenzt.
+  internen Namen). Die DNS-Prüfung passiert beim Verbindungsaufbau selbst und die Verbindung
+  nutzt genau die geprüfte Adresse (kein DNS-Rebinding); jede Weiterleitung wird neu geprüft
+  (`src/server/events/fetch-page.ts`, `src/lib/url-safety.ts`). Seiten: höchstens 3 MB, 15 s;
+  ausgewertet wird nur das erste MB, mit linearen Durchläufen statt anfälliger Regex.
   Seiteninhalt gilt als fremd: Claude füllt nur ein festes JSON-Schema, alles wird danach
-  nochmal geprüft, Links müssen zur Quelle gehören. An Claude geht nur der Seitentext –
-  keine Namen, Kalender oder Notizen von euch. Restrisiko: DNS-Rebinding zwischen Prüfung und
-  Abruf; da nur ihr zwei Quellen eintragen könnt, ist das bewusst in Kauf genommen.
+  nochmal geprüft, Links müssen zur Quelle gehören. An Claude geht nur der Seitentext.
+- **Kostenbremse:** Jeder Claude-Aufruf wird vorher gebucht (mit Sperre pro Paar, zählt auch
+  bei Fehlern): höchstens 20 KI-Vorschlags-Runden und 40 Seiten-Auswertungen pro Tag;
+  „Jetzt lesen“ höchstens alle 10 Minuten pro Quelle.
+- **Verdeckte Bewertungen** fließen weder in „Ø Herzen“/„Lieblingsdate“ noch in die KI-Anfrage
+  ein, solange ihr selbst noch nicht bewertet habt (`visibleRatings()`).
+- **Test-Schalter** (`ALLOW_PRIVATE_EVENT_URLS`, `*_BASE_URL`, lokaler Foto-Ordner) werden auf
+  der Vercel-Produktion ignoriert, auch wenn sie versehentlich gesetzt sind.
 
 - Login nur für Adressen in `ALLOWED_EMAILS`. Danach gilt die Kopplung per Einladungscode;
   sind zwei Personen drin, wird der Code gelöscht.

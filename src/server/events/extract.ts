@@ -43,15 +43,15 @@ function instructions(kind: EventSourceKind, now: Date): string {
   ].join("\n");
 }
 
-export async function extractItems(params: { coupleId: string; pageText: string; url: string; kind: EventSourceKind; now: Date }): Promise<RawItem[]> {
+export async function extractItems(params: { requestId: string; pageText: string; url: string; kind: EventSourceKind; now: Date }): Promise<RawItem[]> {
   const response = await anthropic().messages.parse({
     model: EXTRACTION_MODEL,
-    max_tokens: 16000,
+    max_tokens: 8000,
     output_config: { effort: "low", format: zodOutputFormat(ResultSchema) },
     system: instructions(params.kind, params.now),
     messages: [{ role: "user", content: `Page: ${params.url}\n<page>\n${params.pageText}\n</page>` }],
   });
-  await recordAiUsage({ coupleId: params.coupleId, kind: "events", model: EXTRACTION_MODEL, usage: response.usage });
+  await recordAiUsage(params.requestId, response.usage);
   if (response.stop_reason === "refusal") throw new Error("Claude declined to read this page");
   if (!response.parsed_output) throw new Error(`No usable answer from Claude (${response.stop_reason})`);
   return response.parsed_output.items;

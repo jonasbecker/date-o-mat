@@ -43,6 +43,12 @@ export function visibleReviews(reviews: ReviewView[], viewerId: string): { mine:
   return { mine, partner: mine ? theirs : null, partnerHidden: !mine && theirs !== null };
 }
 
+/** The ratings this viewer may see – feeds the stats and the AI, so nothing hidden leaks through an average. */
+export function visibleRatings(reviews: ReviewView[], viewerId: string): number[] {
+  const { mine, partner } = visibleReviews(reviews, viewerId);
+  return [mine, partner].filter((r): r is ReviewView => r !== null).map((r) => r.rating);
+}
+
 export type StatsDate = { id: string; title: string; startsAt: Date; ratings: number[] };
 
 export type ReviewStats = {

@@ -1,36 +1,51 @@
 // Shared Claude client and usage log (for the daily limit and to see what it costs).
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
-import { and, eq, gte } from "drizzle-orm";
+import { and, count, eq, gte, sql } from "drizzle-orm";
 import { DateTime } from "luxon";
 import { APP_TIMEZONE, type AiRequestKind } from "@/lib/domain";
 import { db } from "@/server/db";
+import { env } from "@/server/env";
 import { aiRequests } from "@/server/db/schema";
 
 let client: Anthropic | undefined;
 
-/** Reads ANTHROPIC_API_KEY (and ANTHROPIC_BASE_URL in tests) from the environment. */
+/** Reads ANTHROPIC_API_KEY from the environment; the base URL is only overridable outside production (tests). */
 export function anthropic(): Anthropic {
-  client ??= new Anthropic({ maxRetries: 2, timeout: 90_000 });
+  client ??= new Anthropic({ baseURL: env().anthropicBaseUrl, maxRetries: 1, timeout: 90_000 });
   return client;
 }
 
-export async function recordAiUsage(entry: {
-  coupleId: string;
-  userId?: string | null;
-  kind: AiRequestKind;
-  model: string;
-  usage?: { input_tokens: number; output_tokens: number } | null;
-}): Promise<void> {
+/** Claude calls per couple and day (Berlin), per kind. */
+export const AI_LIMITS: Record<AiRequestKind, number> = { ideas: 20, events: 40 };
+
+/**
+ * Books one Claude call before it is made – also if it fails later, so a
+ * failing path cannot run unlimited. A per-couple lock makes parallel requests
+ * wait, so the limit holds. Returns the booking id, or null when the day's limit is used up.
+ */
+export async function reserveAiRequest(entry: { coupleId: string; userId?: string | null; kind: AiRequestKind; model: string; now: Date }): Promise<string | null> {
+  const midnight = DateTime.fromJSDate(entry.now, { zone: APP_TIMEZONE }).startOf("day").toJSDate();
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`ai:${entry.coupleId}:${entry.kind}`}))`);
+    const [{ used }] = await tx
+      .select({ used: count() })
+      .from(aiRequests)
+      .where(and(eq(aiRequests.coupleId, entry.coupleId), eq(aiRequests.kind, entry.kind), gte(aiRequests.createdAt, midnight)));
+    if (used >= AI_LIMITS[entry.kind]) return null;
+    const [row] = await tx
+      .insert(aiRequests)
+      .values({ coupleId: entry.coupleId, userId: entry.userId ?? null, kind: entry.kind, model: entry.model })
+      .returning({ id: aiRequests.id });
+    return row.id;
+  });
+}
+
+/** Adds the token counts once the call is done. */
+export async function recordAiUsage(requestId: string, usage: { input_tokens: number; output_tokens: number } | null | undefined): Promise<void> {
+  if (!usage) return;
   try {
-    await db.insert(aiRequests).values({
-      coupleId: entry.coupleId,
-      userId: entry.userId ?? null,
-      kind: entry.kind,
-      model: entry.model,
-      inputTokens: entry.usage?.input_tokens ?? 0,
-      outputTokens: entry.usage?.output_tokens ?? 0,
-    });
+    await db.update(aiRequests).set({ inputTokens: usage.input_tokens, outputTokens: usage.output_tokens }).where(eq(aiRequests.id, requestId));
   } catch (error) {
     console.warn("[ai] usage log failed", error instanceof Error ? error.message : error);
   }

@@ -5,7 +5,7 @@ import { PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { Avatar } from "@/components/avatar";
 import { Hearts } from "@/components/hearts";
-import { reviewStats, visibleReviews } from "@/core/reviews";
+import { reviewStats, visibleRatings, visibleReviews } from "@/core/reviews";
 import { formatLongDate } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
@@ -29,7 +29,7 @@ async function Dates() {
   const dates = await pastDates(coupleId);
   const covers = await coverPhotos(coupleId, dates.map((d) => d.id));
   const stats = reviewStats(
-    dates.map((d) => ({ id: d.id, title: d.title, startsAt: d.startsAt, ratings: d.reviews.map((r) => r.rating) })),
+    dates.map((d) => ({ id: d.id, title: d.title, startsAt: d.startsAt, ratings: visibleRatings(d.reviews, user.id) })),
     now,
   );
 

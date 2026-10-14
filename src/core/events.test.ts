@@ -31,6 +31,25 @@ describe("htmlToText", () => {
   });
 });
 
+describe("hostile pages stay fast", () => {
+  const cases = {
+    "unclosed scripts": "<script ".repeat(200_000),
+    "unclosed links": '<a href="/x">'.repeat(100_000),
+    "links closed only at the end": '<a href="/x">x'.repeat(100_000) + "</a>",
+    "lone angle brackets": "<".repeat(1_000_000),
+    "unclosed comments": "<!--".repeat(300_000),
+    "unclosed ld+json": '<script type="application/ld+json">{'.repeat(50_000),
+  };
+  for (const [name, html] of Object.entries(cases)) {
+    it(name, () => {
+      const started = performance.now();
+      htmlToText(html, SOURCE);
+      jsonLdEvents(html, SOURCE);
+      expect(performance.now() - started).toBeLessThan(1500);
+    });
+  }
+});
+
 describe("jsonLdEvents", () => {
   it("reads schema.org events, also inside @graph", () => {
     const html = `<script type="application/ld+json">{"@context":"https://schema.org","@graph":[

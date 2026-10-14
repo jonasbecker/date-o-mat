@@ -45,6 +45,7 @@ export type Env = {
   /** Where photos go: Vercel Blob, a local folder (dev only) or nowhere (feature off). */
   photoStorage: "blob" | "local" | null;
   weatherApiBaseUrl: string;
+  anthropicBaseUrl: string;
 };
 
 let cached: Env | undefined;
@@ -58,6 +59,14 @@ export function env(): Env {
     throw new Error(`Invalid environment configuration (see .env.example):\n- ${fields.join("\n- ")}`);
   }
   const e = result.data;
+  // On the live Vercel deployment, test-only switches are ignored – even if set by mistake.
+  // (ENABLE_DEV_TOOLS stays usable there on purpose: the dev clock is how rounds are tested, see SETUP.)
+  const production = process.env.VERCEL_ENV === "production";
+  const testOverrides = ["ALLOW_PRIVATE_EVENT_URLS", "GOOGLE_API_BASE_URL", "WEATHER_API_BASE_URL", "ANTHROPIC_BASE_URL"].filter((key) => process.env[key]);
+  if (production && testOverrides.length) {
+    console.warn(`[env] ignoring test-only settings in production: ${testOverrides.join(", ")}`);
+  }
+  const devTools = e.ENABLE_DEV_TOOLS === "1";
   cached = {
     appUrl: e.APP_URL,
     secureCookies: e.APP_URL.startsWith("https://"),
@@ -65,17 +74,18 @@ export function env(): Env {
     googleClientSecret: e.GOOGLE_CLIENT_SECRET,
     allowedEmails: parseAllowlist(e.ALLOWED_EMAILS),
     tokenKey: parseKey(e.TOKEN_ENCRYPTION_KEY),
-    googleApiBaseUrl: e.GOOGLE_API_BASE_URL.replace(/\/+$/, ""),
+    googleApiBaseUrl: production ? "https://www.googleapis.com" : e.GOOGLE_API_BASE_URL.replace(/\/+$/, ""),
     cronSecret: e.CRON_SECRET ?? null,
-    devTools: e.ENABLE_DEV_TOOLS === "1",
+    devTools,
     vapid:
       e.VAPID_PUBLIC_KEY && e.VAPID_PRIVATE_KEY
         ? { publicKey: e.VAPID_PUBLIC_KEY, privateKey: e.VAPID_PRIVATE_KEY, subject: e.VAPID_SUBJECT ?? e.APP_URL }
         : null,
     ai: Boolean(e.ANTHROPIC_API_KEY),
-    allowPrivateEventUrls: e.ENABLE_DEV_TOOLS === "1" && e.ALLOW_PRIVATE_EVENT_URLS === "1",
-    weatherApiBaseUrl: e.WEATHER_API_BASE_URL.replace(/\/+$/, ""),
-    photoStorage: e.BLOB_READ_WRITE_TOKEN ? "blob" : e.ENABLE_DEV_TOOLS === "1" ? "local" : null,
+    allowPrivateEventUrls: !production && devTools && e.ALLOW_PRIVATE_EVENT_URLS === "1",
+    weatherApiBaseUrl: production ? "https://api.open-meteo.com" : e.WEATHER_API_BASE_URL.replace(/\/+$/, ""),
+    anthropicBaseUrl: production ? "https://api.anthropic.com" : (process.env.ANTHROPIC_BASE_URL ?? "https://api.anthropic.com"),
+    photoStorage: e.BLOB_READ_WRITE_TOKEN ? "blob" : !production && devTools ? "local" : null,
   };
   return cached;
 }

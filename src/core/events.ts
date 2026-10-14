@@ -60,25 +60,81 @@ function absoluteUrl(href: string, base: string): string | null {
   }
 }
 
+/** Only the start of a huge page is read – keeps the work below bounded. */
+export const MAX_HTML = 1_000_000;
+
+/**
+ * Removes whole elements (<script>…</script> etc.) in one pass. Written with
+ * indexOf instead of a backtracking regex, so a hostile page with thousands of
+ * unclosed tags cannot make it slow. An unclosed element drops the rest.
+ */
+function removeElements(html: string, tags: string[]): string {
+  const lower = html.toLowerCase();
+  const open = new RegExp(`<(${tags.join("|")})(?=[\\s>/])`, "gi");
+  let out = "";
+  let pos = 0;
+  for (let m = open.exec(html); m; m = open.exec(html)) {
+    out += html.slice(pos, m.index);
+    const close = lower.indexOf(`</${m[1].toLowerCase()}`, m.index + m[0].length);
+    if (close === -1) return out;
+    const gt = lower.indexOf(">", close);
+    if (gt === -1) return out;
+    pos = gt + 1;
+    open.lastIndex = pos;
+  }
+  return out + html.slice(pos);
+}
+
+function removeComments(html: string): string {
+  let out = "";
+  let pos = 0;
+  for (let start = html.indexOf("<!--"); start !== -1; start = html.indexOf("<!--", pos)) {
+    out += html.slice(pos, start);
+    const end = html.indexOf("-->", start + 4);
+    if (end === -1) return out;
+    pos = end + 3;
+  }
+  return out + html.slice(pos);
+}
+
+const MAX_TAG = 2_000; // attributes longer than this are not a real tag
+const MAX_LINK_TEXT = 3_000;
+
+/** "<a href=…>text</a>" → " [text](url) " – bounded per link, linear overall. */
+function linksToText(html: string, baseUrl: string): string {
+  const lower = html.toLowerCase();
+  const open = new RegExp(`<a\\b([^<>]{0,${MAX_TAG}})>`, "gi");
+  let out = "";
+  let pos = 0;
+  let close = -1; // next "</a" – searched again only once we are past it
+  for (let m = open.exec(html); m; m = open.exec(html)) {
+    const contentStart = m.index + m[0].length;
+    if (close < contentStart) close = lower.indexOf("</a", contentStart);
+    if (close === -1) break;
+    if (close - contentStart > MAX_LINK_TEXT) continue;
+    const href = /href\s*=\s*["']([^"']+)["']/i.exec(m[1])?.[1];
+    const label = html.slice(contentStart, close).replace(new RegExp(`<[^<>]{0,${MAX_TAG}}>`, "g"), " ").replace(/\s+/g, " ").trim();
+    const url = href ? absoluteUrl(href, baseUrl) : null;
+    const gt = lower.indexOf(">", close);
+    out += html.slice(pos, m.index) + (label && url ? ` [${label}](${url}) ` : ` ${label} `);
+    pos = gt === -1 ? html.length : gt + 1;
+    open.lastIndex = pos;
+  }
+  return out + html.slice(pos);
+}
+
 /**
  * Readable text of a page: scripts, styles, navigation and footer removed,
  * links kept as "[text](url)" so Claude can attach the right link to each event.
  */
 export function htmlToText(html: string, baseUrl: string, maxLength = MAX_PAGE_TEXT): string {
-  let s = html
-    .replace(/<!--[\s\S]*?-->/g, " ")
-    .replace(/<(script|style|noscript|svg|template|head|nav|footer|iframe|form)\b[\s\S]*?<\/\1\s*>/gi, " ");
-  s = s.replace(/<a\b[^>]*?href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a\s*>/gi, (_m, href: string, inner: string) => {
-    const label = inner.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-    const url = absoluteUrl(href, baseUrl);
-    return label && url ? ` [${label}](${url}) ` : ` ${label} `;
-  });
-  s = s
-    .replace(/<(br|\/p|\/div|\/li|\/h[1-6]|\/tr|\/article|\/section|\/time)\b[^>]*>/gi, "\n")
-    .replace(/<[^>]+>/g, " ");
+  let s = removeElements(removeComments(html.slice(0, MAX_HTML)), ["script", "style", "noscript", "svg", "template", "head", "nav", "footer", "iframe", "form"]);
+  s = linksToText(s, baseUrl)
+    .replace(new RegExp(`<(br|/p|/div|/li|/h[1-6]|/tr|/article|/section|/time)\\b[^<>]{0,${MAX_TAG}}>`, "gi"), "\n")
+    .replace(new RegExp(`<[^<>]{1,${MAX_TAG}}>`, "g"), " ");
   s = decodeEntities(s)
     .replace(/[ \t\f\r\v]+/g, " ")
-    .replace(/ *\n[\s]*/g, "\n")
+    .replace(/ *\n\s*/g, "\n")
     .trim();
   return s.length > maxLength ? s.slice(0, maxLength) : s;
 }
@@ -109,10 +165,25 @@ function priceOf(offers: unknown, free: unknown): string | null {
   return Number.isFinite(n) ? `${lowPrice !== undefined && price === undefined ? "ab " : ""}${n.toLocaleString("de-DE")} ${currency}` : String(value);
 }
 
+/** Contents of <script type="application/ld+json"> blocks, found in one linear pass. */
+function ldJsonBlocks(html: string): string[] {
+  const lower = html.toLowerCase();
+  const open = new RegExp(`<script\\b([^<>]{0,${MAX_TAG}})>`, "gi");
+  const blocks: string[] = [];
+  for (let m = open.exec(html); m; m = open.exec(html)) {
+    const contentStart = m.index + m[0].length;
+    const close = lower.indexOf("</script", contentStart);
+    if (close === -1) break;
+    if (/type\s*=\s*["']?application\/ld\+json/i.test(m[1])) blocks.push(html.slice(contentStart, close));
+    open.lastIndex = close;
+  }
+  return blocks;
+}
+
 /** Events the page declares itself (schema.org JSON-LD) – exact and free, no AI needed. */
 export function jsonLdEvents(html: string, baseUrl: string): RawItem[] {
   const items: RawItem[] = [];
-  const blocks = html.matchAll(/<script[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  const blocks = ldJsonBlocks(html.slice(0, MAX_HTML));
   const visit = (node: unknown, depth: number) => {
     if (!node || typeof node !== "object" || depth > 6 || items.length >= MAX_ITEMS) return;
     if (Array.isArray(node)) return node.forEach((n) => visit(n, depth + 1));
@@ -134,7 +205,7 @@ export function jsonLdEvents(html: string, baseUrl: string): RawItem[] {
       if (key in obj) visit(obj[key], depth + 1);
     }
   };
-  for (const [, json] of blocks) {
+  for (const json of blocks) {
     try {
       visit(JSON.parse(json.trim()), 0);
     } catch {

@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { describe, expect, it } from "vitest";
-import { parseReview, reviewAskAt, reviewStats, visibleReviews, type StatsDate } from "./reviews";
+import { parseReview, reviewAskAt, reviewStats, visibleRatings, visibleReviews, type StatsDate } from "./reviews";
 
 const ZONE = "Europe/Berlin";
 const at = (s: string) => DateTime.fromISO(s, { zone: ZONE }).toJSDate();
@@ -48,6 +48,13 @@ describe("visibleReviews", () => {
   });
   it("nothing hidden when nobody reviewed", () => {
     expect(visibleReviews([], "jonas")).toEqual({ mine: null, partner: null, partnerHidden: false });
+  });
+});
+
+describe("visibleRatings", () => {
+  it("hides the partner's hearts from averages until you reviewed", () => {
+    expect(visibleRatings([{ userId: "sam", rating: 2, note: null }], "jonas")).toEqual([]);
+    expect(visibleRatings([{ userId: "sam", rating: 2, note: null }, { userId: "jonas", rating: 5, note: null }], "jonas")).toEqual([5, 2]);
   });
 });
 
