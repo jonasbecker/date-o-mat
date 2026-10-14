@@ -1,6 +1,7 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import type { SlotRules } from "@/core/slots";
+import type { EventMix } from "@/lib/domain";
 import type { SlotSettingsValues } from "@/lib/slot-settings";
 import { db } from "@/server/db";
 import { coupleSettings, cycles, datePhotos, type CoupleSettings } from "@/server/db/schema";
@@ -43,6 +44,11 @@ export async function updateCycleSettings(coupleId: string, values: CycleSetting
 
 export async function setFirstPlanner(coupleId: string, userId: string): Promise<void> {
   await db.update(coupleSettings).set({ firstPlannerId: userId }).where(eq(coupleSettings.coupleId, coupleId));
+}
+
+export async function setDeckEventMix(coupleId: string, mix: EventMix): Promise<void> {
+  await getCoupleSettings(coupleId);
+  await db.update(coupleSettings).set({ deckEventMix: mix }).where(eq(coupleSettings.coupleId, coupleId));
 }
 
 export async function setDevClockOffset(coupleId: string, minutes: number): Promise<void> {

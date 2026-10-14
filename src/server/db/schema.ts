@@ -22,15 +22,20 @@ import {
   CONNECTION_STATUSES,
   CYCLE_STATUSES,
   DATE_STATUSES,
+  DECK_CARD_KINDS,
+  DECK_CARD_STATUSES,
   EVENT_KINDS,
+  EVENT_MIXES,
   EVENT_SOURCE_KINDS,
   FETCH_STATUSES,
   IDEA_SIZES,
   IDEA_SOURCES,
   NOTIFICATION_TYPES,
+  PLACE_SETTINGS,
   PLAN_MODES,
   RHYTHMS,
   SUGGESTION_STATUSES,
+  SWIPE_VERDICTS,
   SYNC_STATUSES,
   USER_COLORS,
 } from "@/lib/domain";
@@ -129,6 +134,9 @@ export const coupleSettings = pgTable("couple_settings", {
   quietHoursEndMinute: smallint().notNull().default(8 * 60),
   // Dev clock (only used when ENABLE_DEV_TOOLS=1): shifts "now" to test many rounds.
   devClockOffsetMinutes: integer().notNull().default(0),
+  // Swipe deck: share of event combos per batch, and a claim while a batch is being made.
+  deckEventMix: text({ enum: EVENT_MIXES }).notNull().default("some"),
+  deckRefillStartedAt: timestamptz(),
   updatedAt: updatedAt(),
 });
 
@@ -342,6 +350,63 @@ export const events = pgTable(
   ],
 );
 
+// --- Swipe deck ("Entdecken") ----------------------------------------------------------
+
+// Ideas Claude made for the couple. Never deleted while the couple exists, so
+// nothing comes back: the dedupe key (normalized title) is unique per couple.
+export const deckCards = pgTable(
+  "deck_cards",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    coupleId: uuid()
+      .notNull()
+      .references(() => couples.id, { onDelete: "cascade" }),
+    kind: text({ enum: DECK_CARD_KINDS }).notNull(),
+    title: text().notNull(),
+    note: text(),
+    size: text({ enum: IDEA_SIZES }).notNull(),
+    costEur: integer(),
+    location: text(),
+    setting: text({ enum: PLACE_SETTINGS }),
+    theme: text(),
+    emoji: text(),
+    // Deliberately outside their usual taste ("Mal was anderes").
+    wildcard: boolean().notNull().default(false),
+    dedupeKey: text().notNull(),
+    // Combo cards: a snapshot of the event (events are replaced on every fetch).
+    eventTitle: text(),
+    eventStartsAt: timestamptz(),
+    eventEndsAt: timestamptz(),
+    eventAllDay: boolean().notNull().default(false),
+    eventVenue: text(),
+    eventUrl: text(),
+    eventKey: text(),
+    status: text({ enum: DECK_CARD_STATUSES }).notNull().default("open"),
+    matchedAt: timestamptz(),
+    ideaId: uuid().references(() => ideas.id, { onDelete: "set null" }),
+    // Running number of the batch (rotates the themes).
+    batch: integer().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [unique("deck_cards_couple_key_unique").on(t.coupleId, t.dedupeKey), index("deck_cards_couple_status_idx").on(t.coupleId, t.status)],
+);
+
+// One swipe per person and card.
+export const deckSwipes = pgTable(
+  "deck_swipes",
+  {
+    cardId: uuid()
+      .notNull()
+      .references(() => deckCards.id, { onDelete: "cascade" }),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    verdict: text({ enum: SWIPE_VERDICTS }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.cardId, t.userId] }), index("deck_swipes_user_created_idx").on(t.userId, t.createdAt)],
+);
+
 // Small operational facts (e.g. when the cron tick last ran) for the "Läuft alles?" status.
 export const appStatus = pgTable("app_status", {
   key: text().primaryKey(),
@@ -425,3 +490,5 @@ export type EventRow = typeof events.$inferSelect;
 export type DatePhoto = typeof datePhotos.$inferSelect;
 export type DateReview = typeof dateReviews.$inferSelect;
 export type SuggestionRow = typeof suggestions.$inferSelect;
+export type DeckCard = typeof deckCards.$inferSelect;
+export type DeckSwipe = typeof deckSwipes.$inferSelect;

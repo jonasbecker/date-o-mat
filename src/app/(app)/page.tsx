@@ -15,6 +15,7 @@ import { tickHealth } from "@/core/system-status";
 import { agoLabel } from "@/lib/format";
 import { env } from "@/server/env";
 import { lastTick } from "@/server/system-status";
+import { remainingCards } from "@/server/deck";
 import { countSubscriptions } from "@/server/push";
 import { hasSeenIntro, requireCouple } from "@/server/auth/dal";
 import { calendarStates } from "@/server/availability";
@@ -44,7 +45,7 @@ async function Home() {
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
   const cycle = await ensureCurrentCycle(coupleId, now);
-  const [ideaCount, calendars, history, nextDate, pushDevices, toReview, weekEvents, tick] = await Promise.all([
+  const [ideaCount, calendars, history, nextDate, pushDevices, toReview, weekEvents, tick, deckCount] = await Promise.all([
     countIdeas(coupleId),
     calendarStates(ctx),
     cycleHistory(coupleId),
@@ -53,6 +54,7 @@ async function Home() {
     dateToReview(ctx, now),
     upcomingEvents(coupleId, now, 7),
     lastTick(),
+    remainingCards(ctx, now),
   ]);
   // The cron runs in real time (not the dev clock). Only warn once it has worked before –
   // "never ran" is a setup step, shown under Einstellungen → Läuft alles?
@@ -139,6 +141,20 @@ async function Home() {
       />
 
       <CycleHistory history={history} currentId={cycle.id} />
+
+      {(deckCount > 0 || env().ai) && (
+        <Link href="/ideas/entdecken" className="press sticker flex items-center gap-3 rounded-[20px] bg-himbeere-soft px-4 py-3 text-tinte">
+          <span className="text-3xl" aria-hidden="true">
+            💞
+          </span>
+          <span className="flex flex-col">
+            <span className="font-display text-lg font-semibold leading-tight">
+              {deckCount > 0 ? `${deckCount} ${deckCount === 1 ? "neue Idee" : "neue Ideen"} zum Swipen` : "Ideen entdecken"}
+            </span>
+            <span className="text-xs font-bold">Wischt beide nach rechts – dann ist&apos;s ein Match</span>
+          </span>
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 gap-2.5">
         <Link href="/ideas" className="press sticker flex flex-col gap-0.5 rounded-[20px] bg-zitrone-soft px-3.5 py-3 text-tinte">

@@ -28,6 +28,7 @@ gemeinsame Ideen-Wunschliste.
 | M14 | Tests + CI im Repo: End-to-End-Suites mit Mocks, GitHub Actions | ✅ |
 | M15 | Link → Idee: TikTok/Instagram/YouTube/Webseite teilen oder einfügen, Claude macht eine Idee draus | ✅ |
 | M16 | „Läuft alles?“: Status in den Einstellungen, Warnung bei stehender Automatik, Push bei getrenntem Kalender | ✅ |
+| M17 | Entdecken: KI-Ideen-Stapel zum Swipen, Match nur wenn beide 💚, Rückgängig, Super-Like, Event-Kombis | ✅ |
 
 ## Tech-Stack
 
@@ -181,10 +182,38 @@ scripts/              Migration beim Build, Secret-Generator
 - **Wörter:** Kurz/Lang statt Klein/Groß, „Diese Woche“ statt „Runde 3“, „Plan bis …“ statt
   „Deadline“. Einstellungen in „Für euch beide“ und „Nur für dich“, Zeitfenster eingeklappt.
 
+### Entdecken (Swipen) in Kürze
+
+- **Stapel:** Claude Haiku 5.5 macht Ideen in Ladungen à 20 (`src/server/deck.ts`, Prompt und
+  Prüfung in `src/core/deck.ts`, mit Tests). Sinkt der Stapel bei einem von euch unter 5 Karten,
+  kommt im Hintergrund die nächste Ladung (beim Öffnen der Seite, nach einem Swipe oder im
+  Cron-Tick) – höchstens 3 automatisch pro Tag, insgesamt 6 Ladungen pro Tag und Paar.
+- **Nichts doppelt:** Jede Karte bekommt einen Schlüssel aus ihren Kernwörtern (eindeutig pro
+  Paar, Karten werden nie gelöscht). Claude bekommt alle bisherigen Titel, Wunschliste und
+  vergangene Dates als Ausschlussliste; was trotzdem fast gleich klingt
+  („Stadtwald-Picknick“ ≈ „Picknick im Stadtwald“), wird verworfen.
+- **Abwechslung:** Jede Ladung hat vier andere Schwerpunkte aus zwölf (Essen, Natur, Kultur,
+  Ausflug …), kennt Jahreszeit und Wetter der nächsten Tage, und etwa jede vierte Idee ist
+  bewusst „🎲 mal was anderes“. Gemochtes und Weggewischtes fließt als Geschmack ein.
+- **Event-Kombis:** echte Events aus euren Event-Quellen (nächste 14 Tage) plus etwas Passendes
+  davor/danach, mit „✓ Ihr habt beide Zeit“. Anteil in den Einstellungen: Keine / Ein paar /
+  Viele. Kombi-Karten verschwinden, wenn das Event begonnen hat.
+- **Swipen:** rechts/💚 = gerne, links/✕ = nö, hoch/⭐ = Super-Like (einmal am Tag, der Partner
+  sieht ihn mit Namen), ↩️ nimmt den letzten Swipe zurück – beliebig oft hintereinander.
+  Tastatur: ← → ↑ und Rücktaste. Filter: Günstig, Drinnen, Draußen, Kurz, Lang, Mit Event;
+  „Mehr … holen“ macht gezielt passende Karten.
+- **Match:** Jede:r swipet für sich. Erst wenn beide 💚 geben: „Match! 💞“ mit Konfetti, Push an
+  beide, Idee auf der Wunschliste (`source = 'deck'`) und „📅 Jetzt planen“. Ein ✕ von einem
+  nimmt die Karte für beide aus dem Stapel. Was der Partner gemocht hat, kommt bei dir früher
+  dran – ohne es zu verraten. Rückgängig nach einem Match nimmt die Idee wieder von der Liste
+  (außer sie ist schon als Date geplant).
+- **Nachrichten** (einzeln abschaltbar unter Erinnerungen): „Match!“, „⭐ … findet etwas super“
+  und höchstens einmal am Tag „Sam hat 4 Ideen geliked 👀“ (ab 3 wartenden Likes, nicht nachts).
+
 ### Tests & CI in Kürze
 
 - **Unit-Tests** (Vitest) liegen neben der Logik in `src/core` und `src/lib`: `npm test`.
-- **End-to-End** (`e2e/m1.mjs` … `e2e/m15.mjs`): echte Produktions-Build, echter Browser
+- **End-to-End** (`e2e/m*.mjs`): echte Produktions-Build, echter Browser
   (Playwright/Chromium), echte Postgres – Google, Claude, Wetter, Push und fremde Webseiten
   sind kleine Mock-Server auf `localhost:4010–4060`. `e2e/run.mjs` startet den Server mit
   Test-Umgebung, erzeugt Zertifikat und Schlüssel und lässt die Suites nacheinander laufen.

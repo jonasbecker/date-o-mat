@@ -4,7 +4,7 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isPushEndpointAllowed } from "@/lib/allowlist";
-import { NOTIFICATION_TYPES, PLAN_MODES, RHYTHMS } from "@/lib/domain";
+import { EVENT_MIXES, NOTIFICATION_TYPES, PLAN_MODES, RHYTHMS } from "@/lib/domain";
 import { parseSlotSettings, type SlotSettingsErrors } from "@/lib/slot-settings";
 import { requireCouple } from "@/server/auth/dal";
 import { destroySession } from "@/server/auth/session";
@@ -13,7 +13,7 @@ import { disconnect, setBusyCalendars } from "@/server/google/connection";
 import { coupleNow } from "@/server/clock";
 import { applySettingsToOpenCycle } from "@/server/cycles";
 import { env } from "@/server/env";
-import { getCoupleSettings, resetDevClock, setDevClockOffset, updateCycleSettings, updateSlotSettings } from "@/server/settings";
+import { getCoupleSettings, resetDevClock, setDeckEventMix, setDevClockOffset, updateCycleSettings, updateSlotSettings } from "@/server/settings";
 import { removeSubscription, saveSubscription, sendToUser, setPref } from "@/server/push";
 import { tickCouple } from "@/server/tick";
 
@@ -128,4 +128,13 @@ export async function sendTestPushAction(): Promise<{ delivered: number }> {
     "test",
   );
   return { delivered };
+}
+
+/** How many event combos the swipe deck mixes in (affects the next batch). */
+export async function setEventMixAction(mix: string): Promise<void> {
+  const { coupleId } = await requireCouple();
+  const parsed = z.enum(EVENT_MIXES).safeParse(mix);
+  if (!parsed.success) return;
+  await setDeckEventMix(coupleId, parsed.data);
+  refresh();
 }

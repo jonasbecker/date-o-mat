@@ -314,6 +314,13 @@ Ohne Schlüssel wird nur der Titel aus dem Link übernommen.
   Nach einem Update des Manifests kann es nötig sein, die App einmal vom Home-Bildschirm zu
   entfernen und neu hinzuzufügen.
 
+### Entdecken (M17)
+
+Nichts extra einzurichten – nutzt denselben `ANTHROPIC_API_KEY`. Die erste Ladung entsteht
+beim ersten Öffnen von **Ideen → 💞 Entdecken** (etwa eine halbe Minute). Kosten: grob
+0,5–1 Cent pro Ladung à 20 Karten, höchstens 6 Ladungen pro Tag. Wie viele Event-Kombis
+dabei sind, stellt ihr unter **Einstellungen → Entdecken** ein.
+
 ### Status prüfen (M16)
 
 **Einstellungen → Läuft alles?** zeigt auf einen Blick, ob der Cron läuft, beide Kalender

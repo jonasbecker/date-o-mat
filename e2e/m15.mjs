@@ -93,7 +93,7 @@ await j.goto(`${BASE}/settings`);
 await status(j).getByText(/Dinge? brauchen? euch|Eine Sache braucht euch/).waitFor({ timeout: 15000 });
 check("never ran → shown in settings", await status(j).getByText("Noch nie gelaufen").isVisible());
 check("push devices listed", await status(j).getByText("Jonas: 1 Gerät · Sam: 1 Gerät").isVisible());
-check("AI usage listed", await status(j).getByText(/Heute: Ideen 0\/20 · Links 0\/30 · Events 0\/40/).isVisible());
+check("AI usage listed", await status(j).getByText(/Heute: Ideen 0\/20 · Stapel 0\/6 · Links 0\/30 · Events 0\/40/).isVisible());
 await j.goto(`${BASE}/`);
 await j.getByText("Hey Jonas!").waitFor({ timeout: 15000 });
 check("no cron banner before the first run", (await j.getByText(/Die Automatik ist zuletzt/).count()) === 0);

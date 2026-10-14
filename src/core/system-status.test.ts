@@ -25,7 +25,7 @@ const facts = (over: Partial<StatusFacts> = {}): StatusFacts => ({
   ],
   push: { configured: true, devices: [{ name: "Jonas", count: 1 }, { name: "Sam", count: 2 }] },
   sources: { count: 4, failing: 0 },
-  ai: { configured: true, used: { ideas: 2, events: 5, links: 1 }, limits: { ideas: 20, events: 40, links: 30 } },
+  ai: { configured: true, used: { ideas: 2, events: 5, links: 1, deck: 1 }, limits: { ideas: 20, events: 40, links: 30, deck: 6 } },
   photos: "blob",
   ...over,
 });
@@ -37,7 +37,7 @@ describe("statusRows", () => {
     expect(overallLevel(rows)).toBe("ok");
     expect(row(facts(), "tick").detail).toBe("Läuft – zuletzt vor 3 Min.");
     expect(row(facts(), "push").detail).toBe("Jonas: 1 Gerät · Sam: 2 Geräte");
-    expect(row(facts(), "ai").detail).toBe("Heute: Ideen 2/20 · Links 1/30 · Events 5/40");
+    expect(row(facts(), "ai").detail).toBe("Heute: Ideen 2/20 · Stapel 1/6 · Links 1/30 · Events 5/40");
   });
 
   it("a cron that stopped is a warning", () => {
@@ -66,7 +66,7 @@ describe("statusRows", () => {
   });
 
   it("limit reached and failing sources are warnings", () => {
-    expect(row(facts({ ai: { ...facts().ai, used: { ideas: 20, events: 0, links: 0 } } }), "ai").level).toBe("warn");
+    expect(row(facts({ ai: { ...facts().ai, used: { ideas: 20, events: 0, links: 0, deck: 0 } } }), "ai").level).toBe("warn");
     expect(row(facts({ sources: { count: 4, failing: 1 } }), "sources").detail).toBe("4 Seiten, 1 mit Fehler");
     expect(row(facts({ push: { configured: true, devices: [{ name: "Jonas", count: 0 }, { name: "Sam", count: 1 }] } }), "push").level).toBe("warn");
   });

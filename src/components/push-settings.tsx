@@ -134,6 +134,8 @@ export function PushSettings({
     date_soon: "Date in 2 Stunden",
     review_due: "Wie war's? (am Tag nach dem Date)",
     system: "Wichtiges (z. B. ein Kalender wurde getrennt)",
+    match: "Match! – ihr mögt beide dieselbe Idee",
+    deck_nudge: `Entdecken: ${partnerName} hat Ideen geliked oder super-geliked`,
   };
 
   if (!publicKey) {

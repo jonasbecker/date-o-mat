@@ -2,7 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { after, type NextRequest, NextResponse } from "next/server";
 import { env } from "@/server/env";
 import { recordTick } from "@/server/system-status";
-import { runEventRefresh, runTick } from "@/server/tick";
+import { runDeckRefill, runEventRefresh, runTick } from "@/server/tick";
 
 // Reading an event source (page + Claude) can take a while; it runs after the answer.
 export const maxDuration = 120;
@@ -25,7 +25,10 @@ async function handle(request: NextRequest) {
   }
   const result = await runTick();
   await recordTick(result, new Date());
-  after(runEventRefresh);
+  after(async () => {
+    await runEventRefresh();
+    await runDeckRefill();
+  });
   return NextResponse.json({ ok: result.errors === 0, ...result });
 }
 

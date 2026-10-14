@@ -10,9 +10,9 @@ export type UserColor = (typeof USER_COLORS)[number];
 export const IDEA_SIZES = ["small", "large"] as const;
 export type IdeaSize = (typeof IDEA_SIZES)[number];
 
-// Where an idea came from: typed in, curated list, AI suggestion, or a tip
-// found on an event source ("web").
-export const IDEA_SOURCES = ["wishlist", "curated", "ai", "web"] as const;
+// Where an idea came from: typed in, curated list, AI suggestion, a tip
+// found on an event source ("web"), or a match in the swipe deck ("deck").
+export const IDEA_SOURCES = ["wishlist", "curated", "ai", "web", "deck"] as const;
 export type IdeaSource = (typeof IDEA_SOURCES)[number];
 
 export const RHYTHMS = ["weekly", "biweekly", "semimonthly", "monthly"] as const;
@@ -46,6 +46,10 @@ export const NOTIFICATION_TYPES = [
   "review_due",
   // Something needs a person: a calendar connection was lost.
   "system",
+  // Swipe deck: both liked an idea.
+  "match",
+  // Swipe deck: the partner liked ideas you have not seen yet, or super-liked one.
+  "deck_nudge",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -71,5 +75,19 @@ export type EventKind = (typeof EVENT_KINDS)[number];
 /** Photos after a date: resized in the browser, stored privately. */
 export const PHOTO_LIMITS = { perDate: 24, fullEdge: 1600, thumbEdge: 480, maxBytes: 3 * 1024 * 1024 } as const;
 
-export const AI_REQUEST_KINDS = ["ideas", "events", "links"] as const;
+export const AI_REQUEST_KINDS = ["ideas", "events", "links", "deck"] as const;
 export type AiRequestKind = (typeof AI_REQUEST_KINDS)[number];
+
+// Swipe deck ("Entdecken"): cards made by Claude, each person swipes on their own.
+// A card is matched when both like it, passed as soon as one says no.
+export const DECK_CARD_KINDS = ["idea", "combo"] as const;
+export type DeckCardKind = (typeof DECK_CARD_KINDS)[number];
+export const DECK_CARD_STATUSES = ["open", "matched", "passed", "expired"] as const;
+export type DeckCardStatus = (typeof DECK_CARD_STATUSES)[number];
+export const SWIPE_VERDICTS = ["like", "super", "nope", "maybe"] as const;
+export type SwipeVerdict = (typeof SWIPE_VERDICTS)[number];
+export const PLACE_SETTINGS = ["indoor", "outdoor"] as const;
+export type PlaceSetting = (typeof PLACE_SETTINGS)[number];
+/** How many event combos go into a new batch. */
+export const EVENT_MIXES = ["none", "some", "lots"] as const;
+export type EventMix = (typeof EVENT_MIXES)[number];

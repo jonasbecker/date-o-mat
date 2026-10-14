@@ -202,7 +202,7 @@ export async function savedRefs(coupleId: string): Promise<Set<string>> {
  * For each timed event: are both free (calendars + buffer)? One FreeBusy query
  * per person for the whole range. Null when the calendars cannot be read.
  */
-export async function freeForEvents(ctx: CoupleContext, list: EventRow[]): Promise<Map<string, boolean> | null> {
+export async function freeForEvents(ctx: CoupleContext, list: Array<Pick<EventRow, "id" | "startsAt" | "endsAt" | "allDay">>): Promise<Map<string, boolean> | null> {
   const spans = list.map((e) => ({ id: e.id, span: eventSpan(e) })).filter((x): x is { id: string; span: { start: Date; end: Date } } => x.span !== null);
   if (spans.length === 0) return new Map();
   const settings = await getCoupleSettings(ctx.coupleId);

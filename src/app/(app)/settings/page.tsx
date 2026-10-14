@@ -28,6 +28,7 @@ import { buttonClass } from "@/components/button";
 import { Info } from "@/components/info";
 import { systemStatus } from "@/server/system-status";
 import { SystemStatusCard } from "./system-status-card";
+import { EventMixPicker } from "./event-mix-picker";
 
 // "Jetzt lesen" fetches a page and asks Claude (runs after the response).
 export const maxDuration = 120;
@@ -147,6 +148,15 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
         </h2>
         <Card>
           <EventSources sources={sources.map((s) => sourceView(s, now))} aiReady={env().ai} />
+        </Card>
+      </section>
+
+      <section id="entdecken" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="deck-heading">
+        <h2 id="deck-heading" className="text-[21px] font-semibold">
+          Entdecken
+        </h2>
+        <Card>
+          <EventMixPicker value={settings.deckEventMix} />
         </Card>
       </section>
 

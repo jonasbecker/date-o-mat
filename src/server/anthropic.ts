@@ -17,7 +17,7 @@ export function anthropic(): Anthropic {
 }
 
 /** Claude calls per couple and day (Berlin), per kind. */
-export const AI_LIMITS: Record<AiRequestKind, number> = { ideas: 20, events: 40, links: 30 };
+export const AI_LIMITS: Record<AiRequestKind, number> = { ideas: 20, events: 40, links: 30, deck: 6 };
 
 /**
  * Books one Claude call before it is made – also if it fails later, so a

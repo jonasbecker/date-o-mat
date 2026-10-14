@@ -75,7 +75,7 @@ function aiRow(facts: StatusFacts): StatusRow {
   if (!facts.ai.configured) return { key: "ai", label, level: "off", detail: "Nicht eingerichtet (ANTHROPIC_API_KEY fehlt)" };
   const { used, limits } = facts.ai;
   const full = (Object.keys(limits) as AiRequestKind[]).filter((kind) => used[kind] >= limits[kind]);
-  const detail = `Heute: Ideen ${used.ideas}/${limits.ideas} · Links ${used.links}/${limits.links} · Events ${used.events}/${limits.events}`;
+  const detail = `Heute: Ideen ${used.ideas}/${limits.ideas} · Stapel ${used.deck}/${limits.deck} · Links ${used.links}/${limits.links} · Events ${used.events}/${limits.events}`;
   return { key: "ai", label, level: full.length ? "warn" : "ok", detail: full.length ? `${detail} – Limit erreicht, morgen geht's weiter` : detail };
 }
 
