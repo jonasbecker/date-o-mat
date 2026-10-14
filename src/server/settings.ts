@@ -3,7 +3,8 @@ import { eq } from "drizzle-orm";
 import type { SlotRules } from "@/core/slots";
 import type { SlotSettingsValues } from "@/lib/slot-settings";
 import { db } from "@/server/db";
-import { coupleSettings, cycles, type CoupleSettings } from "@/server/db/schema";
+import { coupleSettings, cycles, datePhotos, type CoupleSettings } from "@/server/db/schema";
+import { photoStore } from "@/server/photos/store";
 
 /** The couple's settings; creates the default row if it is missing. */
 export async function getCoupleSettings(coupleId: string): Promise<CoupleSettings> {
@@ -50,6 +51,9 @@ export async function setDevClockOffset(coupleId: string, minutes: number): Prom
 
 /** Dev tools only: back to real time and start the rounds from scratch. */
 export async function resetDevClock(coupleId: string): Promise<void> {
+  // Test rounds take their dates (and those dates' photos) with them – remove the files too.
+  const photos = await db.select({ full: datePhotos.fullPath, thumb: datePhotos.thumbPath }).from(datePhotos).where(eq(datePhotos.coupleId, coupleId));
+  await photoStore()?.remove(photos.flatMap((p) => [p.full, p.thumb])).catch((error) => console.warn("[dev] removing photos failed", error));
   await db.delete(cycles).where(eq(cycles.coupleId, coupleId));
   await setDevClockOffset(coupleId, 0);
 }
