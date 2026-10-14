@@ -115,3 +115,25 @@ describe("dueReminders", () => {
     expect(dueReminders({ now: at("2026-10-16T18:31"), cycle: null, date: { ...date, startsAt: at("2026-10-16T18:30") }, userIds: USERS, rules: RULES })).toEqual([]);
   });
 });
+
+describe("plannedReminders – review", () => {
+  const past = { id: "d9", startsAt: at("2026-10-16T19:00"), endsAt: at("2026-10-16T22:00"), reviewedBy: ["sam"] };
+
+  it("asks only the person who has not reviewed yet, the next day at 11:00", () => {
+    const list = plannedReminders({ cycle: null, date: null, reviewDates: [past], userIds: USERS, rules: RULES });
+    expect(list.map((r) => [r.userId, r.type, r.refId, show(r.dueAt)])).toEqual([["jonas", "review_due", "d9", "2026-10-17 11:00"]]);
+  });
+
+  it("respects quiet hours when a date ends late at night", () => {
+    const late = { id: "d10", startsAt: at("2026-10-16T20:00"), endsAt: at("2026-10-17T21:30"), reviewedBy: [] };
+    const list = plannedReminders({ cycle: null, date: null, reviewDates: [late], userIds: USERS, rules: RULES });
+    expect(list.map((r) => show(r.dueAt))).toEqual(["2026-10-18 08:00", "2026-10-18 08:00"]);
+  });
+
+  it("is due only within the lateness window", () => {
+    const params = { cycle: null, date: null, reviewDates: [past], userIds: USERS, rules: RULES };
+    expect(dueReminders({ ...params, now: at("2026-10-17T10:59") })).toHaveLength(0);
+    expect(dueReminders({ ...params, now: at("2026-10-17T11:05") })).toHaveLength(1);
+    expect(dueReminders({ ...params, now: at("2026-10-17T14:00") })).toHaveLength(0);
+  });
+});

@@ -18,6 +18,11 @@ gemeinsame Ideen-Wunschliste.
 | M5 | Date festlegen, Google-Termin mit Einladung, Passt!/Ändern/Absagen synchron | ✅ |
 | M6 | Web Push, Erinnerungen, iPhone-Installationshilfe, App-Manifest | ✅ |
 | M7 | Fehler-/Offline-Seiten, App-Kurzbefehle, Sicherheits-Härtung, Aufräum-Job, Doku | ✅ |
+| **V2** | | |
+| M8 | Rückblick: „Wie war's?“-Erinnerung, Herzen + Notiz je Person, Seite „Unsere Dates“ | ✅ |
+| M9 | Fotos zum Rückblick (Vercel Blob, privat) | ⏳ |
+| M10 | Kuratierte Köln-Ideen, „Überrasch uns“ | ⏳ |
+| M11 | KI-Vorschläge (Claude Haiku 5.5, Wetter von Open-Meteo) | ⏳ |
 
 ## Tech-Stack
 
@@ -131,14 +136,27 @@ scripts/              Migration beim Build, Secret-Generator
 - **iPhone:** Push gibt es nur, wenn die App auf dem Home-Bildschirm installiert ist (iOS 16.4+).
   In Safari zeigen Startseite und Einstellungen deshalb eine Schritt-für-Schritt-Anleitung.
 - **Arten** (je Person einzeln abschaltbar): Du bist dran (Rundenstart, frühestens 9 Uhr),
-  Deadline in 24 Std., Partner:in plant/bestätigt/sagt ab, Date morgen (19 Uhr am Vortag),
-  Date in 2 Stunden.
+  Deadline in 24 Std., Partner:in plant/bestätigt/sagt ab/bewertet, Date morgen (19 Uhr am Vortag),
+  Date in 2 Stunden, „Wie war's?“ (Tag danach, 11 Uhr).
 - **Wann:** `src/core/reminders.ts` berechnet rein aus Runde, Date und Uhrzeit, was fällig ist.
   Ruhezeit 22–8 Uhr (außer „Date in 2 Stunden“); was mehr als 2 Std. zu spät wäre, entfällt.
 - **Genau einmal:** Vor dem Senden wird jede Erinnerung in `notification_log` eingetragen
   (eindeutiger Schlüssel). Nur wenn das klappt, geht sie raus – parallele Ticks senden nie doppelt.
 - Partner-Nachrichten gehen sofort nach der Aktion raus (`after()`), unabhängig von der Ruhezeit,
   weil die andere Person ja gerade selbst aktiv ist.
+
+### Rückblick in Kürze
+
+- Nach dem Date (Status „stattgefunden“) vergibt jede Person **1–5 Herzen** und optional eine
+  Notiz (`date_reviews`, eine Zeile pro Person und Date, später änderbar).
+- **Verdeckt:** Die Herzen der anderen Person sieht man erst, wenn man selbst bewertet hat –
+  damit sich niemand nach dem anderen richtet (`visibleReviews()` in `src/core/reviews.ts`).
+- **Erinnerung** „Wie war's?“ am Tag nach dem Date um 11 Uhr, nur an alle, die noch nicht bewertet haben;
+  die Startseite fragt außerdem 14 Tage lang nach. Die erste Bewertung meldet sich bei der
+  anderen Person.
+- **„Unsere Dates“** (`/dates`): alle Dates mit Herzen, Zahlen (Anzahl, Ø Herzen, dieses Jahr)
+  und Lieblingsdate. Die Einstellungen sind dafür aus der unteren Leiste in den Kopf der
+  Startseite gewandert (Regler-Symbol).
 
 ### Slot-Finder in Kürze
 
@@ -159,10 +177,10 @@ scripts/              Migration beim Build, Secret-Generator
 | `couple_settings` | Rhythmus, Modus, Zeitfenster, Puffer … |
 | `ideas` | Wunschliste |
 | `cycles`, `date_plans`, `suggestions` | Runden, geplante Dates, App-Vorschläge |
+| `date_reviews` | Herzen + Notiz je Person und Date |
 | `push_subscriptions`, `notification_prefs`, `notification_log` | Push |
 
-Für V2 vorbereitet, aber nicht in der UI: `date_plans.rating`/`review_note` (Rückblick),
-`ideas.source`/`external_ref` (kuratierte bzw. KI-Ideen).
+Für M10/M11 vorbereitet: `ideas.source`/`external_ref` (kuratierte bzw. KI-Ideen).
 
 ## Entwickeln
 
@@ -194,9 +212,8 @@ Bewusst nicht in V1, aber vorbereitet:
 | **Kuratierte Ideen für Köln** | Neue Datei `src/server/idea-sources/curated.ts`, die `IdeaSourceProvider` implementiert (z. B. aus einer JSON-Datei oder Tabelle mit `ideas.source = 'curated'`), und in `PROVIDERS` in `src/server/idea-sources/index.ts` eintragen. Vorschlag-Modus und Planen nutzen sie dann automatisch. |
 | **KI-Vorschläge** (Budget, Wetter, Dauer, Stimmung) | Ebenfalls ein `IdeaSourceProvider` (`source = 'ai'`), der aus Kontext (Slot-Größe, Wetter-API, Budget) Kandidaten erzeugt; erzeugte Ideen können mit `external_ref` in `ideas` gespeichert werden. |
 | **Zufall („Überrasch uns“)** | Eine kleine Funktion neben `pickSuggestion` (`src/core/suggestion.ts`), die statt der ältesten eine zufällige Idee aus `ideaCandidates()` zieht, plus ein Button auf der Startseite. |
-| **Neue Erinnerung** (z. B. „Wie war's?“ am Tag danach) | Typ in `NOTIFICATION_TYPES` (`src/lib/domain.ts`) ergänzen, Zeitpunkt in `plannedReminders()` (`src/core/reminders.ts`, mit Test), Text in `reminderText()` (`src/server/notifications.ts`), Beschriftung in `push-settings.tsx`. Keine Migration nötig. |
+| **Neue Erinnerung** | Typ in `NOTIFICATION_TYPES` (`src/lib/domain.ts`) ergänzen, Zeitpunkt in `plannedReminders()` (`src/core/reminders.ts`, mit Test), Text in `reminderText()` (`src/server/notifications.ts`), Beschriftung in `push-settings.tsx`. Keine Migration nötig. |
 | **Weitere Person / Gruppen** | Bewusst nicht vorgesehen: Runden, Bestätigen und Push gehen überall von genau zwei Personen aus. |
-| **Rückblick nach dem Date** | `date_plans.rating` und `review_note` existieren schon; für Fotos kommt eine neue Tabelle `date_photos` dazu. Nur UI nötig. |
 
 ## Sicherheit & Datenschutz
 

@@ -1,0 +1,123 @@
+import Link from "next/link";
+import { connection } from "next/server";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/app-header";
+import { AutoRefresh } from "@/components/auto-refresh";
+import { Avatar } from "@/components/avatar";
+import { Hearts } from "@/components/hearts";
+import { reviewStats, visibleReviews } from "@/core/reviews";
+import { formatLongDate } from "@/lib/format";
+import { requireCouple } from "@/server/auth/dal";
+import { coupleNow } from "@/server/clock";
+import type { User } from "@/server/db/schema";
+import { pastDates, type PastDate } from "@/server/reviews";
+import { getCoupleSettings } from "@/server/settings";
+
+export default function DatesPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <Dates />
+    </Suspense>
+  );
+}
+
+async function Dates() {
+  const { user, partner, coupleId } = await requireCouple();
+  await connection();
+  const now = coupleNow(await getCoupleSettings(coupleId));
+  const dates = await pastDates(coupleId);
+  const stats = reviewStats(
+    dates.map((d) => ({ id: d.id, title: d.title, startsAt: d.startsAt, ratings: d.reviews.map((r) => r.rating) })),
+    now,
+  );
+
+  return (
+    <div className="flex flex-col gap-5">
+      <AutoRefresh />
+      <h1 className="text-[30px] font-bold">Unsere Dates</h1>
+
+      {dates.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-[24px] border-[2.5px] border-dashed border-line px-6 py-10 text-center">
+          <span className="text-5xl" aria-hidden="true">
+            📸
+          </span>
+          <p className="font-display text-xl font-semibold">Hier sammeln sich eure Dates</p>
+          <p className="font-semibold text-muted">Nach jedem Date könnt ihr Herzen vergeben und festhalten, was schön war.</p>
+        </div>
+      ) : (
+        <>
+          <dl className="grid grid-cols-3 gap-2.5">
+            <Stat label="Dates" value={String(stats.count)} tone="bg-minze" />
+            <Stat label="Ø Herzen" value={stats.averageRating?.toLocaleString("de-DE") ?? "–"} tone="bg-himbeere-soft" />
+            <Stat label="dieses Jahr" value={String(stats.thisYear)} tone="bg-zitrone-soft" />
+          </dl>
+          {stats.favorite && (
+            <Link
+              href={`/dates/${stats.favorite.id}`}
+              className="press sticker flex items-center gap-3 rounded-[22px] bg-lavendel px-4 py-3.5 text-tinte"
+            >
+              <span className="text-3xl" aria-hidden="true">
+                🏆
+              </span>
+              <span className="flex flex-col">
+                <span className="text-[13px] font-extrabold uppercase tracking-wide">Euer Lieblingsdate</span>
+                <span className="font-display text-lg font-semibold leading-snug">{stats.favorite.title}</span>
+              </span>
+            </Link>
+          )}
+          <ul className="flex flex-col gap-3.5">
+            {dates.map((date) => (
+              <li key={date.id}>
+                <DateRow date={date} me={user} partner={partner} />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {
+  return (
+    <div className={`sticker flex flex-col items-center rounded-[20px] px-2 py-3 text-tinte ${tone}`}>
+      <dt className="order-2 text-xs font-extrabold">{label}</dt>
+      <dd className="font-display text-[28px] font-bold leading-none">{value}</dd>
+    </div>
+  );
+}
+
+function DateRow({ date, me, partner }: { date: PastDate; me: User; partner: User }) {
+  const { mine, partner: theirs, partnerHidden } = visibleReviews(date.reviews, me.id);
+  return (
+    <Link href={`/dates/${date.id}`} className="press sticker flex flex-col gap-2 rounded-[20px] bg-surface p-3.5">
+      <span className="flex items-start justify-between gap-3">
+        <span className="font-display text-lg font-semibold leading-snug">{date.title}</span>
+        {!mine && <span className="shrink-0 rounded-full border-2 border-line bg-himbeere px-2.5 py-0.5 text-xs font-extrabold text-tinte">Bewerten</span>}
+      </span>
+      <span className="text-[13px] font-extrabold text-muted">
+        {formatLongDate(date.startsAt)}
+        {date.location && ` · 📍 ${date.location}`}
+      </span>
+      <span className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <PersonHearts person={me} rating={mine?.rating ?? null} />
+        {partnerHidden ? (
+          <span className="flex items-center gap-1.5 text-[13px] font-extrabold text-muted">
+            <Avatar person={partner} size={22} /> hat bewertet 🔒
+          </span>
+        ) : (
+          <PersonHearts person={partner} rating={theirs?.rating ?? null} />
+        )}
+      </span>
+    </Link>
+  );
+}
+
+function PersonHearts({ person, rating }: { person: User; rating: number | null }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <Avatar person={person} size={22} />
+      {rating ? <Hearts rating={rating} size={16} /> : <span className="text-[13px] font-extrabold text-muted">noch offen</span>}
+    </span>
+  );
+}

@@ -18,6 +18,7 @@ import { coupleNow } from "@/server/clock";
 import { activeDateOf, cycleHistory, ensureCurrentCycle } from "@/server/cycles";
 import { upcomingDate } from "@/server/dates";
 import { countIdeas } from "@/server/ideas";
+import { dateToReview } from "@/server/reviews";
 import { getCoupleSettings } from "@/server/settings";
 import { currentSuggestion } from "@/server/suggestions";
 
@@ -37,12 +38,13 @@ async function Home() {
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
   const cycle = await ensureCurrentCycle(coupleId, now);
-  const [ideaCount, calendars, history, nextDate, pushDevices] = await Promise.all([
+  const [ideaCount, calendars, history, nextDate, pushDevices, toReview] = await Promise.all([
     countIdeas(coupleId),
     calendarStates(ctx),
     cycleHistory(coupleId),
     upcomingDate(coupleId, now),
     countSubscriptions(user.id),
+    dateToReview(ctx, now),
   ]);
   const roundDate = cycle?.status === "done" ? await activeDateOf(cycle.id) : undefined;
   const calendarsReady = calendars.every((person) => person.state === "connected");
@@ -60,6 +62,21 @@ async function Home() {
       <p className="text-[17px] font-bold text-muted">Hey {user.name}!</p>
 
       <CycleHero cycle={cycle} me={user} partner={partner} now={now} />
+
+      {toReview && (
+        <Link
+          href={`/dates/${toReview.id}`}
+          className="press sticker flex items-center gap-4 rounded-[22px] bg-himbeere-soft px-4 py-3.5 text-tinte"
+        >
+          <span className="text-3xl" aria-hidden="true">
+            💭
+          </span>
+          <span className="flex flex-col">
+            <span className="font-display text-lg font-semibold leading-snug">Wie war „{toReview.title}“?</span>
+            <span className="text-sm font-bold">Vergib Herzen und halt fest, was schön war.</span>
+          </span>
+        </Link>
+      )}
 
       {nextDate && <DateCard date={nextDate} me={user} partner={partner} />}
 

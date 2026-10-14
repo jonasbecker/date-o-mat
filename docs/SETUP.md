@@ -250,6 +250,16 @@ Danach:
 - Kommt nichts an: Mitteilungen für die App in den Systemeinstellungen erlaubt? Fokus/„Nicht
   stören“ aus? Auf dem iPhone die App einmal vom Home-Bildschirm aus öffnen.
 
+### Meilenstein 8 testen: Rückblick
+
+1. Nach einem Date (oder mit der Dev-Uhr über das Ende eines Dates hinaus vorgestellt) fragt die
+   Startseite „Wie war …?“. Antippen → Herzen wählen → optional Notiz → **Bewertung abschicken**.
+2. Die andere Person bekommt „… hat verraten, wie's war“ und sieht unter **Dates** ein 🔒:
+   Die Herzen werden erst sichtbar, wenn sie selbst bewertet hat.
+3. Am Tag nach dem Date um 11 Uhr kommt „Wie war's? 💭“ an alle, die noch nicht bewertet haben
+   (Dev-Uhr auf 11:05 am Folgetag, dann cron-job.org **Testlauf**).
+4. Die Einstellungen liegen jetzt hinter dem Regler-Symbol oben rechts auf der Startseite.
+
 ## 7. Lokal entwickeln (optional)
 
 1. In Neon: **Branches → Create branch** `dev`. Dessen Connection Strings nutzen, damit lokale

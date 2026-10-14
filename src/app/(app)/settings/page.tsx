@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { PageSkeleton } from "@/components/app-header";
@@ -23,7 +24,12 @@ import { SlotSettingsForm } from "./slot-settings-form";
 export default function SettingsPage({ searchParams }: PageProps<"/settings">) {
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-[30px] font-bold">Einstellungen</h1>
+      <div className="flex flex-col gap-1">
+        <Link href="/" className="self-start text-sm font-extrabold text-muted underline">
+          ← Start
+        </Link>
+        <h1 className="text-[30px] font-bold">Einstellungen</h1>
+      </div>
       <Suspense fallback={<PageSkeleton />}>
         <Settings searchParams={searchParams} />
       </Suspense>

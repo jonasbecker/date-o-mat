@@ -7,10 +7,11 @@ import type { CoupleContext } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { cycles, notificationLog, users, type Cycle, type DatePlan } from "@/server/db/schema";
 import { upcomingDate } from "@/server/dates";
+import { reviewReminderDates } from "@/server/reviews";
 import { sendToUser, type PushPayload } from "@/server/push";
 import { getCoupleSettings } from "@/server/settings";
 
-function reminderText(reminder: Reminder, cycle: Cycle | undefined, date: DatePlan | undefined): PushPayload {
+function reminderText(reminder: Reminder, cycle: Cycle | undefined, date: DatePlan | undefined, reviewTitle?: string): PushPayload {
   switch (reminder.type) {
     case "turn_started":
       return cycle?.mode === "suggestion"
@@ -42,6 +43,13 @@ function reminderText(reminder: Reminder, cycle: Cycle | undefined, date: DatePl
         url: "/",
         tag: "date",
       };
+    case "review_due":
+      return {
+        title: "Wie war's? 💭",
+        body: `${reviewTitle ?? "Euer Date"} – vergib ein paar Herzen und halt fest, was schön war.`,
+        url: `/dates/${reminder.refId}`,
+        tag: "review",
+      };
     default:
       return { title: "Date-O-Mat", body: "", url: "/" };
   }
@@ -58,11 +66,13 @@ export async function sendDueReminders(coupleId: string, now: Date): Promise<num
   const settings = await getCoupleSettings(coupleId);
   const [cycle] = await db.select().from(cycles).where(eq(cycles.coupleId, coupleId)).orderBy(desc(cycles.seq)).limit(1);
   const date = await upcomingDate(coupleId, now);
+  const reviewDates = await reviewReminderDates(coupleId, now);
 
   const due = dueReminders({
     now,
     cycle: cycle ?? null,
     date: date ?? null,
+    reviewDates,
     userIds: [members[0].id, members[1].id],
     rules: { quietHoursStartMinute: settings.quietHoursStartMinute, quietHoursEndMinute: settings.quietHoursEndMinute },
   });
@@ -75,7 +85,7 @@ export async function sendDueReminders(coupleId: string, now: Date): Promise<num
       .onConflictDoNothing()
       .returning({ id: notificationLog.id });
     if (!claimed) continue;
-    sent += await sendToUser(reminder.userId, reminderText(reminder, cycle, date), reminder.type);
+    sent += await sendToUser(reminder.userId, reminderText(reminder, cycle, date, reviewDates.find((d) => d.id === reminder.refId)?.title), reminder.type);
   }
   return sent;
 }
@@ -94,6 +104,18 @@ export async function notifyPartner(ctx: CoupleContext, event: PartnerEvent, dat
   };
   try {
     await sendToUser(ctx.partner.id, payloads[event], "partner_activity");
+  } catch (error) {
+    console.warn("[push] partner notification failed", error);
+  }
+}
+
+/** "Jonas hat verraten, wie's war" – nudges the partner to review too (or tells them both are in). */
+export async function notifyPartnerReviewed(ctx: CoupleContext, date: Pick<DatePlan, "id" | "title">, partnerDone: boolean) {
+  const payload: PushPayload = partnerDone
+    ? { title: `${ctx.user.name} hat „${date.title}“ bewertet 💞`, body: "Jetzt seht ihr beide, wie's für den anderen war.", url: `/dates/${date.id}`, tag: "review" }
+    : { title: `${ctx.user.name} hat verraten, wie's war`, body: `„${date.title}“ – deine Herzen fehlen noch. Danach siehst du ${ctx.user.name}s.`, url: `/dates/${date.id}`, tag: "review" };
+  try {
+    await sendToUser(ctx.partner.id, payload, "partner_activity");
   } catch (error) {
     console.warn("[push] partner notification failed", error);
   }

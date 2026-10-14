@@ -43,8 +43,14 @@ export const NOTIFICATION_TYPES = [
   "partner_activity",
   "date_tomorrow",
   "date_soon",
+  "review_due",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 export const CONNECTION_STATUSES = ["ok", "needs_reauth"] as const;
 export type ConnectionStatus = (typeof CONNECTION_STATUSES)[number];
+
+/** Review after a date: 1–5 hearts. */
+export const RATING_MIN = 1;
+export const RATING_MAX = 5;
+export const REVIEW_NOTE_MAX = 500;

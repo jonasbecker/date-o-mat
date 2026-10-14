@@ -66,6 +66,28 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M6 | Web Push, iOS-Onboarding, Erinnerungen | ✅ |
 | M7 | Design-Politur, PWA-Feinschliff, Deployment, README | ✅ |
 
+## V2 (freigegeben am 14.10.2026)
+
+| Thema | Entscheidung |
+|---|---|
+| Umfang | Rückblick, Fotos, kuratierte Köln-Ideen + „Überrasch uns“, KI-Vorschläge |
+| Fotos | Vercel Blob, privater Store; Auslieferung nur über die App mit Login-Prüfung |
+| KI | Claude Haiku 5.5 über die Anthropic API (`ANTHROPIC_API_KEY`), Wetter von Open-Meteo |
+
+| | Inhalt | Status |
+|---|---|---|
+| M8 | Rückblick: Herzen + Notiz je Person, „Wie war's?“-Push, Seite „Unsere Dates“ | ✅ |
+| M9 | Fotos zum Rückblick | ⏳ |
+| M10 | Kuratierte Köln-Ideen, „Überrasch uns“ | ⏳ |
+| M11 | KI-Vorschläge | ⏳ |
+
+Abweichungen in V2:
+
+1. Bewertung **je Person** (neue Tabelle `date_reviews`) statt einer gemeinsamen Bewertung in
+   `date_plans.rating`/`review_note`; die beiden unbenutzten Spalten sind entfernt.
+2. Untere Leiste: „Dates“ ersetzt „Einstellungen“; die Einstellungen öffnet das Regler-Symbol
+   oben auf der Startseite.
+
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 
 1. OAuth „In Produktion (unverifiziert)“ statt Testmodus (7-Tage-Token-Ablauf).

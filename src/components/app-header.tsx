@@ -1,12 +1,23 @@
+import Link from "next/link";
 import type { User } from "@/server/db/schema";
 import { AvatarPair } from "./avatar";
+import { SlidersIcon } from "./icons";
 import { LogoLockup } from "./logo";
 
 export function AppHeader({ user, partner }: { user: User; partner: User }) {
   return (
     <header className="flex items-center justify-between">
       <LogoLockup clipId="header-logo" />
-      <AvatarPair a={user} b={partner} />
+      <span className="flex items-center gap-2.5">
+        <AvatarPair a={user} b={partner} />
+        <Link
+          href="/settings"
+          aria-label="Einstellungen"
+          className="press flex size-10 items-center justify-center rounded-full border-2 border-line bg-surface"
+        >
+          <SlidersIcon width={20} height={20} />
+        </Link>
+      </span>
     </header>
   );
 }

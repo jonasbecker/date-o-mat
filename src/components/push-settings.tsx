@@ -132,6 +132,7 @@ export function PushSettings({
     partner_activity: `${partnerName} plant, bestätigt oder sagt ab`,
     date_tomorrow: "Date ist morgen (19 Uhr am Vortag)",
     date_soon: "Date in 2 Stunden",
+    review_due: "Wie war's? (am Tag nach dem Date)",
   };
 
   if (!publicKey) {

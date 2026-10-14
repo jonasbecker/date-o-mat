@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ComponentType, SVGProps } from "react";
+import { Suspense, type ComponentType, type SVGProps } from "react";
 import { cn } from "@/lib/cn";
-import { BulbIcon, CalendarIcon, HomeIcon, SlidersIcon } from "./icons";
+import { BulbIcon, CalendarIcon, HeartIcon, HomeIcon } from "./icons";
 import { QuickAdd } from "./quick-add";
 
 type NavItem = { href: string; label: string; Icon: ComponentType<SVGProps<SVGSVGElement>> };
@@ -15,11 +15,11 @@ const LEFT: NavItem[] = [
 ];
 const RIGHT: NavItem[] = [
   { href: "/plan", label: "Planen", Icon: CalendarIcon },
-  { href: "/settings", label: "Einstellungen", Icon: SlidersIcon },
+  { href: "/dates", label: "Dates", Icon: HeartIcon },
 ];
 
-function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
-  const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+function NavLink({ item, pathname }: { item: NavItem; pathname: string | null }) {
+  const active = pathname !== null && (item.href === "/" ? pathname === "/" : pathname.startsWith(item.href));
   return (
     <li>
       <Link
@@ -44,8 +44,23 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
   );
 }
 
+/**
+ * On routes with a dynamic param (/dates/[id]) the pathname is only known at
+ * request time, so the prerendered shell shows the nav without a highlight.
+ */
 export function BottomNav() {
-  const pathname = usePathname();
+  return (
+    <Suspense fallback={<NavBar pathname={null} />}>
+      <CurrentNav />
+    </Suspense>
+  );
+}
+
+function CurrentNav() {
+  return <NavBar pathname={usePathname()} />;
+}
+
+function NavBar({ pathname }: { pathname: string | null }) {
   return (
     <nav
       aria-label="Hauptnavigation"

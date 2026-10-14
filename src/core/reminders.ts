@@ -2,6 +2,7 @@
 // reminders comes out. The tick sends each one at most once (notification_log).
 
 import { DateTime } from "luxon";
+import { reviewAskAt } from "./reviews";
 import { APP_TIMEZONE, type CycleStatus, type DateStatus, type NotificationType, type PlanMode } from "@/lib/domain";
 
 export type ReminderCycle = {
@@ -15,6 +16,9 @@ export type ReminderCycle = {
 };
 
 export type ReminderDate = { id: string; startsAt: Date; status: DateStatus };
+
+/** A date that already happened, with the people who already said how it was. */
+export type ReviewDate = { id: string; startsAt: Date; endsAt: Date; reviewedBy: string[] };
 
 export type Reminder = {
   userId: string;
@@ -57,11 +61,13 @@ export function outOfQuietHours(at: Date, rules: ReminderRules, zone = APP_TIMEZ
 export function plannedReminders(params: {
   cycle: ReminderCycle | null;
   date: ReminderDate | null;
+  /** Past dates still waiting for a review ("Wie war's?"). */
+  reviewDates?: ReviewDate[];
   userIds: [string, string];
   rules: ReminderRules;
   zone?: string;
 }): Reminder[] {
-  const { cycle, date, userIds, rules, zone = APP_TIMEZONE } = params;
+  const { cycle, date, reviewDates = [], userIds, rules, zone = APP_TIMEZONE } = params;
   const reminders: Reminder[] = [];
 
   if (cycle && cycle.status === "open") {
@@ -90,6 +96,13 @@ export function plannedReminders(params: {
       reminders.push({ userId, type: "date_tomorrow", refId: ref, dueAt: dayBefore });
       // Quiet hours do not apply here – a date at 9:00 is reminded at 7:00.
       reminders.push({ userId, type: "date_soon", refId: ref, dueAt: soon });
+    }
+  }
+
+  for (const past of reviewDates) {
+    const dueAt = outOfQuietHours(reviewAskAt(past, zone), rules, zone);
+    for (const userId of userIds) {
+      if (!past.reviewedBy.includes(userId)) reminders.push({ userId, type: "review_due", refId: past.id, dueAt });
     }
   }
   return reminders;
