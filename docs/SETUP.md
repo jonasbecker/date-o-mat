@@ -264,8 +264,9 @@ Danach:
 
 1. In Vercel im Projekt **Storage → Create Database → Blob** wählen, Name z. B.
    `date-o-mat-fotos`, Zugriff **Private**, Region **Frankfurt (fra1)**.
-2. Den Store mit dem Projekt verbinden (**Connect Project**, alle Umgebungen). Vercel trägt
-   `BLOB_READ_WRITE_TOKEN` dabei selbst ein.
+2. Prefix `BLOB` lassen und **unbedingt den Haken bei „Add a read-write token env var to this
+   connection“ setzen** – nur dann legt Vercel `BLOB_READ_WRITE_TOKEN` an, an dem die App den
+   Speicher erkennt. Dann **Create** / mit dem Projekt verbinden.
 3. Neu deployen (**Deployments → … → Redeploy**).
 4. Test: Unter **Dates** ein vergangenes Date öffnen → **📷 Fotos hinzufügen**. Das Foto
    erscheint in der Vorschau und als Titelbild in der Liste.
