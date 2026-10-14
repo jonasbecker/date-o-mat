@@ -48,4 +48,13 @@ describe("curated ideas", () => {
     expect(free.every((i) => i.costEur === 0 && i.setting === "outdoor")).toBe(true);
     expect(filterCurated(CURATED_IDEAS, { size: "large" }).every((i) => i.size === "large")).toBe(true);
   });
+
+  it("prefers what fits the budget, falls back when nothing does", () => {
+    const pool = [
+      { key: "a", title: "Teuer", size: "small" as const, fromWishlist: true, costEur: 80 },
+      { key: "b", title: "Günstig", size: "small" as const, fromWishlist: false, costEur: 10 },
+    ];
+    expect(pickSurprise(pool, { maxCost: 20, random: () => 0 })?.key).toBe("b");
+    expect(pickSurprise(pool, { maxCost: 5, random: () => 0 })?.key).toBe("a");
+  });
 });

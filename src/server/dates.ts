@@ -2,6 +2,7 @@
 // Google Calendar event in sync with the database.
 import "server-only";
 import { and, asc, eq, gt, inArray, lt, ne } from "drizzle-orm";
+import { parsePriceEur } from "@/core/budget";
 import { buildEventBody, eventIdFor } from "@/core/date-event";
 import { mergeRanges, padRanges, subtractRanges, type TimeRange } from "@/core/ranges";
 import type { IdeaSize } from "@/lib/domain";
@@ -27,6 +28,8 @@ export type DateChoice = {
   customLocation: string | null;
   /** … or an event found on an event source. */
   eventId?: string | null;
+  /** Paid from the savings pot instead of the month budget. */
+  fromPot?: boolean;
 };
 
 export type SaveDateResult =
@@ -88,7 +91,7 @@ async function snapshot(coupleId: string, choice: DateChoice) {
       .limit(1);
     if (!event) return null;
     const note = [event.priceText, event.summary].filter(Boolean).join(" · ") || null;
-    return { ideaId: null, title: event.title, location: event.venue, note, url: event.url };
+    return { ideaId: null, title: event.title, location: event.venue, note, url: event.url, estimatedCostEur: parsePriceEur(event.priceText) };
   }
   if (choice.ideaId) {
     const [idea] = await db
@@ -97,10 +100,10 @@ async function snapshot(coupleId: string, choice: DateChoice) {
       .where(and(eq(ideas.id, choice.ideaId), eq(ideas.coupleId, coupleId)))
       .limit(1);
     if (!idea) return null;
-    return { ideaId: idea.id, title: idea.title, location: idea.location, note: idea.note, url: idea.url };
+    return { ideaId: idea.id, title: idea.title, location: idea.location, note: idea.note, url: idea.url, estimatedCostEur: idea.costEur };
   }
   if (!choice.customTitle) return null;
-  return { ideaId: null, title: choice.customTitle, location: choice.customLocation, note: null, url: null };
+  return { ideaId: null, title: choice.customTitle, location: choice.customLocation, note: null, url: null, estimatedCostEur: null };
 }
 
 /**
@@ -137,6 +140,7 @@ export async function saveDate(ctx: CoupleContext, choice: DateChoice, now: Date
         size: choice.size,
         startsAt: choice.start,
         endsAt: choice.end,
+        fromPot: choice.fromPot ?? existing.fromPot,
         status: "planned",
         proposedById: ctx.user.id,
         confirmedById: null,
@@ -167,6 +171,7 @@ export async function saveDate(ctx: CoupleContext, choice: DateChoice, now: Date
           size: choice.size,
           startsAt: choice.start,
           endsAt: choice.end,
+          fromPot: choice.fromPot ?? false,
           organizerId: ctx.user.id,
           proposedById: ctx.user.id,
         })

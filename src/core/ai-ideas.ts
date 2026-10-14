@@ -84,6 +84,8 @@ export type IdeaContext = {
   wishlist: string[];
   /** Past dates with their average hearts (1–5), most recent first. */
   pastDates: Array<{ title: string; hearts: number | null }>;
+  /** Date budget left this month in euros (if they set one). */
+  budgetLeft?: number | null;
 };
 
 export function buildIdeaPrompt(ctx: IdeaContext, zone = APP_TIMEZONE): string {
@@ -99,6 +101,9 @@ export function buildIdeaPrompt(ctx: IdeaContext, zone = APP_TIMEZONE): string {
   lines.push(`Weather in Cologne then: ${ctx.weather ?? "unknown"}.`);
   if (ctx.size) lines.push(ctx.size === "small" ? "It should be a small date (up to about 3 hours)." : "It should be a big date (half a day or more).");
   lines.push(`Budget: ${BUDGET_PROMPT[ctx.budget]}.`);
+  if (typeof ctx.budgetLeft === "number") {
+    lines.push(ctx.budgetLeft <= 10 ? "Their monthly date budget is nearly used up – prefer free ideas." : `They have about ${ctx.budgetLeft} euros left for dates this month.`);
+  }
   lines.push(`Mood: ${MOOD_PROMPT[ctx.mood]}.`);
   if (ctx.setting !== "any") lines.push(`They want to be ${ctx.setting === "indoor" ? "indoors" : "outdoors"}.`);
   if (ctx.wishlist.length) lines.push(`Already on their wishlist (do not suggest these again): ${ctx.wishlist.slice(0, 40).join("; ")}.`);

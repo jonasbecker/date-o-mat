@@ -27,6 +27,7 @@ import {
 import { APP_TIMEZONE, type SwipeVerdict } from "@/lib/domain";
 import type { CoupleContext } from "@/server/auth/dal";
 import { aiRequestsToday, anthropic, recordAiUsage, reserveAiRequest } from "@/server/anthropic";
+import { budgetState } from "@/server/budget";
 import { db } from "@/server/db";
 import { coupleSettings, datePlans, deckCards, deckSwipes, ideas, notificationLog, users, type DeckCard } from "@/server/db/schema";
 import { env } from "@/server/env";
@@ -383,7 +384,7 @@ export async function refillDeck(coupleId: string, now: Date, options: { manual?
 
 async function makeBatch(coupleId: string, now: Date, requestId: string, focus?: DeckFilter): Promise<boolean> {
   const settings = await getCoupleSettings(coupleId);
-  const [cards, swipes, wishlist, past, upcoming, weather] = await Promise.all([
+  const [cards, swipes, wishlist, past, upcoming, weather, budget] = await Promise.all([
     db
       .select({ title: deckCards.title, key: deckCards.dedupeKey, status: deckCards.status, eventKey: deckCards.eventKey, batch: deckCards.batch })
       .from(deckCards)
@@ -400,6 +401,7 @@ async function makeBatch(coupleId: string, now: Date, requestId: string, focus?:
     db.select({ title: datePlans.title }).from(datePlans).where(and(eq(datePlans.coupleId, coupleId), eq(datePlans.status, "done"))).orderBy(desc(datePlans.startsAt)).limit(30),
     upcomingEvents(coupleId, now, COMBO_EVENT_DAYS),
     weatherFor(now, new Date(now.getTime() + 3 * 86_400_000), now),
+    budgetState(coupleId, now),
   ]);
   const batch = (cards.reduce((m, c) => Math.max(m, c.batch), 0) || 0) + 1;
   const usedEvents = new Set(cards.map((c) => c.eventKey).filter(Boolean));
@@ -423,6 +425,7 @@ async function makeBatch(coupleId: string, now: Date, requestId: string, focus?:
     passed,
     exclude,
     focus,
+    budgetLeft: budget?.left ?? null,
   });
 
   const response = await anthropic().messages.parse({

@@ -29,6 +29,7 @@ gemeinsame Ideen-Wunschliste.
 | M15 | Link → Idee: TikTok/Instagram/YouTube/Webseite teilen oder einfügen, Claude macht eine Idee draus | ✅ |
 | M16 | „Läuft alles?“: Status in den Einstellungen, Warnung bei stehender Automatik, Push bei getrenntem Kalender | ✅ |
 | M17 | Entdecken: KI-Ideen-Stapel zum Swipen, Match nur wenn beide 💚, Rückgängig, Super-Like, Event-Kombis | ✅ |
+| M18 | Budget & Spartopf: Monatsbudget, echte Kosten im Rückblick, Spartopf, Monatsrückblick | ✅ |
 
 ## Tech-Stack
 
@@ -209,6 +210,21 @@ scripts/              Migration beim Build, Secret-Generator
   (außer sie ist schon als Date geplant).
 - **Nachrichten** (einzeln abschaltbar unter Erinnerungen): „Match!“, „⭐ … findet etwas super“
   und höchstens einmal am Tag „Sam hat 4 Ideen geliked 👀“ (ab 3 wartenden Likes, nicht nachts).
+
+### Budget & Spartopf in Kürze
+
+- **Einstellen:** Einstellungen → Budget, z. B. 80 € im Monat (leer = kein Budget).
+- **Was zählt** (`src/core/budget.ts`, mit Tests): Jedes Date bekommt beim Planen eine
+  Schätzung (Kosten der Idee, bei Events der Preis × 2), im Rückblick tragt ihr den echten
+  Betrag ein (vorausgefüllt). Abgesagte Dates zählen nicht.
+- **Anzeige:** Balken auf Start- und Planen-Seite („Oktober: 45 von 80 € · noch 35 €“, grün →
+  gelb → rot, Verplantes heller), Details unter `/budget`.
+- **Spartopf:** Am Monatsende (Cron-Tick, `budget_months`) wandert der Rest in den Topf;
+  ein überzogener Monat nimmt sich etwas daraus, nie unter 0. Beim Planen: „🎁 Aus dem
+  Spartopf“ – das Date belastet dann nicht das Monatsbudget. Dazu ein Push mit dem
+  Monatsrückblick an beide (abschaltbar).
+- **Vorschläge passen sich an:** Ideen über dem Rest sind beim Planen markiert; Stapel,
+  KI-Vorschläge und „Überrasch uns“ bevorzugen dann Günstiges.
 
 ### Tests & CI in Kürze
 

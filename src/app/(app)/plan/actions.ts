@@ -24,6 +24,7 @@ const schema = z.object({
   customTitle: optionalText,
   customLocation: optionalText,
   dateId: optionalUuid,
+  fromPot: z.literal("1").optional(),
 });
 
 /** "Date festlegen" (or "Termin ändern" with a dateId). */
@@ -44,6 +45,7 @@ export async function saveDateAction(_prev: SaveDateState, formData: FormData): 
       ideaId: data.ideaId ?? null,
       customTitle: data.ideaId ? null : (data.customTitle ?? null),
       customLocation: data.ideaId ? null : (data.customLocation ?? null),
+      fromPot: data.fromPot === "1",
     },
     now,
     data.dateId,

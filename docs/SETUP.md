@@ -321,6 +321,11 @@ beim ersten Öffnen von **Ideen → 💞 Entdecken** (etwa eine halbe Minute). K
 0,5–1 Cent pro Ladung à 20 Karten, höchstens 6 Ladungen pro Tag. Wie viele Event-Kombis
 dabei sind, stellt ihr unter **Einstellungen → Entdecken** ein.
 
+### Budget (M18)
+
+Nichts einzurichten. Unter **Einstellungen → Budget** einen Monatsbetrag eintragen; der
+Spartopf zählt ab diesem Monat. Den Monatsabschluss macht der Cron-Tick am 1. des Monats.
+
 ### Status prüfen (M16)
 
 **Einstellungen → Läuft alles?** zeigt auf einen Blick, ob der Cron läuft, beide Kalender

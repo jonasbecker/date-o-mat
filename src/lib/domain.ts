@@ -50,6 +50,8 @@ export const NOTIFICATION_TYPES = [
   "match",
   // Swipe deck: the partner liked ideas you have not seen yet, or super-liked one.
   "deck_nudge",
+  // Month recap of the date budget and the savings pot.
+  "budget",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

@@ -4,7 +4,9 @@ import { refresh } from "next/cache";
 import { after } from "next/server";
 import { z } from "zod";
 import { parseReview } from "@/core/reviews";
+import { parseCost } from "@/lib/idea-input";
 import { requireCouple } from "@/server/auth/dal";
+import { setActualCost } from "@/server/budget";
 import { notifyPartnerReviewed } from "@/server/notifications";
 import { pastDate, saveReview } from "@/server/reviews";
 import { addPhoto, deletePhoto } from "@/server/photos";
@@ -17,11 +19,14 @@ export async function saveReviewAction(_prev: ReviewFormState, formData: FormDat
   const input = parseReview({ rating: formData.get("rating"), note: formData.get("note") });
   if (!id.success) return { status: "error", message: "Dieses Date gibt es nicht mehr." };
   if (!input) return { status: "error", message: "Tipp auf 1 bis 5 Herzen." };
+  const cost = parseCost(String(formData.get("cost") ?? ""));
+  if (Number.isNaN(cost) || (cost !== null && cost > 10_000)) return { status: "error", message: "Die Kosten bitte als Zahl, z. B. 25." };
 
   const before = await pastDate(ctx.coupleId, id.data);
   if (!before || !(await saveReview(ctx, id.data, input))) {
     return { status: "error", message: "Dieses Date kann man (noch) nicht bewerten." };
   }
+  if (formData.has("cost")) await setActualCost(ctx.coupleId, id.data, cost);
   // Only the first review is news for the partner – later edits are not.
   if (!before.reviews.some((r) => r.userId === ctx.user.id)) {
     const partnerDone = before.reviews.some((r) => r.userId === ctx.partner.id);

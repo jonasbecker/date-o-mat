@@ -29,6 +29,7 @@ import { Info } from "@/components/info";
 import { systemStatus } from "@/server/system-status";
 import { SystemStatusCard } from "./system-status-card";
 import { EventMixPicker } from "./event-mix-picker";
+import { BudgetForm } from "./budget-form";
 
 // "Jetzt lesen" fetches a page and asks Claude (runs after the response).
 export const maxDuration = 120;
@@ -148,6 +149,15 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
         </h2>
         <Card>
           <EventSources sources={sources.map((s) => sourceView(s, now))} aiReady={env().ai} />
+        </Card>
+      </section>
+
+      <section id="budget" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="budget-heading">
+        <h2 id="budget-heading" className="text-[21px] font-semibold">
+          Budget
+        </h2>
+        <Card>
+          <BudgetForm budget={settings.monthlyBudgetEur} />
         </Card>
       </section>
 

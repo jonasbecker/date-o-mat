@@ -136,6 +136,7 @@ export function PushSettings({
     system: "Wichtiges (z. B. ein Kalender wurde getrennt)",
     match: "Match! – ihr mögt beide dieselbe Idee",
     deck_nudge: `Entdecken: ${partnerName} hat Ideen geliked oder super-geliked`,
+    budget: "Monatsrückblick: Budget und Spartopf",
   };
 
   if (!publicKey) {

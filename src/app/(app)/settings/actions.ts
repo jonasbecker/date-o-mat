@@ -6,7 +6,9 @@ import { z } from "zod";
 import { isPushEndpointAllowed } from "@/lib/allowlist";
 import { EVENT_MIXES, NOTIFICATION_TYPES, PLAN_MODES, RHYTHMS } from "@/lib/domain";
 import { parseSlotSettings, type SlotSettingsErrors } from "@/lib/slot-settings";
+import { parseBudget } from "@/core/budget";
 import { requireCouple } from "@/server/auth/dal";
+import { setBudget } from "@/server/budget";
 import { destroySession } from "@/server/auth/session";
 import { listCalendars } from "@/server/google/calendar-api";
 import { disconnect, setBusyCalendars } from "@/server/google/connection";
@@ -137,4 +139,16 @@ export async function setEventMixAction(mix: string): Promise<void> {
   if (!parsed.success) return;
   await setDeckEventMix(coupleId, parsed.data);
   refresh();
+}
+
+export type BudgetFormState = { status: "idle" | "saved" | "error"; message?: string };
+
+/** Monthly date budget in euros; empty = no budget. */
+export async function setBudgetAction(_prev: BudgetFormState, formData: FormData): Promise<BudgetFormState> {
+  const { coupleId } = await requireCouple();
+  const budget = parseBudget(String(formData.get("budget") ?? ""));
+  if (Number.isNaN(budget)) return { status: "error", message: "Bitte einen Betrag zwischen 1 und 10.000 € – oder leer lassen für kein Budget." };
+  await setBudget(coupleId, budget, coupleNow(await getCoupleSettings(coupleId)));
+  refresh();
+  return { status: "saved" };
 }

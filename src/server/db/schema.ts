@@ -137,6 +137,9 @@ export const coupleSettings = pgTable("couple_settings", {
   // Swipe deck: share of event combos per batch, and a claim while a batch is being made.
   deckEventMix: text({ enum: EVENT_MIXES }).notNull().default("some"),
   deckRefillStartedAt: timestamptz(),
+  // Monthly date budget in euros (null = none) and the first month it counted ("2026-10").
+  monthlyBudgetEur: integer(),
+  budgetSinceMonth: text(),
   updatedAt: updatedAt(),
 });
 
@@ -224,6 +227,11 @@ export const datePlans = pgTable(
     syncStatus: text({ enum: SYNC_STATUSES }).notNull().default("pending"),
     syncError: text(),
     syncAttempts: smallint().notNull().default(0),
+    // Budget: the estimate when planning (idea / event price), the real amount after the date.
+    estimatedCostEur: integer(),
+    actualCostEur: integer(),
+    // Paid from the savings pot instead of the month budget.
+    fromPot: boolean().notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -348,6 +356,26 @@ export const events = pgTable(
     unique("events_source_key_unique").on(t.sourceId, t.dedupeKey),
     index("events_couple_starts_idx").on(t.coupleId, t.startsAt),
   ],
+);
+
+// --- Budget ---------------------------------------------------------------------------------------
+
+// One row per closed month: what was spent and how much is in the savings pot afterwards.
+export const budgetMonths = pgTable(
+  "budget_months",
+  {
+    coupleId: uuid()
+      .notNull()
+      .references(() => couples.id, { onDelete: "cascade" }),
+    month: text().notNull(),
+    budgetEur: integer().notNull(),
+    spentEur: integer().notNull(),
+    fromPotEur: integer().notNull(),
+    dates: smallint().notNull(),
+    potAfterEur: integer().notNull(),
+    closedAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.coupleId, t.month] })],
 );
 
 // --- Swipe deck ("Entdecken") ----------------------------------------------------------

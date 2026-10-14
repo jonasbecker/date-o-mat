@@ -13,6 +13,7 @@ import { ideas } from "@/server/db/schema";
 import { listIdeas } from "@/server/ideas";
 import { BUDGETS, MOODS, SETTINGS, type AiIdea } from "@/core/ai-ideas";
 import { generateIdeas } from "@/server/ai-ideas";
+import { budgetState } from "@/server/budget";
 import { coupleNow } from "@/server/clock";
 import { getCoupleSettings } from "@/server/settings";
 
@@ -79,6 +80,7 @@ export async function surpriseAction(recent: string[], size?: IdeaSize): Promise
       title: i.title,
       size: i.size,
       fromWishlist: true,
+      costEur: i.costEur,
       view: { key: `idea:${i.id}`, title: i.title, size: i.size, note: i.note, meta: meta(i.costEur, i.location), ideaId: i.id, curatedId: null },
     })),
     ...CURATED_IDEAS.filter((c) => !savedCurated.has(c.id)).map((c) => ({
@@ -86,10 +88,12 @@ export async function surpriseAction(recent: string[], size?: IdeaSize): Promise
       title: c.title,
       size: c.size,
       fromWishlist: false,
+      costEur: c.costEur,
       view: { key: `curated:${c.id}`, title: c.title, size: c.size, note: c.note, meta: meta(c.costEur, c.location), ideaId: null, curatedId: c.id },
     })),
   ];
-  return pickSurprise(candidates, { recent: recentKeys, size: sizeFilter })?.view ?? null;
+  const budget = await budgetState(coupleId, coupleNow(await getCoupleSettings(coupleId)));
+  return pickSurprise(candidates, { recent: recentKeys, size: sizeFilter, maxCost: budget?.left ?? null })?.view ?? null;
 }
 
 

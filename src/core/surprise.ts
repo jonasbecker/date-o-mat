@@ -9,15 +9,21 @@ export type SurpriseCandidate = {
   size: IdeaSize;
   /** Wishlist ideas are what you chose yourselves – they come up twice as often. */
   fromWishlist: boolean;
+  costEur?: number | null;
 };
 
 /**
  * Weighted random pick. `recent` are keys of the last picks (not repeated while
  * there is anything else); `random` returns a number in [0, 1) – injectable for tests.
  */
-export function pickSurprise<T extends SurpriseCandidate>(candidates: T[], options: { recent?: string[]; size?: IdeaSize; random?: () => number } = {}): T | null {
-  const { recent = [], size, random = Math.random } = options;
-  const bySize = size ? candidates.filter((c) => c.size === size) : candidates;
+export function pickSurprise<T extends SurpriseCandidate>(
+  candidates: T[],
+  options: { recent?: string[]; size?: IdeaSize; random?: () => number; /** Budget left: pricier ideas only if nothing else fits. */ maxCost?: number | null } = {},
+): T | null {
+  const { recent = [], size, random = Math.random, maxCost = null } = options;
+  const sized = size ? candidates.filter((c) => c.size === size) : candidates;
+  const affordable = maxCost === null ? sized : sized.filter((c) => (c.costEur ?? 0) <= Math.max(0, maxCost));
+  const bySize = affordable.length ? affordable : sized;
   const fresh = bySize.filter((c) => !recent.includes(c.key));
   const pool = fresh.length ? fresh : bySize;
   if (pool.length === 0) return null;

@@ -14,7 +14,7 @@ import webpush from "web-push";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const HERE = fileURLToPath(new URL(".", import.meta.url));
-const ALL = ["m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "m10", "m11", "m12", "m13", "m14", "m15", "m17"];
+const ALL = ["m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "m10", "m11", "m12", "m13", "m14", "m15", "m17", "m18"];
 const suites = process.argv.slice(2).length ? process.argv.slice(2) : ALL;
 
 if (!process.env.DATABASE_URL) {

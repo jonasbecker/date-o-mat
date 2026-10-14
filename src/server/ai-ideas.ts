@@ -11,6 +11,7 @@ import { env } from "@/server/env";
 import { listIdeas } from "@/server/ideas";
 import { pastDates } from "@/server/reviews";
 import { weatherFor } from "@/server/weather";
+import { budgetState } from "@/server/budget";
 
 export const IDEAS_MODEL = "claude-haiku-5-5";
 
@@ -39,10 +40,11 @@ export async function generateIdeas(
   const requestId = await reserveAiRequest({ coupleId: ctx.coupleId, userId: ctx.user.id, kind: "ideas", model: IDEAS_MODEL, now });
   if (!requestId) return { ok: false, error: "limit" };
 
-  const [wishlist, past, weather] = await Promise.all([
+  const [wishlist, past, weather, budget] = await Promise.all([
     listIdeas(ctx.coupleId),
     pastDates(ctx.coupleId),
     prefs.slot ? weatherFor(prefs.slot.start, prefs.slot.end, now) : Promise.resolve(null),
+    budgetState(ctx.coupleId, now),
   ]);
   const wishlistTitles = wishlist.map((i) => i.title);
   // Only titles and hearts – no names, notes or calendar data leave the app.
@@ -51,7 +53,7 @@ export async function generateIdeas(
     const ratings = visibleRatings(d.reviews, ctx.user.id);
     return { title: d.title, hearts: ratings.length ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10 : null };
   });
-  const prompt = buildIdeaPrompt({ now, slot: prefs.slot, weather, budget: prefs.budget, mood: prefs.mood, setting: prefs.setting, size: prefs.size, wishlist: wishlistTitles, pastDates: pastDatesForPrompt });
+  const prompt = buildIdeaPrompt({ now, slot: prefs.slot, weather, budget: prefs.budget, mood: prefs.mood, setting: prefs.setting, size: prefs.size, wishlist: wishlistTitles, pastDates: pastDatesForPrompt, budgetLeft: budget?.left ?? null });
 
   try {
     const response = await anthropic().messages.parse({

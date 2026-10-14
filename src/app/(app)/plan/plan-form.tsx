@@ -14,6 +14,7 @@ import { EventCard, type EventView } from "../events/event-list";
 import { saveCuratedAction } from "../ideas/inspiration-actions";
 import { cn } from "@/lib/cn";
 import { IDEA_SIZES, type IdeaSize } from "@/lib/domain";
+import { budgetHint } from "@/core/budget";
 import type { SlotView } from "@/lib/format";
 import { saveDateAction, type SaveDateState } from "./actions";
 
@@ -27,7 +28,7 @@ const MOOD_LABEL: Record<SlotMood, string> = {
   daytime: "Tagsüber",
 };
 
-export type IdeaOption = { id: string; title: string; size: IdeaSize; meta: string | null };
+export type IdeaOption = { id: string; title: string; size: IdeaSize; meta: string | null; costEur?: number | null };
 
 export type RescheduleInfo = { dateId: string; size: IdeaSize; ideaId: string | null; title: string; location: string | null };
 
@@ -50,6 +51,7 @@ export function PlanForm({
   preselectIdeaId,
   aiEnabled = false,
   events = null,
+  budget = null,
 }: {
   small: SlotView[];
   large: SlotView[];
@@ -65,6 +67,8 @@ export function PlanForm({
   aiEnabled?: boolean;
   /** Events where both are free; null when no event sources are set up. */
   events?: EventView[] | null;
+  /** Month budget left and savings pot (null = no budget set). */
+  budget?: { left: number; pot: number } | null;
 }) {
   const router = useRouter();
   const preselected = !reschedule && preselectIdeaId ? ideas.find((i) => i.id === preselectIdeaId) : undefined;
@@ -123,6 +127,8 @@ export function PlanForm({
     { key: "own", label: "✏️ Eigene" },
   ];
   const ready = Boolean(slot && title);
+  const pickedCost = pick.kind === "idea" ? (ideas.find((i) => i.id === pick.id)?.costEur ?? null) : null;
+  const budgetWarning = budget ? budgetHint(pickedCost, budget.left) : null;
 
   // "⚡ Schnell planen": top short slot + the short idea that has waited longest.
   const quickSlot = small[0];
@@ -431,6 +437,17 @@ export function PlanForm({
               <p className="truncate text-sm font-bold">
                 {slot ? `${slot.dateLabel} · ${slot.timeLabel}` : "Wähl eine Zeit"} {title && `· ${title}`}
               </p>
+              {budget && (budgetWarning || budget.pot > 0) && (
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm font-bold">
+                  {budgetWarning && <span className="rounded-full bg-zitrone px-2.5 py-0.5 text-tinte">⚠️ {budgetWarning}</span>}
+                  {budget.pot > 0 && (
+                    <label className="flex items-center gap-2">
+                      <input type="checkbox" name="fromPot" value="1" className="size-5 accent-himbeere" />
+                      🎁 Aus dem Spartopf ({budget.pot} €)
+                    </label>
+                  )}
+                </div>
+              )}
               <Button type="submit" disabled={!ready || pending || leaving} className="h-14 w-full text-xl">
                 {pending ? "Wird eingetragen …" : reschedule ? "Termin ändern" : "Date festlegen 🎉"}
               </Button>

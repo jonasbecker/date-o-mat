@@ -86,7 +86,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M15 | Link → Idee (TikTok/Instagram/YouTube/Webseite, Teilen-Ziel auf Android) | ✅ |
 | M16 | Status & Warnungen („Läuft alles?“, Cron-Hinweis, Push bei getrenntem Kalender) | ✅ |
 | M17 | Entdecken: Ideen-Stapel zum Swipen mit Match, Rückgängig, Super-Like, Event-Kombis, Nachrichten | ✅ |
-| M18 | Budget & Spartopf | |
+| M18 | Budget & Spartopf (Monatsbudget, echte Kosten, Spartopf, Monatsrückblick) | ✅ |
 | M19 | Besondere Tage, „Vielleicht“-Stapel, alte Ideen auffrischen | |
 | M20 | Date-Story (Jahresrückblick) & Statistik | |
 | M21 | Extras: iOS-Kurzbefehl zum Teilen, Überraschungs-Date, Vorbereitungs-Checkliste, Anfahrt, Gesprächskarten | |

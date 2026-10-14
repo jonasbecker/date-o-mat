@@ -57,7 +57,13 @@ async function DateDetail({ params }: { params: PageProps<"/dates/[id]">["params
           {mine ? "Deine Herzen" : "Wie war's für dich?"}
         </h2>
         {mine && <ReviewBlock person={user} review={mine} />}
-        <ReviewForm key={mine?.rating ?? 0} dateId={date.id} rating={mine?.rating ?? null} note={mine?.note ?? null} />
+        <ReviewForm
+          key={mine?.rating ?? 0}
+          dateId={date.id}
+          rating={mine?.rating ?? null}
+          note={mine?.note ?? null}
+          cost={date.actualCostEur ?? date.estimatedCostEur}
+        />
       </section>
 
       <PhotoSection

@@ -10,7 +10,7 @@ import { saveReviewAction, type ReviewFormState } from "./actions";
 
 const MOODS = ["", "Naja 😕", "Ganz okay 🙂", "Schön 😊", "Richtig schön 🥰", "Unvergesslich 🤩"];
 
-export function ReviewForm({ dateId, rating, note }: { dateId: string; rating: number | null; note: string | null }) {
+export function ReviewForm({ dateId, rating, note, cost }: { dateId: string; rating: number | null; note: string | null; cost: number | null }) {
   const celebrate = useCelebrate();
   const [hearts, setHearts] = useState(rating ?? 0);
   const [editing, setEditing] = useState(rating === null);
@@ -69,6 +69,21 @@ export function ReviewForm({ dateId, rating, note }: { dateId: string; rating: n
           placeholder="Der Sonnenuntergang, das beste Eis der Stadt …"
           className="rounded-[18px] border-2 border-line bg-bg px-4 py-3 font-semibold placeholder:text-muted/70"
         />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="font-extrabold">Was hat&apos;s ungefähr gekostet? (für euch beide, optional)</span>
+        <span className="flex items-center gap-2">
+          <input
+            name="cost"
+            defaultValue={cost ?? ""}
+            inputMode="decimal"
+            placeholder="0"
+            aria-label="Kosten in Euro"
+            className="h-12 w-28 rounded-[18px] border-2 border-line bg-bg px-4 font-bold placeholder:text-muted/70"
+          />
+          <span className="font-bold">€</span>
+        </span>
+        <span className="text-xs font-bold text-muted">Zählt fürs Monatsbudget – ihr seht beide denselben Betrag.</span>
       </label>
       {state.status === "error" && (
         <p role="alert" className="rounded-xl bg-zitrone-soft px-3 py-2 font-bold text-tinte">

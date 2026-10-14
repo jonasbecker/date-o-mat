@@ -16,6 +16,8 @@ import { agoLabel } from "@/lib/format";
 import { env } from "@/server/env";
 import { lastTick } from "@/server/system-status";
 import { remainingCards } from "@/server/deck";
+import { budgetState } from "@/server/budget";
+import { BudgetBar } from "@/components/budget-bar";
 import { countSubscriptions } from "@/server/push";
 import { hasSeenIntro, requireCouple } from "@/server/auth/dal";
 import { calendarStates } from "@/server/availability";
@@ -45,7 +47,7 @@ async function Home() {
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
   const cycle = await ensureCurrentCycle(coupleId, now);
-  const [ideaCount, calendars, history, nextDate, pushDevices, toReview, weekEvents, tick, deckCount] = await Promise.all([
+  const [ideaCount, calendars, history, nextDate, pushDevices, toReview, weekEvents, tick, deckCount, budget] = await Promise.all([
     countIdeas(coupleId),
     calendarStates(ctx),
     cycleHistory(coupleId),
@@ -55,6 +57,7 @@ async function Home() {
     upcomingEvents(coupleId, now, 7),
     lastTick(),
     remainingCards(ctx, now),
+    budgetState(coupleId, now),
   ]);
   // The cron runs in real time (not the dev clock). Only warn once it has worked before –
   // "never ran" is a setup step, shown under Einstellungen → Läuft alles?
@@ -132,6 +135,8 @@ async function Home() {
           </p>
         </div>
       )}
+
+      {budget && <BudgetBar {...budget} />}
 
       <SetupChecklist
         calendar={calendars.find((p) => p.isMe)?.state === "connected"}

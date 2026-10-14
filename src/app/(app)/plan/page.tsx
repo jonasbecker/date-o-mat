@@ -15,6 +15,9 @@ import type { EventView } from "../events/event-list";
 import { eventView } from "../events/event-view";
 import { searchUntil } from "@/server/suggestions";
 import { formatCost } from "@/lib/idea-input";
+import { budgetState } from "@/server/budget";
+import { budgetHint } from "@/core/budget";
+import { BudgetBar } from "@/components/budget-bar";
 import { getDate } from "@/server/dates";
 import { ideaCandidates } from "@/server/idea-sources";
 import { PlanForm, type IdeaOption, type RescheduleInfo } from "./plan-form";
@@ -74,6 +77,7 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
     </Link>
   );
 
+  const budget = await budgetState(ctx.coupleId, now);
   // Longest waiting first – the same order the suggestion mode uses.
   const ideas: IdeaOption[] = (await ideaCandidates({ coupleId: ctx.coupleId }))
     .filter((c) => c.ideaId)
@@ -82,7 +86,10 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
       id: c.ideaId!,
       title: c.title,
       size: c.size,
-      meta: [formatCost(c.costEur), c.location && `📍 ${c.location}`].filter(Boolean).join(" · ") || null,
+      costEur: c.costEur,
+      meta:
+        [formatCost(c.costEur), c.location && `📍 ${c.location}`, budget && budgetHint(c.costEur, budget.left) && "⚠️ über Budget"].filter(Boolean).join(" · ") ||
+        null,
     }));
 
   // "🎟️ Events" tab: events in the next weeks where both are free (null = no sources yet).
@@ -113,7 +120,9 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
           werden und zählen gerade nicht mit. Prüft die Auswahl in den Einstellungen.
         </p>
       )}
+      {budget && !reschedule && <BudgetBar {...budget} compact />}
       <PlanForm
+        budget={budget && !reschedule ? { left: budget.left, pot: budget.pot } : null}
         small={search.small.map(slotView)}
         large={search.large.map(slotView)}
         ideas={ideas}
