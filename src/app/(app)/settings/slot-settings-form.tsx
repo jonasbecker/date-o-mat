@@ -49,7 +49,7 @@ export function SlotSettingsForm({ values }: { values: SlotSettingsValues }) {
     // would otherwise put <select>s back to their very first default.
     <form key={JSON.stringify(values)} action={formAction} className="flex flex-col gap-5">
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 font-display text-lg font-semibold">☕ Kleines Date</legend>
+        <legend className="mb-2 font-display text-lg font-semibold">☕ Kurzes Date</legend>
         <Field label="Dauer" htmlFor="smallDurationMinutes" error={e.smallDurationMinutes}>
           <Select name="smallDurationMinutes" options={SLOT_OPTIONS.smallDurationMinutes} value={num("smallDurationMinutes")} format={formatHours} />
         </Field>
@@ -64,7 +64,7 @@ export function SlotSettingsForm({ values }: { values: SlotSettingsValues }) {
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 font-display text-lg font-semibold">🎡 Großes Date</legend>
+        <legend className="mb-2 font-display text-lg font-semibold">🎡 Langes Date</legend>
         <Field label="Mindestens" htmlFor="largeMinDurationMinutes" error={e.largeMinDurationMinutes}>
           <Select name="largeMinDurationMinutes" options={SLOT_OPTIONS.largeMinDurationMinutes} value={num("largeMinDurationMinutes")} format={formatHours} />
         </Field>

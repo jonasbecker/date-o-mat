@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cancelDateAction, confirmDateAction } from "@/app/(app)/actions";
-import { formatLongDate, formatTimeRange } from "@/lib/format";
+import { formatLongDate, formatTimeRange, genitive } from "@/lib/format";
 import type { DatePlan, User } from "@/server/db/schema";
 import { buttonClass } from "./button";
 import { Card, Chip } from "./card";
@@ -24,9 +24,10 @@ function SyncHint({ date }: { date: DatePlan }) {
 }
 
 /** The upcoming date with the actions that fit the viewer's role. */
-export function DateCard({ date, me, partner }: { date: DatePlan; me: User; partner: User }) {
+export function DateCard({ date, me, partner, showConfirm = true }: { date: DatePlan; me: User; partner: User; showConfirm?: boolean }) {
   const proposer = date.proposedById === me.id ? me : partner;
-  const canConfirm = date.status === "planned" && date.proposedById !== me.id;
+  // On the home screen the "Passt!" button already sits in the next-step card above.
+  const canConfirm = showConfirm && date.status === "planned" && date.proposedById !== me.id;
 
   return (
     <Card size="lg" className="flex flex-col gap-4">
@@ -69,8 +70,9 @@ export function DateCard({ date, me, partner }: { date: DatePlan; me: User; part
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">
-          {date.status === "planned" && (
-            <p className="font-bold text-muted">Wartet auf {partner.name}s „Passt!“</p>
+          {/* On the home screen the next-step card above already says this. */}
+          {showConfirm && date.status === "planned" && date.proposedById === me.id && (
+            <p className="font-bold text-muted">Wartet auf {genitive(partner.name)} „Passt!“</p>
           )}
           <div className="flex flex-wrap items-center gap-3">
             <Link href={`/plan?reschedule=${date.id}`} className={buttonClass("secondary", "sm")}>

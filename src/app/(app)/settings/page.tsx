@@ -24,6 +24,8 @@ import { EventSources, type SourceView } from "./event-sources";
 import { listSources } from "@/server/events";
 import type { EventSource } from "@/server/db/schema";
 import { agoLabel } from "@/lib/format";
+import { buttonClass } from "@/components/button";
+import { Info } from "@/components/info";
 
 // "Jetzt lesen" fetches a page and asks Claude (runs after the response).
 export const maxDuration = 120;
@@ -87,9 +89,14 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
 
   return (
     <>
+      <div className="-mb-3 mt-2 flex flex-col">
+        <p className="text-[13px] font-extrabold uppercase tracking-wide text-muted">Für euch beide</p>
+        <p className="text-sm font-semibold text-muted">Was du hier änderst, gilt auch für {partner.name}.</p>
+      </div>
+
       <section className="flex flex-col gap-3" aria-labelledby="rhythm-heading">
         <h2 id="rhythm-heading" className="text-[21px] font-semibold">
-          Rhythmus &amp; Modus
+          Rhythmus &amp; Modus <Info term="runde" />
         </h2>
         <Card>
           <CycleSettingsForm
@@ -97,6 +104,51 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
           />
         </Card>
       </section>
+
+      <section className="flex flex-col gap-3" aria-labelledby="slots-heading">
+        <h2 id="slots-heading" className="text-[21px] font-semibold">
+          Freie Zeiten finden
+        </h2>
+        <p className="-mt-1 px-1 font-semibold text-muted">Wann ein Date frühestens beginnt, wie lange es dauert und wie viel Luft um eure Termine bleibt.</p>
+        <details className="group rounded-[24px] border-[2.5px] border-line bg-surface">
+          <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 font-display text-lg font-semibold">
+            Zeitfenster, Puffer &amp; Vorlauf anpassen
+            <span aria-hidden="true" className="transition-transform group-open:rotate-180">
+              ⌄
+            </span>
+          </summary>
+          <div className="border-t-2 border-track px-5 py-4">
+          <SlotSettingsForm
+            values={{
+              smallDurationMinutes: settings.smallDurationMinutes,
+              smallStartFromMinute: settings.smallStartFromMinute,
+              smallStartUntilMinute: settings.smallStartUntilMinute,
+              largeMinDurationMinutes: settings.largeMinDurationMinutes,
+              largeStartFromMinute: settings.largeStartFromMinute,
+              largeStartUntilMinute: settings.largeStartUntilMinute,
+              latestEndMinute: settings.latestEndMinute,
+              minLeadHours: settings.minLeadHours,
+              bufferMinutes: settings.bufferMinutes,
+              horizonDays: settings.horizonDays,
+            }}
+          />
+          </div>
+        </details>
+      </section>
+
+      <section id="events" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="events-heading">
+        <h2 id="events-heading" className="text-[21px] font-semibold">
+          Event-Quellen
+        </h2>
+        <Card>
+          <EventSources sources={sources.map((s) => sourceView(s, now))} aiReady={env().ai} />
+        </Card>
+      </section>
+
+      <div className="-mb-3 mt-2 flex flex-col">
+        <p className="text-[13px] font-extrabold uppercase tracking-wide text-muted">Nur für dich</p>
+        <p className="text-sm font-semibold text-muted">Erinnerungen und dein Kalender – das stellt jede:r selbst ein.</p>
+      </div>
 
       <section id="push" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="push-heading">
         <h2 id="push-heading" className="text-[21px] font-semibold">
@@ -116,36 +168,13 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
         message={typeof message === "string" ? message : undefined}
       />
 
-      <section className="flex flex-col gap-3" aria-labelledby="slots-heading">
-        <h2 id="slots-heading" className="text-[21px] font-semibold">
-          Freie Zeiten finden
+      <section className="flex flex-col gap-3" aria-labelledby="help-heading">
+        <h2 id="help-heading" className="text-[21px] font-semibold">
+          Hilfe
         </h2>
-        <Card>
-          <SlotSettingsForm
-            values={{
-              smallDurationMinutes: settings.smallDurationMinutes,
-              smallStartFromMinute: settings.smallStartFromMinute,
-              smallStartUntilMinute: settings.smallStartUntilMinute,
-              largeMinDurationMinutes: settings.largeMinDurationMinutes,
-              largeStartFromMinute: settings.largeStartFromMinute,
-              largeStartUntilMinute: settings.largeStartUntilMinute,
-              latestEndMinute: settings.latestEndMinute,
-              minLeadHours: settings.minLeadHours,
-              bufferMinutes: settings.bufferMinutes,
-              horizonDays: settings.horizonDays,
-            }}
-          />
-        </Card>
-        <p className="px-1 text-sm font-semibold text-muted">Gilt für euch beide.</p>
-      </section>
-
-      <section id="events" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="events-heading">
-        <h2 id="events-heading" className="text-[21px] font-semibold">
-          Event-Quellen
-        </h2>
-        <Card>
-          <EventSources sources={sources.map((s) => sourceView(s, now))} aiReady={env().ai} />
-        </Card>
+        <Link href="/welcome" className={buttonClass("secondary", "md", "w-full")}>
+          👋 Einführung nochmal ansehen
+        </Link>
       </section>
 
       <section className="flex flex-col gap-3" aria-labelledby="couple-heading">
@@ -215,6 +244,7 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
           </Button>
         </form>
       </section>
+
     </>
   );
 }

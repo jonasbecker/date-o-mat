@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { describe, expect, it } from "vitest";
-import { agoLabel, dayHeading, formatClock, formatCycleRange, formatDeadline, timeLeftLabel } from "./format";
+import { agoLabel, daysUntilLabel, genitive, dayHeading, formatClock, formatCycleRange, formatDeadline, timeLeftLabel } from "./format";
 
 const at = (local: string) => DateTime.fromISO(local, { zone: "Europe/Berlin" }).toJSDate();
 
@@ -39,4 +39,18 @@ describe("event list labels", () => {
     expect(agoLabel(now, at("2026-10-14T09:00"))).toBe("vor 3 Std.");
     expect(agoLabel(now, at("2026-10-11T12:00"))).toBe("vor 3 Tagen");
   });
+});
+
+describe("daysUntilLabel", () => {
+  const now = at("2026-10-14T22:00");
+  it.each([
+    ["2026-10-14T23:30", "heute"],
+    ["2026-10-15T08:00", "morgen"],
+    ["2026-10-16T19:00", "übermorgen"],
+    ["2026-10-19T19:00", "in 5 Tagen"],
+  ])("%s", (when, label) => expect(daysUntilLabel(now, at(when))).toBe(label));
+});
+
+describe("genitive", () => {
+  it.each([["Sam", "Sams"], ["Jonas", "Jonas'"], ["Max", "Max'"], ["Fritz", "Fritz'"], ["Lea", "Leas"]])("%s → %s", (name, g) => expect(genitive(name)).toBe(g));
 });

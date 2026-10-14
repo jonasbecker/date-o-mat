@@ -24,6 +24,7 @@ gemeinsame Ideen-Wunschliste.
 | M10 | Kuratierte Köln-Ideen, „Überrasch uns“ | ✅ |
 | M11 | KI-Vorschläge (Claude Haiku 5.5, Wetter von Open-Meteo) | ✅ |
 | M12 | Event-Quellen: Lieblings-Seiten täglich lesen, „Was läuft“ mit Frei-Prüfung | ✅ |
+| M13 | Verständlich & aufgeräumt: Einführung, Start-Checkliste, „Dein nächster Schritt“, ⓘ-Hilfen, Ideen beim Planen gebündelt, Schnell planen | ✅ |
 
 ## Tech-Stack
 
@@ -158,6 +159,24 @@ scripts/              Migration beim Build, Secret-Generator
 - **„Unsere Dates“** (`/dates`): alle Dates mit Herzen, Zahlen (Anzahl, Ø Herzen, dieses Jahr)
   und Lieblingsdate. Die Einstellungen sind dafür aus der unteren Leiste in den Kopf der
   Startseite gewandert (Regler-Symbol).
+
+### Bedienung in Kürze (M13)
+
+- **Einführung** (`/welcome`): vier Karten nach dem Koppeln (Rhythmus/Modus und Namen
+  eingesetzt), danach nie wieder automatisch – `users.onboarded_at`. In den Einstellungen
+  unter „Hilfe“ jederzeit erneut.
+- **Startseite:** oben genau eine Karte „Dein nächster Schritt“ (`nextStep()` in
+  `src/core/next-step.ts`, mit Tests): Kalender verbinden → „Passt!“ geben → planen →
+  bewerten → sonst „Stand der Dinge“. Darunter das nächste Date, eine **Start-Checkliste**
+  (Kalender, Home-Bildschirm, Push; verschwindet, wenn alles erledigt ist) und zwei kleine
+  Kacheln zu Ideen und Events.
+- **ⓘ-Hilfen:** `<Info term="…">` mit Texten aus `src/lib/glossary.ts`, über die Popover-API
+  des Browsers (kein eigenes JavaScript).
+- **Planen:** „⚡ Schnell planen“ (Top-Termin + älteste kurze Idee, ein Tipp) und unter
+  „Was machen wir?“ alle Quellen als Reiter: Wunschliste, Köln, Events (nur wo ihr beide Zeit
+  habt), KI, Zufall, Eigene. Was man nimmt, landet auf der Wunschliste und ist sofort gewählt.
+- **Wörter:** Kurz/Lang statt Klein/Groß, „Diese Woche“ statt „Runde 3“, „Plan bis …“ statt
+  „Deadline“. Einstellungen in „Für euch beide“ und „Nur für dich“, Zeitfenster eingeklappt.
 
 ### KI-Vorschläge in Kürze
 

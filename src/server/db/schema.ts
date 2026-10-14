@@ -64,6 +64,8 @@ export const users = pgTable(
     color: text({ enum: USER_COLORS }),
     createdAt: createdAt(),
     lastLoginAt: timestamptz(),
+    // Set once the person has seen the short introduction after pairing.
+    onboardedAt: timestamptz(),
   },
   (t) => [index("users_couple_idx").on(t.coupleId)],
 );

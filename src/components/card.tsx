@@ -31,7 +31,10 @@ export function Chip({ className, ...props }: ComponentProps<"span">) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border-2 border-line bg-surface px-2.5 py-0.5 text-[13px] font-extrabold text-ink",
+        "inline-flex items-center gap-1 rounded-full border-2 border-line px-2.5 py-0.5 text-[13px] font-extrabold",
+        // Defaults only when the caller sets no colour – two bg-/text- classes would fight.
+        !/\bbg-/.test(className ?? "") && "bg-surface",
+        !/\btext-(ink|tinte|muted|bg)\b/.test(className ?? "") && "text-ink",
         className,
       )}
       {...props}

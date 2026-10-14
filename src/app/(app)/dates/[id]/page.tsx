@@ -6,9 +6,10 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { Avatar } from "@/components/avatar";
 import { Card } from "@/components/card";
 import { Hearts } from "@/components/hearts";
+import { Info } from "@/components/info";
 import { SizeChip } from "@/components/size-chip";
 import { visibleReviews, type ReviewView } from "@/core/reviews";
-import { formatLongDate, formatTimeRange } from "@/lib/format";
+import { formatLongDate, formatTimeRange, genitive } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
 import type { User } from "@/server/db/schema";
 import { pastDate } from "@/server/reviews";
@@ -72,7 +73,9 @@ async function DateDetail({ params }: { params: PageProps<"/dates/[id]">["params
         {theirs ? (
           <ReviewBlock person={partner} review={theirs} />
         ) : partnerHidden ? (
-          <p className="font-bold">🔒 {partner.name} hat schon bewertet. Gib erst deine Herzen – dann siehst du {partner.name}s.</p>
+          <p className="flex flex-wrap items-center gap-2 font-bold">
+            🔒 {partner.name} hat schon bewertet. Gib erst deine Herzen – dann siehst du {genitive(partner.name)}. <Info term="verdeckt" />
+          </p>
         ) : (
           <p className="font-bold text-muted">{partner.name} hat noch nicht bewertet.</p>
         )}

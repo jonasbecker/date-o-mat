@@ -47,7 +47,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 
 async function RedirectIfLoggedIn() {
   const user = await getSessionUser();
-  if (user) redirect(user.coupleId ? "/" : "/pair");
+  if (user) redirect(!user.coupleId ? "/pair" : user.onboardedAt ? "/" : "/welcome");
   return null;
 }
 

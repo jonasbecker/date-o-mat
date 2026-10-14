@@ -58,13 +58,13 @@ export function CuratedList({ ideas, saved }: { ideas: CuratedIdea[]; saved: str
           ]}
         />
         <Chips<IdeaSize | undefined>
-          label="Größe"
+          label="Dauer"
           value={filter.size}
           onChange={(size) => setFilter({ ...filter, size })}
           options={[
             { value: undefined, label: "Alle" },
-            { value: "small", label: "Klein" },
-            { value: "large", label: "Groß" },
+            { value: "small", label: "☕ Kurz" },
+            { value: "large", label: "🎡 Lang" },
           ]}
         />
       </div>

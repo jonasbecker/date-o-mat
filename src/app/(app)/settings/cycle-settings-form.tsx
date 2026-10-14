@@ -14,7 +14,7 @@ const RHYTHM_LABEL: Record<Rhythm, string> = {
 };
 
 const MODES: Array<{ value: PlanMode; title: string; text: string }> = [
-  { value: "alternating", title: "Abwechselnd", text: "Pro Runde ist eine Person von euch dran und plant bis zur Deadline." },
+  { value: "alternating", title: "Abwechselnd", text: "Pro Runde ist eine Person von euch dran und plant das Date – die andere sagt „Passt!“." },
   { value: "suggestion", title: "Vorschlag", text: "Der Date-O-Mat schlägt Zeit und Idee vor – ihr nehmt an oder wollt einen anderen." },
 ];
 
@@ -74,7 +74,7 @@ export function CycleSettingsForm({ values }: { values: CycleSettingsValues }) {
 
       <div className="flex flex-col gap-1">
         <label htmlFor="deadlineDaysBeforeEnd" className="text-[13px] font-extrabold text-muted">
-          Deadline zum Planen
+          Plan bis … (Frist)
         </label>
         <select ref={deadline} id="deadlineDaysBeforeEnd" name="deadlineDaysBeforeEnd" defaultValue={values.deadlineDaysBeforeEnd} className={fieldClass}>
           {Array.from({ length: 11 }, (_, days) => (

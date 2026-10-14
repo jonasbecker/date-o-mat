@@ -56,7 +56,7 @@ async function Pairing({ searchParams }: { searchParams: PageProps<"/pair">["sea
     );
   }
 
-  if ((await countMembers(user.coupleId)) >= 2) redirect("/");
+  if ((await countMembers(user.coupleId)) >= 2) redirect(user.onboardedAt ? "/" : "/welcome");
 
   const couple = await getCouple(user.coupleId);
   const expired = !couple?.inviteCode || !couple.inviteExpiresAt || couple.inviteExpiresAt < new Date();

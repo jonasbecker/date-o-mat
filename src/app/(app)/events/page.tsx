@@ -4,13 +4,13 @@ import { Suspense } from "react";
 import { PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { IdeasTabs } from "@/components/ideas-tabs";
-import { eventSpan } from "@/core/events";
-import { agoLabel, dayHeading, formatClock, formatShortDate } from "@/lib/format";
+import { agoLabel, dayHeading } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
 import { freeForEvents, listSources, savedRefs, tipsList, upcomingEvents } from "@/server/events";
 import { getCoupleSettings } from "@/server/settings";
-import { EventList, type EventGroup, type EventView } from "./event-list";
+import { EventList, type EventGroup } from "./event-list";
+import { eventView } from "./event-view";
 
 // "Als Date planen" checks both calendars and creates the Google event.
 export const maxDuration = 60;
@@ -58,23 +58,7 @@ async function Events({ searchParams }: { searchParams: PageProps<"/events">["se
 
   const free = await freeForEvents(ctx, upcoming);
 
-  const toView = (e: (typeof upcoming)[number]): EventView => {
-    const span = eventSpan(e);
-    return {
-      id: e.id,
-      title: e.title,
-      time: e.allDay || !e.startsAt ? (e.endsAt ? `bis ${formatShortDate(e.endsAt)}` : "ganztägig") : formatClock(e.startsAt),
-      venue: e.venue,
-      price: e.priceText,
-      summary: e.summary,
-      url: e.url,
-      source: e.sourceLabel,
-      free: free?.get(e.id) ?? null,
-      plannable: span !== null,
-      saved: saved.has(e.dedupeKey),
-      when: span ? `${dayHeading(span.start, now)}, ${formatClock(span.start)}` : "",
-    };
-  };
+  const toView = (e: (typeof upcoming)[number]) => eventView(e, { free: free?.get(e.id) ?? null, saved: saved.has(e.dedupeKey), now });
 
   const groups: EventGroup[] = [];
   const running = upcoming.filter((e) => e.allDay && e.startsAt! < now);
@@ -92,20 +76,7 @@ async function Events({ searchParams }: { searchParams: PageProps<"/events">["se
       <AutoRefresh />
       <EventList
         groups={groups}
-        tips={tips.map((t) => ({
-          id: t.id,
-          title: t.title,
-          time: "",
-          venue: t.venue,
-          price: t.priceText,
-          summary: t.summary,
-          url: t.url,
-          source: t.sourceLabel,
-          free: null,
-          plannable: false,
-          saved: saved.has(t.dedupeKey),
-          when: "",
-        }))}
+        tips={tips.map((t) => eventView(t, { free: null, saved: saved.has(t.dedupeKey), now }))}
         calendarsReadable={free !== null}
         initialFilter={params.free === "1" ? "free" : "all"}
       />

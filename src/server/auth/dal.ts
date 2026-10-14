@@ -32,3 +32,14 @@ export const requireCouple = cache(async (): Promise<CoupleContext> => {
   if (!partner) redirect("/pair");
   return { user, partner, coupleId: user.coupleId };
 });
+
+/**
+ * Has the person seen the introduction? Checked against the database when the
+ * cached user says no: right after "Los geht's" the redirect renders the home
+ * page in the same request, where the cached user still has the old value.
+ */
+export async function hasSeenIntro(user: User): Promise<boolean> {
+  if (user.onboardedAt) return true;
+  const [row] = await db.select({ onboardedAt: users.onboardedAt }).from(users).where(eq(users.id, user.id)).limit(1);
+  return Boolean(row?.onboardedAt);
+}

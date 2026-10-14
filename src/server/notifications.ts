@@ -2,7 +2,7 @@
 import "server-only";
 import { desc, eq } from "drizzle-orm";
 import { dueReminders, type Reminder } from "@/core/reminders";
-import { formatDeadline, formatShortDate, formatTimeRange } from "@/lib/format";
+import { formatDeadline, formatShortDate, formatTimeRange, genitive } from "@/lib/format";
 import type { CoupleContext } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { cycles, notificationLog, users, type Cycle, type DatePlan } from "@/server/db/schema";
@@ -18,7 +18,7 @@ function reminderText(reminder: Reminder, cycle: Cycle | undefined, date: DatePl
         ? { title: "Neue Runde, neuer Vorschlag ✨", body: "Der Date-O-Mat hat eine Idee für euch – schau mal rein.", url: "/", tag: "turn" }
         : {
             title: "Du bist dran! 🎯",
-            body: `Runde ${cycle?.seq}: Plan bis ${cycle ? formatDeadline(cycle.deadlineAt) : "zur Deadline"} ein Date.`,
+            body: `Plan bis ${cycle ? formatDeadline(cycle.deadlineAt) : "Ende der Runde"} euer nächstes Date.`,
             url: "/plan",
             tag: "turn",
           };
@@ -113,7 +113,7 @@ export async function notifyPartner(ctx: CoupleContext, event: PartnerEvent, dat
 export async function notifyPartnerReviewed(ctx: CoupleContext, date: Pick<DatePlan, "id" | "title">, partnerDone: boolean) {
   const payload: PushPayload = partnerDone
     ? { title: `${ctx.user.name} hat „${date.title}“ bewertet 💞`, body: "Jetzt seht ihr beide, wie's für den anderen war.", url: `/dates/${date.id}`, tag: "review" }
-    : { title: `${ctx.user.name} hat verraten, wie's war`, body: `„${date.title}“ – deine Herzen fehlen noch. Danach siehst du ${ctx.user.name}s.`, url: `/dates/${date.id}`, tag: "review" };
+    : { title: `${ctx.user.name} hat verraten, wie's war`, body: `„${date.title}“ – deine Herzen fehlen noch. Danach siehst du ${genitive(ctx.user.name)}.`, url: `/dates/${date.id}`, tag: "review" };
   try {
     await sendToUser(ctx.partner.id, payload, "partner_activity");
   } catch (error) {

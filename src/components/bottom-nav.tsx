@@ -11,7 +11,7 @@ type NavItem = { href: string; label: string; Icon: ComponentType<SVGProps<SVGSV
 
 const LEFT: NavItem[] = [
   { href: "/", label: "Start", Icon: HomeIcon },
-  { href: "/ideas", label: "Ideen", Icon: BulbIcon, also: ["/events"] },
+  { href: "/ideas", label: "Inspiration", Icon: BulbIcon, also: ["/events"] },
 ];
 const RIGHT: NavItem[] = [
   { href: "/plan", label: "Planen", Icon: CalendarIcon },

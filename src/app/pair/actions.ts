@@ -41,5 +41,6 @@ export async function joinCoupleAction(_prev: JoinState, formData: FormData): Pr
   if (result !== "ok") {
     return { error: JOIN_ERRORS[result], code: input };
   }
-  redirect("/");
+  // Straight to the introduction (not via "/"), so the browser never caches "/" as a redirect.
+  redirect(user.onboardedAt ? "/" : "/welcome");
 }

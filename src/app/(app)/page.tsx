@@ -1,19 +1,18 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { notHappenedAction, swapTurnAction } from "./actions";
+import { notHappenedAction } from "./actions";
 import { AppHeader, PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { buttonClass } from "@/components/button";
-import { ConnectCalendarCard } from "@/components/connect-calendar";
-import { CycleHero, CycleHistory } from "@/components/cycle";
+import { CycleHistory } from "@/components/cycle";
 import { DateCard } from "@/components/date-card";
-import { SparkleIcon } from "@/components/icons";
-import { PushNudge } from "@/components/push-nudge";
+import { NextStepCard } from "@/components/next-step";
+import { SetupChecklist } from "@/components/setup-checklist";
 import { SuggestionCard } from "@/components/suggestion-card";
-import { SurpriseButton } from "@/components/surprise-button";
+import { nextStep } from "@/core/next-step";
 import { countSubscriptions } from "@/server/push";
-import { requireCouple } from "@/server/auth/dal";
+import { hasSeenIntro, requireCouple } from "@/server/auth/dal";
 import { calendarStates } from "@/server/availability";
 import { coupleNow } from "@/server/clock";
 import { activeDateOf, cycleHistory, ensureCurrentCycle } from "@/server/cycles";
@@ -34,6 +33,7 @@ export default function HomePage() {
 
 async function Home() {
   const ctx = await requireCouple();
+  if (!(await hasSeenIntro(ctx.user))) redirect("/welcome");
   // Time-based and writes the round state – only for real requests, not prefetches.
   await connection();
   const { user, partner, coupleId } = ctx;
@@ -54,9 +54,17 @@ async function Home() {
   if (!cycle) return null;
 
   const isOpen = cycle.status === "open";
-  const myTurn = cycle.mode === "alternating" && cycle.plannerId === user.id;
   const previous = history.at(-2);
   const suggestion = isOpen && cycle.mode === "suggestion" && calendarsReady ? await currentSuggestion(ctx, cycle, now) : null;
+
+  const step = nextStep({
+    meId: user.id,
+    myCalendar: calendars.find((p) => p.isMe)?.state ?? "missing",
+    partnerCalendar: calendars.find((p) => !p.isMe)?.state ?? "missing",
+    cycle,
+    upcoming: nextDate ?? null,
+    toReview: toReview ? { id: toReview.id, title: toReview.title } : null,
+  });
 
   return (
     <div className="flex flex-col gap-5">
@@ -64,24 +72,28 @@ async function Home() {
       <AppHeader user={user} partner={partner} />
       <p className="text-[17px] font-bold text-muted">Hey {user.name}!</p>
 
-      <CycleHero cycle={cycle} me={user} partner={partner} now={now} />
+      <NextStepCard step={step} cycle={cycle} me={user} partner={partner} now={now} date={nextDate} />
 
-      {toReview && (
-        <Link
-          href={`/dates/${toReview.id}`}
-          className="press sticker flex items-center gap-4 rounded-[22px] bg-himbeere-soft px-4 py-3.5 text-tinte"
-        >
-          <span className="text-3xl" aria-hidden="true">
+      {suggestion?.status === "ok" && <SuggestionCard suggestion={suggestion.suggestion} idea={suggestion.idea} />}
+      {suggestion?.status === "no_slots" && (
+        <p className="rounded-[20px] border-2 border-dashed border-line px-4 py-3 font-bold">
+          Diese Runde findet der Date-O-Mat keine gemeinsame Lücke mehr. Schaut unter „Planen“, ob ihr später Zeit habt.
+        </p>
+      )}
+
+      {nextDate && <DateCard date={nextDate} me={user} partner={partner} showConfirm={false} />}
+
+      {/* Not the main step right now (e.g. it's my turn) – but still worth a reminder. */}
+      {toReview && step.kind !== "review" && (
+        <Link href={`/dates/${toReview.id}`} className="press sticker flex items-center gap-3 rounded-[20px] bg-lavendel/30 px-4 py-3">
+          <span className="text-2xl" aria-hidden="true">
             💭
           </span>
-          <span className="flex flex-col">
-            <span className="font-display text-lg font-semibold leading-snug">Wie war „{toReview.title}“?</span>
-            <span className="text-sm font-bold">Vergib Herzen und halt fest, was schön war.</span>
+          <span className="font-bold">
+            Wie war „{toReview.title}“? <span className="underline">Jetzt bewerten</span>
           </span>
         </Link>
       )}
-
-      {nextDate && <DateCard date={nextDate} me={user} partner={partner} />}
 
       {roundDate?.status === "done" && (
         <form action={notHappenedAction.bind(null, roundDate.id)} className="-mt-2 self-center">
@@ -91,86 +103,47 @@ async function Home() {
         </form>
       )}
 
-      {isOpen && myTurn && (
-        <div className="flex flex-col items-center gap-2">
-          <Link href="/plan" className={buttonClass("primary", "lg", "w-full")}>
-            <SparkleIcon />
-            Date planen
-          </Link>
-          <SurpriseButton />
-          <form action={swapTurnAction}>
-            <button type="submit" className="text-sm font-extrabold text-muted underline">
-              Diese Runde an {partner.name} abgeben
-            </button>
-          </form>
-        </div>
-      )}
-
-      {isOpen && cycle.mode === "alternating" && !myTurn && (
-        <div className="flex flex-col gap-3 rounded-[22px] border-2 border-dashed border-line px-4 py-3.5">
-          <p className="font-bold">
-            {partner.name} plant diese Runde. Du kannst schon mal Ideen auf die Wunschliste setzen – oder einspringen.
-          </p>
-          <form action={swapTurnAction}>
-            <button type="submit" className={buttonClass("secondary", "sm")}>
-              Ich übernehme diese Runde
-            </button>
-          </form>
-        </div>
-      )}
-
-      {suggestion?.status === "ok" && <SuggestionCard suggestion={suggestion.suggestion} idea={suggestion.idea} />}
-      {suggestion?.status === "no_slots" && (
-        <p className="rounded-[20px] border-2 border-dashed border-line px-4 py-3 font-bold">
-          Diese Runde findet der Date-O-Mat keine gemeinsame Lücke mehr. Schaut unter „Planen“, ob ihr später Zeit habt.
-        </p>
-      )}
-
       {isOpen && previous?.status === "skipped" && (
         <div className="flex items-start gap-3 rounded-[20px] border-2 border-line bg-zitrone-soft px-4 py-3.5 text-tinte">
           <span className="text-2xl leading-none" aria-hidden="true">
             🌦️
           </span>
           <p>
-            <strong className="block font-extrabold">Runde {previous.seq} ist ausgefallen – passiert!</strong>
+            <strong className="block font-extrabold">Letzte Runde ist ausgefallen – passiert!</strong>
             <span className="font-semibold">Kein Stress. Diese Runde holt ihr&apos;s nach.</span>
           </p>
         </div>
       )}
 
-      {!calendarsReady && <ConnectCalendarCard people={calendars} next="/" />}
-
-      <PushNudge subscribed={pushDevices > 0} />
+      <SetupChecklist
+        calendar={calendars.find((p) => p.isMe)?.state === "connected"}
+        partnerName={partner.name}
+        partnerCalendar={calendars.find((p) => !p.isMe)?.state === "connected"}
+        pushOn={pushDevices > 0}
+      />
 
       <CycleHistory history={history} currentId={cycle.id} />
 
-      <Link href="/ideas" className="press sticker flex items-center gap-4 rounded-[22px] bg-zitrone-soft px-4 py-3.5 text-tinte">
-        <span className="text-3xl" aria-hidden="true">
-          💡
-        </span>
-        <span className="flex flex-col">
-          <span className="font-display text-lg font-semibold">
-            {ideaCount === 0 ? "Noch keine Ideen" : `${ideaCount} ${ideaCount === 1 ? "Idee" : "Ideen"} auf eurer Wunschliste`}
+      <div className="grid grid-cols-2 gap-2.5">
+        <Link href="/ideas" className="press sticker flex flex-col gap-0.5 rounded-[20px] bg-zitrone-soft px-3.5 py-3 text-tinte">
+          <span className="text-2xl" aria-hidden="true">
+            💡
           </span>
-          <span className="text-sm font-bold">
-            {ideaCount === 0 ? "Tippt auf das gelbe + und schreibt die erste auf." : "Ansehen und ergänzen"}
+          <span className="font-display text-base font-semibold leading-tight">
+            {ideaCount === 0 ? "Noch keine Ideen" : `${ideaCount} ${ideaCount === 1 ? "Idee" : "Ideen"}`}
           </span>
-        </span>
-      </Link>
-
-      {weekEvents.length > 0 && (
-        <Link href="/events" className="press sticker flex items-center gap-4 rounded-[22px] bg-himmel px-4 py-3.5 text-tinte">
-          <span className="text-3xl" aria-hidden="true">
-            🎟️
-          </span>
-          <span className="flex flex-col">
-            <span className="font-display text-lg font-semibold">
-              {weekEvents.length} {weekEvents.length === 1 ? "Event" : "Events"} in den nächsten 7 Tagen
-            </span>
-            <span className="text-sm font-bold">Schaut, wo ihr beide Zeit habt</span>
-          </span>
+          <span className="text-xs font-bold">auf eurer Wunschliste</span>
         </Link>
-      )}
+        <Link href={weekEvents.length ? "/events" : "/ideas/koeln"} className="press sticker flex flex-col gap-0.5 rounded-[20px] bg-himmel/40 px-3.5 py-3 text-ink">
+          <span className="text-2xl" aria-hidden="true">
+            {weekEvents.length ? "🎟️" : "📍"}
+          </span>
+          <span className="font-display text-base font-semibold leading-tight">
+            {weekEvents.length ? `${weekEvents.length} ${weekEvents.length === 1 ? "Event" : "Events"}` : "Köln-Ideen"}
+          </span>
+          <span className="text-xs font-bold">{weekEvents.length ? "in den nächsten 7 Tagen" : "zum Stöbern"}</span>
+        </Link>
+      </div>
     </div>
   );
 }

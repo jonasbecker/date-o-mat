@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
+import { Info } from "@/components/info";
 import { cn } from "@/lib/cn";
 import { planEventAction, saveEventIdeaAction } from "./actions";
 
@@ -106,7 +107,8 @@ export function EventList({
   );
 }
 
-function EventCard({ event }: { event: EventView }) {
+/** One event with "Als Date planen" (two steps) and "Merken". */
+export function EventCard({ event, onPlanned }: { event: EventView; onPlanned?: () => void }) {
   const celebrate = useCelebrate();
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -134,7 +136,11 @@ function EventCard({ event }: { event: EventView }) {
         )}
       </p>
       {event.summary && <p className="line-clamp-2 text-sm font-semibold text-muted">{event.summary}</p>}
-      {event.free === true && <p className="self-start rounded-full bg-minze-soft px-2.5 py-0.5 text-[13px] font-extrabold text-tinte">✓ Ihr habt beide Zeit</p>}
+      {event.free === true && (
+        <p className="flex items-center gap-2 self-start rounded-full bg-minze-soft py-0.5 pl-2.5 pr-1 text-[13px] font-extrabold text-tinte">
+          ✓ Ihr habt beide Zeit <Info term="frei" className="size-[18px] text-[11px]" />
+        </p>
+      )}
       {event.free === false && <p className="text-[13px] font-bold text-muted">Da ist mindestens einer von euch schon verplant.</p>}
 
       {confirming ? (
@@ -154,6 +160,7 @@ function EventCard({ event }: { event: EventView }) {
                     celebrate();
                     setPlanned(true);
                     setConfirming(false);
+                    onPlanned?.();
                   } else setMessage(result.message ?? "Das hat nicht geklappt.");
                 })
               }

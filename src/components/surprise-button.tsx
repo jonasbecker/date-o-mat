@@ -7,16 +7,23 @@ import { cn } from "@/lib/cn";
 import { Button, buttonClass } from "./button";
 import { Sheet, type SheetHandle } from "./sheet";
 import { SizeChip } from "./size-chip";
+import type { IdeaSize } from "@/lib/domain";
 
 /** "Überrasch uns": draws a random idea, shown like a gumball falling out of the machine. */
 export function SurpriseButton({
   className,
   variant = "secondary",
   size = "md",
+  ideaSize,
+  onChoose,
 }: {
   className?: string;
   variant?: "primary" | "secondary";
   size?: "sm" | "md";
+  /** On the plan page: only ideas of the chosen length … */
+  ideaSize?: IdeaSize;
+  /** … and "Nehmen" selects the idea instead of opening the plan page. */
+  onChoose?: (idea: { id: string; title: string }) => void;
 }) {
   const router = useRouter();
   const sheet = useRef<SheetHandle>(null);
@@ -30,7 +37,7 @@ export function SurpriseButton({
   function draw() {
     startDraw(async () => {
       // A short pause makes the draw feel like a draw.
-      const [result] = await Promise.all([surpriseAction(recent), new Promise((r) => setTimeout(r, 650))]);
+      const [result] = await Promise.all([surpriseAction(recent, ideaSize), new Promise((r) => setTimeout(r, 650))]);
       setPick(result);
       setEmpty(result === null);
       setSaved(false);
@@ -47,7 +54,11 @@ export function SurpriseButton({
     if (!pick) return;
     startBusy(async () => {
       const ideaId = pick.ideaId ?? (pick.curatedId ? (await saveCuratedAction(pick.curatedId)).ideaId : null);
-      if (ideaId) router.push(`/plan?idea=${ideaId}`);
+      if (!ideaId) return;
+      if (onChoose) {
+        onChoose({ id: ideaId, title: pick.title });
+        sheet.current?.close();
+      } else router.push(`/plan?idea=${ideaId}`);
     });
   }
 
@@ -83,7 +94,7 @@ export function SurpriseButton({
           {pick && !drawing && (
             <div className="flex flex-col gap-2.5">
               <Button size="md" className="w-full" disabled={busy} onClick={planIt}>
-                Damit planen
+                {onChoose ? "Nehmen" : "Damit planen"}
               </Button>
               <div className="flex gap-2.5">
                 <Button variant="secondary" size="sm" className="flex-1" onClick={draw}>

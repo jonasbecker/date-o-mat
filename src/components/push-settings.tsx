@@ -128,7 +128,7 @@ export function PushSettings({
 
   const labels: Record<NotificationType, string> = {
     turn_started: "Du bist dran (Rundenstart, ab 9 Uhr)",
-    deadline_soon: "Deadline naht (24 Std. vorher)",
+    deadline_soon: "Frist naht (24 Std. vorher)",
     partner_activity: `${partnerName} plant, bestätigt oder sagt ab`,
     date_tomorrow: "Date ist morgen (19 Uhr am Vortag)",
     date_soon: "Date in 2 Stunden",

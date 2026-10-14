@@ -1,10 +1,8 @@
-// Building blocks of the home screen: round card, status stepper, history dots.
+// Building blocks of the home screen: status stepper and history dots.
 import { cn } from "@/lib/cn";
-import type { CycleStatus, UserColor } from "@/lib/domain";
-import { formatCycleRange, formatDeadline, formatShortDate, timeLeftLabel } from "@/lib/format";
-import type { Cycle, User } from "@/server/db/schema";
-import { Card, Chip, type CardTone } from "./card";
-import { CheckIcon, ClockIcon } from "./icons";
+import type { CycleStatus } from "@/lib/domain";
+import type { Cycle } from "@/server/db/schema";
+import { CheckIcon } from "./icons";
 
 const STEPS: Array<{ status: CycleStatus; label: string }> = [
   { status: "open", label: "Offen" },
@@ -37,72 +35,6 @@ export function CycleStepper({ status }: { status: CycleStatus }) {
         );
       })}
     </ol>
-  );
-}
-
-const PERSON_TONE: Record<UserColor, CardTone> = { mandarine: "mandarine", himmel: "himmel" };
-
-function heroTitle(cycle: Cycle, me: User, partner: User): string {
-  switch (cycle.status) {
-    case "planned":
-      return "Date geplant!";
-    case "confirmed":
-      return "Date steht! 🎉";
-    case "done":
-      return "Runde geschafft 💚";
-    case "skipped":
-      return "Runde vorbei";
-    default:
-      if (cycle.mode === "suggestion") return "Zeit für ein Date!";
-      return cycle.plannerId === me.id ? "Du bist dran!" : `${partner.name} ist dran`;
-  }
-}
-
-function heroTone(cycle: Cycle, me: User, partner: User): CardTone {
-  if (cycle.status === "planned") return "zitrone";
-  if (cycle.status === "confirmed" || cycle.status === "done") return "minze";
-  if (cycle.mode === "suggestion") return "lavendel";
-  const planner = cycle.plannerId === me.id ? me : partner;
-  return PERSON_TONE[planner.color ?? "mandarine"];
-}
-
-export function CycleHero({ cycle, me, partner, now }: { cycle: Cycle; me: User; partner: User; now: Date }) {
-  const deadlinePassed = cycle.deadlineAt <= now;
-  return (
-    <Card tone={heroTone(cycle, me, partner)} size="lg" className="animate-pop-in relative flex flex-col gap-3.5 overflow-hidden">
-      <svg aria-hidden="true" width="96" height="96" viewBox="0 0 24 24" className="absolute -right-3.5 -top-3.5 rotate-[14deg]">
-        <path
-          d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z"
-          fill="#ffd93d"
-          stroke="#2a1b3d"
-          strokeWidth="1.2"
-          strokeLinejoin="round"
-        />
-      </svg>
-      <div className="flex gap-2">
-        <Chip className="bg-bg">Runde {cycle.seq}</Chip>
-        <Chip className="bg-bg">{formatCycleRange(cycle.startsAt, cycle.endsAt)}</Chip>
-      </div>
-      <h1 className="text-[44px] font-bold leading-none">{heroTitle(cycle, me, partner)}</h1>
-      {cycle.status === "open" && (
-        <p className="flex flex-wrap items-center gap-2 font-bold">
-          <ClockIcon width={20} height={20} />
-          {deadlinePassed ? (
-            <span>Deadline vorbei – bis {formatShortDate(new Date(cycle.endsAt.getTime() - 1))} geht noch was!</span>
-          ) : (
-            <>
-              <span>
-                Plan bis <strong className="font-extrabold">{formatDeadline(cycle.deadlineAt)}</strong>
-              </span>
-              <span className="rounded-full border-2 border-line bg-zitrone px-2 py-px text-xs font-extrabold text-tinte">
-                {timeLeftLabel(now, cycle.deadlineAt)}
-              </span>
-            </>
-          )}
-        </p>
-      )}
-      <CycleStepper status={cycle.status === "skipped" ? "open" : cycle.status} />
-    </Card>
   );
 }
 

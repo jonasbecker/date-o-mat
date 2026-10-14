@@ -55,7 +55,7 @@ export function parseIdeaInput(raw: Record<string, unknown>): IdeaParseResult {
   else if (title.length > IDEA_LIMITS.title) errors.title = `Bitte kürzer als ${IDEA_LIMITS.title} Zeichen.`;
 
   const size = IDEA_SIZES.find((s) => s === raw.size);
-  if (!size) errors.size = "Klein oder groß?";
+  if (!size) errors.size = "Kurz oder lang?";
 
   const note = optional(raw.note);
   if (note && note.length > IDEA_LIMITS.note) errors.note = `Bitte kürzer als ${IDEA_LIMITS.note} Zeichen.`;

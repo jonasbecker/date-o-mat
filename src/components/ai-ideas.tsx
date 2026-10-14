@@ -44,7 +44,7 @@ export function AiIdeas({
 }: {
   slot?: { startIso: string; endIso: string; label: string } | null;
   size?: IdeaSize;
-  onChoose?: (ideaId: string) => void;
+  onChoose?: (idea: { id: string; title: string }) => void;
   className?: string;
   buttonSize?: "sm" | "md";
   label?: string;
@@ -71,7 +71,7 @@ export function AiIdeas({
       if (!ideaId) return;
       setSaved((list) => [...list, idea.title]);
       if (onChoose) {
-        onChoose(ideaId);
+        onChoose({ id: ideaId, title: idea.title });
         sheet.current?.close();
       }
     });

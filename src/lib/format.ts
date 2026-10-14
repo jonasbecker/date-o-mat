@@ -104,3 +104,17 @@ export function agoLabel(now: Date, then: Date): string {
   if (minutes < 48 * 60) return `vor ${Math.floor(minutes / 60)} Std.`;
   return `vor ${Math.floor(minutes / 1440)} Tagen`;
 }
+
+/** "heute", "morgen", "übermorgen", "in 5 Tagen" (calendar days, Berlin). */
+export function daysUntilLabel(now: Date, date: Date): string {
+  const diff = Math.round(inZone(date).startOf("day").diff(inZone(now).startOf("day"), "days").days);
+  if (diff <= 0) return "heute";
+  if (diff === 1) return "morgen";
+  if (diff === 2) return "übermorgen";
+  return `in ${diff} Tagen`;
+}
+
+/** German genitive of a first name: "Sams", but "Jonas'" / "Max'". */
+export function genitive(name: string): string {
+  return /[sßxz]$/i.test(name.trim()) ? `${name.trim()}'` : `${name.trim()}s`;
+}

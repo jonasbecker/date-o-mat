@@ -9,6 +9,10 @@ import { coupleNow } from "@/server/clock";
 import { activeDateOf, ensureCurrentCycle } from "@/server/cycles";
 import { getCoupleSettings } from "@/server/settings";
 import { env } from "@/server/env";
+import { periodLabel } from "@/core/next-step";
+import { freeForEvents, listSources, savedRefs, upcomingEvents } from "@/server/events";
+import type { EventView } from "../events/event-list";
+import { eventView } from "../events/event-view";
 import { searchUntil } from "@/server/suggestions";
 import { formatCost } from "@/lib/idea-input";
 import { getDate } from "@/server/dates";
@@ -21,9 +25,6 @@ export default function PlanPage({ searchParams }: PageProps<"/plan">) {
       <div>
         <h1 className="text-[30px] font-bold leading-tight">Date planen</h1>
         <p className="font-bold text-muted">Zeit und Idee wählen – fertig.</p>
-        <Link href="/events?free=1" className="text-sm font-extrabold underline">
-          🎟️ Oder ein Event, bei dem ihr beide Zeit habt
-        </Link>
       </div>
       <Suspense fallback={<SlotsSkeleton />}>
         <Plan searchParams={searchParams} />
@@ -57,7 +58,8 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
   const search = await searchSlots(ctx, now, until);
   const roundInfo = cycle && (
     <p className="-mt-3 text-sm font-extrabold text-muted">
-      {reschedule ? "Termin ändern · " : ""}Runde {cycle.seq}
+      {reschedule ? "Termin ändern · " : ""}
+      {periodLabel(cycle.startsAt, cycle.endsAt)}
       {cycle.mode === "alternating" &&
         (cycle.plannerId === ctx.user.id ? " · du bist dran" : ` · ${ctx.partner.name} ist dran`)}
       {cycle.mode === "suggestion" && " · Vorschlag-Modus"}
@@ -82,6 +84,16 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
       size: c.size,
       meta: [formatCost(c.costEur), c.location && `📍 ${c.location}`].filter(Boolean).join(" · ") || null,
     }));
+
+  // "🎟️ Events" tab: events in the next weeks where both are free (null = no sources yet).
+  let events: EventView[] | null = null;
+  if (search.status === "ok" && !reschedule && (await listSources(ctx.coupleId)).length > 0) {
+    const [list, saved] = await Promise.all([upcomingEvents(ctx.coupleId, now, settings.horizonDays), savedRefs(ctx.coupleId)]);
+    const earliest = now.getTime() + 2 * 3_600_000; // same lead time as saving a date
+    const plannable = list.filter((e) => e.startsAt && !e.allDay && e.startsAt.getTime() > earliest);
+    const free = await freeForEvents(ctx, plannable);
+    events = plannable.filter((e) => free?.get(e.id) === true).map((e) => eventView(e, { free: true, saved: saved.has(e.dedupeKey), now }));
+  }
 
   if (search.status === "not_connected") return <ConnectCalendarCard people={search.people} next="/plan" />;
   if (search.status === "google_error") {
@@ -111,6 +123,7 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
         searchScopeLink={scopeLink}
         preselectIdeaId={typeof params.idea === "string" ? params.idea : undefined}
         aiEnabled={env().ai}
+        events={events}
       />
     </>
   );

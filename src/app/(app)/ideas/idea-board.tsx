@@ -31,8 +31,8 @@ export function IdeaBoard({ ideas, people }: { ideas: BoardIdea[]; people: Recor
 
   const filters: Array<{ value: Filter; label: string }> = [
     { value: "all", label: "Alle" },
-    { value: "small", label: `${SIZE_LABEL.small.emoji} Klein · ${counts.small}` },
-    { value: "large", label: `${SIZE_LABEL.large.emoji} Groß · ${counts.large}` },
+    { value: "small", label: `${SIZE_LABEL.small.emoji} ${SIZE_LABEL.small.label} · ${counts.small}` },
+    { value: "large", label: `${SIZE_LABEL.large.emoji} ${SIZE_LABEL.large.label} · ${counts.large}` },
   ];
 
   return (
