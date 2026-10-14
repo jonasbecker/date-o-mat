@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { isPushEndpointAllowed } from "@/lib/allowlist";
 import { NOTIFICATION_TYPES, PLAN_MODES, RHYTHMS } from "@/lib/domain";
 import { parseSlotSettings, type SlotSettingsErrors } from "@/lib/slot-settings";
 import { requireCouple } from "@/server/auth/dal";
@@ -92,21 +93,22 @@ export async function devClockAction(formData: FormData) {
 // --- Push ---------------------------------------------------------------------------
 
 const subscriptionSchema = z.object({
-  endpoint: z.url(),
-  keys: z.object({ p256dh: z.string().min(1), auth: z.string().min(1) }),
+  endpoint: z.string().max(1000).refine(isPushEndpointAllowed),
+  keys: z.object({ p256dh: z.string().min(1).max(200), auth: z.string().min(1).max(100) }),
 });
 
 export async function savePushSubscriptionAction(subscription: unknown, userAgent: string): Promise<{ ok: boolean }> {
   const { user } = await requireCouple();
   const parsed = subscriptionSchema.safeParse(subscription);
   if (!parsed.success) return { ok: false };
-  await saveSubscription(user.id, parsed.data, userAgent.slice(0, 300));
+  await saveSubscription(user.id, parsed.data, typeof userAgent === "string" ? userAgent.slice(0, 300) : null);
   refresh();
   return { ok: true };
 }
 
 export async function removePushSubscriptionAction(endpoint: string): Promise<void> {
   const { user } = await requireCouple();
+  if (typeof endpoint !== "string") return;
   await removeSubscription(user.id, endpoint);
   refresh();
 }

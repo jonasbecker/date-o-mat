@@ -1,13 +1,13 @@
 // The periodic job (cron-job.org calls /api/cron/tick every 5 minutes).
 // Everything here is idempotent: running it twice, or late, is harmless.
 import "server-only";
-import { eq, isNotNull } from "drizzle-orm";
+import { eq, isNotNull, lt, sql } from "drizzle-orm";
 import type { CoupleContext } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
 import { ensureCurrentCycle } from "@/server/cycles";
 import { pullGoogleChanges, retryPendingSyncs } from "@/server/dates";
 import { db } from "@/server/db";
-import { users } from "@/server/db/schema";
+import { notificationLog, sessions, users } from "@/server/db/schema";
 import { sendDueReminders } from "@/server/notifications";
 import { getCoupleSettings } from "@/server/settings";
 import { currentSuggestion } from "@/server/suggestions";
@@ -34,7 +34,19 @@ export async function tickCouple(coupleId: string): Promise<void> {
   }
 }
 
+/** Removes what is no longer needed: expired sessions and old notification log rows. */
+async function cleanUp(): Promise<void> {
+  await db.delete(sessions).where(lt(sessions.expiresAt, sql`now()`));
+  // Reminders are at most a few weeks apart; 90 days is plenty for "already sent?".
+  await db.delete(notificationLog).where(lt(notificationLog.dueAt, sql`now() - interval '90 days'`));
+}
+
 export async function runTick(): Promise<TickResult> {
+  try {
+    await cleanUp();
+  } catch (error) {
+    console.error("[tick] clean-up failed", error);
+  }
   const rows = await db.selectDistinct({ coupleId: users.coupleId }).from(users).where(isNotNull(users.coupleId));
   let errors = 0;
   for (const { coupleId } of rows) {

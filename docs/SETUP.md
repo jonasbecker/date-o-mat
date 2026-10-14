@@ -13,6 +13,8 @@ Reihenfolge einhalten, weil spätere Schritte Werte aus früheren brauchen.
 | 5. Testen | | M1 |
 | 6. cron-job.org | Erinnerungen, Zyklus-Wechsel | M4 |
 | 7. Lokal entwickeln | optional | – |
+| 8. Go-live-Check | alles einmal durchprobieren | M7 |
+| 9. Betrieb & Wartung | Updates, Backups, Schlüssel | – |
 
 Halte eine Notiz offen (z. B. im Passwortmanager), in die du alle Werte sammelst.
 **Nichts davon kommt ins Git-Repo.**
@@ -259,10 +261,54 @@ Danach:
    ```
 4. Qualität prüfen: `npm test`, `npm run lint`, `npm run typecheck`.
 
+## 8. Go-live-Check
+
+Einmal nach dem ersten vollständigen Deploy, am besten zu zweit mit beiden Handys:
+
+- [ ] In Vercel sind alle Variablen aus Schritt 4 gesetzt, `ENABLE_DEV_TOOLS` **nicht**
+      (oder `0`). In den Einstellungen taucht keine „Dev-Uhr“ auf.
+- [ ] Beide sind eingeloggt und gekoppelt, beide Kalender sind verbunden
+      (Einstellungen → Kalender: „Verbunden mit …“ und „‹Name›: verbunden ✓“).
+- [ ] Beide haben die App auf dem Home-Bildschirm und Push aktiviert, **Test-Push** kommt an.
+- [ ] cron-job.org: letzter Lauf grün (Status 200), Ausführung alle 5 Minuten.
+- [ ] Ein Probe-Date planen → steht in beiden Google-Kalendern → **Passt!** → **Absagen** →
+      der Termin verschwindet wieder.
+- [ ] Flugmodus an, App öffnen → „Gerade offline 📡“ statt einer Browser-Fehlerseite.
+- [ ] Rhythmus, Modus und Zeitfenster in den Einstellungen nach euren Wünschen einstellen.
+
+## 9. Betrieb & Wartung
+
+**Updates einspielen:** Jeder Push auf `main` deployt automatisch. Neue Migrationen laufen
+beim Build von selbst. Schlägt ein Build fehl, bleibt die alte Version online.
+Vercel → **Deployments** → älteres Deployment → **⋯ → Promote to Production** springt zurück.
+
+**Backups:** Neon hält im Free-Plan einen Wiederherstellungszeitraum von einigen Stunden
+(**Branches → Restore**). Für mehr Sicherheit gelegentlich lokal sichern:
+`pg_dump "$DATABASE_URL_UNPOOLED" > date-o-mat-backup.sql`.
+
+**Eine Person entfernen:** Adresse aus `ALLOWED_EMAILS` löschen und neu deployen. Die
+Person ist beim nächsten Seitenaufruf abgemeldet.
+
+**Secrets wechseln** (z. B. falls eins versehentlich geteilt wurde):
+
+| Secret | Folge eines Wechsels |
+|---|---|
+| `CRON_SECRET` | Auch den Header in cron-job.org anpassen. |
+| `GOOGLE_CLIENT_SECRET` | In Google Cloud ein neues Secret anlegen, eintragen, altes löschen. Keine Folgen für euch. |
+| `TOKEN_ENCRYPTION_KEY` | Gespeicherte Google-Tokens sind danach unlesbar: beide müssen den Kalender in den Einstellungen **neu verbinden**. |
+| `VAPID_*` | Alle Push-Abos werden ungültig: beide müssen Push in den Einstellungen neu aktivieren. |
+
+Nach jedem Wechsel: **Redeploy** (siehe Schritt 4).
+
+**Logs:** Vercel → Projekt → **Logs**. Fehler aus dem Cron-Tick beginnen mit `[tick]`,
+Kalender-Abgleich mit `[dates]`, Push mit `[push]`. Kalenderdetails oder Tokens stehen
+dort nie drin.
+
 ## Fehlerbehebung
 
 | Meldung | Ursache / Lösung |
 |---|---|
+| Termine erscheinen nicht / „Kalender neu verbinden“ | Google-Zugriff wurde widerrufen oder ist abgelaufen → Einstellungen → Kalender → **Neu verbinden**. |
 | Push aktivieren tut auf dem iPhone nichts | App muss vom Home-Bildschirm geöffnet werden, nicht in Safari (iOS 16.4+). |
 | `redirect_uri_mismatch` bei Google | Die Weiterleitungs-URI im OAuth-Client muss exakt `APP_URL` + `/api/auth/google/callback` sein (https, keine Leerzeichen). |
 | „Zugriff blockiert: … nur für Testnutzer“ | App ist noch im Testmodus → Schritt 3.3, Punkt 7. |

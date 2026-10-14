@@ -2,6 +2,7 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import { decrypt, encrypt } from "@/lib/crypto";
+import { describeOAuthError } from "@/lib/safe-error";
 import type { GoogleTokens } from "@/server/auth/google";
 import { oauthClient } from "@/server/auth/google";
 import { db } from "@/server/db";
@@ -89,7 +90,8 @@ export async function getAccessToken(userId: string, { forceRefresh = false } = 
       await markNeedsReauth(userId);
       throw new CalendarNotConnectedError(userId, "reauth");
     }
-    throw error;
+    // Never pass the original error on: it contains the refresh token.
+    throw new Error(`Google token refresh failed (${describeOAuthError(error)})`);
   }
 }
 

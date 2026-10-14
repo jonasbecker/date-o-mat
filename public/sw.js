@@ -1,8 +1,41 @@
 // Date-O-Mat service worker: shows push notifications and opens the app on tap.
-// Kept deliberately small – no offline caching.
+// Deliberately small: no data caching (everything is live and shared), only a
+// friendly offline page for navigations without network.
 
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+const CACHE = "dom-offline-v1";
+const OFFLINE_ASSETS = ["/offline.html", "/icons/icon-192.png"];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      .then((cache) => cache.addAll(OFFLINE_ASSETS))
+      .then(() => self.skipWaiting()),
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    (async () => {
+      for (const key of await caches.keys()) if (key !== CACHE) await caches.delete(key);
+      await self.clients.claim();
+    })(),
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  if (request.method !== "GET") return;
+  if (request.mode === "navigate") {
+    event.respondWith(fetch(request).catch(() => caches.match("/offline.html")));
+    return;
+  }
+  // The offline page's own image, served from the cache when the network is gone.
+  const url = new URL(request.url);
+  if (url.origin === self.location.origin && OFFLINE_ASSETS.includes(url.pathname)) {
+    event.respondWith(fetch(request).catch(() => caches.match(url.pathname)));
+  }
+});
 
 self.addEventListener("push", (event) => {
   let data = {};

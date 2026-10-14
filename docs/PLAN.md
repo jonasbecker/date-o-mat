@@ -64,7 +64,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M4 | Einstellungen, Zyklus-Engine, Startseite, Vorschlag-Modus, Cron-Tick | ✅ |
 | M5 | Google-Event mit Einladung, Sync bei Änderung/Absage | ✅ |
 | M6 | Web Push, iOS-Onboarding, Erinnerungen | ✅ |
-| M7 | Design-Politur, PWA-Feinschliff, Deployment, README | |
+| M7 | Design-Politur, PWA-Feinschliff, Deployment, README | ✅ |
 
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 

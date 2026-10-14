@@ -17,7 +17,7 @@ gemeinsame Ideen-Wunschliste.
 | M4 | Rhythmus, Modi (abwechselnd/Vorschlag), Runden, Startseite, Cron-Tick, Dev-Uhr | ✅ |
 | M5 | Date festlegen, Google-Termin mit Einladung, Passt!/Ändern/Absagen synchron | ✅ |
 | M6 | Web Push, Erinnerungen, iPhone-Installationshilfe, App-Manifest | ✅ |
-| M7 | Politur & PWA | ⏳ |
+| M7 | Fehler-/Offline-Seiten, App-Kurzbefehle, Sicherheits-Härtung, Aufräum-Job, Doku | ✅ |
 
 ## Tech-Stack
 
@@ -45,8 +45,11 @@ src/
     (app)/            eingeloggter Bereich mit Navigation
     login/, pair/     Login und Kopplung
     api/auth/google/  OAuth-Start und -Callback
+    api/cron/tick/    Einstieg für cron-job.org
+    manifest.ts       App-Manifest (Name, Icons, Kurzbefehle)
+    error.tsx, not-found.tsx, global-error.tsx   freundliche Fehlerseiten
   components/         UI-Bausteine (Button, Card, Avatar, Logo …)
-  core/               Kernlogik ohne I/O: Slot-Finder, Zeitbereiche, Kalender-Regeln (getestet)
+  core/               Kernlogik ohne I/O: Slots, Runden, Vorschläge, Erinnerungen (getestet)
   lib/                kleine Hilfsfunktionen ohne Server-Zugriff (getestet)
   server/             alles mit DB, Secrets oder Google
     auth/             Sessions, Data Access Layer (requireUser/requireCouple), OAuth
@@ -57,8 +60,11 @@ src/
     suggestions.ts    Vorschlag-Modus
     idea-sources/     austauschbare Ideen-Quellen (V1: Wunschliste)
     dates.ts          Dates planen/ändern/bestätigen/absagen + Abgleich mit Google
-    tick.ts           der periodische Job hinter /api/cron/tick
+    push.ts           Push-Abos, Einstellungen, Versand (web-push)
+    notifications.ts  Texte und Versand der Erinnerungen
+    tick.ts           der periodische Job hinter /api/cron/tick (inkl. Aufräumen)
   proxy.ts            schickt Besucher ohne Session-Cookie zur Login-Seite
+public/sw.js          Service Worker: Push anzeigen, Offline-Seite (public/offline.html)
 drizzle/              SQL-Migrationen (generiert)
 scripts/              Migration beim Build, Secret-Generator
 ```
@@ -188,6 +194,8 @@ Bewusst nicht in V1, aber vorbereitet:
 | **Kuratierte Ideen für Köln** | Neue Datei `src/server/idea-sources/curated.ts`, die `IdeaSourceProvider` implementiert (z. B. aus einer JSON-Datei oder Tabelle mit `ideas.source = 'curated'`), und in `PROVIDERS` in `src/server/idea-sources/index.ts` eintragen. Vorschlag-Modus und Planen nutzen sie dann automatisch. |
 | **KI-Vorschläge** (Budget, Wetter, Dauer, Stimmung) | Ebenfalls ein `IdeaSourceProvider` (`source = 'ai'`), der aus Kontext (Slot-Größe, Wetter-API, Budget) Kandidaten erzeugt; erzeugte Ideen können mit `external_ref` in `ideas` gespeichert werden. |
 | **Zufall („Überrasch uns“)** | Eine kleine Funktion neben `pickSuggestion` (`src/core/suggestion.ts`), die statt der ältesten eine zufällige Idee aus `ideaCandidates()` zieht, plus ein Button auf der Startseite. |
+| **Neue Erinnerung** (z. B. „Wie war's?“ am Tag danach) | Typ in `NOTIFICATION_TYPES` (`src/lib/domain.ts`) ergänzen, Zeitpunkt in `plannedReminders()` (`src/core/reminders.ts`, mit Test), Text in `reminderText()` (`src/server/notifications.ts`), Beschriftung in `push-settings.tsx`. Keine Migration nötig. |
+| **Weitere Person / Gruppen** | Bewusst nicht vorgesehen: Runden, Bestätigen und Push gehen überall von genau zwei Personen aus. |
 | **Rückblick nach dem Date** | `date_plans.rating` und `review_note` existieren schon; für Fotos kommt eine neue Tabelle `date_photos` dazu. Nur UI nötig. |
 
 ## Sicherheit & Datenschutz
@@ -199,3 +207,10 @@ Bewusst nicht in V1, aber vorbereitet:
 - Aus den Kalendern liest die App nur Belegt-Zeiten (FreeBusy) und speichert keine Termindetails.
 - Alle Secrets liegen nur in Umgebungsvariablen (`.env.example` als Vorlage).
 - `/api/cron/tick` verlangt `Authorization: Bearer <CRON_SECRET>` (zeitkonstanter Vergleich).
+- Wer aus `ALLOWED_EMAILS` entfernt wird, ist sofort abgemeldet (Prüfung bei jedem Seitenaufruf).
+- Fehler von Google-OAuth werden nur gekürzt geloggt (Fehlercode + HTTP-Status), weil die
+  Original-Fehler Refresh-Tokens und Auth-Codes enthalten (`src/lib/safe-error.ts`).
+- Push-Abos werden nur für die Push-Dienste der Browser angenommen (Google, Apple, Mozilla,
+  Microsoft), damit der Server keine beliebigen Adressen anfragt.
+- Sicherheits-Header (`next.config.ts`): kein Einbetten in fremde Seiten, `nosniff`,
+  sparsamer Referrer. Abgelaufene Sessions löscht der Cron-Tick.

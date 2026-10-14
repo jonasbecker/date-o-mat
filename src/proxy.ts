@@ -13,5 +13,5 @@ export function proxy(request: NextRequest) {
 export const config = {
   // Everything except the login page, API routes (they check auth themselves)
   // and static files.
-  matcher: ["/((?!login|api|_next/static|_next/image|icon|apple-icon|manifest|sw\\.js|.*\\.(?:svg|png|jpg|webp|ico)$).*)"],
+  matcher: ["/((?!login|api|_next/static|_next/image|icon|apple-icon|manifest|sw\\.js|offline\\.html|.*\\.(?:svg|png|jpg|webp|ico)$).*)"],
 };

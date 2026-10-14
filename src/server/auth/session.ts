@@ -2,6 +2,7 @@ import "server-only";
 import { and, eq, gt, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { cache } from "react";
+import { isEmailAllowed } from "@/lib/allowlist";
 import { SESSION_COOKIE, SESSION_DAYS } from "@/lib/constants";
 import { randomToken, sha256Hex } from "@/lib/crypto";
 import { db } from "@/server/db";
@@ -36,7 +37,13 @@ export const getSessionUser = cache(async (): Promise<User | null> => {
     .innerJoin(users, eq(users.id, sessions.userId))
     .where(and(eq(sessions.id, sha256Hex(token)), gt(sessions.expiresAt, sql`now()`)))
     .limit(1);
-  return row?.user ?? null;
+  if (!row) return null;
+  // Removed from ALLOWED_EMAILS → all sessions end right away, not only at the next login.
+  if (!isEmailAllowed(row.user.email, env().allowedEmails)) {
+    await db.delete(sessions).where(eq(sessions.userId, row.user.id));
+    return null;
+  }
+  return row.user;
 });
 
 /** Deletes the current session (server actions only – they may set cookies). */

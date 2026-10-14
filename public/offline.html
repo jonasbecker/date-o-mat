@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Date-O-Mat · offline</title>
+    <style>
+      :root { --bg: #fff6ec; --ink: #2a1b3d; --muted: #5e4f70; --line: #2a1b3d; }
+      @media (prefers-color-scheme: dark) { :root { --bg: #1e1530; --ink: #fff6ec; --muted: #cbbfdd; --line: #0d0816; } }
+      body {
+        margin: 0; min-height: 100dvh; display: flex; flex-direction: column; align-items: center;
+        justify-content: center; gap: 16px; padding: 24px; box-sizing: border-box; text-align: center;
+        font-family: ui-rounded, system-ui, sans-serif; background: var(--bg); color: var(--ink);
+      }
+      h1 { margin: 0; font-size: 32px; }
+      p { margin: 0; max-width: 22rem; font-weight: 600; color: var(--muted); }
+      button {
+        font: inherit; font-size: 18px; font-weight: 800; padding: 14px 28px; border-radius: 18px;
+        border: 2.5px solid var(--line); box-shadow: 3px 3px 0 var(--line); background: #ff4f8b; color: #2a1b3d;
+      }
+      button:active { transform: translate(3px, 3px); box-shadow: none; }
+    </style>
+  </head>
+  <body>
+    <img src="/icons/icon-192.png" width="96" height="96" alt="" style="border-radius: 24px" />
+    <h1>Gerade offline 📡</h1>
+    <p>Der Date-O-Mat braucht Internet, um eure Kalender und Pläne zu laden. Sobald du wieder online bist, geht's weiter.</p>
+    <button type="button" onclick="location.reload()">Nochmal versuchen</button>
+    <script>
+      addEventListener("online", () => location.reload());
+    </script>
+  </body>
+</html>

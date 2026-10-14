@@ -2,7 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { defaultBusyCalendarIds, missingCalendarScopes } from "@/core/calendars";
 import { isEmailAllowed } from "@/lib/allowlist";
 import { OAUTH_COOKIE } from "@/lib/constants";
-import { exchangeCode, type GoogleIdentity, type GoogleTokens, type OAuthState } from "@/server/auth/google";
+import { describeOAuthError } from "@/lib/safe-error";
+import { exchangeCode, RETURN_PATHS, type GoogleIdentity, type GoogleTokens, type OAuthState } from "@/server/auth/google";
 import { createSession, getSessionUser } from "@/server/auth/session";
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema";
@@ -40,10 +41,11 @@ export async function GET(request: NextRequest) {
   try {
     const { identity, tokens } = await exchangeCode(code, saved.codeVerifier);
     return saved.flow === "calendar"
-      ? await connectCalendar(identity, tokens, saved.returnTo ?? "/settings")
+      ? await connectCalendar(identity, tokens, RETURN_PATHS.find((path) => path === saved.returnTo) ?? "/settings")
       : await login(identity, request.headers.get("user-agent"));
   } catch (error) {
-    console.error("[auth] Google callback failed", error);
+    // Not the error itself: OAuth errors carry the auth code and PKCE verifier.
+    console.error(`[auth] Google callback failed: ${describeOAuthError(error)}`);
     return finish(`${errorPage}oauth`);
   }
 }
