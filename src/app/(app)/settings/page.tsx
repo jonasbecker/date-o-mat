@@ -20,6 +20,26 @@ import { PushSettings } from "@/components/push-settings";
 import { getPrefs, pushPublicKey } from "@/server/push";
 import { CalendarSection } from "./calendar-section";
 import { SlotSettingsForm } from "./slot-settings-form";
+import { EventSources, type SourceView } from "./event-sources";
+import { listSources } from "@/server/events";
+import type { EventSource } from "@/server/db/schema";
+import { agoLabel } from "@/lib/format";
+
+// "Jetzt lesen" fetches a page and asks Claude (runs after the response).
+export const maxDuration = 120;
+
+function sourceView(source: EventSource, now: Date): SourceView {
+  const base = { id: source.id, label: source.label, url: source.url, kind: source.kind };
+  if (source.fetchStartedAt && now.getTime() - source.fetchStartedAt.getTime() < 5 * 60_000) {
+    return { ...base, status: "Wird gerade gelesen …", tone: "busy" };
+  }
+  if (!source.lastFetchedAt) return { ...base, status: "Wird gleich gelesen …", tone: "new" };
+  const ago = agoLabel(now, source.lastFetchedAt);
+  if (source.lastStatus === "error") return { ...base, status: `⚠️ ${source.lastError ?? "Fehler"} · ${ago}`, tone: "warn" };
+  if (source.lastStatus === "empty") return { ...base, status: `Nichts gefunden · ${ago}`, tone: "warn" };
+  const count = source.lastCount ?? 0;
+  return { ...base, status: `✓ ${count} ${count === 1 ? "Eintrag" : "Einträge"} · ${ago}`, tone: "ok" };
+}
 
 export default function SettingsPage({ searchParams }: PageProps<"/settings">) {
   return (
@@ -44,12 +64,14 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
   const { user, partner, coupleId } = ctx;
   const { calendar: message } = await searchParams;
 
-  const [people, googleConnection, settings, prefs] = await Promise.all([
+  const [people, googleConnection, settings, prefs, sources] = await Promise.all([
     calendarStates(ctx),
     getConnection(user.id),
     getCoupleSettings(coupleId),
     getPrefs(user.id),
+    listSources(coupleId),
   ]);
+  const now = coupleNow(settings);
   const me = people.find((p) => p.isMe)!;
   const other = people.find((p) => !p.isMe)!;
 
@@ -113,6 +135,15 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
           />
         </Card>
         <p className="px-1 text-sm font-semibold text-muted">Gilt für euch beide.</p>
+      </section>
+
+      <section id="events" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="events-heading">
+        <h2 id="events-heading" className="text-[21px] font-semibold">
+          Event-Quellen
+        </h2>
+        <Card>
+          <EventSources sources={sources.map((s) => sourceView(s, now))} aiReady={env().ai} />
+        </Card>
       </section>
 
       <section className="flex flex-col gap-3" aria-labelledby="couple-heading">

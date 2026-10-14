@@ -80,6 +80,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M9 | Fotos zum Rückblick | ⏳ |
 | M10 | Kuratierte Köln-Ideen, „Überrasch uns“ | ⏳ |
 | M11 | KI-Vorschläge | ⏳ |
+| M12 | Event-Quellen (rausgegangen, koeln.de, KölnTourismus, Mit Vergnügen) – vorgezogen | ✅ |
 
 Abweichungen in V2:
 
@@ -87,6 +88,10 @@ Abweichungen in V2:
    `date_plans.rating`/`review_note`; die beiden unbenutzten Spalten sind entfernt.
 2. Untere Leiste: „Dates“ ersetzt „Einstellungen“; die Einstellungen öffnet das Regler-Symbol
    oben auf der Startseite.
+3. Reihenfolge: M12 (Event-Quellen) vor M9–M11, auf Wunsch.
+4. Event-Quellen: Der Server holt die Seiten selbst und Claude wertet nur den Text aus, statt
+   Claudes Web-Fetch-Werkzeug zu nutzen – günstiger, lokal testbar, und Seiten mit JSON-LD
+   brauchen gar keine KI. Dafür gibt es einen SSRF-Schutz für eingetragene Adressen.
 
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 

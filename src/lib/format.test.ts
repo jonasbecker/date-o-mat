@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { describe, expect, it } from "vitest";
-import { formatCycleRange, formatDeadline, timeLeftLabel } from "./format";
+import { agoLabel, dayHeading, formatClock, formatCycleRange, formatDeadline, timeLeftLabel } from "./format";
 
 const at = (local: string) => DateTime.fromISO(local, { zone: "Europe/Berlin" }).toJSDate();
 
@@ -21,5 +21,22 @@ describe("format", () => {
     ["2026-10-15T20:00", "vorbei"],
   ])("time left from %s", (now, label) => {
     expect(timeLeftLabel(at(now), at("2026-10-15T20:00"))).toBe(label);
+  });
+});
+
+describe("event list labels", () => {
+  const now = at("2026-10-14T12:00");
+  it("day headings", () => {
+    expect(dayHeading(at("2026-10-14T20:00"), now)).toBe("Heute");
+    expect(dayHeading(at("2026-10-15T00:30"), now)).toBe("Morgen");
+    expect(dayHeading(at("2026-10-17T20:00"), now)).toBe("Samstag, 17. Okt");
+  });
+  it("clock", () => {
+    expect(formatClock(at("2026-10-17T20:05"))).toBe("20:05");
+  });
+  it("ago", () => {
+    expect(agoLabel(now, at("2026-10-14T11:59"))).toBe("gerade eben");
+    expect(agoLabel(now, at("2026-10-14T09:00"))).toBe("vor 3 Std.");
+    expect(agoLabel(now, at("2026-10-11T12:00"))).toBe("vor 3 Tagen");
   });
 });

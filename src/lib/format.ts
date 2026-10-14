@@ -80,3 +80,27 @@ export function timeLeftLabel(now: Date, until: Date): string {
 export function formatTimeRange(start: Date, end: Date): string {
   return `${inZone(start).toFormat("HH:mm")} – ${inZone(end).toFormat("HH:mm")}`;
 }
+
+/** "Heute", "Morgen" or "Sa, 18. Okt." – headings of the event list. */
+export function dayHeading(date: Date, now: Date): string {
+  const day = inZone(date).startOf("day");
+  const today = inZone(now).startOf("day");
+  const diff = Math.round(day.diff(today, "days").days);
+  if (diff === 0) return "Heute";
+  if (diff === 1) return "Morgen";
+  return day.toFormat("cccc, d. LLL");
+}
+
+/** "20:00" */
+export function formatClock(date: Date): string {
+  return inZone(date).toFormat("HH:mm");
+}
+
+/** "gerade eben", "vor 3 Std.", "vor 2 Tagen" */
+export function agoLabel(now: Date, then: Date): string {
+  const minutes = (now.getTime() - then.getTime()) / 60_000;
+  if (minutes < 2) return "gerade eben";
+  if (minutes < 60) return `vor ${Math.floor(minutes)} Min.`;
+  if (minutes < 48 * 60) return `vor ${Math.floor(minutes / 60)} Std.`;
+  return `vor ${Math.floor(minutes / 1440)} Tagen`;
+}

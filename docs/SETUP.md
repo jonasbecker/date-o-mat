@@ -260,6 +260,27 @@ Danach:
    (Dev-Uhr auf 11:05 am Folgetag, dann cron-job.org **Testlauf**).
 4. Die Einstellungen liegen jetzt hinter dem Regler-Symbol oben rechts auf der Startseite.
 
+### Meilenstein 12 einrichten: Event-Quellen
+
+1. Auf [console.anthropic.com](https://console.anthropic.com) ein Konto anlegen, unter
+   **Billing** etwas Guthaben aufladen (5 $ reichen lange) und unter **Limits** ein
+   monatliches Ausgabenlimit setzen, z. B. 5 $.
+2. **API Keys → Create Key**, Name z. B. `date-o-mat`, Schlüssel kopieren.
+3. In Vercel unter **Settings → Environment Variables** `ANTHROPIC_API_KEY` eintragen
+   (Production) und neu deployen.
+4. In der App **Einstellungen → Event-Quellen → Köln-Quellen hinzufügen**. Nach etwa einer
+   Minute steht bei jeder Quelle „✓ … Einträge“ oder ein Hinweis, warum es nicht klappte.
+5. Unter **Ideen → Was läuft** erscheinen die Events; „✓ Ihr habt beide Zeit“ braucht
+   verbundene Kalender bei euch beiden.
+
+Kosten: pro gelesener Seite grob 0,1–0,5 Cent (Haiku 5.5), bei vier Quellen täglich also
+wenige Cent bis etwa 50 Cent im Monat. Danach liest der Cron-Tick jede Quelle einmal am Tag
+ab 5 Uhr.
+
+Steht bei einer Quelle „Seite ist fast leer (… JavaScript)“ oder „HTTP 403“, lässt sie sich
+so nicht lesen. Oft hilft eine Unterseite (z. B. direkt der Veranstaltungskalender statt der
+Startseite).
+
 ## 7. Lokal entwickeln (optional)
 
 1. In Neon: **Branches → Create branch** `dev`. Dessen Connection Strings nutzen, damit lokale

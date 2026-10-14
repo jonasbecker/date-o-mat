@@ -20,6 +20,9 @@ export default function PlanPage({ searchParams }: PageProps<"/plan">) {
       <div>
         <h1 className="text-[30px] font-bold leading-tight">Date planen</h1>
         <p className="font-bold text-muted">Zeit und Idee wählen – fertig.</p>
+        <Link href="/events?free=1" className="text-sm font-extrabold underline">
+          🎟️ Oder ein Event, bei dem ihr beide Zeit habt
+        </Link>
       </div>
       <Suspense fallback={<SlotsSkeleton />}>
         <Plan searchParams={searchParams} />

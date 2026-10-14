@@ -19,6 +19,7 @@ import { activeDateOf, cycleHistory, ensureCurrentCycle } from "@/server/cycles"
 import { upcomingDate } from "@/server/dates";
 import { countIdeas } from "@/server/ideas";
 import { dateToReview } from "@/server/reviews";
+import { upcomingEvents } from "@/server/events";
 import { getCoupleSettings } from "@/server/settings";
 import { currentSuggestion } from "@/server/suggestions";
 
@@ -38,13 +39,14 @@ async function Home() {
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
   const cycle = await ensureCurrentCycle(coupleId, now);
-  const [ideaCount, calendars, history, nextDate, pushDevices, toReview] = await Promise.all([
+  const [ideaCount, calendars, history, nextDate, pushDevices, toReview, weekEvents] = await Promise.all([
     countIdeas(coupleId),
     calendarStates(ctx),
     cycleHistory(coupleId),
     upcomingDate(coupleId, now),
     countSubscriptions(user.id),
     dateToReview(ctx, now),
+    upcomingEvents(coupleId, now, 7),
   ]);
   const roundDate = cycle?.status === "done" ? await activeDateOf(cycle.id) : undefined;
   const calendarsReady = calendars.every((person) => person.state === "connected");
@@ -153,6 +155,20 @@ async function Home() {
           </span>
         </span>
       </Link>
+
+      {weekEvents.length > 0 && (
+        <Link href="/events" className="press sticker flex items-center gap-4 rounded-[22px] bg-himmel px-4 py-3.5 text-tinte">
+          <span className="text-3xl" aria-hidden="true">
+            🎟️
+          </span>
+          <span className="flex flex-col">
+            <span className="font-display text-lg font-semibold">
+              {weekEvents.length} {weekEvents.length === 1 ? "Event" : "Events"} in den nächsten 7 Tagen
+            </span>
+            <span className="text-sm font-bold">Schaut, wo ihr beide Zeit habt</span>
+          </span>
+        </Link>
+      )}
     </div>
   );
 }

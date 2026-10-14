@@ -17,6 +17,10 @@ const schema = z.object({
   VAPID_PUBLIC_KEY: z.string().min(1).optional(),
   VAPID_PRIVATE_KEY: z.string().min(1).optional(),
   VAPID_SUBJECT: z.string().min(1).optional(),
+  // Claude reads the event sources. Without a key the feature is off.
+  ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  // Only for tests (and only with ENABLE_DEV_TOOLS=1): event sources on localhost/http.
+  ALLOW_PRIVATE_EVENT_URLS: z.enum(["0", "1"]).optional(),
 });
 
 export type Env = {
@@ -31,6 +35,9 @@ export type Env = {
   devTools: boolean;
   /** Null when push is not configured (VAPID keys missing). */
   vapid: { publicKey: string; privateKey: string; subject: string } | null;
+  /** Claude is configured (event sources are read). */
+  ai: boolean;
+  allowPrivateEventUrls: boolean;
 };
 
 let cached: Env | undefined;
@@ -58,6 +65,8 @@ export function env(): Env {
       e.VAPID_PUBLIC_KEY && e.VAPID_PRIVATE_KEY
         ? { publicKey: e.VAPID_PUBLIC_KEY, privateKey: e.VAPID_PRIVATE_KEY, subject: e.VAPID_SUBJECT ?? e.APP_URL }
         : null,
+    ai: Boolean(e.ANTHROPIC_API_KEY),
+    allowPrivateEventUrls: e.ENABLE_DEV_TOOLS === "1" && e.ALLOW_PRIVATE_EVENT_URLS === "1",
   };
   return cached;
 }

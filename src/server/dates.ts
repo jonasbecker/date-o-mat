@@ -7,7 +7,7 @@ import { mergeRanges, padRanges, subtractRanges, type TimeRange } from "@/core/r
 import type { IdeaSize } from "@/lib/domain";
 import type { CoupleContext } from "@/server/auth/dal";
 import { db } from "@/server/db";
-import { cycles, datePlans, ideas, suggestions, users, type DatePlan } from "@/server/db/schema";
+import { cycles, datePlans, events, ideas, suggestions, users, type DatePlan } from "@/server/db/schema";
 import { env } from "@/server/env";
 import { deleteEvent, getEvent, insertEvent, patchEvent, queryFreeBusy } from "@/server/google/calendar-api";
 import { CalendarNotConnectedError, getConnection } from "@/server/google/connection";
@@ -22,9 +22,11 @@ export type DateChoice = {
   size: IdeaSize;
   /** Idea from the wishlist … */
   ideaId: string | null;
-  /** … or a spontaneous one. */
+  /** … or a spontaneous one … */
   customTitle: string | null;
   customLocation: string | null;
+  /** … or an event found on an event source. */
+  eventId?: string | null;
 };
 
 export type SaveDateResult =
@@ -78,6 +80,16 @@ async function isStillFree(ctx: CoupleContext, start: Date, end: Date, ignore?: 
 // --- Plan / reschedule ---------------------------------------------------------------
 
 async function snapshot(coupleId: string, choice: DateChoice) {
+  if (choice.eventId) {
+    const [event] = await db
+      .select()
+      .from(events)
+      .where(and(eq(events.id, choice.eventId), eq(events.coupleId, coupleId)))
+      .limit(1);
+    if (!event) return null;
+    const note = [event.priceText, event.summary].filter(Boolean).join(" · ") || null;
+    return { ideaId: null, title: event.title, location: event.venue, note, url: event.url };
+  }
   if (choice.ideaId) {
     const [idea] = await db
       .select()

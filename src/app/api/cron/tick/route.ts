@@ -1,7 +1,10 @@
 import { timingSafeEqual } from "node:crypto";
-import { type NextRequest, NextResponse } from "next/server";
+import { after, type NextRequest, NextResponse } from "next/server";
 import { env } from "@/server/env";
-import { runTick } from "@/server/tick";
+import { runEventRefresh, runTick } from "@/server/tick";
+
+// Reading an event source (page + Claude) can take a while; it runs after the answer.
+export const maxDuration = 120;
 
 function authorized(request: NextRequest): boolean {
   const secret = env().cronSecret;
@@ -20,6 +23,7 @@ async function handle(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const result = await runTick();
+  after(runEventRefresh);
   return NextResponse.json({ ok: result.errors === 0, ...result });
 }
 

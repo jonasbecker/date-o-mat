@@ -10,9 +10,9 @@ export type UserColor = (typeof USER_COLORS)[number];
 export const IDEA_SIZES = ["small", "large"] as const;
 export type IdeaSize = (typeof IDEA_SIZES)[number];
 
-// Where an idea came from. V1 only writes "wishlist"; the other sources are
-// reserved for curated ideas and AI suggestions (see README, "Erweiterungen").
-export const IDEA_SOURCES = ["wishlist", "curated", "ai"] as const;
+// Where an idea came from: typed in, curated list, AI suggestion, or a tip
+// found on an event source ("web").
+export const IDEA_SOURCES = ["wishlist", "curated", "ai", "web"] as const;
 export type IdeaSource = (typeof IDEA_SOURCES)[number];
 
 export const RHYTHMS = ["weekly", "biweekly", "semimonthly", "monthly"] as const;
@@ -54,3 +54,14 @@ export type ConnectionStatus = (typeof CONNECTION_STATUSES)[number];
 export const RATING_MIN = 1;
 export const RATING_MAX = 5;
 export const REVIEW_NOTE_MAX = 500;
+
+// Event sources (websites the couple follows): a calendar lists dated events,
+// a tips page (magazine) lists ideas without a fixed date.
+export const EVENT_SOURCE_KINDS = ["calendar", "tips"] as const;
+export type EventSourceKind = (typeof EVENT_SOURCE_KINDS)[number];
+
+export const FETCH_STATUSES = ["ok", "empty", "error"] as const;
+export type FetchStatus = (typeof FETCH_STATUSES)[number];
+
+export const EVENT_KINDS = ["event", "tip"] as const;
+export type EventKind = (typeof EVENT_KINDS)[number];

@@ -20,6 +20,9 @@ import {
   CONNECTION_STATUSES,
   CYCLE_STATUSES,
   DATE_STATUSES,
+  EVENT_KINDS,
+  EVENT_SOURCE_KINDS,
+  FETCH_STATUSES,
   IDEA_SIZES,
   IDEA_SOURCES,
   NOTIFICATION_TYPES,
@@ -257,6 +260,61 @@ export const suggestions = pgTable(
   (t) => [index("suggestions_cycle_idx").on(t.cycleId)],
 );
 
+// --- Event sources -----------------------------------------------------------------
+
+// Websites the couple follows. The tick reads each one about once a day.
+export const eventSources = pgTable(
+  "event_sources",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    coupleId: uuid()
+      .notNull()
+      .references(() => couples.id, { onDelete: "cascade" }),
+    url: text().notNull(),
+    label: text().notNull(),
+    kind: text({ enum: EVENT_SOURCE_KINDS }).notNull().default("calendar"),
+    createdById: uuid().references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    // Set while a fetch runs, so the UI can show it and two runs do not overlap.
+    fetchStartedAt: timestamptz(),
+    lastFetchedAt: timestamptz(),
+    lastStatus: text({ enum: FETCH_STATUSES }),
+    lastError: text(),
+    lastCount: smallint(),
+  },
+  (t) => [unique("event_sources_couple_url_unique").on(t.coupleId, t.url)],
+);
+
+// What was found on a source. Replaced as a whole on every successful fetch.
+export const events = pgTable(
+  "events",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    coupleId: uuid()
+      .notNull()
+      .references(() => couples.id, { onDelete: "cascade" }),
+    sourceId: uuid()
+      .notNull()
+      .references(() => eventSources.id, { onDelete: "cascade" }),
+    kind: text({ enum: EVENT_KINDS }).notNull(),
+    title: text().notNull(),
+    startsAt: timestamptz(),
+    endsAt: timestamptz(),
+    allDay: boolean().notNull().default(false),
+    venue: text(),
+    priceText: text(),
+    url: text(),
+    summary: text(),
+    // Stable across fetches (title + start), e.g. to know a tip is already on the wishlist.
+    dedupeKey: text().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    unique("events_source_key_unique").on(t.sourceId, t.dedupeKey),
+    index("events_couple_starts_idx").on(t.coupleId, t.startsAt),
+  ],
+);
+
 // --- Push notifications -------------------------------------------------------
 
 export const pushSubscriptions = pgTable(
@@ -310,5 +368,7 @@ export type Couple = typeof couples.$inferSelect;
 export type CoupleSettings = typeof coupleSettings.$inferSelect;
 export type Cycle = typeof cycles.$inferSelect;
 export type DatePlan = typeof datePlans.$inferSelect;
+export type EventSource = typeof eventSources.$inferSelect;
+export type EventRow = typeof events.$inferSelect;
 export type DateReview = typeof dateReviews.$inferSelect;
 export type SuggestionRow = typeof suggestions.$inferSelect;

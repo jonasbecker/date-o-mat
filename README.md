@@ -23,6 +23,7 @@ gemeinsame Ideen-Wunschliste.
 | M9 | Fotos zum Rückblick (Vercel Blob, privat) | ⏳ |
 | M10 | Kuratierte Köln-Ideen, „Überrasch uns“ | ⏳ |
 | M11 | KI-Vorschläge (Claude Haiku 5.5, Wetter von Open-Meteo) | ⏳ |
+| M12 | Event-Quellen: Lieblings-Seiten täglich lesen, „Was läuft“ mit Frei-Prüfung | ✅ |
 
 ## Tech-Stack
 
@@ -158,6 +159,24 @@ scripts/              Migration beim Build, Secret-Generator
   und Lieblingsdate. Die Einstellungen sind dafür aus der unteren Leiste in den Kopf der
   Startseite gewandert (Regler-Symbol).
 
+### Event-Quellen in Kürze
+
+- In den **Einstellungen → Event-Quellen** tragt ihr Seiten ein (Veranstaltungskalender oder
+  Tipps-/Magazinseite). Ein Knopf fügt die vier Köln-Quellen auf einmal hinzu.
+- **Lesen** (`src/server/events/`): Der Server holt die Seite selbst (`fetch-page.ts`). Stehen
+  genug Events als schema.org-JSON-LD drin, werden nur die genommen – exakt und ohne KI.
+  Sonst wird die Seite zu Text mit `[Link](url)` gekürzt (`htmlToText`) und **Claude Haiku 5.5**
+  füllt per Structured Output eine feste Liste (Titel, Zeit, Ort, Preis, Link, Kurztext).
+- **Prüfen** (`cleanItems()` in `src/core/events.ts`, mit Tests): Vergangenes und mehr als
+  60 Tage Entferntes fliegt raus, Links zu fremden Domains werden verworfen, Doppelte entfernt.
+- **Wann:** Der Cron-Tick liest ab 5 Uhr pro Lauf höchstens eine Quelle, die älter als 20 Std.
+  ist – nach der Antwort an cron-job.org (`after()`). „Jetzt lesen“ geht jederzeit.
+- **„Was läuft“** (`/events`, Tab neben der Wunschliste): Events der nächsten drei Wochen nach
+  Tagen, mit „✓ Ihr habt beide Zeit“ (eine FreeBusy-Abfrage pro Person, inkl. Puffer).
+  „Als Date planen“ legt das Date direkt zur Event-Zeit an (mit Google-Einladung),
+  „Merken“ setzt es auf die Wunschliste (`ideas.source = 'web'`).
+- **Ohne `ANTHROPIC_API_KEY`** werden nur JSON-LD-Seiten gelesen; die Einstellungen sagen das.
+
 ### Slot-Finder in Kürze
 
 1. FreeBusy für beide Personen und alle ausgewählten Kalender (nur Belegt-Zeiten, nichts wird gespeichert).
@@ -178,9 +197,10 @@ scripts/              Migration beim Build, Secret-Generator
 | `ideas` | Wunschliste |
 | `cycles`, `date_plans`, `suggestions` | Runden, geplante Dates, App-Vorschläge |
 | `date_reviews` | Herzen + Notiz je Person und Date |
+| `event_sources`, `events` | gefolgte Seiten (mit Abruf-Status) und was dort gefunden wurde |
 | `push_subscriptions`, `notification_prefs`, `notification_log` | Push |
 
-Für M10/M11 vorbereitet: `ideas.source`/`external_ref` (kuratierte bzw. KI-Ideen).
+`ideas.source`/`external_ref`: Herkunft einer Idee (`web` = gemerkt aus „Was läuft“; `curated`/`ai` für M10/M11).
 
 ## Entwickeln
 
@@ -216,6 +236,14 @@ Bewusst nicht in V1, aber vorbereitet:
 | **Weitere Person / Gruppen** | Bewusst nicht vorgesehen: Runden, Bestätigen und Push gehen überall von genau zwei Personen aus. |
 
 ## Sicherheit & Datenschutz
+
+- **Event-Quellen:** Der Server ruft nur öffentliche `https`-Adressen ab (keine IPs, keine
+  internen Namen); jede Weiterleitung und die DNS-Auflösung werden erneut geprüft, private
+  Netze sind gesperrt (`src/lib/url-safety.ts`). Seiten werden auf 3 MB und 15 s begrenzt.
+  Seiteninhalt gilt als fremd: Claude füllt nur ein festes JSON-Schema, alles wird danach
+  nochmal geprüft, Links müssen zur Quelle gehören. An Claude geht nur der Seitentext –
+  keine Namen, Kalender oder Notizen von euch. Restrisiko: DNS-Rebinding zwischen Prüfung und
+  Abruf; da nur ihr zwei Quellen eintragen könnt, ist das bewusst in Kauf genommen.
 
 - Login nur für Adressen in `ALLOWED_EMAILS`. Danach gilt die Kopplung per Einladungscode;
   sind zwei Personen drin, wird der Code gelöscht.

@@ -8,6 +8,7 @@ import { ensureCurrentCycle } from "@/server/cycles";
 import { pullGoogleChanges, retryPendingSyncs } from "@/server/dates";
 import { db } from "@/server/db";
 import { notificationLog, sessions, users } from "@/server/db/schema";
+import { deleteOldEvents, refreshDueSource } from "@/server/events";
 import { sendDueReminders } from "@/server/notifications";
 import { getCoupleSettings } from "@/server/settings";
 import { currentSuggestion } from "@/server/suggestions";
@@ -39,6 +40,27 @@ async function cleanUp(): Promise<void> {
   await db.delete(sessions).where(lt(sessions.expiresAt, sql`now()`));
   // Reminders are at most a few weeks apart; 90 days is plenty for "already sent?".
   await db.delete(notificationLog).where(lt(notificationLog.dueAt, sql`now() - interval '90 days'`));
+  await deleteOldEvents();
+}
+
+async function coupleIds(): Promise<string[]> {
+  const rows = await db.selectDistinct({ coupleId: users.coupleId }).from(users).where(isNotNull(users.coupleId));
+  return rows.map((r) => r.coupleId!);
+}
+
+/**
+ * Reads at most one due event source per couple. Slow (page + Claude), so the
+ * cron route runs it after it has answered.
+ */
+export async function runEventRefresh(): Promise<void> {
+  for (const coupleId of await coupleIds()) {
+    try {
+      const settings = await getCoupleSettings(coupleId);
+      await refreshDueSource(coupleId, coupleNow(settings));
+    } catch (error) {
+      console.error(`[tick] event refresh for couple ${coupleId} failed`, error);
+    }
+  }
 }
 
 export async function runTick(): Promise<TickResult> {
@@ -47,15 +69,15 @@ export async function runTick(): Promise<TickResult> {
   } catch (error) {
     console.error("[tick] clean-up failed", error);
   }
-  const rows = await db.selectDistinct({ coupleId: users.coupleId }).from(users).where(isNotNull(users.coupleId));
+  const ids = await coupleIds();
   let errors = 0;
-  for (const { coupleId } of rows) {
+  for (const coupleId of ids) {
     try {
-      await tickCouple(coupleId!);
+      await tickCouple(coupleId);
     } catch (error) {
       errors++;
       console.error(`[tick] couple ${coupleId} failed`, error);
     }
   }
-  return { couples: rows.length, errors };
+  return { couples: ids.length, errors };
 }
