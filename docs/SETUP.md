@@ -326,6 +326,11 @@ dabei sind, stellt ihr unter **Einstellungen → Entdecken** ein.
 Nichts einzurichten. Unter **Einstellungen → Budget** einen Monatsbetrag eintragen; der
 Spartopf zählt ab diesem Monat. Den Monatsabschluss macht der Cron-Tick am 1. des Monats.
 
+### Besondere Tage (M19)
+
+Unter **Einstellungen → Besondere Tage** Jahrestag und Geburtstage eintragen. Erinnerungen
+kommen per Push (Erinnerungen → „Besondere Tage“).
+
 ### Status prüfen (M16)
 
 **Einstellungen → Läuft alles?** zeigt auf einen Blick, ob der Cron läuft, beide Kalender

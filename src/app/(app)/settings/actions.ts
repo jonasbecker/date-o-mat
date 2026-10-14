@@ -7,6 +7,8 @@ import { isPushEndpointAllowed } from "@/lib/allowlist";
 import { EVENT_MIXES, NOTIFICATION_TYPES, PLAN_MODES, RHYTHMS } from "@/lib/domain";
 import { parseSlotSettings, type SlotSettingsErrors } from "@/lib/slot-settings";
 import { parseBudget } from "@/core/budget";
+import { parseSpecialDay } from "@/core/special-days";
+import { addSpecialDay, deleteSpecialDay } from "@/server/special-days";
 import { requireCouple } from "@/server/auth/dal";
 import { setBudget } from "@/server/budget";
 import { destroySession } from "@/server/auth/session";
@@ -151,4 +153,21 @@ export async function setBudgetAction(_prev: BudgetFormState, formData: FormData
   await setBudget(coupleId, budget, coupleNow(await getCoupleSettings(coupleId)));
   refresh();
   return { status: "saved" };
+}
+
+export type SpecialDayFormState = { status: "idle" | "saved" | "error"; message?: string; savedAt?: number };
+
+export async function addSpecialDayAction(_prev: SpecialDayFormState, formData: FormData): Promise<SpecialDayFormState> {
+  const ctx = await requireCouple();
+  const parsed = parseSpecialDay({ kind: formData.get("kind"), title: formData.get("title"), date: formData.get("date") }, [ctx.user.id, ctx.partner.id]);
+  if ("error" in parsed) return { status: "error", message: parsed.error };
+  if (!(await addSpecialDay(ctx, parsed))) return { status: "error", message: "Mehr besondere Tage passen nicht rein." };
+  refresh();
+  return { status: "saved", savedAt: Date.now() };
+}
+
+export async function deleteSpecialDayAction(id: string): Promise<void> {
+  const { coupleId } = await requireCouple();
+  if (z.uuid().safeParse(id).success) await deleteSpecialDay(coupleId, id);
+  refresh();
 }

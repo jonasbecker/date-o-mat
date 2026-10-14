@@ -33,6 +33,8 @@ import {
   NOTIFICATION_TYPES,
   PLACE_SETTINGS,
   PLAN_MODES,
+  SEASON_KEYS,
+  SPECIAL_DAY_KINDS,
   RHYTHMS,
   SUGGESTION_STATUSES,
   SWIPE_VERDICTS,
@@ -378,6 +380,29 @@ export const budgetMonths = pgTable(
   (t) => [primaryKey({ columns: [t.coupleId, t.month] })],
 );
 
+// --- Special days ---------------------------------------------------------------------------------
+
+// Anniversary, birthdays …: every year on month/day. `year` (optional) gives "2. Jahrestag".
+export const specialDays = pgTable(
+  "special_days",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    coupleId: uuid()
+      .notNull()
+      .references(() => couples.id, { onDelete: "cascade" }),
+    kind: text({ enum: SPECIAL_DAY_KINDS }).notNull(),
+    title: text().notNull(),
+    month: smallint().notNull(),
+    day: smallint().notNull(),
+    year: smallint(),
+    // Whose birthday it is (the other one gets the reminder).
+    personId: uuid().references(() => users.id, { onDelete: "cascade" }),
+    createdById: uuid().references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("special_days_couple_idx").on(t.coupleId)],
+);
+
 // --- Swipe deck ("Entdecken") ----------------------------------------------------------
 
 // Ideas Claude made for the couple. Never deleted while the couple exists, so
@@ -400,6 +425,8 @@ export const deckCards = pgTable(
     emoji: text(),
     // Deliberately outside their usual taste ("Mal was anderes").
     wildcard: boolean().notNull().default(false),
+    // When it fits best – a "maybe" comes back then.
+    bestSeason: text({ enum: SEASON_KEYS }),
     dedupeKey: text().notNull(),
     // Combo cards: a snapshot of the event (events are replaced on every fetch).
     eventTitle: text(),
@@ -430,6 +457,8 @@ export const deckSwipes = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     verdict: text({ enum: SWIPE_VERDICTS }).notNull(),
+    // "Vielleicht": the card comes back to this person from then on.
+    revisitAt: timestamptz(),
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.cardId, t.userId] }), index("deck_swipes_user_created_idx").on(t.userId, t.createdAt)],
@@ -520,3 +549,4 @@ export type DateReview = typeof dateReviews.$inferSelect;
 export type SuggestionRow = typeof suggestions.$inferSelect;
 export type DeckCard = typeof deckCards.$inferSelect;
 export type DeckSwipe = typeof deckSwipes.$inferSelect;
+export type SpecialDay = typeof specialDays.$inferSelect;

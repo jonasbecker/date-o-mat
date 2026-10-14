@@ -49,6 +49,7 @@ export function PlanForm({
   reschedule,
   searchScopeLink,
   preselectIdeaId,
+  preselectSize,
   aiEnabled = false,
   events = null,
   budget = null,
@@ -63,6 +64,8 @@ export function PlanForm({
   searchScopeLink?: React.ReactNode;
   /** From "Überrasch uns" / "Damit planen": start with this idea selected. */
   preselectIdeaId?: string;
+  /** "Großes Date planen" (special days): start with long dates. */
+  preselectSize?: IdeaSize;
   /** Show "✨ Ideen von der KI" (Claude is configured). */
   aiEnabled?: boolean;
   /** Events where both are free; null when no event sources are set up. */
@@ -72,7 +75,7 @@ export function PlanForm({
 }) {
   const router = useRouter();
   const preselected = !reschedule && preselectIdeaId ? ideas.find((i) => i.id === preselectIdeaId) : undefined;
-  const [size, setSize] = useState<IdeaSize>(reschedule?.size ?? preselected?.size ?? "small");
+  const [size, setSize] = useState<IdeaSize>(reschedule?.size ?? preselected?.size ?? preselectSize ?? "small");
   const slots = size === "small" ? small : large;
   const [slotKey, setSlotKey] = useState<string | null>(slots[0]?.key ?? null);
   const firstIdea = (s: IdeaSize): IdeaPick => {
@@ -89,7 +92,7 @@ export function PlanForm({
         : firstIdea(size),
   );
   const [tab, setTab] = useState<Tab>(() =>
-    reschedule && !reschedule.ideaId ? "own" : ideas.some((i) => i.size === (reschedule?.size ?? preselected?.size ?? "small")) ? "wishlist" : "koeln",
+    reschedule && !reschedule.ideaId ? "own" : ideas.some((i) => i.size === (reschedule?.size ?? preselected?.size ?? preselectSize ?? "small")) ? "wishlist" : "koeln",
   );
   const [saving, startSaving] = useTransition();
   const [customTitle, setCustomTitle] = useState(reschedule && !reschedule.ideaId ? reschedule.title : "");

@@ -18,6 +18,8 @@ import { lastTick } from "@/server/system-status";
 import { remainingCards } from "@/server/deck";
 import { budgetState } from "@/server/budget";
 import { BudgetBar } from "@/components/budget-bar";
+import { upcomingForHome } from "@/server/special-days";
+import { inDaysLabel, SHOW_DAYS_BEFORE } from "@/core/special-days";
 import { countSubscriptions } from "@/server/push";
 import { hasSeenIntro, requireCouple } from "@/server/auth/dal";
 import { calendarStates } from "@/server/availability";
@@ -47,7 +49,7 @@ async function Home() {
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
   const cycle = await ensureCurrentCycle(coupleId, now);
-  const [ideaCount, calendars, history, nextDate, pushDevices, toReview, weekEvents, tick, deckCount, budget] = await Promise.all([
+  const [ideaCount, calendars, history, nextDate, pushDevices, toReview, weekEvents, tick, deckCount, budget, specialDays] = await Promise.all([
     countIdeas(coupleId),
     calendarStates(ctx),
     cycleHistory(coupleId),
@@ -58,6 +60,7 @@ async function Home() {
     lastTick(),
     remainingCards(ctx, now),
     budgetState(coupleId, now),
+    upcomingForHome(ctx, now, SHOW_DAYS_BEFORE),
   ]);
   // The cron runs in real time (not the dev clock). Only warn once it has worked before –
   // "never ran" is a setup step, shown under Einstellungen → Läuft alles?
@@ -101,6 +104,21 @@ async function Home() {
           Diese Runde findet der Date-O-Mat keine gemeinsame Lücke mehr. Schaut unter „Planen“, ob ihr später Zeit habt.
         </p>
       )}
+
+      {specialDays.slice(0, 2).map((day) => (
+        <div key={day.id} className="sticker flex flex-col gap-2 rounded-[20px] bg-himbeere-soft px-4 py-3.5 text-tinte">
+          <p className="font-display text-lg font-semibold">
+            {day.emoji} {day.label} {inDaysLabel(day.days)}
+          </p>
+          <p className="text-sm font-bold">
+            {day.kind === "birthday" ? "Zeit für eine Überraschung." : "Wie wär's mit einem großen Date?"}
+            {budget && budget.pot > 0 ? ` Im Spartopf: ${budget.pot} € 🎁` : ""}
+          </p>
+          <Link href="/plan?size=large" className="self-start text-sm font-extrabold underline">
+            {day.kind === "birthday" ? "Überraschung planen →" : "Großes Date planen →"}
+          </Link>
+        </div>
+      ))}
 
       {nextDate && <DateCard date={nextDate} me={user} partner={partner} showConfirm={false} />}
 

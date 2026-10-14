@@ -131,6 +131,7 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
         reschedule={reschedule}
         searchScopeLink={scopeLink}
         preselectIdeaId={typeof params.idea === "string" ? params.idea : undefined}
+        preselectSize={params.size === "large" ? "large" : undefined}
         aiEnabled={env().ai}
         events={events}
       />

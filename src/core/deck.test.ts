@@ -7,9 +7,11 @@ import {
   dedupeKey,
   isNearDuplicate,
   matchesFilter,
+  maybeRevisitAt,
   needsRefill,
   orderDeck,
   pickThemes,
+  revisitOutcome,
   seasonOf,
   superLikeLeft,
   swipeOutcome,
@@ -167,5 +169,27 @@ describe("swiping", () => {
     expect(needsRefill({ remainingPerPerson: [12, 8], openTotal: 20, autoBatchesToday: 0 })).toBe(false);
     expect(needsRefill({ remainingPerPerson: [0, 0], openTotal: 0, autoBatchesToday: 3 })).toBe(false);
     expect(needsRefill({ remainingPerPerson: [60, 0], openTotal: 60, autoBatchesToday: 0 })).toBe(false);
+  });
+});
+
+describe("maybe and revisit", () => {
+  const now = new Date("2026-10-14T12:00:00Z"); // autumn
+  it("a maybe comes back at the start of its season, else in three weeks", () => {
+    expect(maybeRevisitAt("summer", now).toISOString()).toBe("2027-06-01T06:00:00.000Z");
+    expect(maybeRevisitAt("winter", now).toISOString()).toBe("2026-12-01T07:00:00.000Z");
+    expect(maybeRevisitAt("autumn", now).toISOString()).toBe("2026-11-04T07:00:00.000Z");
+    expect(maybeRevisitAt(null, now).toISOString()).toBe("2026-11-04T07:00:00.000Z");
+  });
+  it.each([
+    ["like", null, "keep"],
+    ["nope", null, "wait"],
+    ["nope", "nope", "archive"],
+    ["nope", "like", "wait"],
+    ["maybe", "nope", "wait"],
+  ] as const)("revisit: %s + partner %s → %s", (mine, partner, outcome) => expect(revisitOutcome(mine, partner)).toBe(outcome));
+  it("best_season is checked", () => {
+    const [card] = cleanDeckCards([raw({ best_season: "summer" })], { existingKeys: [], eventCount: 0, maxCombos: 0 });
+    expect(card.bestSeason).toBe("summer");
+    expect(cleanDeckCards([raw({ best_season: "monsoon" })], { existingKeys: [], eventCount: 0, maxCombos: 0 })[0].bestSeason).toBeNull();
   });
 });

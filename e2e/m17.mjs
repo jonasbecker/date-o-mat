@@ -67,7 +67,7 @@ const claude = createServer((req, res) => {
     const ideas = Number(/Make (\d+) normal ideas/.exec(prompt)?.[1] ?? 0);
     const combos = Number(/Also make (\d+) combo cards/.exec(prompt)?.[1] ?? 0);
     const themes = ["food", "nature", "culture", "active", "creative", "cozy"];
-    const cards = [{ title: "Stadtwald: Picknick", description: "Schon auf der Liste.", emoji: "🧺", size: "small", cost_eur: 5, location: "Stadtwald", setting: "outdoor", theme: "nature", wildcard: false, event_index: null }];
+    const cards = [{ title: "Stadtwald: Picknick", description: "Schon auf der Liste.", emoji: "🧺", size: "small", cost_eur: 5, location: "Stadtwald", setting: "outdoor", theme: "nature", wildcard: false, event_index: null, best_season: "any" }];
     for (let i = 0; i < ideas; i++) {
       cards.push({
         title: `${NOUNS[i % NOUNS.length]} Runde${n}`,
@@ -80,10 +80,11 @@ const claude = createServer((req, res) => {
         theme: themes[i % themes.length],
         wildcard: i % 4 === 3,
         event_index: null,
+        best_season: "any",
       });
     }
     for (let i = 0; i < combos; i++) {
-      cards.push({ title: `Kombi${n}x${i + 1}: Event und Burger`, description: "Vorher Burger um die Ecke.", emoji: "🎟️", size: "small", cost_eur: 60, location: "Mülheim", setting: "indoor", theme: "night", wildcard: false, event_index: i });
+      cards.push({ title: `Kombi${n}x${i + 1}: Event und Burger`, description: "Vorher Burger um die Ecke.", emoji: "🎟️", size: "small", cost_eur: 60, location: "Mülheim", setting: "indoor", theme: "night", wildcard: false, event_index: i, best_season: "any" });
     }
     res.setHeader("content-type", "application/json");
     res.end(JSON.stringify({

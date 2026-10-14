@@ -11,7 +11,7 @@ import { calendarStates } from "@/server/availability";
 import { listCalendars } from "@/server/google/calendar-api";
 import { getConnection } from "@/server/google/connection";
 import { getCoupleSettings } from "@/server/settings";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatLongDate } from "@/lib/format";
 import { coupleNow } from "@/server/clock";
 import { env } from "@/server/env";
 import { devClockAction, logoutAction } from "./actions";
@@ -30,6 +30,9 @@ import { systemStatus } from "@/server/system-status";
 import { SystemStatusCard } from "./system-status-card";
 import { EventMixPicker } from "./event-mix-picker";
 import { BudgetForm } from "./budget-form";
+import { SpecialDays, type SpecialDayView } from "./special-days";
+import { upcomingDaysFor } from "@/server/special-days";
+import { inDaysLabel } from "@/core/special-days";
 
 // "Jetzt lesen" fetches a page and asks Claude (runs after the response).
 export const maxDuration = 120;
@@ -81,6 +84,13 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
   ]);
   const now = coupleNow(settings);
   const status = await systemStatus(ctx, now);
+  const specialDayViews: SpecialDayView[] = (await upcomingDaysFor(coupleId, now, 366)).map((d) => ({
+    id: d.id,
+    emoji: d.emoji,
+    label: d.label,
+    dateLabel: formatLongDate(d.date),
+    inDays: inDaysLabel(d.days),
+  }));
   const me = people.find((p) => p.isMe)!;
   const other = people.find((p) => !p.isMe)!;
 
@@ -149,6 +159,15 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
         </h2>
         <Card>
           <EventSources sources={sources.map((s) => sourceView(s, now))} aiReady={env().ai} />
+        </Card>
+      </section>
+
+      <section id="besondere-tage" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="special-heading">
+        <h2 id="special-heading" className="text-[21px] font-semibold">
+          Besondere Tage
+        </h2>
+        <Card>
+          <SpecialDays days={specialDayViews} people={[user, partner].map((p) => ({ id: p.id, name: p.name }))} />
         </Card>
       </section>
 

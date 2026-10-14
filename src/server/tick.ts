@@ -8,7 +8,8 @@ import { ensureCurrentCycle } from "@/server/cycles";
 import { pullGoogleChanges, retryPendingSyncs } from "@/server/dates";
 import { closeBudgetMonths } from "@/server/budget";
 import { db } from "@/server/db";
-import { expireDeckCards, refillDeck, sendDeckNudges } from "@/server/deck";
+import { expireDeckCards, refillDeck, resurfaceOldIdea, sendDeckNudges } from "@/server/deck";
+import { sendSpecialDayReminders } from "@/server/special-days";
 import { notificationLog, sessions, users } from "@/server/db/schema";
 import { deleteOldEvents, refreshDueSource } from "@/server/events";
 import { sendDueReminders } from "@/server/notifications";
@@ -28,6 +29,8 @@ export async function tickCouple(coupleId: string): Promise<void> {
   await sendDueReminders(coupleId, now);
   await expireDeckCards(coupleId, now);
   await closeBudgetMonths(coupleId, now);
+  await sendSpecialDayReminders(coupleId, now);
+  await resurfaceOldIdea(coupleId, now);
   await sendDeckNudges(coupleId, now);
 
   // Suggestion mode: prepare the round's proposal, so it is ready when someone opens the app.

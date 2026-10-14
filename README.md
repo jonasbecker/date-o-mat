@@ -30,6 +30,7 @@ gemeinsame Ideen-Wunschliste.
 | M16 | „Läuft alles?“: Status in den Einstellungen, Warnung bei stehender Automatik, Push bei getrenntem Kalender | ✅ |
 | M17 | Entdecken: KI-Ideen-Stapel zum Swipen, Match nur wenn beide 💚, Rückgängig, Super-Like, Event-Kombis | ✅ |
 | M18 | Budget & Spartopf: Monatsbudget, echte Kosten im Rückblick, Spartopf, Monatsrückblick | ✅ |
+| M19 | Besondere Tage (Jahrestag, Geburtstage) mit Erinnerung, „Vielleicht“-Stapel, alte Ideen auffrischen | ✅ |
 
 ## Tech-Stack
 
@@ -210,6 +211,24 @@ scripts/              Migration beim Build, Secret-Generator
   (außer sie ist schon als Date geplant).
 - **Nachrichten** (einzeln abschaltbar unter Erinnerungen): „Match!“, „⭐ … findet etwas super“
   und höchstens einmal am Tag „Sam hat 4 Ideen geliked 👀“ (ab 3 wartenden Likes, nicht nachts).
+
+### Besondere Tage, „Vielleicht“ & alte Ideen in Kürze
+
+- **Besondere Tage** (Einstellungen): Jahrestag, Geburtstag von euch beiden, eigene Tage
+  („Unser erstes Date“). Jedes Jahr wieder; mit Startjahr zählt die App mit („2. Jahrestag“,
+  „Sams Geburtstag (25)“). Logik in `src/core/special-days.ts` (mit Tests, auch 29. Februar).
+- **Erinnerung** 2 Wochen und 2 Tage vorher um 10 Uhr (Push, abschaltbar), auf der
+  Startseite eine Karte ab 3 Wochen vorher mit „Großes Date planen →“ (Planen startet dann mit
+  „Lang“) und dem Stand des Spartopfs. **Geburtstage sieht und bekommt nur die andere Person**
+  – für die Überraschung. Steht ein Tag in den nächsten 30 Tagen an, mischt der Stapel ein paar
+  besondere Ideen dafür bei.
+- **„Vielleicht“** (🤔 oder nach unten wischen): Die Karte verschwindet nur für dich und kommt
+  zur passenden Jahreszeit wieder (Claude gibt jeder Karte eine „beste Jahreszeit“; Freibad →
+  1. Juni), sonst nach drei Wochen. „Jetzt nochmal ansehen“ holt sie sofort zurück.
+- **Alte Ideen:** Steht eine Idee seit 3 Monaten unverplant auf der Wunschliste, kommt sie
+  (höchstens eine pro Tag) als Karte „🕰️ Steht seit März auf eurer Liste – noch Lust?“ in den
+  Stapel. Ein 💚 reicht, damit sie bleibt; erst wenn beide ✕ sagen, fliegt sie von der Liste.
+  Rückgängig geht auch hier.
 
 ### Budget & Spartopf in Kürze
 

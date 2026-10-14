@@ -131,7 +131,7 @@ await j.goto(`${BASE}/settings#events`);
 await j.getByRole("heading", { name: "Event-Quellen" }).waitFor({ timeout: 15000 });
 for (const [path, kind] of [["/jsonld", "calendar"], ["/html", "calendar"], ["/tips", "tips"], ["/spa", "calendar"]]) {
   await j.getByRole("textbox", { name: "Weitere Seite" }).fill(`http://localhost:4040${path}`);
-  await j.locator('select[name="kind"]').selectOption(kind);
+  await j.locator("#events select[name=\"kind\"]").selectOption(kind);
   await j.getByRole("button", { name: "Hinzufügen", exact: true }).click();
   await j.locator(`a[href="http://localhost:4040${path}"]`).waitFor({ timeout: 10000 });
 }

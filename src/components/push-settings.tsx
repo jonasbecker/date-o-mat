@@ -137,6 +137,7 @@ export function PushSettings({
     match: "Match! – ihr mögt beide dieselbe Idee",
     deck_nudge: `Entdecken: ${partnerName} hat Ideen geliked oder super-geliked`,
     budget: "Monatsrückblick: Budget und Spartopf",
+    special_day: "Besondere Tage (2 Wochen und 2 Tage vorher)",
   };
 
   if (!publicKey) {

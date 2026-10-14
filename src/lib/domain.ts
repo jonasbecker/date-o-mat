@@ -52,6 +52,8 @@ export const NOTIFICATION_TYPES = [
   "deck_nudge",
   // Month recap of the date budget and the savings pot.
   "budget",
+  // Anniversary, birthdays and other special days coming up.
+  "special_day",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -82,7 +84,8 @@ export type AiRequestKind = (typeof AI_REQUEST_KINDS)[number];
 
 // Swipe deck ("Entdecken"): cards made by Claude, each person swipes on their own.
 // A card is matched when both like it, passed as soon as one says no.
-export const DECK_CARD_KINDS = ["idea", "combo"] as const;
+// "revisit": an idea that has waited long on the wishlist – still wanted?
+export const DECK_CARD_KINDS = ["idea", "combo", "revisit"] as const;
 export type DeckCardKind = (typeof DECK_CARD_KINDS)[number];
 export const DECK_CARD_STATUSES = ["open", "matched", "passed", "expired"] as const;
 export type DeckCardStatus = (typeof DECK_CARD_STATUSES)[number];
@@ -93,3 +96,9 @@ export type PlaceSetting = (typeof PLACE_SETTINGS)[number];
 /** How many event combos go into a new batch. */
 export const EVENT_MIXES = ["none", "some", "lots"] as const;
 export type EventMix = (typeof EVENT_MIXES)[number];
+
+/** Special days that come back every year. A birthday belongs to one of the two. */
+export const SPECIAL_DAY_KINDS = ["anniversary", "birthday", "other"] as const;
+export type SpecialDayKind = (typeof SPECIAL_DAY_KINDS)[number];
+export const SEASON_KEYS = ["any", "spring", "summer", "autumn", "winter"] as const;
+export type SeasonKey = (typeof SEASON_KEYS)[number];

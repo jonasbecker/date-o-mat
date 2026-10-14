@@ -17,7 +17,10 @@ import {
   needsRefill,
   NUDGE_MIN_LIKES,
   orderDeck,
+  maybeRevisitAt,
   pickThemes,
+  REVISIT_AFTER_DAYS,
+  revisitOutcome,
   superLikeLeft,
   swipeOutcome,
   type DeckCardView,
@@ -28,6 +31,8 @@ import { APP_TIMEZONE, type SwipeVerdict } from "@/lib/domain";
 import type { CoupleContext } from "@/server/auth/dal";
 import { aiRequestsToday, anthropic, recordAiUsage, reserveAiRequest } from "@/server/anthropic";
 import { budgetState } from "@/server/budget";
+import { specialDayPrompt } from "@/core/special-days";
+import { upcomingDaysFor } from "@/server/special-days";
 import { db } from "@/server/db";
 import { coupleSettings, datePlans, deckCards, deckSwipes, ideas, notificationLog, users, type DeckCard } from "@/server/db/schema";
 import { env } from "@/server/env";
@@ -55,6 +60,7 @@ const ResultSchema = z.object({
       theme: z.string().nullable(),
       wildcard: z.boolean(),
       event_index: z.number().int().nullable(),
+      best_season: z.enum(["any", "spring", "summer", "autumn", "winter"]),
     }),
   ),
 });
@@ -105,11 +111,14 @@ export function cardView(card: DeckCard, partnerVerdict: SwipeVerdict | undefine
 /** Open cards one person has not swiped yet, in their order. */
 async function openCardsFor(ctx: CoupleContext, now: Date): Promise<{ cards: DeckCard[]; partner: Map<string, SwipeVerdict> }> {
   const rows = await db
-    .select({ card: deckCards, mine: deckSwipes.verdict })
+    .select({ card: deckCards, mine: deckSwipes.verdict, revisitAt: deckSwipes.revisitAt })
     .from(deckCards)
     .leftJoin(deckSwipes, and(eq(deckSwipes.cardId, deckCards.id), eq(deckSwipes.userId, ctx.user.id)))
     .where(and(eq(deckCards.coupleId, ctx.coupleId), eq(deckCards.status, "open")));
-  const cards = rows.filter((r) => r.mine === null && stillValid(r.card, now)).map((r) => r.card);
+  // Not swiped yet – or put on "Vielleicht" and due again.
+  const cards = rows
+    .filter((r) => (r.mine === null || (r.mine === "maybe" && r.revisitAt !== null && r.revisitAt <= now)) && stillValid(r.card, now))
+    .map((r) => r.card);
   const partnerRows = cards.length
     ? await db
         .select({ cardId: deckSwipes.cardId, verdict: deckSwipes.verdict })
@@ -122,6 +131,8 @@ async function openCardsFor(ctx: CoupleContext, now: Date): Promise<{ cards: Dec
 
 export type DeckState = {
   cards: DeckCardView[];
+  /** Put on "Vielleicht", coming back later. */
+  maybes: number;
   superLeft: boolean;
   /** A batch is being made right now. */
   generating: boolean;
@@ -130,13 +141,15 @@ export type DeckState = {
 };
 
 export async function deckFor(ctx: CoupleContext, now: Date): Promise<DeckState> {
-  const [{ cards, partner }, lastSuper, settings, matches] = await Promise.all([
+  const [{ cards, partner }, lastSuper, settings, matches, maybes] = await Promise.all([
     openCardsFor(ctx, now),
     lastSuperLike(ctx.user.id),
     getCoupleSettings(ctx.coupleId),
-    db.$count(deckCards, and(eq(deckCards.coupleId, ctx.coupleId), eq(deckCards.status, "matched"))),
+    db.$count(deckCards, and(eq(deckCards.coupleId, ctx.coupleId), eq(deckCards.status, "matched"), ne(deckCards.kind, "revisit"))),
+    maybeCount(ctx, now),
   ]);
-  const views = cards.map((card) => cardView(card, partner.get(card.id)));
+  const since = await waitingSinceLabels(cards, now);
+  const views = cards.map((card) => ({ ...cardView(card, partner.get(card.id)), waitingSince: since.get(card.id) ?? null }));
   // "✓ Ihr habt beide Zeit" for combo cards – one FreeBusy query per person.
   const combos = cards.filter((c) => c.kind === "combo" && c.eventStartsAt);
   if (combos.length) {
@@ -149,6 +162,7 @@ export async function deckFor(ctx: CoupleContext, now: Date): Promise<DeckState>
   const refillAt = settings.deckRefillStartedAt;
   return {
     cards: views,
+    maybes,
     superLeft: superLikeLeft(lastSuper, new Date()),
     generating: Boolean(refillAt && Date.now() - refillAt.getTime() < STALE_REFILL_MS),
     matches,
@@ -185,7 +199,7 @@ function matchNote(card: DeckCard): string | null {
   return note ? note.slice(0, 1000) : null;
 }
 
-export async function swipe(ctx: CoupleContext, cardId: string, verdict: SwipeVerdict): Promise<SwipeResult> {
+export async function swipe(ctx: CoupleContext, cardId: string, verdict: SwipeVerdict, now: Date): Promise<SwipeResult> {
   if (verdict === "super" && !superLikeLeft(await lastSuperLike(ctx.user.id), new Date())) return { ok: false, error: "super_used" };
   return db.transaction(async (tx) => {
     const [card] = await tx
@@ -194,12 +208,31 @@ export async function swipe(ctx: CoupleContext, cardId: string, verdict: SwipeVe
       .where(and(eq(deckCards.id, cardId), eq(deckCards.coupleId, ctx.coupleId)))
       .for("update");
     if (!card || card.status !== "open") return { ok: false, error: "gone" } as const;
-    const inserted = await tx.insert(deckSwipes).values({ cardId, userId: ctx.user.id, verdict }).onConflictDoNothing().returning();
+    const revisitAt = verdict === "maybe" ? maybeRevisitAt(card.bestSeason, now) : null;
+    // A "maybe" can be decided again later; any other swipe is final (until undone).
+    const inserted = await tx
+      .insert(deckSwipes)
+      .values({ cardId, userId: ctx.user.id, verdict, revisitAt })
+      .onConflictDoUpdate({
+        target: [deckSwipes.cardId, deckSwipes.userId],
+        set: { verdict, revisitAt, createdAt: new Date() },
+        setWhere: eq(deckSwipes.verdict, "maybe"),
+      })
+      .returning();
     if (inserted.length === 0) return { ok: false, error: "gone" } as const;
     const [partner] = await tx
       .select({ verdict: deckSwipes.verdict })
       .from(deckSwipes)
       .where(and(eq(deckSwipes.cardId, cardId), eq(deckSwipes.userId, ctx.partner.id)));
+    if (card.kind === "revisit") {
+      const outcome = revisitOutcome(verdict, partner?.verdict ?? null);
+      if (outcome === "keep") await tx.update(deckCards).set({ status: "matched", matchedAt: new Date() }).where(eq(deckCards.id, cardId));
+      if (outcome === "archive" && card.ideaId) {
+        await tx.update(deckCards).set({ status: "passed" }).where(eq(deckCards.id, cardId));
+        await tx.update(ideas).set({ archivedAt: new Date(), updatedById: ctx.user.id }).where(and(eq(ideas.id, card.ideaId), eq(ideas.coupleId, ctx.coupleId)));
+      }
+      return { ok: true, outcome, title: card.title, match: null } as const;
+    }
     const outcome = swipeOutcome(verdict, partner?.verdict ?? null);
     if (outcome === "pass") {
       await tx.update(deckCards).set({ status: "passed" }).where(eq(deckCards.id, cardId));
@@ -243,13 +276,19 @@ export async function undoLastSwipe(ctx: CoupleContext, now: Date): Promise<Undo
       .limit(1);
     if (!last || !stillValid(last.card, now)) return { ok: false, error: "nothing" } as const;
     const card = last.card;
-    if (card.status === "matched" && card.ideaId) {
+    if (card.kind === "revisit") {
+      // Kept or removed from the wishlist: back to how it was.
+      if (card.status === "passed" && card.ideaId) await tx.update(ideas).set({ archivedAt: null }).where(and(eq(ideas.id, card.ideaId), eq(ideas.coupleId, ctx.coupleId)));
+    } else if (card.status === "matched" && card.ideaId) {
       // Already planned as a date: the match stays.
       const used = await tx.$count(datePlans, eq(datePlans.ideaId, card.ideaId));
       if (used > 0) return { ok: false, error: "planned" } as const;
       await tx.delete(ideas).where(and(eq(ideas.id, card.ideaId), eq(ideas.coupleId, ctx.coupleId)));
     }
-    await tx.update(deckCards).set({ status: "open", matchedAt: null, ideaId: null }).where(eq(deckCards.id, card.id));
+    await tx
+      .update(deckCards)
+      .set({ status: "open", matchedAt: null, ideaId: card.kind === "revisit" ? card.ideaId : null })
+      .where(eq(deckCards.id, card.id));
     await tx.delete(deckSwipes).where(and(eq(deckSwipes.cardId, card.id), eq(deckSwipes.userId, ctx.user.id)));
     const [partner] = await tx
       .select({ verdict: deckSwipes.verdict })
@@ -426,6 +465,7 @@ async function makeBatch(coupleId: string, now: Date, requestId: string, focus?:
     exclude,
     focus,
     budgetLeft: budget?.left ?? null,
+    specialDays: specialDayPrompt(await upcomingDaysFor(coupleId, now, 30)),
   });
 
   const response = await anthropic().messages.parse({
@@ -458,6 +498,7 @@ async function makeBatch(coupleId: string, now: Date, requestId: string, focus?:
           theme: d.theme,
           emoji: d.emoji,
           wildcard: d.wildcard,
+          bestSeason: d.bestSeason,
           dedupeKey: d.dedupeKey,
           eventTitle: event?.title ?? null,
           eventStartsAt: event?.startsAt ?? null,
@@ -472,4 +513,81 @@ async function makeBatch(coupleId: string, now: Date, requestId: string, focus?:
     )
     .onConflictDoNothing();
   return true;
+}
+
+// --- Old wishlist ideas and "Vielleicht" ------------------------------------------------------------
+
+/**
+ * Tick: at most one idea a day that has waited long on the wishlist (never
+ * planned, not asked about recently) comes back as a "noch Lust?" card.
+ */
+export async function resurfaceOldIdea(coupleId: string, now: Date): Promise<void> {
+  const day = 86_400_000;
+  const recent = await db.$count(deckCards, and(eq(deckCards.coupleId, coupleId), eq(deckCards.kind, "revisit"), gt(deckCards.createdAt, new Date(Date.now() - 20 * 3_600_000))));
+  if (recent > 0) return;
+  const cutoff = new Date(now.getTime() - REVISIT_AFTER_DAYS * day);
+  const candidates = await db
+    .select()
+    .from(ideas)
+    .where(and(eq(ideas.coupleId, coupleId), isNull(ideas.archivedAt), lt(ideas.createdAt, cutoff), lt(ideas.updatedAt, cutoff)))
+    .orderBy(ideas.createdAt)
+    .limit(20);
+  for (const idea of candidates) {
+    const [planned, asked] = await Promise.all([
+      db.$count(datePlans, eq(datePlans.ideaId, idea.id)),
+      db.$count(deckCards, and(eq(deckCards.coupleId, coupleId), eq(deckCards.kind, "revisit"), eq(deckCards.ideaId, idea.id), gt(deckCards.createdAt, cutoff))),
+    ]);
+    if (planned > 0 || asked > 0) continue;
+    await db
+      .insert(deckCards)
+      .values({
+        coupleId,
+        kind: "revisit",
+        title: idea.title,
+        note: idea.note,
+        size: idea.size,
+        costEur: idea.costEur,
+        location: idea.location,
+        emoji: "🕰️",
+        dedupeKey: `revisit:${idea.id}:${DateTime.fromJSDate(now, { zone: APP_TIMEZONE }).toISODate()}`,
+        ideaId: idea.id,
+        batch: 0,
+      })
+      .onConflictDoNothing();
+    return;
+  }
+}
+
+/** "seit März" / "seit März 2025" for revisit cards. */
+export async function waitingSinceLabels(cards: DeckCard[], now: Date): Promise<Map<string, string>> {
+  const ids = cards.filter((c) => c.kind === "revisit" && c.ideaId).map((c) => c.ideaId!);
+  if (ids.length === 0) return new Map();
+  const rows = await db.select({ id: ideas.id, createdAt: ideas.createdAt }).from(ideas).where(inArray(ideas.id, ids));
+  const year = DateTime.fromJSDate(now, { zone: APP_TIMEZONE }).year;
+  const labels = new Map<string, string>();
+  for (const card of cards) {
+    const created = rows.find((r) => r.id === card.ideaId)?.createdAt;
+    if (!created) continue;
+    const t = DateTime.fromJSDate(created, { zone: APP_TIMEZONE }).setLocale("de");
+    labels.set(card.id, `seit ${t.toFormat(t.year === year ? "LLLL" : "LLLL yyyy")}`);
+  }
+  return labels;
+}
+
+/** Cards this person put on "Vielleicht" that are not due yet. */
+export async function maybeCount(ctx: CoupleContext, now: Date): Promise<number> {
+  return db
+    .select({ cardId: deckSwipes.cardId })
+    .from(deckSwipes)
+    .innerJoin(deckCards, eq(deckCards.id, deckSwipes.cardId))
+    .where(and(eq(deckSwipes.userId, ctx.user.id), eq(deckSwipes.verdict, "maybe"), gt(deckSwipes.revisitAt, now), eq(deckCards.status, "open")))
+    .then((rows) => rows.length);
+}
+
+/** "Jetzt nochmal ansehen": all of this person's "Vielleicht" cards come back now. */
+export async function bringBackMaybes(ctx: CoupleContext, now: Date): Promise<void> {
+  await db
+    .update(deckSwipes)
+    .set({ revisitAt: now })
+    .where(and(eq(deckSwipes.userId, ctx.user.id), eq(deckSwipes.verdict, "maybe"), gt(deckSwipes.revisitAt, now)));
 }

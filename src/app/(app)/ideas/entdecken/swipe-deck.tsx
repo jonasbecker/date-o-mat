@@ -8,12 +8,13 @@ import { SizeChip } from "@/components/size-chip";
 import { DECK_FILTER_LABEL, DECK_FILTERS, DECK_THEMES, matchesFilter, type DeckCardView, type DeckFilter } from "@/core/deck";
 import { cn } from "@/lib/cn";
 import { formatCost } from "@/lib/idea-input";
-import { moreCardsAction, swipeAction, undoSwipeAction } from "./actions";
+import { bringBackMaybesAction, moreCardsAction, swipeAction, undoSwipeAction } from "./actions";
 
-type Verdict = "like" | "super" | "nope";
+type Verdict = "like" | "super" | "nope" | "maybe";
 
 const THRESHOLD_X = 100;
 const THRESHOLD_UP = 110;
+const THRESHOLD_DOWN = 110;
 const FLY_MS = 220;
 
 const THEME_LABEL = Object.fromEntries(DECK_THEMES.map((t) => [t.key, t.label])) as Record<string, string>;
@@ -38,6 +39,7 @@ function Card({ card, partnerName }: { card: DeckCardView; partnerName: string }
   return (
     <div className={cn("sticker flex h-full flex-col gap-3 overflow-hidden rounded-[28px] p-5 text-tinte", TONE[card.theme ?? ""] ?? "bg-zitrone-soft")}>
       <div className="flex flex-wrap gap-1.5 text-[12px] font-extrabold">
+        {card.kind === "revisit" && <span className="rounded-full bg-lavendel px-2.5 py-0.5">🕰️ Steht {card.waitingSince ?? "lange"} auf eurer Liste</span>}
         {card.partnerSuper && <span className="rounded-full bg-zitrone px-2.5 py-0.5">⭐ {partnerName} findet das super</span>}
         {card.kind === "combo" && <span className="rounded-full bg-himmel px-2.5 py-0.5">🎟️ Event-Kombi</span>}
         {card.wildcard && <span className="rounded-full bg-lavendel px-2.5 py-0.5">🎲 Mal was anderes</span>}
@@ -57,6 +59,7 @@ function Card({ card, partnerName }: { card: DeckCardView; partnerName: string }
           {card.bothFree === false && <p className="mt-1 text-[13px]">✗ Da hat jemand von euch schon was vor</p>}
         </div>
       )}
+      {card.kind === "revisit" && <p className="text-[15px] font-extrabold">Noch Lust? 💚 = bleibt drauf · ✕ = weg damit (wenn ihr euch einig seid)</p>}
       <div className="mt-auto flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] font-extrabold">
         <SizeChip size={card.size} />
         {cost && <span>{cost}</span>}
@@ -72,10 +75,12 @@ export function SwipeDeck({
   superLeft: superLeftInitially,
   generating,
   matches,
+  maybes,
   ai,
   partnerName,
 }: {
   cards: DeckCardView[];
+  maybes: number;
   superLeft: boolean;
   generating: boolean;
   matches: number;
@@ -94,8 +99,12 @@ export function SwipeDeck({
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const [flying, setFlying] = useState<{ id: string; verdict: Verdict } | null>(null);
   const [busy, startBusy] = useTransition();
+  // While an undo is on its way, the top card is about to change – no swiping.
+  const [undoing, startUndo] = useTransition();
   const [loading, startLoading] = useTransition();
   const start = useRef<{ x: number; y: number } | null>(null);
+  // The fly-out of the last swipe; an undo right after must not be overtaken by it.
+  const flyTimer = useRef<{ timer: ReturnType<typeof setTimeout>; id: string } | null>(null);
 
   const superLeft = superLeftInitially && !superCard;
   const seen = new Set<string>();
@@ -109,7 +118,8 @@ export function SwipeDeck({
   const next = cards[1];
 
   function decide(verdict: Verdict) {
-    if (!top || flying) return;
+    if (!top || flying || undoing) return;
+    if (verdict === "super" && top.kind === "revisit") verdict = "like";
     if (verdict === "super" && !superLeft) {
       setMessage("Dein Super-Like für heute ist schon weg – morgen gibt's einen neuen ⭐");
       return;
@@ -118,11 +128,7 @@ export function SwipeDeck({
     setMessage(null);
     setFlying({ id: card.id, verdict });
     setDrag(null);
-    setTimeout(() => {
-      setHandled((prev) => new Set(prev).add(card.id));
-      setRestored((prev) => prev.filter((c) => c.id !== card.id));
-      setFlying(null);
-    }, FLY_MS);
+    flyTimer.current = { id: card.id, timer: setTimeout(() => landed(card.id), FLY_MS) };
     if (verdict === "super") setSuperCard(card.id);
     startBusy(async () => {
       const result = await swipeAction(card.id, verdict).catch(() => null);
@@ -144,16 +150,40 @@ export function SwipeDeck({
         setMessage("Dein Super-Like für heute ist schon weg – morgen gibt's einen neuen ⭐");
         return;
       }
+      if (!result.ok) {
+        setMessage(`Diese Karte ist schon weg – vielleicht hat ${partnerName} gerade entschieden.`);
+        return;
+      }
       if (result.ok && result.match) {
         celebrate();
         setMatch(result.match);
+      } else if (result.ok) {
+        const notes: Partial<Record<string, string>> = {
+          keep: "Bleibt auf eurer Wunschliste 💚",
+          archive: "Von der Wunschliste genommen – ihr wart euch einig.",
+        };
+        if (verdict === "maybe") setMessage("Kommt später wieder 🤔");
+        else if (notes[result.outcome]) setMessage(notes[result.outcome]!);
+        else if (card.kind === "revisit" && verdict === "nope") setMessage(`Wenn ${partnerName} auch ✕ sagt, fliegt sie von der Liste.`);
       }
     });
   }
 
+  function landed(id: string) {
+    if (flyTimer.current?.id === id) {
+      clearTimeout(flyTimer.current.timer);
+      flyTimer.current = null;
+    }
+    setHandled((prev) => new Set(prev).add(id));
+    setRestored((prev) => prev.filter((c) => c.id !== id));
+    setFlying(null);
+  }
+
   function undo() {
+    if (undoing) return;
+    if (flyTimer.current) landed(flyTimer.current.id);
     setMessage(null);
-    startBusy(async () => {
+    startUndo(async () => {
       const result = await undoSwipeAction().catch(() => null);
       if (!result) return setMessage("Das hat nicht geklappt – bist du offline?");
       if (!result.ok) {
@@ -189,6 +219,7 @@ export function SwipeDeck({
       if (event.key === "ArrowLeft") decide("nope");
       else if (event.key === "ArrowRight") decide("like");
       else if (event.key === "ArrowUp") decide("super");
+      else if (event.key === "ArrowDown") decide("maybe");
       else if (event.key === "Backspace") undo();
       else return;
       event.preventDefault();
@@ -216,18 +247,25 @@ export function SwipeDeck({
     if (d.x > THRESHOLD_X) decide("like");
     else if (d.x < -THRESHOLD_X) decide("nope");
     else if (d.y < -THRESHOLD_UP && Math.abs(d.x) < THRESHOLD_X) decide("super");
+    else if (d.y > THRESHOLD_DOWN && Math.abs(d.x) < THRESHOLD_X) decide("maybe");
     else setDrag(null);
   }
 
   const flyTransform = (verdict: Verdict) =>
-    verdict === "like" ? "translate(140%, 0) rotate(18deg)" : verdict === "nope" ? "translate(-140%, 0) rotate(-18deg)" : "translate(0, -140%)";
+    verdict === "like"
+      ? "translate(140%, 0) rotate(18deg)"
+      : verdict === "nope"
+        ? "translate(-140%, 0) rotate(-18deg)"
+        : verdict === "maybe"
+          ? "translate(0, 140%)"
+          : "translate(0, -140%)";
   const topStyle =
     flying && top && flying.id === top.id
       ? { transform: flyTransform(flying.verdict), transition: `transform ${FLY_MS}ms ease-in` }
       : drag
         ? { transform: `translate(${drag.x}px, ${drag.y}px) rotate(${drag.x / 18}deg)` }
         : { transform: "none", transition: "transform 180ms ease-out" };
-  const hint = drag ? (drag.x > 40 ? "like" : drag.x < -40 ? "nope" : drag.y < -50 ? "super" : null) : flying?.verdict ?? null;
+  const hint = drag ? (drag.x > 40 ? "like" : drag.x < -40 ? "nope" : drag.y < -50 ? "super" : drag.y > 50 ? "maybe" : null) : (flying?.verdict ?? null);
 
   return (
     <div className="flex flex-col gap-4">
@@ -279,9 +317,10 @@ export function SwipeDeck({
                   hint === "like" && "left-6 -rotate-12 bg-minze",
                   hint === "nope" && "right-6 rotate-12 bg-himbeere",
                   hint === "super" && "left-1/2 -translate-x-1/2 bg-zitrone",
+                  hint === "maybe" && "left-1/2 -translate-x-1/2 bg-lavendel",
                 )}
               >
-                {hint === "like" ? "💚 Gerne!" : hint === "nope" ? "✕ Nö" : "⭐ Super!"}
+                {hint === "like" ? "💚 Gerne!" : hint === "nope" ? "✕ Nö" : hint === "maybe" ? "🤔 Vielleicht" : "⭐ Super!"}
               </span>
             )}
           </div>
@@ -315,23 +354,33 @@ export function SwipeDeck({
       </div>
 
       <div className="flex items-center justify-center gap-3">
-        <button type="button" aria-label="Nein" onClick={() => decide("nope")} disabled={!top} className="sticker press flex size-16 items-center justify-center rounded-full bg-himbeere text-2xl text-tinte disabled:opacity-40">
+        <button type="button" aria-label="Nein" onClick={() => decide("nope")} disabled={!top || undoing} className="sticker press flex size-16 items-center justify-center rounded-full bg-himbeere text-2xl text-tinte disabled:opacity-40">
           ✕
         </button>
-        <button type="button" aria-label="Rückgängig" onClick={undo} disabled={busy} className="sticker press flex size-12 items-center justify-center rounded-full bg-surface text-xl text-ink disabled:opacity-40">
+        <button type="button" aria-label="Rückgängig" onClick={undo} disabled={busy || undoing} className="sticker press flex size-12 items-center justify-center rounded-full bg-surface text-xl text-ink disabled:opacity-40">
           ↩️
+        </button>
+        <button
+          type="button"
+          aria-label="Vielleicht später"
+          title="Kommt später wieder – zur passenden Jahreszeit"
+          onClick={() => decide("maybe")}
+          disabled={!top || undoing}
+          className="sticker press flex size-12 items-center justify-center rounded-full bg-lavendel text-xl text-tinte disabled:opacity-40"
+        >
+          🤔
         </button>
         <button
           type="button"
           aria-label="Super-Like"
           title={superLeft ? "Einmal am Tag: „Das will ich unbedingt!“" : "Morgen gibt's einen neuen Super-Like"}
           onClick={() => decide("super")}
-          disabled={!top || !superLeft}
+          disabled={!top || !superLeft || top.kind === "revisit" || undoing}
           className="sticker press flex size-12 items-center justify-center rounded-full bg-zitrone text-xl text-tinte disabled:opacity-40"
         >
           ⭐
         </button>
-        <button type="button" aria-label="Gefällt mir" onClick={() => decide("like")} disabled={!top} className="sticker press flex size-16 items-center justify-center rounded-full bg-minze text-2xl text-tinte disabled:opacity-40">
+        <button type="button" aria-label="Gefällt mir" onClick={() => decide("like")} disabled={!top || undoing} className="sticker press flex size-16 items-center justify-center rounded-full bg-minze text-2xl text-tinte disabled:opacity-40">
           💚
         </button>
       </div>
@@ -343,6 +392,12 @@ export function SwipeDeck({
       {top && ai && cards.length < 8 && !generating && (
         <button type="button" onClick={more} disabled={loading} className="self-center text-sm font-extrabold text-muted underline disabled:opacity-60">
           {loading ? "Mische neue Ideen …" : filter === "all" ? "✨ Mehr Ideen holen" : `✨ Mehr „${DECK_FILTER_LABEL[filter].replace(/^\S+\s/, "")}“ holen`}
+        </button>
+      )}
+
+      {maybes > 0 && (
+        <button type="button" onClick={() => startLoading(() => bringBackMaybesAction())} className="self-center text-sm font-extrabold text-muted underline">
+          🤔 {maybes} auf „Vielleicht“ – jetzt nochmal ansehen
         </button>
       )}
 
