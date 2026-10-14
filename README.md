@@ -31,6 +31,7 @@ gemeinsame Ideen-Wunschliste.
 | M17 | Entdecken: KI-Ideen-Stapel zum Swipen, Match nur wenn beide 💚, Rückgängig, Super-Like, Event-Kombis | ✅ |
 | M18 | Budget & Spartopf: Monatsbudget, echte Kosten im Rückblick, Spartopf, Monatsrückblick | ✅ |
 | M19 | Besondere Tage (Jahrestag, Geburtstage) mit Erinnerung, „Vielleicht“-Stapel, alte Ideen auffrischen | ✅ |
+| M20 | Eure Date-Story: Jahresrückblick zum Durchtippen, Swipe-Statistik „Euer Ding“ | ✅ |
 
 ## Tech-Stack
 
@@ -211,6 +212,18 @@ scripts/              Migration beim Build, Secret-Generator
   (außer sie ist schon als Date geplant).
 - **Nachrichten** (einzeln abschaltbar unter Erinnerungen): „Match!“, „⭐ … findet etwas super“
   und höchstens einmal am Tag „Sam hat 4 Ideen geliked 👀“ (ab 3 wartenden Likes, nicht nachts).
+
+### Date-Story in Kürze
+
+- **`/story`** (Link auf „Unsere Dates“, ab 27. Dezember bis Ende Januar auch auf der
+  Startseite, dazu ein Push „Eure Date-Story ist fertig 📖“): das Jahr zum Durchtippen –
+  Anzahl Dates und Stunden, Lieblingsdate (mit Foto), Ø Herzen, Date-Monat und Lieblingstag,
+  kurz vs. lang, Ausgaben und Spartopf, „Euer Ding“ beim Swipen (Lieblingsthemen, Matches, wer
+  öfter nach rechts wischt), Fotos, Ausblick. Rechts tippen = weiter, links = zurück, Pfeiltasten
+  gehen auch. Frühere Jahre oben auswählbar.
+- Berechnet in `src/core/story.ts` (mit Tests). Herzen des Partners zählen erst, wenn beide
+  bewertet haben – wie überall in der App.
+- **„Euer Ding“** steht ab 10 Swipes auch unter dem Stapel auf „Entdecken“.
 
 ### Besondere Tage, „Vielleicht“ & alte Ideen in Kürze
 

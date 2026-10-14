@@ -20,6 +20,7 @@ import { budgetState } from "@/server/budget";
 import { BudgetBar } from "@/components/budget-bar";
 import { upcomingForHome } from "@/server/special-days";
 import { inDaysLabel, SHOW_DAYS_BEFORE } from "@/core/special-days";
+import { storyYearToShow } from "@/core/story";
 import { countSubscriptions } from "@/server/push";
 import { hasSeenIntro, requireCouple } from "@/server/auth/dal";
 import { calendarStates } from "@/server/availability";
@@ -65,6 +66,7 @@ async function Home() {
   // The cron runs in real time (not the dev clock). Only warn once it has worked before –
   // "never ran" is a setup step, shown under Einstellungen → Läuft alles?
   const realNow = new Date();
+  const storyYear = storyYearToShow(now);
   const cronStale = Boolean(env().cronSecret) && tick !== null && tickHealth(tick.at, realNow) === "stale";
   const roundDate = cycle?.status === "done" ? await activeDateOf(cycle.id) : undefined;
   const calendarsReady = calendars.every((person) => person.state === "connected");
@@ -103,6 +105,15 @@ async function Home() {
         <p className="rounded-[20px] border-2 border-dashed border-line px-4 py-3 font-bold">
           Diese Runde findet der Date-O-Mat keine gemeinsame Lücke mehr. Schaut unter „Planen“, ob ihr später Zeit habt.
         </p>
+      )}
+
+      {storyYear !== null && (
+        <Link href={`/story?year=${storyYear}`} className="press sticker flex items-center gap-3 rounded-[20px] bg-himbeere px-4 py-3 text-tinte">
+          <span className="text-3xl" aria-hidden="true">
+            📖
+          </span>
+          <span className="font-display text-lg font-semibold leading-tight">Eure Date-Story {storyYear} ist da – tipp rein!</span>
+        </Link>
       )}
 
       {specialDays.slice(0, 2).map((day) => (

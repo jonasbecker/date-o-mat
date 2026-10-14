@@ -53,6 +53,15 @@ async function Dates() {
             <Stat label="Ø Herzen" value={stats.averageRating?.toLocaleString("de-DE") ?? "–"} tone="bg-himbeere-soft" />
             <Stat label="dieses Jahr" value={String(stats.thisYear)} tone="bg-zitrone-soft" />
           </dl>
+          <Link href="/story" className="press sticker flex items-center gap-3 rounded-[22px] bg-himbeere px-4 py-3.5 text-tinte">
+            <span className="text-3xl" aria-hidden="true">
+              📖
+            </span>
+            <span className="flex flex-col">
+              <span className="font-display text-lg font-semibold leading-snug">Eure Date-Story</span>
+              <span className="text-sm font-bold">Euer Jahr zum Durchtippen – Lieblingsdate, Herzen, Fotos …</span>
+            </span>
+          </Link>
           {stats.favorite && (
             <Link
               href={`/dates/${stats.favorite.id}`}

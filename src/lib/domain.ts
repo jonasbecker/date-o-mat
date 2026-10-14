@@ -54,6 +54,8 @@ export const NOTIFICATION_TYPES = [
   "budget",
   // Anniversary, birthdays and other special days coming up.
   "special_day",
+  // "Eure Date-Story" of the year is ready (late December).
+  "story",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

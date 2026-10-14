@@ -138,6 +138,7 @@ export function PushSettings({
     deck_nudge: `Entdecken: ${partnerName} hat Ideen geliked oder super-geliked`,
     budget: "Monatsrückblick: Budget und Spartopf",
     special_day: "Besondere Tage (2 Wochen und 2 Tage vorher)",
+    story: "Eure Date-Story ist fertig (Ende Dezember)",
   };
 
   if (!publicKey) {
