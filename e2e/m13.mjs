@@ -1,0 +1,146 @@
+// M13: next step, intro, info hints, plan tabs, quick plan, settings groups.
+import { createCipheriv, createHash, randomBytes } from "node:crypto";
+import { mkdirSync } from "node:fs";
+import pg from "pg";
+import { chromium } from "playwright";
+import { startMock } from "./google-mock.mjs";
+import { tuesdayMorningOffset } from "./clock.mjs";
+
+const BASE = "http://localhost:3000";
+const OUT = new URL("./shots/", import.meta.url).pathname;
+mkdirSync(OUT, { recursive: true });
+const KEY = Buffer.from(process.env.TOKEN_ENCRYPTION_KEY, "base64");
+const encrypt = (text) => {
+  const iv = randomBytes(12);
+  const c = createCipheriv("aes-256-gcm", KEY, iv);
+  const ct = Buffer.concat([c.update(text, "utf8"), c.final()]);
+  return ["v1", iv, c.getAuthTag(), ct].map((p) => (typeof p === "string" ? p : p.toString("base64url"))).join(".");
+};
+const google = await startMock(4010);
+const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
+await db.connect();
+await db.query("TRUNCATE users, couples, sessions, ideas CASCADE");
+const { rows: [couple] } = await db.query("INSERT INTO couples DEFAULT VALUES RETURNING id");
+async function makeUser(name, email, color, accessToken, createdAt) {
+  const { rows } = await db.query(
+    "INSERT INTO users (google_sub, email, name, couple_id, color, created_at, onboarded_at) VALUES ($1, $2, $3, $4, $5, $6, now()) RETURNING id",
+    [`sub-${email}`, email, name, couple.id, color, createdAt],
+  );
+  const token = randomBytes(32).toString("base64url");
+  await db.query("INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, now() + interval '1 day')", [createHash("sha256").update(token).digest("hex"), rows[0].id]);
+  await db.query(
+    `INSERT INTO google_connections (user_id, refresh_token_enc, access_token_enc, access_token_expires_at, busy_calendar_ids)
+     VALUES ($1, $2, $3, now() + interval '1 hour', '{primary}')`,
+    [rows[0].id, encrypt("fake-refresh"), encrypt(accessToken)],
+  );
+  return { id: rows[0].id, token };
+}
+const jonas = await makeUser("Jonas", "jonas@example.com", "mandarine", "token-jonas", "2026-01-01");
+const sam = await makeUser("Sam", "partnerin@example.com", "himmel", "token-sam", "2026-01-02");
+await db.query("INSERT INTO couple_settings (couple_id, first_planner_id, dev_clock_offset_minutes) VALUES ($1, $2, $3)", [couple.id, jonas.id, tuesdayMorningOffset()]);
+for (const [title, size, loc] of [["Picknick im Stadtwald", "small", "Stadtwald"], ["Tagesausflug nach Bonn", "large", "Bonn"], ["Kochabend: Ramen selbst machen", "small", null], ["Kletterhalle ausprobieren", "small", "Ehrenfeld"]]) {
+  await db.query("INSERT INTO ideas (couple_id, title, size, location, created_by_id) VALUES ($1, $2, $3, $4, $5)", [couple.id, title, size, loc, jonas.id]);
+}
+let failures = 0;
+const check = (label, ok) => { console.log(`${ok ? "✓" : "✗"} ${label}`); if (!ok) failures++; };
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+async function pageFor(token, scheme = "light") {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: "de-DE", colorScheme: scheme });
+  if (token) await ctx.addCookies([{ name: "dom_session", value: token, url: BASE }]);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.log("PAGEERROR", e.message));
+  return page;
+}
+
+const heading = async (p) => (await p.locator("h1").first().innerText()).trim();
+
+// 1) Jonas' turn: one big next step
+const j = await pageFor(jonas.token);
+await j.goto(`${BASE}/`);
+await j.getByText("Dein nächster Schritt").waitFor({ timeout: 15000 });
+check(`next step: "${await heading(j)}"`, (await heading(j)) === "Du bist dran!");
+check("period instead of round number", await j.getByText("Diese Woche", { exact: true }).isVisible());
+check("home is focused: no separate surprise / push cards", (await j.getByRole("button", { name: /Überrasch uns/ }).count()) === 0);
+await j.screenshot({ path: `${OUT}m13-01-home-plan.png`, fullPage: true });
+
+// 2) ⓘ explains "Plan bis"
+await j.getByRole("button", { name: "Was heißt „Plan bis …“?" }).click();
+await j.getByText("Bis dahin sollte euer Date feststehen").waitFor({ timeout: 5000 });
+check("info popover opens", true);
+await j.screenshot({ path: `${OUT}m13-02-info.png` });
+await j.getByRole("button", { name: "Verstanden" }).filter({ visible: true }).click();
+await j.waitForTimeout(300);
+check("info popover closes", !(await j.getByText("Bis dahin sollte euer Date feststehen").isVisible()));
+
+// 3) Sam's view: partner's turn
+const s = await pageFor(sam.token);
+await s.goto(`${BASE}/`);
+await s.getByText("Stand der Dinge").waitFor({ timeout: 15000 });
+check(`Sam: "${await heading(s)}"`, (await heading(s)) === "Jonas ist dran");
+
+// 4) Plan page: quick plan + tabs
+await j.goto(`${BASE}/plan`);
+await j.getByText("⚡ Schnell planen").waitFor({ timeout: 20000 });
+check("quick plan suggests top slot + oldest short idea", await j.locator("form", { hasText: "⚡ Schnell planen" }).getByText("Picknick im Stadtwald").isVisible());
+await j.screenshot({ path: `${OUT}m13-03-plan-top.png` });
+const tabs = await j.getByRole("tab").allInnerTexts();
+check(`idea sources bundled as tabs (${tabs.join(" | ")})`, ["💡 Wunschliste", "📍 Köln", "🎟️ Events", "🎲 Zufall", "✏️ Eigene"].every((t) => tabs.includes(t)));
+await j.getByRole("tab", { name: "📍 Köln" }).click();
+const row = j.locator("li", { hasText: "Sonnenuntergang am Rheinboulevard" });
+await row.getByRole("button", { name: "Nehmen" }).click();
+await j.locator("p", { hasText: "Ausgewählt" }).getByText("Sonnenuntergang am Rheinboulevard").waitFor({ timeout: 10000 });
+check("Köln idea taken right on the plan page", true);
+const { rows: curated } = await db.query("SELECT count(*)::int AS n FROM ideas WHERE source = 'curated'");
+check("…and put on the wishlist", curated[0].n === 1);
+await j.getByRole("tab", { name: "🎟️ Events" }).click();
+check("events tab explains how to set up sources", await j.getByText("Noch keine Event-Quellen.").isVisible());
+await j.getByRole("tab", { name: "✏️ Eigene" }).click();
+await j.getByLabel("Eure Idee").fill("Eis am Rhein");
+await j.getByRole("tab", { name: "💡 Wunschliste" }).click();
+check("own idea stays selected while browsing tabs", await j.locator("p", { hasText: "Ausgewählt" }).getByText("Eis am Rhein").isVisible());
+await j.getByRole("tab", { name: "📍 Köln" }).click();
+await j.screenshot({ path: `${OUT}m13-04-plan-tabs.png`, fullPage: true });
+
+// 5) Quick plan in one tap → Sam's next step is "Passt!"
+await j.locator("form", { hasText: "⚡ Schnell planen" }).getByRole("button", { name: "So festlegen 🎉" }).click();
+await j.waitForURL(`${BASE}/`, { timeout: 20000 });
+await j.getByText("Stand der Dinge").waitFor({ timeout: 10000 });
+check(`Jonas waits: "${await heading(j)}"`, (await heading(j)) === "Wartet auf Sams „Passt!“");
+await s.reload();
+await s.getByText("Dein nächster Schritt").waitFor({ timeout: 15000 });
+check(`Sam must confirm: "${await heading(s)}"`, (await heading(s)) === "Jonas hat ein Date geplant 🎉");
+check("only one Passt! button on the page", (await s.getByRole("button", { name: "Passt! 💚" }).count()) === 1);
+await s.screenshot({ path: `${OUT}m13-05-home-confirm.png`, fullPage: true });
+await s.getByRole("button", { name: "Passt! 💚" }).click();
+await s.getByRole("heading", { name: "Date steht! 🎉" }).waitFor({ timeout: 15000 });
+check("after Passt!: Date steht!", true);
+
+// 6) Settings: grouped, advanced folded, intro again
+await j.goto(`${BASE}/settings`);
+await j.getByText("Für euch beide").waitFor({ timeout: 15000 });
+check("settings grouped (beide / nur für dich)", await j.getByText("Nur für dich").isVisible());
+check("advanced slot settings folded", !(await j.getByLabel("Suchen für").isVisible()));
+await j.screenshot({ path: `${OUT}m13-06-settings.png`, fullPage: true });
+await j.getByRole("link", { name: "👋 Einführung nochmal ansehen" }).click();
+await j.getByRole("heading", { name: "Willkommen, Jonas!" }).waitFor({ timeout: 10000 });
+check("intro can be watched again", true);
+await j.waitForTimeout(800);
+await j.getByRole("button", { name: "Weiter" }).click();
+await j.waitForTimeout(600);
+await j.screenshot({ path: `${OUT}m13-07-welcome.png` });
+
+// 7) Dark mode + nav label
+const jd = await pageFor(jonas.token, "dark");
+await jd.goto(`${BASE}/`);
+await jd.getByText("Stand der Dinge").waitFor({ timeout: 15000 });
+check("nav says Inspiration", await jd.getByRole("link", { name: "Inspiration" }).isVisible());
+await jd.screenshot({ path: `${OUT}m13-08-home-dark.png`, fullPage: true });
+await jd.goto(`${BASE}/plan`);
+await jd.getByRole("tab", { name: "📍 Köln" }).waitFor({ timeout: 20000 });
+await jd.screenshot({ path: `${OUT}m13-09-plan-dark.png` });
+
+await browser.close();
+google.close();
+await db.end();
+console.log(failures ? `\n${failures} check(s) failed` : "\nAll checks passed");
+process.exit(failures ? 1 : 0);

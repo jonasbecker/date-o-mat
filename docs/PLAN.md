@@ -82,6 +82,9 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M11 | KI-Vorschläge | ✅ |
 | M12 | Event-Quellen (rausgegangen, koeln.de, KölnTourismus, Mit Vergnügen) – vorgezogen | ✅ |
 | M13 | Verständlich & aufgeräumt (Einführung, nächster Schritt, ⓘ-Hilfen, Planen gebündelt) | ✅ |
+| M14 | Tests + CI im Repo (E2E-Suites mit Mocks, GitHub Actions) | ✅ |
+| M15 | Link → Idee (TikTok/Instagram/YouTube/Webseite, Teilen-Ziel auf Android) | ✅ |
+| M16 | Status & Warnungen („Läuft alles?“, Cron-Hinweis, Push bei getrenntem Kalender) | ✅ |
 
 Abweichungen in V2:
 
@@ -93,6 +96,11 @@ Abweichungen in V2:
 4. Event-Quellen: Der Server holt die Seiten selbst und Claude wertet nur den Text aus, statt
    Claudes Web-Fetch-Werkzeug zu nutzen – günstiger, lokal testbar, und Seiten mit JSON-LD
    brauchen gar keine KI. Dafür gibt es einen SSRF-Schutz für eingetragene Adressen.
+5. Link → Idee schaut sich nicht das Video an, sondern was der Post über sich verrät
+   (Bildunterschrift, Vorschaubild, Seitentitel). Videos herunterzuladen wäre teuer, langsam
+   und verstößt gegen die Nutzungsbedingungen der Plattformen.
+6. Eine stehende Automatik kann sich nicht selbst per Push melden (der Push käme ja aus dem
+   Cron) – deshalb Hinweis auf der Startseite statt Push.
 
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 

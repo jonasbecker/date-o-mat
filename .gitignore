@@ -46,3 +46,7 @@ next-env.d.ts
 # local postgres data for tests
 /.pgdata
 /.data/
+
+# end-to-end tests
+/e2e/.tmp/
+/e2e/shots/

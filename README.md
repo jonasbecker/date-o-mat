@@ -25,6 +25,9 @@ gemeinsame Ideen-Wunschliste.
 | M11 | KI-Vorschläge (Claude Haiku 5.5, Wetter von Open-Meteo) | ✅ |
 | M12 | Event-Quellen: Lieblings-Seiten täglich lesen, „Was läuft“ mit Frei-Prüfung | ✅ |
 | M13 | Verständlich & aufgeräumt: Einführung, Start-Checkliste, „Dein nächster Schritt“, ⓘ-Hilfen, Ideen beim Planen gebündelt, Schnell planen | ✅ |
+| M14 | Tests + CI im Repo: End-to-End-Suites mit Mocks, GitHub Actions | ✅ |
+| M15 | Link → Idee: TikTok/Instagram/YouTube/Webseite teilen oder einfügen, Claude macht eine Idee draus | ✅ |
+| M16 | „Läuft alles?“: Status in den Einstellungen, Warnung bei stehender Automatik, Push bei getrenntem Kalender | ✅ |
 
 ## Tech-Stack
 
@@ -35,7 +38,7 @@ gemeinsame Ideen-Wunschliste.
 | Datenbank | Postgres (Neon), Drizzle ORM, Migrationen in `drizzle/` |
 | Hosting | Vercel (Region Frankfurt) |
 | Auth | eigener Google-OAuth-Flow (PKCE) mit `google-auth-library`, DB-Sessions |
-| Tests | Vitest |
+| Tests | Vitest (Logik), Playwright-End-to-End mit Mock-Servern (`e2e/`), GitHub Actions |
 
 ## Architektur
 
@@ -177,6 +180,58 @@ scripts/              Migration beim Build, Secret-Generator
   habt), KI, Zufall, Eigene. Was man nimmt, landet auf der Wunschliste und ist sofort gewählt.
 - **Wörter:** Kurz/Lang statt Klein/Groß, „Diese Woche“ statt „Runde 3“, „Plan bis …“ statt
   „Deadline“. Einstellungen in „Für euch beide“ und „Nur für dich“, Zeitfenster eingeklappt.
+
+### Tests & CI in Kürze
+
+- **Unit-Tests** (Vitest) liegen neben der Logik in `src/core` und `src/lib`: `npm test`.
+- **End-to-End** (`e2e/m1.mjs` … `e2e/m15.mjs`): echte Produktions-Build, echter Browser
+  (Playwright/Chromium), echte Postgres – Google, Claude, Wetter, Push und fremde Webseiten
+  sind kleine Mock-Server auf `localhost:4010–4060`. `e2e/run.mjs` startet den Server mit
+  Test-Umgebung, erzeugt Zertifikat und Schlüssel und lässt die Suites nacheinander laufen.
+  Die Suites **leeren die Datenbank** – nur gegen eine Wegwerf-DB laufen lassen:
+  ```bash
+  DATABASE_URL=postgres://…/dateomat_test npm run build
+  DATABASE_URL=postgres://…/dateomat_test npm run e2e            # alle
+  DATABASE_URL=postgres://…/dateomat_test npm run e2e -- m5 m14  # einzelne
+  ```
+  Screenshots landen in `e2e/shots/`. Suites, die vom Wochentag abhängen (Frist, freie Zeiten
+  diese Woche), stellen die Dev-Uhr auf Dienstag 10 Uhr der laufenden Woche (`e2e/clock.mjs`).
+- **CI** (`.github/workflows/ci.yml`): bei jedem Push und Pull Request Lint, Typecheck,
+  Unit-Tests; danach Build + alle E2E-Suites gegen einen Postgres-Service. Screenshots gibt's
+  als Artefakt.
+
+### Link → Idee in Kürze
+
+- **Einfügen:** Einen Link (oder einen ganzen Teilen-Text mit Link) ins Titelfeld einer neuen
+  Idee einsetzen – oder **🔗 Link einfügen** tippen (liest die Zwischenablage; iPhone fragt
+  einmal nach). **Android:** in TikTok/Instagram/YouTube **Teilen → Date-O-Mat** (Manifest
+  `share_target` → `/share`).
+- **Lesen** (`src/server/link-ideas.ts`): TikTok und YouTube über ihre öffentliche oEmbed-
+  Schnittstelle (Bildunterschrift, Kanal, Vorschaubild), alles andere über OpenGraph-Tags plus
+  etwas Seitentext. Kurzlinks (vm.tiktok.com …) werden erst aufgelöst. Abgerufen wird mit
+  denselben Schutzregeln wie die Event-Quellen (nur öffentliche Adressen, klein, schnell).
+- **Verstehen:** Claude Haiku 5.5 bekommt Bildunterschrift/Beschreibung **und das
+  Vorschaubild** und füllt Titel, Kurz/Lang, Notiz, Kosten, Ort (`LINK_SYSTEM_PROMPT` in
+  `src/core/link-idea.ts`, mit Tests). Das Video selbst wird nicht angesehen – nur, was der
+  Post über sich verrät. Der Inhalt gilt als Daten, nicht als Anweisung.
+- **Nichts wird automatisch gespeichert:** Das Formular ist vorausgefüllt, ihr prüft und
+  tippt **Speichern**. Der Link steht in der Idee, der Account als „via @…“ in der Notiz.
+- **Ohne KI / Limit (30 pro Tag und Paar) / Fehler:** Titel = erster Satz der
+  Bildunterschrift bzw. der Seitentitel. Liest sich der Link gar nicht (z. B. Instagram ohne
+  Vorschau), bleibt er eingetragen und ihr schreibt den Titel selbst.
+
+### Status & Warnungen in Kürze
+
+- **Einstellungen → Läuft alles?** (ganz oben): Automatik (letzter Cron-Lauf, in
+  `app_status`), beide Kalender, Push-Geräte je Person, Event-Quellen, KI-Verbrauch heute,
+  Fotos. Eingeklappt mit „✅ Alles läuft“, sonst offen mit dem, was zu tun ist
+  (`statusRows()` in `src/core/system-status.ts`, mit Tests).
+- **Startseite:** Lief der Cron länger als 60 Minuten nicht, erscheint ein gelber Hinweis
+  (erst nachdem er schon einmal lief – „noch nie“ zeigt nur die Status-Liste).
+- **Kalender getrennt:** Lehnt Google den gespeicherten Zugang ab, wird die Verbindung beim
+  Wechsel ok → „neu verbinden“ einmalig gemeldet: Push an die betroffene Person (führt zu
+  Einstellungen → Kalender) und an den Partner („Sag … Bescheid“). Abschaltbar unter
+  Erinnerungen → „Wichtiges“.
 
 ### KI-Vorschläge in Kürze
 

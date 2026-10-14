@@ -36,7 +36,7 @@ export function CalendarSection({
   const text = message ? MESSAGES[message] : undefined;
 
   return (
-    <section className="flex flex-col gap-3" aria-labelledby="calendar-heading">
+    <section id="kalender" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="calendar-heading">
       <h2 id="calendar-heading" className="text-[21px] font-semibold">
         Kalender
       </h2>

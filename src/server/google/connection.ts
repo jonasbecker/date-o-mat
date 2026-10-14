@@ -1,6 +1,6 @@
 // Stores the Google tokens of a user (encrypted) and hands out fresh access tokens.
 import "server-only";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { describeOAuthError } from "@/lib/safe-error";
 import type { GoogleTokens } from "@/server/auth/google";
@@ -8,6 +8,7 @@ import { oauthClient } from "@/server/auth/google";
 import { db } from "@/server/db";
 import { googleConnections } from "@/server/db/schema";
 import { env } from "@/server/env";
+import { notifyCalendarLost } from "@/server/system-alerts";
 
 export type GoogleConnection = typeof googleConnections.$inferSelect;
 
@@ -95,8 +96,14 @@ export async function getAccessToken(userId: string, { forceRefresh = false } = 
   }
 }
 
+/** Flags the connection; on the change from ok → needs_reauth both get a push (once). */
 export async function markNeedsReauth(userId: string): Promise<void> {
-  await db.update(googleConnections).set({ status: "needs_reauth" }).where(eq(googleConnections.userId, userId));
+  const changed = await db
+    .update(googleConnections)
+    .set({ status: "needs_reauth" })
+    .where(and(eq(googleConnections.userId, userId), eq(googleConnections.status, "ok")))
+    .returning({ userId: googleConnections.userId });
+  if (changed.length > 0) await notifyCalendarLost(userId);
 }
 
 /** Revokes the grant at Google (best effort) and forgets the tokens. */

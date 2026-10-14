@@ -1,4 +1,5 @@
-// Fetches an event source page – carefully, because the URL was typed in by a person.
+// Fetches pages, oEmbed JSON and preview images from addresses a person typed in
+// or shared – carefully: public addresses only, small, quick.
 import "server-only";
 import { lookup as dnsLookup, type LookupAddress } from "node:dns";
 import { request as httpRequest, type IncomingHttpHeaders } from "node:http";
@@ -36,9 +37,9 @@ function guardedLookup(allowPrivate: boolean): LookupFunction {
   };
 }
 
-type RawResponse = { status: number; headers: IncomingHttpHeaders; body: Buffer };
+type RawResponse = { status: number; headers: IncomingHttpHeaders; body: Buffer; truncated: boolean };
 
-function get(url: URL, allowPrivate: boolean): Promise<RawResponse> {
+function get(url: URL, allowPrivate: boolean, accept: string, maxBytes: number): Promise<RawResponse> {
   return new Promise((resolve, reject) => {
     const send = url.protocol === "https:" ? httpsRequest : httpRequest;
     const request = send(
@@ -46,20 +47,22 @@ function get(url: URL, allowPrivate: boolean): Promise<RawResponse> {
       {
         method: "GET",
         lookup: guardedLookup(allowPrivate),
-        headers: { "user-agent": USER_AGENT, accept: "text/html,application/xhtml+xml", "accept-language": "de-DE,de;q=0.9" },
+        headers: { "user-agent": USER_AGENT, accept, "accept-language": "de-DE,de;q=0.9" },
       },
       (response) => {
         const chunks: Buffer[] = [];
         let size = 0;
+        let truncated = false;
         response.on("data", (chunk: Buffer) => {
           size += chunk.length;
-          if (size > MAX_BYTES) {
+          if (size > maxBytes) {
+            truncated = true;
             response.destroy(); // the start of a huge page is enough
             return;
           }
           chunks.push(chunk);
         });
-        const done = () => resolve({ status: response.statusCode ?? 0, headers: response.headers, body: Buffer.concat(chunks) });
+        const done = () => resolve({ status: response.statusCode ?? 0, headers: response.headers, body: Buffer.concat(chunks), truncated });
         response.on("end", done);
         response.on("close", done);
         response.on("error", done);
@@ -80,15 +83,24 @@ function get(url: URL, allowPrivate: boolean): Promise<RawResponse> {
   });
 }
 
-/** Returns the HTML and the final URL (after redirects). */
-export async function fetchPage(input: string): Promise<{ html: string; url: string }> {
+export type PublicResponse = { body: Buffer; url: string; contentType: string };
+
+/**
+ * GET with redirects (each hop checked again). `types` must match the
+ * content type; `whole` rejects responses larger than `maxBytes` instead of
+ * cutting them (an image cut in half is useless).
+ */
+export async function fetchPublic(
+  input: string,
+  options: { accept: string; types: RegExp; maxBytes?: number; whole?: boolean },
+): Promise<PublicResponse> {
   const allowPrivate = env().allowPrivateEventUrls;
   const first = parseSourceUrl(input, allowPrivate);
   if (!first) throw new FetchPageError("Ungültige Adresse");
   let url: URL = first;
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    const response = await get(url, allowPrivate);
+    const response = await get(url, allowPrivate, options.accept, options.maxBytes ?? MAX_BYTES);
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.location;
       const next: URL | null = location ? parseSourceUrl(new URL(location, url).toString(), allowPrivate) : null;
@@ -97,8 +109,21 @@ export async function fetchPage(input: string): Promise<{ html: string; url: str
       continue;
     }
     if (response.status < 200 || response.status >= 300) throw new FetchPageError(`HTTP ${response.status}`);
-    if (!/html|xml|text\/plain/i.test(response.headers["content-type"] ?? "")) throw new FetchPageError("Keine Webseite");
-    return { html: new TextDecoder("utf-8", { fatal: false }).decode(response.body), url: url.toString() };
+    const contentType = response.headers["content-type"] ?? "";
+    if (!options.types.test(contentType)) throw new FetchPageError("Unerwarteter Inhalt");
+    if (options.whole && response.truncated) throw new FetchPageError("Zu groß");
+    return { body: response.body, url: url.toString(), contentType };
   }
   throw new FetchPageError("Zu viele Weiterleitungen");
+}
+
+/** Returns the HTML and the final URL (after redirects). */
+export async function fetchPage(input: string): Promise<{ html: string; url: string }> {
+  try {
+    const page = await fetchPublic(input, { accept: "text/html,application/xhtml+xml", types: /html|xml|text\/plain/i });
+    return { html: new TextDecoder("utf-8", { fatal: false }).decode(page.body), url: page.url };
+  } catch (error) {
+    if (error instanceof FetchPageError && error.reason === "Unerwarteter Inhalt") throw new FetchPageError("Keine Webseite");
+    throw error;
+  }
 }

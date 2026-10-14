@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import type { IdeaFormState } from "@/app/(app)/ideas/actions";
+import { analyzeLinkAction } from "@/app/(app)/ideas/link-actions";
+import type { Platform } from "@/core/link-idea";
 import { cn } from "@/lib/cn";
 import { IDEA_SIZES, type IdeaSize } from "@/lib/domain";
 import { IDEA_LIMITS } from "@/lib/idea-input";
@@ -19,6 +21,18 @@ export type IdeaFormDefaults = {
 };
 
 type Action = (prev: IdeaFormState, formData: FormData) => Promise<IdeaFormState>;
+
+const FROM: Record<Platform, string> = { tiktok: "aus dem TikTok", youtube: "aus dem YouTube-Video", instagram: "aus dem Instagram-Post", web: "von der Webseite" };
+const PLAIN_REASON = {
+  off: "Titel aus dem Link übernommen – passt ihn ruhig an.",
+  limit: "KI-Limit für heute erreicht – Titel aus dem Link übernommen.",
+  failed: "Die KI hat gerade nicht geantwortet – Titel aus dem Link übernommen.",
+};
+
+/** A first http(s) link in pasted text (kept in sync with extractUrl in core/link-idea). */
+function pastedLink(text: string): boolean {
+  return /https?:\/\/\S{3,}/i.test(text);
+}
 
 const inputClass =
   "w-full rounded-2xl border-[2.5px] border-line bg-surface px-4 font-bold text-ink placeholder:font-semibold placeholder:text-muted/70 focus:shadow-[0_0_0_4px_var(--color-himbeere-soft)] focus:outline-none";
@@ -42,12 +56,15 @@ export function IdeaForm({
   onSaved,
   onDelete,
   footnote,
+  initialLink,
 }: {
   action: Action;
   idea?: IdeaFormDefaults;
   onSaved: () => void;
   onDelete?: () => Promise<void>;
   footnote?: string;
+  /** Shared into the app: analyze this link right away. */
+  initialLink?: string;
 }) {
   const [state, formAction, pending] = useActionState<IdeaFormState, FormData>(async (prev, formData) => {
     const result = await action(prev, formData);
@@ -57,10 +74,56 @@ export function IdeaForm({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, startDelete] = useTransition();
 
-  // After a failed submit, show what was typed; otherwise the idea (or empty).
+  // Link → Idee (new ideas only): a pasted or shared link becomes a prefilled draft.
+  const [draft, setDraft] = useState<IdeaFormDefaults | null>(null);
+  const [draftKey, setDraftKey] = useState(0);
+  const [importInfo, setImportInfo] = useState<{ text: string; ai: boolean } | null>(null);
+  const [importing, startImport] = useTransition();
+  const canImport = !idea?.id;
+
+  function importLink(text: string) {
+    startImport(async () => {
+      const result = await analyzeLinkAction(text).catch(() => null);
+      if (result?.ok) {
+        setDraft({ ...result.draft });
+        setImportInfo(
+          result.via === "ai"
+            ? { ai: true, text: `✨ Idee ${FROM[result.platform]} – kurz prüfen, dann speichern.` }
+            : { ai: false, text: PLAIN_REASON[result.reason ?? "off"] },
+        );
+      } else {
+        setDraft({ title: "", size: "small", note: null, url: result?.url ?? null, costEur: null, location: null });
+        setImportInfo({
+          ai: false,
+          text: result?.error === "invalid" ? "Das sieht nicht nach einem Link aus." : "Den Link konnten wir nicht lesen – schreib kurz, was ihr machen wollt. Der Link ist schon eingetragen.",
+        });
+      }
+      setDraftKey((key) => key + 1);
+    });
+  }
+
+  const started = useRef(false);
+  useEffect(() => {
+    if (!initialLink || started.current) return;
+    started.current = true;
+    importLink(initialLink);
+  });
+
+  async function pasteFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (pastedLink(text)) return importLink(text);
+      setImportInfo({ ai: false, text: "In der Zwischenablage ist kein Link." });
+    } catch {
+      setImportInfo({ ai: false, text: "Halte im Titelfeld gedrückt und wähle „Einsetzen“." });
+    }
+  }
+
+  // After a failed submit, show what was typed; otherwise the draft, the idea (or empty).
+  const base = draft ?? idea;
   const typed = state.status === "error" ? state.values : undefined;
-  const value = (field: keyof IdeaFormDefaults) => typed?.[field] ?? (idea?.[field] == null ? "" : String(idea[field]));
-  const size = (typed?.size as IdeaSize | undefined) ?? idea?.size ?? "small";
+  const value = (field: keyof IdeaFormDefaults) => typed?.[field] ?? (base?.[field] == null ? "" : String(base[field]));
+  const size = (typed?.size as IdeaSize | undefined) ?? base?.size ?? "small";
   const errors = state.errors ?? {};
   const detailsOpen = Boolean(
     value("note") || value("url") || value("costEur") || value("location") || errors.note || errors.url || errors.costEur || errors.location,
@@ -68,13 +131,26 @@ export function IdeaForm({
   const idPrefix = idea?.id ?? "new";
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form key={draftKey} action={formAction} inert={importing} aria-busy={importing} className={cn("flex flex-col gap-4", importing && "opacity-60")}>
       {idea?.id && <input type="hidden" name="id" value={idea.id} />}
 
+      {(importing || importInfo) && (
+        <p role="status" className={cn("rounded-2xl px-4 py-2.5 text-sm font-bold", importInfo?.ai && !importing ? "bg-minze text-tinte" : "bg-track/60")}>
+          {importing ? "🔍 Schaue mir den Link an …" : importInfo?.text}
+        </p>
+      )}
+
       <div className="flex flex-col gap-1.5">
-        <label htmlFor={`${idPrefix}-title`} className="text-[13px] font-extrabold text-muted">
-          Was wollt ihr machen?
-        </label>
+        <div className="flex items-baseline justify-between gap-2">
+          <label htmlFor={`${idPrefix}-title`} className="text-[13px] font-extrabold text-muted">
+            Was wollt ihr machen?
+          </label>
+          {canImport && (
+            <button type="button" onClick={pasteFromClipboard} className="text-[13px] font-extrabold text-muted underline">
+              🔗 Link einfügen
+            </button>
+          )}
+        </div>
         <input
           id={`${idPrefix}-title`}
           name="title"
@@ -86,10 +162,22 @@ export function IdeaForm({
           enterKeyHint="done"
           autoComplete="off"
           aria-invalid={errors.title ? true : undefined}
-          aria-describedby={errors.title ? `${idPrefix}-title-error` : undefined}
+          aria-describedby={errors.title ? `${idPrefix}-title-error` : canImport ? `${idPrefix}-title-hint` : undefined}
           className={cn(inputClass, "h-14 text-lg")}
+          onPaste={(event) => {
+            if (!canImport || event.currentTarget.value.trim()) return;
+            const text = event.clipboardData.getData("text");
+            if (!pastedLink(text)) return;
+            event.preventDefault();
+            importLink(text);
+          }}
         />
         <FieldError id={`${idPrefix}-title-error`} message={errors.title} />
+        {canImport && !errors.title && !importInfo && (
+          <p id={`${idPrefix}-title-hint`} className="text-xs font-bold text-muted">
+            Tipp: Link von TikTok, Instagram, YouTube oder einer Webseite einfügen – daraus wird eine Idee.
+          </p>
+        )}
       </div>
 
       <fieldset className="grid grid-cols-2 gap-2.5">

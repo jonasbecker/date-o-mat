@@ -11,6 +11,10 @@ import { NextStepCard } from "@/components/next-step";
 import { SetupChecklist } from "@/components/setup-checklist";
 import { SuggestionCard } from "@/components/suggestion-card";
 import { nextStep } from "@/core/next-step";
+import { tickHealth } from "@/core/system-status";
+import { agoLabel } from "@/lib/format";
+import { env } from "@/server/env";
+import { lastTick } from "@/server/system-status";
 import { countSubscriptions } from "@/server/push";
 import { hasSeenIntro, requireCouple } from "@/server/auth/dal";
 import { calendarStates } from "@/server/availability";
@@ -40,7 +44,7 @@ async function Home() {
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
   const cycle = await ensureCurrentCycle(coupleId, now);
-  const [ideaCount, calendars, history, nextDate, pushDevices, toReview, weekEvents] = await Promise.all([
+  const [ideaCount, calendars, history, nextDate, pushDevices, toReview, weekEvents, tick] = await Promise.all([
     countIdeas(coupleId),
     calendarStates(ctx),
     cycleHistory(coupleId),
@@ -48,7 +52,12 @@ async function Home() {
     countSubscriptions(user.id),
     dateToReview(ctx, now),
     upcomingEvents(coupleId, now, 7),
+    lastTick(),
   ]);
+  // The cron runs in real time (not the dev clock). Only warn once it has worked before –
+  // "never ran" is a setup step, shown under Einstellungen → Läuft alles?
+  const realNow = new Date();
+  const cronStale = Boolean(env().cronSecret) && tick !== null && tickHealth(tick.at, realNow) === "stale";
   const roundDate = cycle?.status === "done" ? await activeDateOf(cycle.id) : undefined;
   const calendarsReady = calendars.every((person) => person.state === "connected");
   if (!cycle) return null;
@@ -71,6 +80,13 @@ async function Home() {
       <AutoRefresh />
       <AppHeader user={user} partner={partner} />
       <p className="text-[17px] font-bold text-muted">Hey {user.name}!</p>
+
+      {cronStale && tick && (
+        <Link href="/settings#status" role="alert" className="sticker block rounded-[20px] bg-zitrone px-4 py-3 font-bold text-tinte">
+          ⚠️ Die Automatik ist zuletzt {agoLabel(realNow, tick.at)} gelaufen – Erinnerungen kommen gerade nicht.{" "}
+          <span className="underline">Läuft alles?</span>
+        </Link>
+      )}
 
       <NextStepCard step={step} cycle={cycle} me={user} partner={partner} now={now} date={nextDate} />
 

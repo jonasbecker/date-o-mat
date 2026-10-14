@@ -302,6 +302,24 @@ Steht bei einer Quelle „Seite ist fast leer (… JavaScript)“ oder „HTTP 4
 so nicht lesen. Oft hilft eine Unterseite (z. B. direkt der Veranstaltungskalender statt der
 Startseite).
 
+### Link → Idee (M15)
+
+Nichts extra einzurichten – nutzt denselben `ANTHROPIC_API_KEY`. Kosten: grob 0,1–0,3 Cent
+pro Link (das Vorschaubild zählt mit); mehr als 30 Links pro Tag lässt die App nicht zu.
+Ohne Schlüssel wird nur der Titel aus dem Link übernommen.
+
+- **iPhone:** In TikTok/Instagram **Teilen → Link kopieren**, in der App **+** → ins Titelfeld
+  tippen → **Einsetzen** (oder **🔗 Link einfügen**).
+- **Android:** Ist die App installiert (Home-Bildschirm), steht sie direkt im Teilen-Menü.
+  Nach einem Update des Manifests kann es nötig sein, die App einmal vom Home-Bildschirm zu
+  entfernen und neu hinzuzufügen.
+
+### Status prüfen (M16)
+
+**Einstellungen → Läuft alles?** zeigt auf einen Blick, ob der Cron läuft, beide Kalender
+verbunden sind, Push auf euren Geräten an ist und wie viel KI heute verbraucht wurde.
+Nach dem Deploy dieser Version braucht es einen Cron-Lauf (≤ 5 Min.), bis „Automatik“ grün ist.
+
 ## 7. Lokal entwickeln (optional)
 
 1. In Neon: **Branches → Create branch** `dev`. Dessen Connection Strings nutzen, damit lokale
@@ -312,6 +330,10 @@ Startseite).
    npm run dev          # http://localhost:3000
    ```
 4. Qualität prüfen: `npm test`, `npm run lint`, `npm run typecheck`.
+5. End-to-End-Tests (leeren die Datenbank – nur mit einer Wegwerf-DB, z. B. lokalem Postgres
+   oder einem eigenen Neon-Branch): `DATABASE_URL=… npm run build && DATABASE_URL=… npm run e2e`.
+   Braucht `openssl` und Chromium (`npx playwright install chromium`). Dieselben Tests laufen
+   bei jedem Push in GitHub Actions (Reiter **Actions** im Repo).
 
 ## 8. Go-live-Check
 
@@ -323,6 +345,7 @@ Einmal nach dem ersten vollständigen Deploy, am besten zu zweit mit beiden Hand
       (Einstellungen → Kalender: „Verbunden mit …“ und „‹Name›: verbunden ✓“).
 - [ ] Beide haben die App auf dem Home-Bildschirm und Push aktiviert, **Test-Push** kommt an.
 - [ ] cron-job.org: letzter Lauf grün (Status 200), Ausführung alle 5 Minuten.
+- [ ] Einstellungen → **Läuft alles?** zeigt „✅ Alles läuft“.
 - [ ] Ein Probe-Date planen → steht in beiden Google-Kalendern → **Passt!** → **Absagen** →
       der Termin verschwindet wieder.
 - [ ] Flugmodus an, App öffnen → „Gerade offline 📡“ statt einer Browser-Fehlerseite.

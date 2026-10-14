@@ -44,6 +44,8 @@ export const NOTIFICATION_TYPES = [
   "date_tomorrow",
   "date_soon",
   "review_due",
+  // Something needs a person: a calendar connection was lost.
+  "system",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -69,5 +71,5 @@ export type EventKind = (typeof EVENT_KINDS)[number];
 /** Photos after a date: resized in the browser, stored privately. */
 export const PHOTO_LIMITS = { perDate: 24, fullEdge: 1600, thumbEdge: 480, maxBytes: 3 * 1024 * 1024 } as const;
 
-export const AI_REQUEST_KINDS = ["ideas", "events"] as const;
+export const AI_REQUEST_KINDS = ["ideas", "events", "links"] as const;
 export type AiRequestKind = (typeof AI_REQUEST_KINDS)[number];

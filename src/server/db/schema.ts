@@ -8,6 +8,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   smallint,
@@ -340,6 +341,13 @@ export const events = pgTable(
     index("events_couple_starts_idx").on(t.coupleId, t.startsAt),
   ],
 );
+
+// Small operational facts (e.g. when the cron tick last ran) for the "Läuft alles?" status.
+export const appStatus = pgTable("app_status", {
+  key: text().primaryKey(),
+  value: jsonb().notNull(),
+  updatedAt: timestamptz().notNull().defaultNow(),
+});
 
 // One row per Claude call: daily limit for idea suggestions, and a record of token use.
 export const aiRequests = pgTable(

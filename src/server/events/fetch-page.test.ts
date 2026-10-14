@@ -9,7 +9,7 @@ vi.mock("node:dns", () => ({
 const settings = { allowPrivateEventUrls: false };
 vi.mock("@/server/env", () => ({ env: () => settings }));
 
-const { fetchPage } = await import("./fetch-page");
+const { fetchPage, fetchPublic } = await import("./fetch-page");
 
 let server: Server;
 let port = 0;
@@ -56,5 +56,23 @@ describe("fetchPage", () => {
     settings.allowPrivateEventUrls = true;
     await expect(fetchPage(`http://localhost:${port}/json`)).rejects.toMatchObject({ reason: "Keine Webseite" });
     await expect(fetchPage(`http://localhost:${port}/loop`)).rejects.toMatchObject({ reason: "Zu viele Weiterleitungen" });
+  });
+});
+
+describe("fetchPublic", () => {
+  it("returns JSON when asked for it", async () => {
+    settings.allowPrivateEventUrls = true;
+    const response = await fetchPublic(`http://localhost:${port}/json`, { accept: "application/json", types: /json/ });
+    expect(response.body.toString()).toBe("{}");
+  });
+
+  it("`whole` rejects what does not fit instead of cutting it", async () => {
+    settings.allowPrivateEventUrls = true;
+    await expect(fetchPublic(`http://localhost:${port}/big`, { accept: "*/*", types: /html/, maxBytes: 1024, whole: true })).rejects.toMatchObject({ reason: "Zu groß" });
+  });
+
+  it("still refuses internal addresses", async () => {
+    settings.allowPrivateEventUrls = false;
+    await expect(fetchPublic("https://thumbs.example.com/x.jpg", { accept: "image/*", types: /^image\// })).rejects.toMatchObject({ reason: "Adresse nicht erlaubt" });
   });
 });

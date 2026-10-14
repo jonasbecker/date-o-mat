@@ -26,6 +26,8 @@ import type { EventSource } from "@/server/db/schema";
 import { agoLabel } from "@/lib/format";
 import { buttonClass } from "@/components/button";
 import { Info } from "@/components/info";
+import { systemStatus } from "@/server/system-status";
+import { SystemStatusCard } from "./system-status-card";
 
 // "Jetzt lesen" fetches a page and asks Claude (runs after the response).
 export const maxDuration = 120;
@@ -76,6 +78,7 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
     listSources(coupleId),
   ]);
   const now = coupleNow(settings);
+  const status = await systemStatus(ctx, now);
   const me = people.find((p) => p.isMe)!;
   const other = people.find((p) => !p.isMe)!;
 
@@ -89,6 +92,8 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
 
   return (
     <>
+      <SystemStatusCard rows={status} />
+
       <div className="-mb-3 mt-2 flex flex-col">
         <p className="text-[13px] font-extrabold uppercase tracking-wide text-muted">Für euch beide</p>
         <p className="text-sm font-semibold text-muted">Was du hier änderst, gilt auch für {partner.name}.</p>

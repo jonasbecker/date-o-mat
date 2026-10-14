@@ -26,11 +26,12 @@ export function callbackUrl(): string {
 }
 
 export function oauthClient(): OAuth2Client {
-  const { googleClientId, googleClientSecret } = env();
+  const { googleClientId, googleClientSecret, googleTokenUrl } = env();
   return new OAuth2Client({
     clientId: googleClientId,
     clientSecret: googleClientSecret,
     redirectUri: callbackUrl(),
+    endpoints: { oauth2TokenUrl: googleTokenUrl },
   });
 }
 

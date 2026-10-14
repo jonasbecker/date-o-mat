@@ -133,6 +133,7 @@ export function PushSettings({
     date_tomorrow: "Date ist morgen (19 Uhr am Vortag)",
     date_soon: "Date in 2 Stunden",
     review_due: "Wie war's? (am Tag nach dem Date)",
+    system: "Wichtiges (z. B. ein Kalender wurde getrennt)",
   };
 
   if (!publicKey) {
