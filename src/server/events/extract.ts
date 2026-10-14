@@ -1,12 +1,12 @@
 // Asks Claude to pull events (or tips) out of a page's text. The page is
 // untrusted: Claude only fills a fixed JSON schema, and cleanItems() checks it again.
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { DateTime } from "luxon";
 import { z } from "zod";
 import type { RawItem } from "@/core/events";
 import { APP_TIMEZONE, type EventSourceKind } from "@/lib/domain";
+import { anthropic, recordAiUsage } from "@/server/anthropic";
 
 export const EXTRACTION_MODEL = "claude-haiku-5-5";
 
@@ -22,12 +22,6 @@ const ItemSchema = z.object({
 });
 const ResultSchema = z.object({ items: z.array(ItemSchema) });
 
-let client: Anthropic | undefined;
-function anthropic(): Anthropic {
-  // Reads ANTHROPIC_API_KEY (and ANTHROPIC_BASE_URL in tests) from the environment.
-  client ??= new Anthropic({ maxRetries: 2, timeout: 90_000 });
-  return client;
-}
 
 function instructions(kind: EventSourceKind, now: Date): string {
   const today = DateTime.fromJSDate(now, { zone: APP_TIMEZONE }).setLocale("de").toFormat("cccc, d. LLLL yyyy");
@@ -49,7 +43,7 @@ function instructions(kind: EventSourceKind, now: Date): string {
   ].join("\n");
 }
 
-export async function extractItems(params: { pageText: string; url: string; kind: EventSourceKind; now: Date }): Promise<RawItem[]> {
+export async function extractItems(params: { coupleId: string; pageText: string; url: string; kind: EventSourceKind; now: Date }): Promise<RawItem[]> {
   const response = await anthropic().messages.parse({
     model: EXTRACTION_MODEL,
     max_tokens: 16000,
@@ -57,6 +51,7 @@ export async function extractItems(params: { pageText: string; url: string; kind
     system: instructions(params.kind, params.now),
     messages: [{ role: "user", content: `Page: ${params.url}\n<page>\n${params.pageText}\n</page>` }],
   });
+  await recordAiUsage({ coupleId: params.coupleId, kind: "events", model: EXTRACTION_MODEL, usage: response.usage });
   if (response.stop_reason === "refusal") throw new Error("Claude declined to read this page");
   if (!response.parsed_output) throw new Error(`No usable answer from Claude (${response.stop_reason})`);
   return response.parsed_output.items;

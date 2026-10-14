@@ -22,7 +22,7 @@ gemeinsame Ideen-Wunschliste.
 | M8 | Rückblick: „Wie war's?“-Erinnerung, Herzen + Notiz je Person, Seite „Unsere Dates“ | ✅ |
 | M9 | Fotos zum Rückblick (Vercel Blob, privat) | ✅ |
 | M10 | Kuratierte Köln-Ideen, „Überrasch uns“ | ✅ |
-| M11 | KI-Vorschläge (Claude Haiku 5.5, Wetter von Open-Meteo) | ⏳ |
+| M11 | KI-Vorschläge (Claude Haiku 5.5, Wetter von Open-Meteo) | ✅ |
 | M12 | Event-Quellen: Lieblings-Seiten täglich lesen, „Was läuft“ mit Frei-Prüfung | ✅ |
 
 ## Tech-Stack
@@ -159,6 +159,21 @@ scripts/              Migration beim Build, Secret-Generator
   und Lieblingsdate. Die Einstellungen sind dafür aus der unteren Leiste in den Kopf der
   Startseite gewandert (Regler-Symbol).
 
+### KI-Vorschläge in Kürze
+
+- **„✨ Ideen von der KI“** auf der Planen-Seite (kennt den gewählten Termin und die Größe;
+  „Nehmen“ wählt die Idee direkt aus) und als „✨ KI-Ideen“ auf der Wunschliste.
+- Ihr wählt Budget, Stimmung und drinnen/draußen; **Claude Haiku 5.5** liefert per
+  Structured Output drei Ideen (`src/server/ai-ideas.ts`, Prompt und Prüfung in
+  `src/core/ai-ideas.ts`, mit Tests).
+- **Wetter** für den Termin kommt von Open-Meteo (kostenlos, ohne Schlüssel, bis ~14 Tage
+  voraus, `src/server/weather.ts`); ohne Termin oder bei Fehlern heißt es „unbekannt“.
+- **An Claude geht nur:** Termin (Tag, Uhrzeit, Dauer), Wetter, eure Auswahl, die Titel der
+  Wunschliste und Titel + Ø Herzen vergangener Dates. Keine Namen, Mails, Notizen, Kalender.
+- **Grenze:** 20 Vorschlags-Runden pro Tag und Paar. Jeder Claude-Aufruf (auch für die
+  Event-Quellen) landet mit Tokenzahlen in `ai_requests`.
+- Gemerkte Vorschläge stehen mit `source = 'ai'` auf der Wunschliste.
+
 ### Köln-Ideen & „Überrasch uns“ in Kürze
 
 - **Köln-Ideen** (`/ideas/koeln`, Tab neben Wunschliste und „Was läuft“): 40 handverlesene Ideen
@@ -224,10 +239,11 @@ scripts/              Migration beim Build, Secret-Generator
 | `cycles`, `date_plans`, `suggestions` | Runden, geplante Dates, App-Vorschläge |
 | `date_reviews` | Herzen + Notiz je Person und Date |
 | `date_photos` | Fotos je Date (nur Pfade; die Dateien liegen im privaten Blob Store) |
+| `ai_requests` | jeder Claude-Aufruf mit Tokenzahlen (Tageslimit, Kostenüberblick) |
 | `event_sources`, `events` | gefolgte Seiten (mit Abruf-Status) und was dort gefunden wurde |
 | `push_subscriptions`, `notification_prefs`, `notification_log` | Push |
 
-`ideas.source`/`external_ref`: Herkunft einer Idee (`curated` = Köln-Idee, `web` = gemerkt aus „Was läuft“, `ai` für M11).
+`ideas.source`/`external_ref`: Herkunft einer Idee (`curated` = Köln-Idee, `web` = gemerkt aus „Was läuft“, `ai` = KI-Vorschlag).
 
 ## Entwickeln
 
@@ -256,12 +272,13 @@ Bewusst nicht in V1, aber vorbereitet:
 
 | Idee | So würde man sie andocken |
 |---|---|
-| **KI-Vorschläge** (Budget, Wetter, Dauer, Stimmung) | Ebenfalls ein `IdeaSourceProvider` (`source = 'ai'`), der aus Kontext (Slot-Größe, Wetter-API, Budget) Kandidaten erzeugt; erzeugte Ideen können mit `external_ref` in `ideas` gespeichert werden. |
 | **Neue Erinnerung** | Typ in `NOTIFICATION_TYPES` (`src/lib/domain.ts`) ergänzen, Zeitpunkt in `plannedReminders()` (`src/core/reminders.ts`, mit Test), Text in `reminderText()` (`src/server/notifications.ts`), Beschriftung in `push-settings.tsx`. Keine Migration nötig. |
 | **Weitere Person / Gruppen** | Bewusst nicht vorgesehen: Runden, Bestätigen und Push gehen überall von genau zwei Personen aus. |
 
 ## Sicherheit & Datenschutz
 
+- **KI:** An Claude gehen nur Termin, Wetter, Auswahl und Titel (Wunschliste, vergangene Dates
+  mit Ø Herzen) – keine Namen, Mails, Notizen oder Kalenderdaten. 20 Runden pro Tag.
 - **Fotos:** privater Blob Store, Auslieferung nur nach Login- und Paar-Prüfung, eigene
   strenge CSP für die Bild-Route, Dateityp anhand der Bytes geprüft, EXIF wird entfernt.
 - **Event-Quellen:** Der Server ruft nur öffentliche `https`-Adressen ab (keine IPs, keine

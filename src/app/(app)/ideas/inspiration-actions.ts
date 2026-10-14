@@ -11,6 +11,10 @@ import { requireCouple } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { ideas } from "@/server/db/schema";
 import { listIdeas } from "@/server/ideas";
+import { BUDGETS, MOODS, SETTINGS, type AiIdea } from "@/core/ai-ideas";
+import { generateIdeas } from "@/server/ai-ideas";
+import { coupleNow } from "@/server/clock";
+import { getCoupleSettings } from "@/server/settings";
 
 /** Puts a Köln idea on the wishlist (once) and returns the wishlist id. */
 async function saveCurated(coupleId: string, userId: string, curatedId: string): Promise<string | null> {
@@ -88,3 +92,50 @@ export async function surpriseAction(recent: string[], size?: IdeaSize): Promise
   return pickSurprise(candidates, { recent: recentKeys, size: sizeFilter })?.view ?? null;
 }
 
+
+export type AiIdeasResponse = { ok: true; ideas: AiIdea[]; weather: string | null; left: number } | { ok: false; message: string };
+
+const AI_ERRORS = {
+  off: "Die KI ist auf dem Server noch nicht eingerichtet.",
+  limit: "Für heute sind die KI-Vorschläge aufgebraucht (20 pro Tag). Morgen gibt's neue!",
+  failed: "Die KI hat gerade keine Antwort geliefert. Versuch es gleich nochmal.",
+} as const;
+
+const aiInput = z.object({
+  budget: z.enum(BUDGETS),
+  mood: z.enum(MOODS),
+  setting: z.enum(SETTINGS),
+  size: z.enum(["small", "large"]).optional(),
+  slot: z.object({ start: z.iso.datetime(), end: z.iso.datetime() }).nullable(),
+});
+
+export async function aiIdeasAction(input: z.input<typeof aiInput>): Promise<AiIdeasResponse> {
+  const ctx = await requireCouple();
+  const parsed = aiInput.safeParse(input);
+  if (!parsed.success) return { ok: false, message: AI_ERRORS.failed };
+  const now = coupleNow(await getCoupleSettings(ctx.coupleId));
+  const { slot, ...prefs } = parsed.data;
+  const result = await generateIdeas(ctx, { ...prefs, slot: slot ? { start: new Date(slot.start), end: new Date(slot.end) } : null }, now);
+  return result.ok ? result : { ok: false, message: AI_ERRORS[result.error] };
+}
+
+const aiIdea = z.object({
+  title: z.string().trim().min(1).max(120),
+  size: z.enum(["small", "large"]),
+  note: z.string().max(1000),
+  costEur: z.number().int().min(0).max(10_000).nullable(),
+  location: z.string().max(120).nullable(),
+});
+
+/** Puts an AI suggestion on the wishlist and returns its id (for "Nehmen" on the plan page). */
+export async function saveAiIdeaAction(input: z.input<typeof aiIdea>): Promise<{ ideaId: string | null }> {
+  const { user, coupleId } = await requireCouple();
+  const parsed = aiIdea.safeParse(input);
+  if (!parsed.success) return { ideaId: null };
+  const [row] = await db
+    .insert(ideas)
+    .values({ ...parsed.data, note: parsed.data.note || null, coupleId, source: "ai", createdById: user.id, updatedById: user.id })
+    .returning({ id: ideas.id });
+  refresh();
+  return { ideaId: row.id };
+}

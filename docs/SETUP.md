@@ -273,6 +273,13 @@ Danach:
 Platz: Ein Foto braucht mit Vorschau etwa 0,2–0,5 MB. Im Hobby-Plan ist 1 GB frei, das
 reicht für einige tausend Fotos. Stand unter **Storage → date-o-mat-fotos**.
 
+### Meilenstein 11: KI-Vorschläge
+
+Nichts extra einzurichten: Sie nutzen denselben `ANTHROPIC_API_KEY` wie die Event-Quellen
+(Schritte unten). Das Wetter kommt von Open-Meteo und braucht keinen Schlüssel.
+Test: **Planen** → Termin wählen → **✨ Ideen von der KI** → **Vorschläge holen**.
+Kosten: grob 0,05 Cent pro Vorschlags-Runde; mehr als 20 Runden pro Tag lässt die App nicht zu.
+
 ### Meilenstein 12 einrichten: Event-Quellen
 
 1. Auf [console.anthropic.com](https://console.anthropic.com) ein Konto anlegen, unter

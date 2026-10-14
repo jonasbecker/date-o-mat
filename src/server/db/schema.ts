@@ -17,6 +17,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import {
+  AI_REQUEST_KINDS,
   CONNECTION_STATUSES,
   CYCLE_STATUSES,
   DATE_STATUSES,
@@ -336,6 +337,24 @@ export const events = pgTable(
     unique("events_source_key_unique").on(t.sourceId, t.dedupeKey),
     index("events_couple_starts_idx").on(t.coupleId, t.startsAt),
   ],
+);
+
+// One row per Claude call: daily limit for idea suggestions, and a record of token use.
+export const aiRequests = pgTable(
+  "ai_requests",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    coupleId: uuid()
+      .notNull()
+      .references(() => couples.id, { onDelete: "cascade" }),
+    userId: uuid().references(() => users.id, { onDelete: "set null" }),
+    kind: text({ enum: AI_REQUEST_KINDS }).notNull(),
+    model: text().notNull(),
+    inputTokens: integer().notNull().default(0),
+    outputTokens: integer().notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => [index("ai_requests_couple_created_idx").on(t.coupleId, t.createdAt)],
 );
 
 // --- Push notifications -------------------------------------------------------

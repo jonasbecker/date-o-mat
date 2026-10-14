@@ -8,6 +8,7 @@ import { searchSlots } from "@/server/availability";
 import { coupleNow } from "@/server/clock";
 import { activeDateOf, ensureCurrentCycle } from "@/server/cycles";
 import { getCoupleSettings } from "@/server/settings";
+import { env } from "@/server/env";
 import { searchUntil } from "@/server/suggestions";
 import { formatCost } from "@/lib/idea-input";
 import { getDate } from "@/server/dates";
@@ -109,6 +110,7 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
         reschedule={reschedule}
         searchScopeLink={scopeLink}
         preselectIdeaId={typeof params.idea === "string" ? params.idea : undefined}
+        aiEnabled={env().ai}
       />
     </>
   );

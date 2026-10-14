@@ -9,7 +9,15 @@ import { Sheet, type SheetHandle } from "./sheet";
 import { SizeChip } from "./size-chip";
 
 /** "Überrasch uns": draws a random idea, shown like a gumball falling out of the machine. */
-export function SurpriseButton({ className, variant = "secondary" }: { className?: string; variant?: "primary" | "secondary" }) {
+export function SurpriseButton({
+  className,
+  variant = "secondary",
+  size = "md",
+}: {
+  className?: string;
+  variant?: "primary" | "secondary";
+  size?: "sm" | "md";
+}) {
   const router = useRouter();
   const sheet = useRef<SheetHandle>(null);
   const [pick, setPick] = useState<SurpriseView | null>(null);
@@ -45,7 +53,7 @@ export function SurpriseButton({ className, variant = "secondary" }: { className
 
   return (
     <>
-      <button type="button" onClick={open} className={buttonClass(variant, "md", cn("w-full", className))}>
+      <button type="button" onClick={open} className={buttonClass(variant, size, cn("w-full", className))}>
         🎲 Überrasch uns
       </button>
       <Sheet ref={sheet} title="Der Date-O-Mat zieht …">

@@ -19,6 +19,8 @@ const schema = z.object({
   VAPID_SUBJECT: z.string().min(1).optional(),
   // Claude reads the event sources. Without a key the feature is off.
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  // Only for tests: point the weather forecast (Open-Meteo, no key needed) at a mock.
+  WEATHER_API_BASE_URL: z.url().default("https://api.open-meteo.com"),
   // Photos (Vercel Blob, private store). Vercel sets it when the store is connected.
   BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
   // Only for tests (and only with ENABLE_DEV_TOOLS=1): event sources on localhost/http.
@@ -42,6 +44,7 @@ export type Env = {
   allowPrivateEventUrls: boolean;
   /** Where photos go: Vercel Blob, a local folder (dev only) or nowhere (feature off). */
   photoStorage: "blob" | "local" | null;
+  weatherApiBaseUrl: string;
 };
 
 let cached: Env | undefined;
@@ -71,6 +74,7 @@ export function env(): Env {
         : null,
     ai: Boolean(e.ANTHROPIC_API_KEY),
     allowPrivateEventUrls: e.ENABLE_DEV_TOOLS === "1" && e.ALLOW_PRIVATE_EVENT_URLS === "1",
+    weatherApiBaseUrl: e.WEATHER_API_BASE_URL.replace(/\/+$/, ""),
     photoStorage: e.BLOB_READ_WRITE_TOKEN ? "blob" : e.ENABLE_DEV_TOOLS === "1" ? "local" : null,
   };
   return cached;

@@ -6,6 +6,7 @@ import { Button } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
 import { SIZE_LABEL } from "@/components/size-chip";
 import type { SlotMood } from "@/core/slots";
+import { AiIdeas } from "@/components/ai-ideas";
 import { cn } from "@/lib/cn";
 import { IDEA_SIZES, type IdeaSize } from "@/lib/domain";
 import type { SlotView } from "@/lib/format";
@@ -39,6 +40,7 @@ export function PlanForm({
   reschedule,
   searchScopeLink,
   preselectIdeaId,
+  aiEnabled = false,
 }: {
   small: SlotView[];
   large: SlotView[];
@@ -50,6 +52,8 @@ export function PlanForm({
   searchScopeLink?: React.ReactNode;
   /** From "Überrasch uns" / "Damit planen": start with this idea selected. */
   preselectIdeaId?: string;
+  /** Show "✨ Ideen von der KI" (Claude is configured). */
+  aiEnabled?: boolean;
 }) {
   const router = useRouter();
   const preselected = !reschedule && preselectIdeaId ? ideas.find((i) => i.id === preselectIdeaId) : undefined;
@@ -226,6 +230,14 @@ export function PlanForm({
             );
           })}
         </ul>
+      )}
+
+      {aiEnabled && (
+        <AiIdeas
+          size={size}
+          slot={slot ? { startIso: slot.startIso, endIso: slot.endIso, label: `${slot.dateLabel}, ${slot.timeLabel}` } : null}
+          onChoose={(id) => setPick({ kind: "idea", id })}
+        />
       )}
 
       {(pick.kind === "custom" || sizeIdeas.length === 0) && (

@@ -86,7 +86,7 @@ async function itemsFor(source: EventSource, now: Date): Promise<CleanItem[]> {
   }
   const text = htmlToText(page.html, page.url);
   if (text.length < 200) throw new FetchPageError("Seite ist fast leer (lädt ihre Inhalte vermutlich per JavaScript)");
-  const extracted = cleanItems(await extractItems({ pageText: text, url: page.url, kind: source.kind, now }), options);
+  const extracted = cleanItems(await extractItems({ coupleId: source.coupleId, pageText: text, url: page.url, kind: source.kind, now }), options);
   // JSON-LD first: it is exact, Claude's entries only add what is missing.
   return cleanItems([...structured, ...extracted].map(toRaw), options);
 }
