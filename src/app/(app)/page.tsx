@@ -11,6 +11,7 @@ import { DateCard } from "@/components/date-card";
 import { SparkleIcon } from "@/components/icons";
 import { PushNudge } from "@/components/push-nudge";
 import { SuggestionCard } from "@/components/suggestion-card";
+import { SurpriseButton } from "@/components/surprise-button";
 import { countSubscriptions } from "@/server/push";
 import { requireCouple } from "@/server/auth/dal";
 import { calendarStates } from "@/server/availability";
@@ -96,6 +97,7 @@ async function Home() {
             <SparkleIcon />
             Date planen
           </Link>
+          <SurpriseButton />
           <form action={swapTurnAction}>
             <button type="submit" className="text-sm font-extrabold text-muted underline">
               Diese Runde an {partner.name} abgeben

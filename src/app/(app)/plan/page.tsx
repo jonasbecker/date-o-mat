@@ -108,6 +108,7 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
         partnerName={ctx.partner.name}
         reschedule={reschedule}
         searchScopeLink={scopeLink}
+        preselectIdeaId={typeof params.idea === "string" ? params.idea : undefined}
       />
     </>
   );

@@ -7,11 +7,11 @@ import { cn } from "@/lib/cn";
 import { BulbIcon, CalendarIcon, HeartIcon, HomeIcon } from "./icons";
 import { QuickAdd } from "./quick-add";
 
-type NavItem = { href: string; label: string; Icon: ComponentType<SVGProps<SVGSVGElement>> };
+type NavItem = { href: string; label: string; Icon: ComponentType<SVGProps<SVGSVGElement>>; also?: string[] };
 
 const LEFT: NavItem[] = [
   { href: "/", label: "Start", Icon: HomeIcon },
-  { href: "/ideas", label: "Ideen", Icon: BulbIcon },
+  { href: "/ideas", label: "Ideen", Icon: BulbIcon, also: ["/events"] },
 ];
 const RIGHT: NavItem[] = [
   { href: "/plan", label: "Planen", Icon: CalendarIcon },
@@ -19,7 +19,9 @@ const RIGHT: NavItem[] = [
 ];
 
 function NavLink({ item, pathname }: { item: NavItem; pathname: string | null }) {
-  const active = pathname !== null && (item.href === "/" ? pathname === "/" : pathname.startsWith(item.href));
+  const active =
+    pathname !== null &&
+    (item.href === "/" ? pathname === "/" : [item.href, ...(item.also ?? [])].some((href) => pathname.startsWith(href)));
   return (
     <li>
       <Link

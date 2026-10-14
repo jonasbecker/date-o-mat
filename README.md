@@ -21,7 +21,7 @@ gemeinsame Ideen-Wunschliste.
 | **V2** | | |
 | M8 | Rückblick: „Wie war's?“-Erinnerung, Herzen + Notiz je Person, Seite „Unsere Dates“ | ✅ |
 | M9 | Fotos zum Rückblick (Vercel Blob, privat) | ✅ |
-| M10 | Kuratierte Köln-Ideen, „Überrasch uns“ | ⏳ |
+| M10 | Kuratierte Köln-Ideen, „Überrasch uns“ | ✅ |
 | M11 | KI-Vorschläge (Claude Haiku 5.5, Wetter von Open-Meteo) | ⏳ |
 | M12 | Event-Quellen: Lieblings-Seiten täglich lesen, „Was läuft“ mit Frei-Prüfung | ✅ |
 
@@ -159,6 +159,19 @@ scripts/              Migration beim Build, Secret-Generator
   und Lieblingsdate. Die Einstellungen sind dafür aus der unteren Leiste in den Kopf der
   Startseite gewandert (Regler-Symbol).
 
+### Köln-Ideen & „Überrasch uns“ in Kürze
+
+- **Köln-Ideen** (`/ideas/koeln`, Tab neben Wunschliste und „Was läuft“): 40 handverlesene Ideen
+  in `src/core/curated-ideas.ts` (feste IDs, grobe Kosten für zwei, drinnen/draußen), filterbar
+  nach Ort, Budget und Größe. „Auf die Wunschliste“ legt eine Idee mit `source = 'curated'`
+  und `external_ref = <id>` an. Neue Ideen: einfach einen Eintrag in der Datei ergänzen.
+- **„Überrasch uns“** (Startseite neben „Date planen“, Wunschliste, Köln-Tab): zieht zufällig
+  aus Wunschliste (doppelt gewichtet) und noch nicht gemerkten Köln-Ideen, ohne die letzten
+  Ziehungen zu wiederholen (`pickSurprise()` in `src/core/surprise.ts`, mit Tests).
+  „Damit planen“ öffnet `/plan?idea=…` mit der Idee vorausgewählt; eine Köln-Idee kommt dafür
+  vorher auf die Wunschliste.
+- Der Vorschlag-Modus nutzt weiterhin nur die Wunschliste – was ihr euch selbst ausgesucht habt.
+
 ### Fotos in Kürze
 
 - Auf der Seite eines vergangenen Dates: **📷 Fotos hinzufügen** (mehrere auf einmal, bis 24).
@@ -214,7 +227,7 @@ scripts/              Migration beim Build, Secret-Generator
 | `event_sources`, `events` | gefolgte Seiten (mit Abruf-Status) und was dort gefunden wurde |
 | `push_subscriptions`, `notification_prefs`, `notification_log` | Push |
 
-`ideas.source`/`external_ref`: Herkunft einer Idee (`web` = gemerkt aus „Was läuft“; `curated`/`ai` für M10/M11).
+`ideas.source`/`external_ref`: Herkunft einer Idee (`curated` = Köln-Idee, `web` = gemerkt aus „Was läuft“, `ai` für M11).
 
 ## Entwickeln
 
@@ -243,9 +256,7 @@ Bewusst nicht in V1, aber vorbereitet:
 
 | Idee | So würde man sie andocken |
 |---|---|
-| **Kuratierte Ideen für Köln** | Neue Datei `src/server/idea-sources/curated.ts`, die `IdeaSourceProvider` implementiert (z. B. aus einer JSON-Datei oder Tabelle mit `ideas.source = 'curated'`), und in `PROVIDERS` in `src/server/idea-sources/index.ts` eintragen. Vorschlag-Modus und Planen nutzen sie dann automatisch. |
 | **KI-Vorschläge** (Budget, Wetter, Dauer, Stimmung) | Ebenfalls ein `IdeaSourceProvider` (`source = 'ai'`), der aus Kontext (Slot-Größe, Wetter-API, Budget) Kandidaten erzeugt; erzeugte Ideen können mit `external_ref` in `ideas` gespeichert werden. |
-| **Zufall („Überrasch uns“)** | Eine kleine Funktion neben `pickSuggestion` (`src/core/suggestion.ts`), die statt der ältesten eine zufällige Idee aus `ideaCandidates()` zieht, plus ein Button auf der Startseite. |
 | **Neue Erinnerung** | Typ in `NOTIFICATION_TYPES` (`src/lib/domain.ts`) ergänzen, Zeitpunkt in `plannedReminders()` (`src/core/reminders.ts`, mit Test), Text in `reminderText()` (`src/server/notifications.ts`), Beschriftung in `push-settings.tsx`. Keine Migration nötig. |
 | **Weitere Person / Gruppen** | Bewusst nicht vorgesehen: Runden, Bestätigen und Push gehen überall von genau zwei Personen aus. |
 

@@ -38,6 +38,7 @@ export function PlanForm({
   partnerName,
   reschedule,
   searchScopeLink,
+  preselectIdeaId,
 }: {
   small: SlotView[];
   large: SlotView[];
@@ -47,9 +48,12 @@ export function PlanForm({
   reschedule?: RescheduleInfo;
   /** "Auch nach dem Rundenende suchen" – rendered by the server page. */
   searchScopeLink?: React.ReactNode;
+  /** From "Überrasch uns" / "Damit planen": start with this idea selected. */
+  preselectIdeaId?: string;
 }) {
   const router = useRouter();
-  const [size, setSize] = useState<IdeaSize>(reschedule?.size ?? "small");
+  const preselected = !reschedule && preselectIdeaId ? ideas.find((i) => i.id === preselectIdeaId) : undefined;
+  const [size, setSize] = useState<IdeaSize>(reschedule?.size ?? preselected?.size ?? "small");
   const slots = size === "small" ? small : large;
   const [slotKey, setSlotKey] = useState<string | null>(slots[0]?.key ?? null);
   const firstIdea = (s: IdeaSize): IdeaPick => {
@@ -57,7 +61,13 @@ export function PlanForm({
     return idea ? { kind: "idea", id: idea.id } : { kind: "custom" };
   };
   const [pick, setPick] = useState<IdeaPick>(() =>
-    reschedule ? (reschedule.ideaId ? { kind: "idea", id: reschedule.ideaId } : { kind: "custom" }) : firstIdea(size),
+    reschedule
+      ? reschedule.ideaId
+        ? { kind: "idea", id: reschedule.ideaId }
+        : { kind: "custom" }
+      : preselected
+        ? { kind: "idea", id: preselected.id }
+        : firstIdea(size),
   );
   const [customTitle, setCustomTitle] = useState(reschedule && !reschedule.ideaId ? reschedule.title : "");
   const [customLocation, setCustomLocation] = useState(reschedule?.location ?? "");

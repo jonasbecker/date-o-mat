@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { IdeasTabs } from "@/components/ideas-tabs";
+import { SurpriseButton } from "@/components/surprise-button";
 import { requireCouple } from "@/server/auth/dal";
 import { listIdeas } from "@/server/ideas";
 import { IdeaBoard, type BoardIdea, type BoardPerson } from "./idea-board";
@@ -10,6 +11,7 @@ export default function IdeasPage() {
   return (
     <div className="flex flex-col gap-4">
       <IdeasTabs current="wishlist" />
+      <SurpriseButton />
       <Suspense fallback={<PageSkeleton />}>
         <Ideas />
       </Suspense>
