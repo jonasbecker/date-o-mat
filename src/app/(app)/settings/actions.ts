@@ -11,6 +11,7 @@ import { parseSpecialDay } from "@/core/special-days";
 import { addSpecialDay, deleteSpecialDay } from "@/server/special-days";
 import { requireCouple } from "@/server/auth/dal";
 import { setBudget } from "@/server/budget";
+import { createShareKey, deleteShareKey, setStartLocation } from "@/server/profile";
 import { destroySession } from "@/server/auth/session";
 import { listCalendars } from "@/server/google/calendar-api";
 import { disconnect, setBusyCalendars } from "@/server/google/connection";
@@ -169,5 +170,27 @@ export async function addSpecialDayAction(_prev: SpecialDayFormState, formData: 
 export async function deleteSpecialDayAction(id: string): Promise<void> {
   const { coupleId } = await requireCouple();
   if (z.uuid().safeParse(id).success) await deleteSpecialDay(coupleId, id);
+  refresh();
+}
+
+export type StartLocationState = { status: "idle" | "saved" };
+
+export async function saveStartLocationAction(_prev: StartLocationState, formData: FormData): Promise<StartLocationState> {
+  const { user } = await requireCouple();
+  await setStartLocation(user.id, String(formData.get("startLocation") ?? ""));
+  refresh();
+  return { status: "saved" };
+}
+
+/** A new key for the iPhone share shortcut – shown exactly once. */
+export async function createShareKeyAction(): Promise<{ key: string }> {
+  const { user } = await requireCouple();
+  const key = await createShareKey(user.id);
+  return { key };
+}
+
+export async function deleteShareKeyAction(): Promise<void> {
+  const { user } = await requireCouple();
+  await deleteShareKey(user.id);
   refresh();
 }

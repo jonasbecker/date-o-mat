@@ -32,6 +32,7 @@ gemeinsame Ideen-Wunschliste.
 | M18 | Budget & Spartopf: Monatsbudget, echte Kosten im Rückblick, Spartopf, Monatsrückblick | ✅ |
 | M19 | Besondere Tage (Jahrestag, Geburtstage) mit Erinnerung, „Vielleicht“-Stapel, alte Ideen auffrischen | ✅ |
 | M20 | Eure Date-Story: Jahresrückblick zum Durchtippen, Swipe-Statistik „Euer Ding“ | ✅ |
+| M21 | Extras: Überraschungs-Date, Vorbereitungs-Checkliste, Route (ÖPNV), Gesprächskarten, iPhone-Teilen per Kurzbefehl | ✅ |
 
 ## Tech-Stack
 
@@ -212,6 +213,27 @@ scripts/              Migration beim Build, Secret-Generator
   (außer sie ist schon als Date geplant).
 - **Nachrichten** (einzeln abschaltbar unter Erinnerungen): „Match!“, „⭐ … findet etwas super“
   und höchstens einmal am Tag „Sam hat 4 Ideen geliked 👀“ (ab 3 wartenden Likes, nicht nachts).
+
+### Extras in Kürze (M21)
+
+- **Überraschungs-Date:** Beim Planen „🎁 Als Überraschung planen“ plus optionaler Hinweis
+  („Bequeme Schuhe“). Bis zum Tag selbst (00:00) sieht die andere Person nur Zeit und Hinweis –
+  auf der Startseite, in Pushes, auf der Budget-Seite und im **Google-Kalender** (gemeinsamer
+  Termin heißt „🎁 Überraschung von …“, ohne Ort). Verschieben darf sie nur die Zeit. Am Tag
+  selbst bekommt der Termin seinen echten Titel und sie einen Push „🎁 Heute ist es soweit!“.
+  Maskierung an einer Stelle: `dateForViewer()` / `maskSurprise()` (`src/core/date-extras.ts`).
+- **Vorbereitung:** Checkliste am nächsten Date (für beide, bei einer Überraschung nur für den
+  Planenden), mit Vorschlägen nach Stichwort („Tisch reservieren“, „Tickets kaufen“ …). Was am
+  Vortag um 18 Uhr offen ist, kommt als Push.
+- **Route:** „🗺️ Route (ÖPNV)“ öffnet Google Maps mit Bus & Bahn ab deinem Startpunkt
+  (Einstellungen → Unterwegs & Teilen). Eine Fahrzeit in der App selbst bräuchte einen
+  kostenpflichtigen Routen-Dienst – deshalb der Link.
+- **Gesprächskarten:** 40 Fragen; am Tag des Dates direkt auf der Date-Karte, sonst unter
+  „Unsere Dates“ → `/fragen`.
+- **iPhone-Teilen:** iOS lässt Web-Apps nicht ins Teilen-Menü. Stattdessen ein Kurzbefehl, der
+  den Link mit einem persönlichen Schlüssel an `POST /api/share` schickt; die Idee landet sofort
+  auf der Wunschliste (Link → Idee mit KI) und der Kurzbefehl zeigt „💡 Auf eurer Wunschliste:
+  …“. Gespeichert wird nur ein Hash des Schlüssels; neu erstellen oder löschen macht ihn ungültig.
 
 ### Date-Story in Kürze
 

@@ -5,12 +5,13 @@ import { eq, isNotNull, lt, sql } from "drizzle-orm";
 import type { CoupleContext } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
 import { ensureCurrentCycle } from "@/server/cycles";
-import { pullGoogleChanges, retryPendingSyncs } from "@/server/dates";
+import { pullGoogleChanges, retryPendingSyncs, revealSurprises } from "@/server/dates";
 import { closeBudgetMonths } from "@/server/budget";
 import { db } from "@/server/db";
 import { expireDeckCards, refillDeck, resurfaceOldIdea, sendDeckNudges } from "@/server/deck";
 import { sendSpecialDayReminders } from "@/server/special-days";
 import { sendStoryReady } from "@/server/story";
+import { sendPrepReminders } from "@/server/date-tasks";
 import { notificationLog, sessions, users } from "@/server/db/schema";
 import { deleteOldEvents, refreshDueSource } from "@/server/events";
 import { sendDueReminders } from "@/server/notifications";
@@ -23,6 +24,7 @@ export async function tickCouple(coupleId: string): Promise<void> {
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
   // Google first: failed syncs, accepted invitations, events deleted in Google Calendar.
+  await revealSurprises(coupleId, now);
   await retryPendingSyncs(coupleId);
   await pullGoogleChanges(coupleId, now);
   const cycle = await ensureCurrentCycle(coupleId, now);
@@ -33,6 +35,7 @@ export async function tickCouple(coupleId: string): Promise<void> {
   await sendSpecialDayReminders(coupleId, now);
   await resurfaceOldIdea(coupleId, now);
   await sendStoryReady(coupleId, now);
+  await sendPrepReminders(coupleId, now);
   await sendDeckNudges(coupleId, now);
 
   // Suggestion mode: prepare the round's proposal, so it is ready when someone opens the app.

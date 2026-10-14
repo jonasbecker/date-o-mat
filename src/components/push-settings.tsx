@@ -139,6 +139,7 @@ export function PushSettings({
     budget: "Monatsrückblick: Budget und Spartopf",
     special_day: "Besondere Tage (2 Wochen und 2 Tage vorher)",
     story: "Eure Date-Story ist fertig (Ende Dezember)",
+    prep: "Vorbereitung: offene Punkte am Vortag (18 Uhr)",
   };
 
   if (!publicKey) {

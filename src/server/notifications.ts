@@ -6,7 +6,8 @@ import { formatDeadline, formatShortDate, formatTimeRange, genitive } from "@/li
 import type { CoupleContext } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { cycles, notificationLog, users, type Cycle, type DatePlan } from "@/server/db/schema";
-import { upcomingDate } from "@/server/dates";
+import { coupleNow } from "@/server/clock";
+import { dateForViewer, upcomingDate } from "@/server/dates";
 import { reviewReminderDates } from "@/server/reviews";
 import { sendToUser, type PushPayload } from "@/server/push";
 import { getCoupleSettings } from "@/server/settings";
@@ -61,7 +62,7 @@ function reminderText(reminder: Reminder, cycle: Cycle | undefined, date: DatePl
  * so overlapping ticks never send twice.
  */
 export async function sendDueReminders(coupleId: string, now: Date): Promise<number> {
-  const members = await db.select({ id: users.id }).from(users).where(eq(users.coupleId, coupleId));
+  const members = await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.coupleId, coupleId));
   if (members.length !== 2) return 0;
   const settings = await getCoupleSettings(coupleId);
   const [cycle] = await db.select().from(cycles).where(eq(cycles.coupleId, coupleId)).orderBy(desc(cycles.seq)).limit(1);
@@ -85,7 +86,9 @@ export async function sendDueReminders(coupleId: string, now: Date): Promise<num
       .onConflictDoNothing()
       .returning({ id: notificationLog.id });
     if (!claimed) continue;
-    sent += await sendToUser(reminder.userId, reminderText(reminder, cycle, date, reviewDates.find((d) => d.id === reminder.refId)?.title), reminder.type);
+    // A surprise date stays one for the partner ("🎁 Überraschung von …").
+    const shown = date ? dateForViewer(date, reminder.userId, members, now) : date;
+    sent += await sendToUser(reminder.userId, reminderText(reminder, cycle, shown, reviewDates.find((d) => d.id === reminder.refId)?.title), reminder.type);
   }
   return sent;
 }
@@ -93,8 +96,9 @@ export async function sendDueReminders(coupleId: string, now: Date): Promise<num
 export type PartnerEvent = "planned" | "rescheduled" | "confirmed" | "cancelled";
 
 /** Tells the partner right away what just happened (sent after the response). */
-export async function notifyPartner(ctx: CoupleContext, event: PartnerEvent, date: Pick<DatePlan, "title" | "startsAt" | "endsAt">) {
+export async function notifyPartner(ctx: CoupleContext, event: PartnerEvent, fullDate: DatePlan) {
   const name = ctx.user.name;
+  const date = dateForViewer(fullDate, ctx.partner.id, [ctx.user, ctx.partner], coupleNow(await getCoupleSettings(ctx.coupleId)));
   const when = `${formatShortDate(date.startsAt)}, ${formatTimeRange(date.startsAt, date.endsAt)}`;
   const payloads: Record<PartnerEvent, PushPayload> = {
     planned: { title: `${name} hat ein Date geplant 🎉`, body: `${date.title} · ${when} – passt dir das?`, url: "/", tag: "date" },

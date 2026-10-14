@@ -85,6 +85,13 @@
       "when": 1792017823495,
       "tag": "0011_special_days",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792020472223,
+      "tag": "0012_extras",
+      "breakpoints": true
     }
   ]
 }

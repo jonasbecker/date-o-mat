@@ -25,13 +25,16 @@ const schema = z.object({
   customLocation: optionalText,
   dateId: optionalUuid,
   fromPot: z.literal("1").optional(),
+  surprise: z.literal("1").optional(),
+  surpriseHint: optionalText,
+  keepDetails: z.literal("1").optional(),
 });
 
 /** "Date festlegen" (or "Termin ändern" with a dateId). */
 export async function saveDateAction(_prev: SaveDateState, formData: FormData): Promise<SaveDateState> {
   const ctx = await requireCouple();
   const parsed = schema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success || (!parsed.data.ideaId && !parsed.data.customTitle)) {
+  if (!parsed.success || (!parsed.data.ideaId && !parsed.data.customTitle && !parsed.data.keepDetails)) {
     return { status: "error", message: parsed.success ? "Wähl eine Idee oder schreib eine spontane auf." : DATE_ERROR_MESSAGES.invalid };
   }
   const data = parsed.data;
@@ -46,6 +49,9 @@ export async function saveDateAction(_prev: SaveDateState, formData: FormData): 
       customTitle: data.ideaId ? null : (data.customTitle ?? null),
       customLocation: data.ideaId ? null : (data.customLocation ?? null),
       fromPot: data.fromPot === "1",
+      // New dates say whether they are a surprise; a reschedule keeps what it was.
+      surprise: data.dateId ? undefined : data.surprise === "1" ? { hint: data.surpriseHint ?? null } : null,
+      keepDetails: data.keepDetails === "1",
     },
     now,
     data.dateId,

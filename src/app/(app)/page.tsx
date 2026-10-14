@@ -21,12 +21,17 @@ import { BudgetBar } from "@/components/budget-bar";
 import { upcomingForHome } from "@/server/special-days";
 import { inDaysLabel, SHOW_DAYS_BEFORE } from "@/core/special-days";
 import { storyYearToShow } from "@/core/story";
+import { isSurpriseHidden, suggestTasks } from "@/core/date-extras";
+import { dateForViewer, upcomingDate } from "@/server/dates";
+import { listTasks } from "@/server/date-tasks";
+import type { DateCardExtras } from "@/components/date-card";
+import { DateTime } from "luxon";
+import { APP_TIMEZONE } from "@/lib/domain";
 import { countSubscriptions } from "@/server/push";
 import { hasSeenIntro, requireCouple } from "@/server/auth/dal";
 import { calendarStates } from "@/server/availability";
 import { coupleNow } from "@/server/clock";
 import { activeDateOf, cycleHistory, ensureCurrentCycle } from "@/server/cycles";
-import { upcomingDate } from "@/server/dates";
 import { countIdeas } from "@/server/ideas";
 import { dateToReview } from "@/server/reviews";
 import { upcomingEvents } from "@/server/events";
@@ -65,6 +70,16 @@ async function Home() {
   ]);
   // The cron runs in real time (not the dev clock). Only warn once it has worked before –
   // "never ran" is a setup step, shown under Einstellungen → Läuft alles?
+  // A surprise stays one: the partner sees time and hint only.
+  const shownDate = nextDate ? dateForViewer(nextDate, user.id, [user, partner], now) : undefined;
+  const hiddenForMe = nextDate ? isSurpriseHidden(nextDate, user.id, now) : false;
+  const tasks = nextDate && !hiddenForMe ? await listTasks(nextDate.id) : null;
+  const dateExtras: DateCardExtras | undefined = nextDate && {
+    tasks: tasks?.map((t) => ({ id: t.id, title: t.title, done: t.doneAt !== null })) ?? null,
+    suggestions: tasks ? suggestTasks(nextDate, tasks.map((t) => t.title)) : [],
+    isToday: DateTime.fromJSDate(nextDate.startsAt, { zone: APP_TIMEZONE }).hasSame(DateTime.fromJSDate(now, { zone: APP_TIMEZONE }), "day"),
+    surprise: hiddenForMe ? "hidden" : nextDate.surprise && nextDate.organizerId === user.id && isSurpriseHidden(nextDate, partner.id, now) ? "organizer" : null,
+  };
   const realNow = new Date();
   const storyYear = storyYearToShow(now);
   const cronStale = Boolean(env().cronSecret) && tick !== null && tickHealth(tick.at, realNow) === "stale";
@@ -98,7 +113,7 @@ async function Home() {
         </Link>
       )}
 
-      <NextStepCard step={step} cycle={cycle} me={user} partner={partner} now={now} date={nextDate} />
+      <NextStepCard step={step} cycle={cycle} me={user} partner={partner} now={now} date={shownDate} />
 
       {suggestion?.status === "ok" && <SuggestionCard suggestion={suggestion.suggestion} idea={suggestion.idea} />}
       {suggestion?.status === "no_slots" && (
@@ -131,7 +146,7 @@ async function Home() {
         </div>
       ))}
 
-      {nextDate && <DateCard date={nextDate} me={user} partner={partner} showConfirm={false} />}
+      {shownDate && <DateCard date={shownDate} me={user} partner={partner} showConfirm={false} extras={dateExtras} />}
 
       {/* Not the main step right now (e.g. it's my turn) – but still worth a reminder. */}
       {toReview && step.kind !== "review" && (

@@ -74,6 +74,10 @@ export const users = pgTable(
     lastLoginAt: timestamptz(),
     // Set once the person has seen the short introduction after pairing.
     onboardedAt: timestamptz(),
+    // Where this person usually starts from (for the route link), e.g. "Ehrenfeld".
+    startLocation: text(),
+    // SHA-256 of the personal key for the iPhone share shortcut (POST /api/share).
+    shareTokenHash: text().unique("users_share_token_hash_unique"),
   },
   (t) => [index("users_couple_idx").on(t.coupleId)],
 );
@@ -234,6 +238,10 @@ export const datePlans = pgTable(
     actualCostEur: integer(),
     // Paid from the savings pot instead of the month budget.
     fromPot: boolean().notNull().default(false),
+    // Surprise: the partner only sees time and the hint until the day itself.
+    surprise: boolean().notNull().default(false),
+    surpriseHint: text(),
+    surpriseRevealedAt: timestamptz(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -241,6 +249,22 @@ export const datePlans = pgTable(
     index("date_plans_cycle_idx").on(t.cycleId),
     index("date_plans_couple_starts_idx").on(t.coupleId, t.startsAt),
   ],
+);
+
+// Preparation checklist of a date ("Tisch reservieren", "Tickets kaufen").
+export const dateTasks = pgTable(
+  "date_tasks",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    dateId: uuid()
+      .notNull()
+      .references(() => datePlans.id, { onDelete: "cascade" }),
+    title: text().notNull(),
+    doneAt: timestamptz(),
+    createdById: uuid().references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("date_tasks_date_idx").on(t.dateId)],
 );
 
 // Review after the date: one per person, so each says how it was for them.
@@ -550,3 +574,4 @@ export type SuggestionRow = typeof suggestions.$inferSelect;
 export type DeckCard = typeof deckCards.$inferSelect;
 export type DeckSwipe = typeof deckSwipes.$inferSelect;
 export type SpecialDay = typeof specialDays.$inferSelect;
+export type DateTask = typeof dateTasks.$inferSelect;

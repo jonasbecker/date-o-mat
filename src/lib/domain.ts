@@ -56,6 +56,8 @@ export const NOTIFICATION_TYPES = [
   "special_day",
   // "Eure Date-Story" of the year is ready (late December).
   "story",
+  // Preparation checklist of a date: still open the day before.
+  "prep",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

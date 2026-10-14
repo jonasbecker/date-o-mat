@@ -18,7 +18,7 @@ import { formatCost } from "@/lib/idea-input";
 import { budgetState } from "@/server/budget";
 import { budgetHint } from "@/core/budget";
 import { BudgetBar } from "@/components/budget-bar";
-import { getDate } from "@/server/dates";
+import { dateForViewer, getDate } from "@/server/dates";
 import { ideaCandidates } from "@/server/idea-sources";
 import { PlanForm, type IdeaOption, type RescheduleInfo } from "./plan-form";
 
@@ -52,9 +52,11 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
       : cycle && (cycle.status === "planned" || cycle.status === "confirmed")
         ? await activeDateOf(cycle.id)
         : undefined;
+  // Moving someone else's surprise: the time changes, the secret stays.
+  const shown = existing && dateForViewer(existing, ctx.user.id, [ctx.user, ctx.partner], now);
   const reschedule: RescheduleInfo | undefined =
-    existing && (existing.status === "planned" || existing.status === "confirmed")
-      ? { dateId: existing.id, size: existing.size, ideaId: existing.ideaId, title: existing.title, location: existing.location }
+    shown && (shown.status === "planned" || shown.status === "confirmed")
+      ? { dateId: shown.id, size: shown.size, ideaId: shown === existing ? shown.ideaId : null, title: shown.title, location: shown.location, keepSecret: shown !== existing }
       : undefined;
   // Normally only within the current round; "later" searches the whole horizon.
   const until = cycle && !later ? searchUntil(cycle, now, settings.horizonDays) : undefined;

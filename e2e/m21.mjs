@@ -1,0 +1,201 @@
+// M21: surprise date, preparation checklist, route link, conversation cards, iPhone share key.
+import { createCipheriv, createHash, randomBytes } from "node:crypto";
+import { mkdirSync, readFileSync } from "node:fs";
+import { createServer } from "node:http";
+import { DateTime } from "luxon";
+import pg from "pg";
+import { chromium } from "playwright";
+import { events as googleEvents, startMock } from "./google-mock.mjs";
+
+const BASE = "http://localhost:3000";
+const OUT = new URL("./shots/", import.meta.url).pathname;
+mkdirSync(OUT, { recursive: true });
+const ZONE = "Europe/Berlin";
+const CRON = { headers: { Authorization: "Bearer test-cron-secret-123456" } };
+const KEY = Buffer.from(process.env.TOKEN_ENCRYPTION_KEY, "base64");
+const encrypt = (text) => {
+  const iv = randomBytes(12);
+  const c = createCipheriv("aes-256-gcm", KEY, iv);
+  const ct = Buffer.concat([c.update(text, "utf8"), c.final()]);
+  return ["v1", iv, c.getAuthTag(), ct].map((p) => (typeof p === "string" ? p : p.toString("base64url"))).join(".");
+};
+await startMock(4010);
+const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
+await db.connect();
+await db.query("TRUNCATE users, couples, sessions, ideas CASCADE");
+const { rows: [couple] } = await db.query("INSERT INTO couples DEFAULT VALUES RETURNING id");
+async function makeUser(name, email, color, accessToken, createdAt) {
+  const { rows } = await db.query(
+    "INSERT INTO users (google_sub, email, name, couple_id, color, created_at, onboarded_at) VALUES ($1, $2, $3, $4, $5, $6, now()) RETURNING id",
+    [`sub-${email}`, email, name, couple.id, color, createdAt],
+  );
+  const token = randomBytes(32).toString("base64url");
+  await db.query("INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, now() + interval '30 days')", [createHash("sha256").update(token).digest("hex"), rows[0].id]);
+  await db.query(
+    `INSERT INTO google_connections (user_id, refresh_token_enc, access_token_enc, access_token_expires_at, busy_calendar_ids)
+     VALUES ($1, $2, $3, now() + interval '30 days', '{primary}')`,
+    [rows[0].id, encrypt("fake-refresh"), encrypt(accessToken)],
+  );
+  return { id: rows[0].id, token };
+}
+const jonas = await makeUser("Jonas", "jonas@example.com", "mandarine", "token-jonas", "2026-01-01");
+const sam = await makeUser("Sam", "partnerin@example.com", "himmel", "token-sam", "2026-01-02");
+await db.query("INSERT INTO couple_settings (couple_id, first_planner_id) VALUES ($1, $2)", [couple.id, jonas.id]);
+await db.query("INSERT INTO ideas (couple_id, title, size, location, cost_eur, created_by_id) VALUES ($1, 'Sushi-Abend', 'small', 'Belgisches Viertel', 50, $2)", [couple.id, jonas.id]);
+
+let failures = 0;
+const check = (label, ok) => { console.log(`${ok ? "✓" : "✗"} ${label}`); if (!ok) failures++; };
+
+// --- fake TikTok oEmbed + Claude (for the share key) -----------------------------------------------
+const thumb = readFileSync(new URL("./fixtures/strand.jpg", import.meta.url));
+const site = createServer((req, res) => {
+  const url = new URL(req.url, "http://x");
+  if (url.pathname === "/oembed") {
+    res.setHeader("content-type", "application/json");
+    return res.end(JSON.stringify({ title: "Neuer Dune-Film ab Donnerstag!", author_unique_id: "kinofan", thumbnail_url: "http://localhost:4060/thumb.jpg" }));
+  }
+  res.setHeader("content-type", "image/jpeg");
+  res.end(thumb);
+});
+await new Promise((r) => site.listen(4060, r));
+const claude = createServer((req, res) => {
+  let body = "";
+  req.on("data", (c) => (body += c));
+  req.on("end", () => {
+    const request = JSON.parse(body);
+    res.setHeader("content-type", "application/json");
+    res.end(JSON.stringify({
+      id: "msg_test", type: "message", role: "assistant", model: request.model,
+      content: [{ type: "text", text: JSON.stringify({ title: "Kino: Dune", size: "small", note: "Neuer Film.", cost_eur: 26, location: "Cinedom" }) }],
+      stop_reason: "end_turn", stop_sequence: null, usage: { input_tokens: 100, output_tokens: 50 },
+    }));
+  });
+});
+await new Promise((r) => claude.listen(4030, r));
+
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+async function pageFor(token) {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: "de-DE" });
+  await ctx.grantPermissions(["clipboard-read", "clipboard-write"], { origin: BASE });
+  await ctx.addCookies([{ name: "dom_session", value: token, url: BASE }]);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.log("PAGEERROR", e.message));
+  return page;
+}
+const setClock = async (t) => db.query("UPDATE couple_settings SET dev_clock_offset_minutes = $2 WHERE couple_id = $1", [couple.id, Math.round((t.toMillis() - Date.now()) / 60_000)]);
+const tick = () => fetch(`${BASE}/api/cron/tick`, CRON);
+
+// 1) Jonas sets his start point
+const j = await pageFor(jonas.token);
+await j.goto(`${BASE}/settings`);
+await j.getByLabel("Dein Startpunkt").waitFor({ timeout: 15000 });
+await j.waitForTimeout(800);
+await j.getByLabel("Dein Startpunkt").fill("Ehrenfeld");
+await j.locator("form", { has: j.getByLabel("Dein Startpunkt") }).getByRole("button", { name: "Speichern" }).click();
+await j.getByText("Gespeichert ✓").first().waitFor({ timeout: 10000 });
+check("start point saved", (await db.query("SELECT start_location FROM users WHERE id = $1", [jonas.id])).rows[0].start_location === "Ehrenfeld");
+
+// 2) Jonas plans a surprise
+await j.goto(`${BASE}/plan`);
+await j.locator("ol li button").first().waitFor({ timeout: 20000 });
+await j.waitForTimeout(800);
+await j.getByLabel("🎁 Als Überraschung planen").check();
+await j.getByLabel("Hinweis für Sam (optional)").fill("Hunger mitbringen!");
+await j.screenshot({ path: `${OUT}m21-01-plan-surprise.png` });
+await j.getByRole("button", { name: "Date festlegen 🎉" }).click();
+await j.waitForURL(`${BASE}/`, { timeout: 15000 });
+const { rows: [date] } = await db.query("SELECT * FROM date_plans WHERE couple_id = $1 ORDER BY created_at DESC LIMIT 1", [couple.id]);
+check(`surprise saved (${date.title}, ${date.surprise_hint})`, date.surprise === true && date.surprise_hint === "Hunger mitbringen!" && date.title === "Sushi-Abend");
+const event = [...googleEvents["token-jonas"].values()].at(-1);
+check(`Google event keeps the secret (${event?.summary})`, event?.summary === "💞 Date: 🎁 Überraschung von Jonas" && !event.location && !JSON.stringify(event).includes("Sushi"));
+
+// 3) Jonas sees everything, plus the checklist with a suggestion and the route
+await j.reload();
+await j.getByText("Euer nächstes Date").waitFor({ timeout: 15000 });
+check("Jonas sees the real title and the surprise note", (await j.getByRole("heading", { name: "Sushi-Abend" }).isVisible()) && (await j.getByText(/🎁 Überraschung: Sam sieht bis zum Tag selbst nur Zeit und deinen Hinweis/).isVisible()));
+const route = await j.getByRole("link", { name: "🗺️ Route (ÖPNV)" }).getAttribute("href");
+check(`route link with his start point (${route})`, new URL(route).searchParams.get("origin") === "Ehrenfeld, Köln" && new URL(route).searchParams.get("destination") === "Belgisches Viertel, Köln");
+await j.getByText("📝 Vorbereitung").click();
+await j.getByRole("button", { name: "+ Tisch reservieren" }).click();
+await j.getByRole("checkbox", { name: "Tisch reservieren" }).waitFor({ timeout: 10000 });
+await j.getByLabel("Neuer Punkt").fill("Blumen besorgen");
+await j.getByRole("button", { name: "Dazu" }).click();
+await j.getByRole("checkbox", { name: "Blumen besorgen" }).waitFor({ timeout: 10000 });
+await j.getByRole("checkbox", { name: "Blumen besorgen" }).check();
+await j.waitForTimeout(800);
+const { rows: tasks } = await db.query("SELECT title, done_at IS NOT NULL AS done FROM date_tasks ORDER BY created_at");
+check(`checklist stored (${JSON.stringify(tasks)})`, tasks.length === 2 && tasks[0].title === "Tisch reservieren" && !tasks[0].done && tasks[1].done);
+await j.screenshot({ path: `${OUT}m21-02-jonas.png`, fullPage: true });
+
+// 4) Sam sees only time and hint – no title, place, checklist; budget page keeps the secret too
+const s = await pageFor(sam.token);
+await s.goto(`${BASE}/`);
+await s.getByText("Euer nächstes Date").waitFor({ timeout: 15000 });
+const samText = await s.locator("main").innerText();
+check("Sam: surprise title + hint", samText.includes("🎁 Überraschung von Jonas") && samText.includes("Hinweis: Hunger mitbringen!") && samText.includes("erfährst du am Tag selbst"));
+check("Sam: no title, place, checklist or route", !/Sushi|Belgisches|Vorbereitung|Route/.test(samText));
+await s.screenshot({ path: `${OUT}m21-03-sam-surprise.png`, fullPage: true });
+
+// Sam moves the time: details stay secret and unchanged
+await s.goto(`${BASE}/plan?reschedule=${date.id}`);
+await s.locator("ol li button").first().waitFor({ timeout: 20000 });
+check("reschedule: only the time can change", await s.getByText("🤫 Das ist eine Überraschung").isVisible());
+check("reschedule page does not show the title", !(await s.locator("main").innerText()).includes("Sushi"));
+await s.waitForTimeout(800);
+await s.locator("ol li button").nth(1).click();
+await s.getByRole("button", { name: "Termin ändern" }).click();
+await s.waitForURL(`${BASE}/`, { timeout: 15000 });
+const { rows: [moved] } = await db.query("SELECT title, location, surprise, starts_at, organizer_id FROM date_plans WHERE id = $1", [date.id]);
+check(`moved, still the same secret (${moved.title})`, moved.title === "Sushi-Abend" && moved.location === "Belgisches Viertel" && moved.surprise === true && moved.starts_at.getTime() !== date.starts_at.getTime());
+
+// 5) The evening before: prep reminder only for Jonas (Sam must not know)
+const start = DateTime.fromJSDate(moved.starts_at).setZone(ZONE);
+await setClock(start.minus({ days: 1 }).set({ hour: 18, minute: 5 }));
+await tick();
+const { rows: prep } = await db.query("SELECT user_id FROM notification_log WHERE type = 'prep'");
+check(`prep reminder only for Jonas (${prep.length})`, prep.length === 1 && prep[0].user_id === jonas.id);
+
+// 6) The day itself: revealed – Google event gets the real title, Sam sees everything + conversation cards
+await setClock(start.set({ hour: 0, minute: 30 }));
+await tick();
+const { rows: [revealed] } = await db.query("SELECT surprise_revealed_at FROM date_plans WHERE id = $1", [date.id]);
+check("revealed in the database", revealed.surprise_revealed_at !== null);
+const event2 = [...googleEvents["token-jonas"].values()].at(-1);
+check(`Google event now says what it is (${event2?.summary})`, event2?.summary === "💞 Date: Sushi-Abend" && event2.location === "Belgisches Viertel");
+await s.goto(`${BASE}/`);
+await s.getByText("Euer nächstes Date").waitFor({ timeout: 15000 });
+check("Sam sees the real date now", await s.getByRole("heading", { name: "Sushi-Abend" }).isVisible());
+await s.getByRole("button", { name: "💬 Gesprächskarte ziehen" }).click();
+const question = await s.locator("p[aria-live=polite]").innerText();
+await s.getByRole("button", { name: "Nächste Karte →" }).click();
+check(`conversation cards (${question})`, question.endsWith("?") && (await s.locator("p[aria-live=polite]").innerText()) !== question);
+await s.screenshot({ path: `${OUT}m21-04-revealed.png`, fullPage: true });
+await setClock(DateTime.now());
+
+// 7) iPhone share key: create, use, reject wrong keys, delete
+await j.goto(`${BASE}/settings`);
+await j.getByRole("button", { name: "Schlüssel erstellen" }).click();
+const shareKey = (await j.locator("code").innerText()).trim();
+check(`key shown once (${shareKey.slice(0, 8)}…)`, /^dom_[A-Za-z0-9_-]{40,}$/.test(shareKey));
+check("only the hash is stored", (await db.query("SELECT share_token_hash FROM users WHERE id = $1", [jonas.id])).rows[0].share_token_hash === createHash("sha256").update(shareKey).digest("hex"));
+const share = (key, body) => fetch(`${BASE}/api/share`, { method: "POST", headers: { Authorization: `Bearer ${key}`, "content-type": "application/json" }, body: JSON.stringify(body) });
+const ok = await share(shareKey, { text: "Schau mal https://www.tiktok.com/@kinofan/video/123" });
+const okText = await ok.text();
+check(`share saves the idea (${ok.status}: ${okText})`, ok.status === 200 && okText === "💡 Auf eurer Wunschliste: Kino: Dune");
+check("idea is on the wishlist", (await db.query("SELECT created_by_id FROM ideas WHERE title = 'Kino: Dune'")).rows[0]?.created_by_id === jonas.id);
+check("no link → 400", (await share(shareKey, { text: "nur Text" })).status === 400);
+check("wrong key → 401", (await share("dom_" + "x".repeat(43), { text: "https://www.tiktok.com/@a/video/1" })).status === 401);
+await j.reload();
+await j.getByRole("button", { name: "Schlüssel löschen" }).click();
+await j.waitForTimeout(800);
+check("deleted key → 401", (await share(shareKey, { text: "https://www.tiktok.com/@a/video/1" })).status === 401);
+
+// 8) /fragen page
+await j.goto(`${BASE}/fragen`);
+await j.getByRole("button", { name: "💬 Gesprächskarte ziehen" }).click();
+check("question page", (await j.locator("p[aria-live=polite]").innerText()).endsWith("?"));
+
+console.log(failures ? `\n${failures} check(s) failed` : "\nAll checks passed");
+await browser.close();
+await db.end();
+process.exit(failures ? 1 : 0);

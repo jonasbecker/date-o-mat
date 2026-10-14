@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { after } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { addTask, deleteTask, toggleTask } from "@/server/date-tasks";
 import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
 import { applySettingsToOpenCycle, ensureCurrentCycle } from "@/server/cycles";
@@ -114,4 +115,26 @@ export async function acceptSuggestionAction(suggestionId: string): Promise<Acti
   if (result.ok) await tellPartner(ctx, "planned", result.dateId);
   refresh();
   return result.ok ? { ok: true } : { ok: false, message: DATE_ERROR_MESSAGES[result.error] };
+}
+
+// --- Preparation checklist ---------------------------------------------------------------
+
+export async function addTaskAction(dateId: string, title: string): Promise<ActionResult> {
+  const ctx = await requireCouple();
+  const id = dateIdSchema.safeParse(dateId);
+  const ok = id.success && typeof title === "string" && (await addTask(ctx, id.data, title));
+  refresh();
+  return ok ? { ok } : { ok, message: "Das ging nicht – ist die Liste voll?" };
+}
+
+export async function toggleTaskAction(taskId: string, done: boolean): Promise<void> {
+  const { coupleId } = await requireCouple();
+  if (dateIdSchema.safeParse(taskId).success) await toggleTask(coupleId, taskId, done === true);
+  refresh();
+}
+
+export async function deleteTaskAction(taskId: string): Promise<void> {
+  const { coupleId } = await requireCouple();
+  if (dateIdSchema.safeParse(taskId).success) await deleteTask(coupleId, taskId);
+  refresh();
 }

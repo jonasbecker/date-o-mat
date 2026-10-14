@@ -8,6 +8,9 @@ import { CancelDateButton } from "./cancel-date-button";
 import { ConfettiActionButton } from "./confetti";
 import { CalendarIcon, ClockIcon } from "./icons";
 import { SizeChip } from "./size-chip";
+import { ConversationCards } from "./conversation-cards";
+import { DateChecklist, type TaskView } from "./date-checklist";
+import { routeUrl } from "@/core/date-extras";
 
 function SyncHint({ date }: { date: DatePlan }) {
   if (date.syncStatus === "synced") {
@@ -23,8 +26,30 @@ function SyncHint({ date }: { date: DatePlan }) {
   );
 }
 
+export type DateCardExtras = {
+  /** Preparation checklist (null = not shown, e.g. a surprise for me). */
+  tasks: TaskView[] | null;
+  suggestions: string[];
+  /** The date is today: conversation cards. */
+  isToday: boolean;
+  /** "organizer": I planned a surprise · "hidden": it's a surprise for me. */
+  surprise: "organizer" | "hidden" | null;
+};
+
 /** The upcoming date with the actions that fit the viewer's role. */
-export function DateCard({ date, me, partner, showConfirm = true }: { date: DatePlan; me: User; partner: User; showConfirm?: boolean }) {
+export function DateCard({
+  date,
+  me,
+  partner,
+  showConfirm = true,
+  extras,
+}: {
+  date: DatePlan;
+  me: User;
+  partner: User;
+  showConfirm?: boolean;
+  extras?: DateCardExtras;
+}) {
   const proposer = date.proposedById === me.id ? me : partner;
   // On the home screen the "Passt!" button already sits in the next-step card above.
   const canConfirm = showConfirm && date.status === "planned" && date.proposedById !== me.id;
@@ -48,15 +73,34 @@ export function DateCard({ date, me, partner, showConfirm = true }: { date: Date
         <span className="flex items-center gap-2">
           <ClockIcon width={19} height={19} /> {formatTimeRange(date.startsAt, date.endsAt)} Uhr
         </span>
-        {date.location && <span>📍 {date.location}</span>}
-        {date.note && <span className="font-semibold text-muted">„{date.note}“</span>}
+        {date.location && (
+          <span className="flex flex-wrap items-center gap-x-3">
+            📍 {date.location}
+            <a href={routeUrl(date.location, me.startLocation)} target="_blank" rel="noopener noreferrer" className="text-sm underline">
+              🗺️ Route (ÖPNV)
+            </a>
+          </span>
+        )}
+        {date.note && (
+          <span className="font-semibold text-muted">{extras?.surprise === "hidden" ? `Hinweis: ${date.note}` : `„${date.note}“`}</span>
+        )}
         {date.url && (
           <a href={date.url} target="_blank" rel="noopener noreferrer" className="text-sm underline">
             🔗 Link zur Idee
           </a>
         )}
       </div>
+      {extras?.surprise === "hidden" && (
+        <p className="rounded-xl bg-himbeere-soft px-3 py-2 text-[13px] font-bold text-tinte">🤫 {partner.name} hat eine Überraschung geplant – was es ist, erfährst du am Tag selbst.</p>
+      )}
+      {extras?.surprise === "organizer" && (
+        <p className="rounded-xl bg-himbeere-soft px-3 py-2 text-[13px] font-bold text-tinte">
+          🎁 Überraschung: {partner.name} sieht bis zum Tag selbst nur Zeit{date.surpriseHint ? " und deinen Hinweis" : ""} – auch im Google-Kalender.
+        </p>
+      )}
       <SyncHint date={date} />
+      {extras?.tasks && <DateChecklist dateId={date.id} tasks={extras.tasks} suggestions={extras.suggestions} />}
+      {extras?.isToday && <ConversationCards />}
 
       {canConfirm ? (
         <div className="flex flex-col gap-2.5">

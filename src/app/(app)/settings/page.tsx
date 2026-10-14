@@ -30,6 +30,7 @@ import { systemStatus } from "@/server/system-status";
 import { SystemStatusCard } from "./system-status-card";
 import { EventMixPicker } from "./event-mix-picker";
 import { BudgetForm } from "./budget-form";
+import { ShareShortcut, StartLocationForm } from "./on-the-go";
 import { SpecialDays, type SpecialDayView } from "./special-days";
 import { upcomingDaysFor } from "@/server/special-days";
 import { inDaysLabel } from "@/core/special-days";
@@ -200,6 +201,16 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
         </h2>
         <Card>
           <PushSettings publicKey={pushPublicKey()} prefs={prefs} partnerName={partner.name} />
+        </Card>
+      </section>
+
+      <section id="unterwegs" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="go-heading">
+        <h2 id="go-heading" className="text-[21px] font-semibold">
+          Unterwegs & Teilen
+        </h2>
+        <Card className="flex flex-col gap-5">
+          <StartLocationForm value={user.startLocation} />
+          <ShareShortcut hasKey={Boolean(user.shareTokenHash)} endpoint={`${env().appUrl}/api/share`} />
         </Card>
       </section>
 

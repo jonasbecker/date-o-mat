@@ -9,6 +9,7 @@ import { dateCost } from "@/core/budget";
 import { formatShortDate } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
 import { budgetHistory, budgetState, monthDates } from "@/server/budget";
+import { dateForViewer } from "@/server/dates";
 import { coupleNow } from "@/server/clock";
 import { getCoupleSettings } from "@/server/settings";
 
@@ -63,7 +64,10 @@ async function Budget() {
         </h2>
         {dates.length === 0 && <p className="font-semibold text-muted">Noch keine Dates in diesem Monat.</p>}
         <ul className="flex flex-col gap-2">
-          {dates.map((d) => {
+          {dates.map((full) => {
+            // A surprise for me: no title, no amount (the sum above still counts it).
+            const d = dateForViewer(full, ctx.user.id, [ctx.user, ctx.partner], now);
+            const secret = d !== full;
             const past = d.startsAt <= now || d.status === "done";
             return (
               <li key={d.id} className="flex items-center justify-between gap-3 rounded-[18px] border-2 border-line bg-surface px-4 py-2.5">
@@ -76,8 +80,8 @@ async function Budget() {
                   </span>
                 </span>
                 <span className="shrink-0 text-right">
-                  <span className="block font-display text-lg font-semibold">{dateCost(d)} €</span>
-                  {past && d.actualCostEur === null && (
+                  <span className="block font-display text-lg font-semibold">{secret ? "🤫" : `${dateCost(d)} €`}</span>
+                  {past && !secret && d.actualCostEur === null && (
                     <Link href={`/dates/${d.id}`} className="text-xs font-extrabold underline">
                       {d.estimatedCostEur === null ? "Betrag eintragen" : "geschätzt · echt eintragen"}
                     </Link>

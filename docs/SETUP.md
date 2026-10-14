@@ -331,6 +331,12 @@ Spartopf zählt ab diesem Monat. Den Monatsabschluss macht der Cron-Tick am 1. d
 Unter **Einstellungen → Besondere Tage** Jahrestag und Geburtstage eintragen. Erinnerungen
 kommen per Push (Erinnerungen → „Besondere Tage“).
 
+### iPhone: Teilen per Kurzbefehl (M21)
+
+Jede:r einmal auf dem eigenen iPhone: **Einstellungen → Unterwegs & Teilen → Schlüssel
+erstellen**, dann der Anleitung darunter folgen (Kurzbefehle-App, etwa 2 Minuten). Danach in
+TikTok/Instagram: **Teilen → Date-O-Mat**. Unter Android geht das ohne Kurzbefehl direkt.
+
 ### Status prüfen (M16)
 
 **Einstellungen → Läuft alles?** zeigt auf einen Blick, ob der Cron läuft, beide Kalender

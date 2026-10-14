@@ -1,15 +1,19 @@
 // Dates ("date_plans"): plan, reschedule, confirm, cancel – and keep the
 // Google Calendar event in sync with the database.
 import "server-only";
-import { and, asc, eq, gt, inArray, lt, ne } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull, lt, ne } from "drizzle-orm";
 import { parsePriceEur } from "@/core/budget";
 import { buildEventBody, eventIdFor } from "@/core/date-event";
+import { maskSurprise, surpriseRevealAt } from "@/core/date-extras";
 import { mergeRanges, padRanges, subtractRanges, type TimeRange } from "@/core/ranges";
 import type { IdeaSize } from "@/lib/domain";
 import type { CoupleContext } from "@/server/auth/dal";
+import { coupleNow } from "@/server/clock";
 import { db } from "@/server/db";
 import { cycles, datePlans, events, ideas, suggestions, users, type DatePlan } from "@/server/db/schema";
 import { env } from "@/server/env";
+import { formatTimeRange } from "@/lib/format";
+import { sendToUser } from "@/server/push";
 import { deleteEvent, getEvent, insertEvent, patchEvent, queryFreeBusy } from "@/server/google/calendar-api";
 import { CalendarNotConnectedError, getConnection } from "@/server/google/connection";
 import { ensureCurrentCycle } from "@/server/cycles";
@@ -30,7 +34,20 @@ export type DateChoice = {
   eventId?: string | null;
   /** Paid from the savings pot instead of the month budget. */
   fromPot?: boolean;
+  /** Surprise: the partner sees only time and hint until the day. Undefined = keep as it is. */
+  surprise?: { hint: string | null } | null;
+  /** Rescheduling someone else's surprise: only the time changes. */
+  keepDetails?: boolean;
 };
+
+/**
+ * What a viewer may see of a date: a surprise not planned by them shows only
+ * time and hint until the day itself. `viewerId` null = the shared Google event.
+ */
+export function dateForViewer<T extends DatePlan>(date: T, viewerId: string | null, people: Array<{ id: string; name: string }>, now: Date): T {
+  const organizer = people.find((p) => p.id === date.organizerId)?.name ?? "deinem Schatz";
+  return maskSurprise(date, viewerId, now, organizer);
+}
 
 export type SaveDateResult =
   | { ok: true; dateId: string; synced: boolean }
@@ -116,11 +133,14 @@ export async function saveDate(ctx: CoupleContext, choice: DateChoice, now: Date
   if (duration <= 0 || duration > 12 * 3_600_000) return { ok: false, error: "invalid" };
   if (choice.start.getTime() < now.getTime() + Math.min(settings.minLeadHours, 2) * 3_600_000) return { ok: false, error: "invalid" };
 
-  const details = await snapshot(ctx.coupleId, choice);
-  if (!details) return { ok: false, error: "invalid" };
-
   const existing = dateId ? await getDate(ctx.coupleId, dateId) : undefined;
   if (dateId && (!existing || !["planned", "confirmed"].includes(existing.status))) return { ok: false, error: "invalid" };
+
+  const details =
+    choice.keepDetails && existing
+      ? { ideaId: existing.ideaId, title: existing.title, location: existing.location, note: existing.note, url: existing.url, estimatedCostEur: existing.estimatedCostEur }
+      : await snapshot(ctx.coupleId, choice);
+  if (!details) return { ok: false, error: "invalid" };
 
   try {
     const ignore = existing ? { start: existing.startsAt.getTime(), end: existing.endsAt.getTime() } : undefined;
@@ -141,6 +161,7 @@ export async function saveDate(ctx: CoupleContext, choice: DateChoice, now: Date
         startsAt: choice.start,
         endsAt: choice.end,
         fromPot: choice.fromPot ?? existing.fromPot,
+        ...(choice.surprise !== undefined ? { surprise: choice.surprise !== null, surpriseHint: choice.surprise?.hint ?? null, surpriseRevealedAt: null } : {}),
         status: "planned",
         proposedById: ctx.user.id,
         confirmedById: null,
@@ -172,6 +193,8 @@ export async function saveDate(ctx: CoupleContext, choice: DateChoice, now: Date
           startsAt: choice.start,
           endsAt: choice.end,
           fromPot: choice.fromPot ?? false,
+          surprise: Boolean(choice.surprise),
+          surpriseHint: choice.surprise?.hint ?? null,
           organizerId: ctx.user.id,
           proposedById: ctx.user.id,
         })
@@ -262,7 +285,12 @@ export async function syncDate(dateId: string): Promise<boolean> {
       const [idea] = date.ideaId
         ? await db.select({ costEur: ideas.costEur }).from(ideas).where(eq(ideas.id, date.ideaId)).limit(1)
         : [];
-      const body = buildEventBody({ ...date, costEur: idea?.costEur ?? null }, partnerEmail, env().appUrl);
+      // A surprise stays a surprise in Google Calendar too (the partner is invited to the same event).
+      const now = coupleNow(await getCoupleSettings(date.coupleId));
+      const people = await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.coupleId, date.coupleId));
+      const shown = dateForViewer(date, null, people, now);
+      const hidden = shown !== date;
+      const body = buildEventBody({ ...shown, costEur: hidden ? null : (idea?.costEur ?? null) }, partnerEmail, env().appUrl);
       const created = date.googleEventId ? false : await insertEvent(date.organizerId, eventId, body);
       if (!created) await patchEvent(date.organizerId, eventId, body);
     }
@@ -327,5 +355,35 @@ export async function pullGoogleChanges(coupleId: string, now: Date): Promise<vo
     } catch (error) {
       console.warn(`[dates] reading back ${date.id} failed`, error);
     }
+  }
+}
+
+/**
+ * Tick: on the day of a surprise date the event in Google Calendar gets its
+ * real title and the partner a push "Heute ist es soweit".
+ */
+export async function revealSurprises(coupleId: string, now: Date): Promise<void> {
+  const due = await db
+    .select()
+    .from(datePlans)
+    .where(and(eq(datePlans.coupleId, coupleId), eq(datePlans.surprise, true), isNull(datePlans.surpriseRevealedAt), inArray(datePlans.status, ["planned", "confirmed"])));
+  for (const date of due) {
+    if (surpriseRevealAt(date.startsAt) > now) continue;
+    const [claimed] = await db
+      .update(datePlans)
+      .set({ surpriseRevealedAt: now, syncStatus: "pending", syncAttempts: 0 })
+      .where(and(eq(datePlans.id, date.id), isNull(datePlans.surpriseRevealedAt)))
+      .returning({ id: datePlans.id });
+    if (!claimed) continue;
+    await syncDate(date.id);
+    const people = await db.select().from(users).where(eq(users.coupleId, coupleId));
+    const organizer = people.find((p) => p.id === date.organizerId);
+    const partner = people.find((p) => p.id !== date.organizerId);
+    if (!organizer || !partner) continue;
+    await sendToUser(
+      partner.id,
+      { title: "🎁 Heute ist es soweit!", body: `${organizer.name} hat für heute geplant: ${date.title} · ${formatTimeRange(date.startsAt, date.endsAt)} Uhr`, url: "/", tag: "date" },
+      "partner_activity",
+    ).catch(() => 0);
   }
 }

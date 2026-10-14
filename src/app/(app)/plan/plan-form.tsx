@@ -30,7 +30,8 @@ const MOOD_LABEL: Record<SlotMood, string> = {
 
 export type IdeaOption = { id: string; title: string; size: IdeaSize; meta: string | null; costEur?: number | null };
 
-export type RescheduleInfo = { dateId: string; size: IdeaSize; ideaId: string | null; title: string; location: string | null };
+/** `keepSecret`: someone else's surprise – only the time can be changed. */
+export type RescheduleInfo = { dateId: string; size: IdeaSize; ideaId: string | null; title: string; location: string | null; keepSecret?: boolean };
 
 /** `title` is known right away for ideas that were just put on the wishlist (before the page refreshed). */
 type IdeaPick = { kind: "idea"; id: string; title?: string } | { kind: "custom" };
@@ -99,6 +100,7 @@ export function PlanForm({
   const [customLocation, setCustomLocation] = useState(reschedule?.location ?? "");
   const celebrate = useCelebrate();
   const [leaving, setLeaving] = useState(false);
+  const [surprise, setSurprise] = useState(false);
 
   const [state, formAction, pending] = useActionState<SaveDateState, FormData>(async (prev, formData) => {
     const result = await saveDateAction(prev, formData);
@@ -161,8 +163,8 @@ export function PlanForm({
       <form action={formAction} className="flex flex-col gap-4 pb-40">
         {slot && (
           <>
-            <input type="hidden" name="start" value={slot.startIso} />
-            <input type="hidden" name="end" value={slot.endIso} />
+              <input type="hidden" name="start" value={slot.startIso} />
+              <input type="hidden" name="end" value={slot.endIso} />
           </>
         )}
         <input type="hidden" name="size" value={size} />
@@ -256,6 +258,13 @@ export function PlanForm({
         <p className="text-center text-[13px] font-bold text-muted">Gesucht bis {untilLabel}</p>
         {searchScopeLink}
 
+        {reschedule?.keepSecret ? (
+          <p className="rounded-2xl border-2 border-line bg-himbeere-soft px-3.5 py-2.5 font-bold text-tinte">
+            🤫 Das ist eine Überraschung – du kannst nur die Zeit ändern, der Rest bleibt geheim.
+            <input type="hidden" name="keepDetails" value="1" />
+          </p>
+        ) : (
+          <>
         <div className="flex items-center justify-between">
           <h2 className="text-[21px] font-semibold">Was machen wir?</h2>
         </div>
@@ -428,6 +437,28 @@ export function PlanForm({
             </>
           )}
         </div>
+
+        {!reschedule && (
+          <div className="flex flex-col gap-2 rounded-[20px] border-2 border-dashed border-line p-3">
+            <label className="flex items-center gap-2.5 font-extrabold">
+              <input type="checkbox" name="surprise" value="1" checked={surprise} onChange={(e) => setSurprise(e.target.checked)} className="size-5 accent-himbeere" />
+              🎁 Als Überraschung planen
+            </label>
+            {surprise && (
+              <>
+                <p className="text-sm font-semibold text-muted">
+                  {partnerName} sieht bis zum Tag selbst nur die Zeit (auch im Google-Kalender) – und deinen Hinweis.
+                </p>
+                <label htmlFor="surprise-hint" className="text-[13px] font-extrabold text-muted">
+                  Hinweis für {partnerName} (optional)
+                </label>
+                <input id="surprise-hint" name="surpriseHint" maxLength={120} placeholder="z. B. Bequeme Schuhe, nichts vorher essen" className={inputClass} />
+              </>
+            )}
+          </div>
+        )}
+          </>
+        )}
 
         {slots.length > 0 && (
           <div className="fixed inset-x-0 bottom-[86px] z-10 border-t-[2.5px] border-line bg-surface px-5 pb-3.5 pt-3">

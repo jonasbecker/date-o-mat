@@ -89,7 +89,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M18 | Budget & Spartopf (Monatsbudget, echte Kosten, Spartopf, Monatsrückblick) | ✅ |
 | M19 | Besondere Tage, „Vielleicht“-Stapel, alte Ideen auffrischen | ✅ |
 | M20 | Date-Story (Jahresrückblick) & Statistik | ✅ |
-| M21 | Extras: iOS-Kurzbefehl zum Teilen, Überraschungs-Date, Vorbereitungs-Checkliste, Anfahrt, Gesprächskarten | |
+| M21 | Extras: iOS-Kurzbefehl zum Teilen, Überraschungs-Date, Vorbereitungs-Checkliste, Anfahrt, Gesprächskarten | ✅ |
 
 Abweichungen in V2:
 
@@ -106,6 +106,10 @@ Abweichungen in V2:
    und verstößt gegen die Nutzungsbedingungen der Plattformen.
 6. Eine stehende Automatik kann sich nicht selbst per Push melden (der Push käme ja aus dem
    Cron) – deshalb Hinweis auf der Startseite statt Push.
+7. Anfahrt: statt „ca. 25 Min. mit der KVB“ ein Link zu Google Maps (ÖPNV) – eine Fahrzeit in
+   der App bräuchte einen Routen-Dienst mit Schlüssel und Kosten.
+8. iPhone-Teilen über einen Kurzbefehl mit persönlichem Schlüssel statt eines fertigen
+   Kurzbefehls zum Herunterladen (Apple verlangt dafür signierte Dateien).
 
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 

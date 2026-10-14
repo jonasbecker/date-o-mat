@@ -62,6 +62,9 @@ async function Dates() {
               <span className="text-sm font-bold">Euer Jahr zum Durchtippen – Lieblingsdate, Herzen, Fotos …</span>
             </span>
           </Link>
+          <Link href="/fragen" className="self-start text-sm font-extrabold underline">
+            💬 Gesprächskarten für euer nächstes Date
+          </Link>
           {stats.favorite && (
             <Link
               href={`/dates/${stats.favorite.id}`}
