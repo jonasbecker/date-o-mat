@@ -132,11 +132,11 @@ await j.getByRole("heading", { name: "Event-Quellen" }).waitFor({ timeout: 15000
 for (const [path, kind] of [["/jsonld", "calendar"], ["/html", "calendar"], ["/tips", "tips"], ["/spa", "calendar"]]) {
   await j.getByRole("textbox", { name: "Weitere Seite" }).fill(`http://localhost:4040${path}`);
   await j.locator("#events select[name=\"kind\"]").selectOption(kind);
-  await j.getByRole("button", { name: "Hinzufügen", exact: true }).click();
+  await j.locator("#events").getByRole("button", { name: "Hinzufügen", exact: true }).click();
   await j.locator(`a[href="http://localhost:4040${path}"]`).waitFor({ timeout: 10000 });
 }
 await j.getByRole("textbox", { name: "Weitere Seite" }).fill("http://localhost:4040/jsonld");
-await j.getByRole("button", { name: "Hinzufügen", exact: true }).click();
+await j.locator("#events").getByRole("button", { name: "Hinzufügen", exact: true }).click();
 await j.getByText("Diese Seite folgt ihr schon.").waitFor({ timeout: 10000 });
 check("duplicate source rejected", true);
 check("all four sources read in the background", await waitForSources(4));
