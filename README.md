@@ -389,6 +389,10 @@ scripts/              Migration beim Build, Secret-Generator
   Tagen, mit „✓ Ihr habt beide Zeit“ (eine FreeBusy-Abfrage pro Person, inkl. Puffer).
   „Als Date planen“ legt das Date direkt zur Event-Zeit an (mit Google-Einladung),
   „Merken“ setzt es auf die Wunschliste (`ideas.source = 'web'`).
+- **Feed als zweiter Weg** (`src/core/feeds.ts`, mit Tests): Blockt eine Seite automatische
+  Abrufe (z. B. HTTP 403), ist sie fast leer (JavaScript) oder ist sie eine Tipps-/Magazinseite,
+  liest der Server ihren RSS-/Atom-Feed – aus dem Seitenkopf verlinkt oder WordPress-typisch
+  unter `/feed/`. Feeds enthalten oft die ganzen Artikel, also mehr Tipps als die Startseite.
 - **Ohne `ANTHROPIC_API_KEY`** werden nur JSON-LD-Seiten gelesen; die Einstellungen sagen das.
 
 ### Slot-Finder in Kürze

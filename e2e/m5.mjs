@@ -3,6 +3,7 @@ import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import pg from "pg";
 import { chromium } from "playwright";
 import { BUSY, events, failures, requests, startMock } from "./google-mock.mjs";
+import { tuesdayMorningOffset } from "./clock.mjs";
 
 const BASE = "http://localhost:3000";
 const SHOTS = new URL("./shots/", import.meta.url).pathname;
@@ -36,7 +37,7 @@ async function makeUser(name, email, color, accessToken, createdAt) {
 }
 const jonas = await makeUser("Jonas", "jonas@example.com", "mandarine", "token-jonas", "2026-01-01");
 const sam = await makeUser("Sam", "partnerin@example.com", "himmel", "token-sam", "2026-01-02");
-await db.query("INSERT INTO couple_settings (couple_id, first_planner_id) VALUES ($1, $2)", [couple.id, jonas.id]);
+await db.query("INSERT INTO couple_settings (couple_id, first_planner_id, dev_clock_offset_minutes) VALUES ($1, $2, $3)", [couple.id, jonas.id, tuesdayMorningOffset()]);
 for (const [title, size, days, location] of [
   ["Picknick im Stadtwald", "small", 3, "Stadtwald"],
   ["Ramen kochen", "small", 1, null],

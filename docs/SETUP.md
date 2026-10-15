@@ -298,8 +298,8 @@ Kosten: pro gelesener Seite grob 0,1–0,5 Cent (Haiku 5.5), bei vier Quellen t�
 wenige Cent bis etwa 50 Cent im Monat. Danach liest der Cron-Tick jede Quelle einmal am Tag
 ab 5 Uhr.
 
-Steht bei einer Quelle „Seite ist fast leer (… JavaScript)“ oder „HTTP 403“, lässt sie sich
-so nicht lesen. Oft hilft eine Unterseite (z. B. direkt der Veranstaltungskalender statt der
+Steht bei einer Quelle „Seite ist fast leer (… JavaScript)“ oder „HTTP 403“, hat die App auch
+keinen RSS-Feed der Seite gefunden (den probiert sie automatisch). Oft hilft eine Unterseite (z. B. direkt der Veranstaltungskalender statt der
 Startseite).
 
 ### Link → Idee (M15)

@@ -49,6 +49,20 @@ const site = createServer((req, res) => {
 });
 await new Promise((r) => site.listen(4040, r));
 
+// A magazine that blocks automated page requests (403) but publishes a WordPress feed.
+const magazine = createServer((req, res) => {
+  if (req.url === "/feed/") {
+    res.setHeader("content-type", "application/rss+xml; charset=utf-8");
+    return res.end(`<?xml version="1.0"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Magazin</title>
+      <item><title>11 Dinge fürs Wochenende</title><link>http://localhost:4041/wochenende/</link><pubDate>Thu, 15 Oct 2026 08:00:00 +0000</pubDate>
+      <content:encoded><![CDATA[<h2>Lichterfest im Rheinpark</h2><p>Lampions, Musik und Glühwein am Rhein – <a href="/lichterfest">alle Infos</a>.</p>${"<p>Und noch mehr schöne Sachen in Köln.</p>".repeat(6)}]]></content:encoded></item>
+    </channel></rss>`);
+  }
+  res.statusCode = 403;
+  res.end("Forbidden");
+});
+await new Promise((r) => magazine.listen(4041, r));
+
 // --- fake Claude ----------------------------------------------------------------------------
 const claudeCalls = [];
 const answers = {
@@ -56,6 +70,7 @@ const answers = {
     { kind: "event", title: "Kino unterm Sternenhimmel", starts_at: local(sunday.set({ hour: 19 })), ends_at: null, venue: "Planetarium", price: "9 €", url: "/kino", summary: "Filme unter der Kuppel." },
     { kind: "event", title: "Phishing", starts_at: local(sunday.set({ hour: 21 })), ends_at: null, venue: null, price: null, url: "https://evil.example/x", summary: null },
   ],
+  "/feed": [{ kind: "tip", title: "Lichterfest im Rheinpark", starts_at: null, ends_at: null, venue: "Rheinpark", price: null, url: "http://localhost:4041/lichterfest", summary: "Lampions, Musik und Glühwein." }],
   "/tips": [{ kind: "tip", title: "Neues Café in Ehrenfeld", starts_at: null, ends_at: null, venue: "Ehrenfeld", price: null, url: null, summary: "Bester Käsekuchen der Stadt." }],
 };
 const claude = createServer((req, res) => {
@@ -65,7 +80,7 @@ const claude = createServer((req, res) => {
     const request = JSON.parse(body);
     claudeCalls.push({ request, headers: req.headers });
     const text = request.messages[0].content;
-    const path = /Page: http:\/\/localhost:4040(\/\w+)/.exec(text)?.[1];
+    const path = text.startsWith("Page: http://localhost:4041/feed/") ? "/feed" : /Page: http:\/\/localhost:4040(\/\w+)/.exec(text)?.[1];
     res.setHeader("content-type", "application/json");
     res.end(JSON.stringify({
       id: "msg_test", type: "message", role: "assistant", model: request.model,
@@ -225,9 +240,23 @@ await j.locator('a[href="http://localhost:4040/tips"]').waitFor({ state: "detach
 const { rows: [left] } = await db.query("SELECT count(*)::int AS c FROM events WHERE kind = 'tip'");
 check(`removing a source deletes its entries (${removeCount.rows[0].c} → tips left ${left.c})`, left.c === 0);
 
+// 9) Blocked magazine (HTTP 403): read through its feed instead
+await j.getByRole("textbox", { name: "Weitere Seite" }).fill("http://localhost:4041/");
+await j.locator("#events select[name=\"kind\"]").selectOption("tips");
+await j.locator("#events").getByRole("button", { name: "Hinzufügen", exact: true }).click();
+await j.locator('a[href="http://localhost:4041/"]').waitFor({ timeout: 10000 });
+let magazineSource;
+for (let i = 0; i < 40 && !magazineSource?.last_status; i++) {
+  await sleep(500);
+  magazineSource = (await db.query("SELECT id, last_status, last_error, last_count FROM event_sources WHERE url = 'http://localhost:4041/'")).rows[0];
+}
+const { rows: feedTips } = await db.query("SELECT title, url FROM events WHERE source_id = $1", [magazineSource?.id]);
+check(`blocked page read via its feed (${magazineSource?.last_status} ${magazineSource?.last_error ?? ""}, ${JSON.stringify(feedTips)})`, magazineSource?.last_status === "ok" && feedTips[0]?.title === "Lichterfest im Rheinpark" && feedTips[0]?.url === "http://localhost:4041/lichterfest");
+
 await browser.close();
 google.close();
 site.close();
+magazine.close();
 claude.close();
 await db.end();
 console.log(failures ? `\n${failures} check(s) failed` : "\nAll checks passed");

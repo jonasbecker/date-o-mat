@@ -2,7 +2,7 @@
 import "server-only";
 import { and, asc, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { DateTime } from "luxon";
-import { cleanItems, eventSpan, fitsFreeTime, htmlToText, jsonLdEvents, type CleanItem } from "@/core/events";
+import { cleanItems, eventSpan, fitsFreeTime, htmlToText, jsonLdEvents, MAX_PAGE_TEXT, type CleanItem } from "@/core/events";
 import { mergeRanges } from "@/core/ranges";
 import { APP_TIMEZONE, type EventSourceKind } from "@/lib/domain";
 import { parseSourceUrl } from "@/lib/url-safety";
@@ -15,7 +15,8 @@ import { getConnection } from "@/server/google/connection";
 import { getCoupleSettings } from "@/server/settings";
 import { EXTRACTION_MODEL, extractItems } from "./extract";
 import { reserveAiRequest } from "@/server/anthropic";
-import { fetchPage, FetchPageError } from "./fetch-page";
+import { fetchPage, FetchPageError, fetchPublic } from "./fetch-page";
+import { feedToText, findFeedLink, guessFeedUrl, parseFeed } from "@/core/feeds";
 
 export const MAX_SOURCES = 12;
 /** How often the tick reads a source again. */
@@ -77,20 +78,59 @@ async function claim(sourceId: string, now: Date): Promise<EventSource | undefin
   return row;
 }
 
+/**
+ * The RSS/Atom feed of a site (linked in the page, or WordPress' /feed/) as
+ * text for Claude – null if there is none or it says nothing.
+ */
+async function feedText(pageHtml: string | null, pageUrl: string): Promise<{ text: string; url: string } | null> {
+  const candidates = [pageHtml ? findFeedLink(pageHtml, pageUrl) : null, guessFeedUrl(pageUrl)].filter((u, i, all): u is string => !!u && all.indexOf(u) === i);
+  for (const url of candidates) {
+    try {
+      const feed = await fetchPublic(url, { accept: "application/rss+xml, application/atom+xml, application/xml, text/xml", types: /xml|rss|atom/i });
+      const xml = new TextDecoder("utf-8", { fatal: false }).decode(feed.body);
+      const text = feedToText(parseFeed(xml, feed.url), feed.url, MAX_PAGE_TEXT);
+      if (text.length >= 200) return { text, url: feed.url };
+    } catch {
+      // no feed there – try the next candidate
+    }
+  }
+  return null;
+}
+
 async function itemsFor(source: EventSource, now: Date): Promise<CleanItem[]> {
-  const page = await fetchPage(source.url);
-  const options = { sourceUrl: page.url, sourceKind: source.kind, now };
-  const structured = cleanItems(jsonLdEvents(page.html, page.url), options);
+  // Some sites block automated page requests or render with JavaScript – their feed often still works.
+  let page: { html: string; url: string } | null = null;
+  let pageError: unknown = null;
+  try {
+    page = await fetchPage(source.url);
+  } catch (error) {
+    pageError = error;
+  }
+  const baseUrl = page?.url ?? source.url;
+  const options = { sourceUrl: baseUrl, sourceKind: source.kind, now };
+  const structured = page ? cleanItems(jsonLdEvents(page.html, page.url), options) : [];
   if (source.kind === "calendar" && structured.length >= ENOUGH_STRUCTURED) return structured;
   if (!env().ai) {
     if (structured.length > 0) return structured;
     throw new FetchPageError("Claude ist nicht eingerichtet (ANTHROPIC_API_KEY fehlt)");
   }
-  const text = htmlToText(page.html, page.url);
-  if (text.length < 200) throw new FetchPageError("Seite ist fast leer (lädt ihre Inhalte vermutlich per JavaScript)");
+  let text = page ? htmlToText(page.html, page.url) : "";
+  let textUrl = baseUrl;
+  // Magazines: the feed has the full articles, the start page only teasers.
+  if (!page || text.length < 200 || source.kind === "tips") {
+    const feed = await feedText(page?.html ?? null, baseUrl);
+    if (feed) {
+      text = feed.text;
+      textUrl = feed.url;
+    }
+  }
+  if (text.length < 200) {
+    if (pageError) throw pageError;
+    throw new FetchPageError("Seite ist fast leer (lädt ihre Inhalte vermutlich per JavaScript, und einen Feed gibt es nicht)");
+  }
   const requestId = await reserveAiRequest({ coupleId: source.coupleId, kind: "events", model: EXTRACTION_MODEL, now });
   if (!requestId) throw new FetchPageError("Tageslimit für die KI-Auswertung erreicht – morgen geht's weiter");
-  const extracted = cleanItems(await extractItems({ requestId, pageText: text, url: page.url, kind: source.kind, now }), options);
+  const extracted = cleanItems(await extractItems({ requestId, pageText: text, url: textUrl, kind: source.kind, now }), options);
   // JSON-LD first: it is exact, Claude's entries only add what is missing.
   return cleanItems([...structured, ...extracted].map(toRaw), options);
 }
