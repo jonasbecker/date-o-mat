@@ -2,7 +2,7 @@
 import "server-only";
 import { and, asc, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { DateTime } from "luxon";
-import { cleanItems, eventSpan, fitsFreeTime, htmlToText, jsonLdEvents, MAX_PAGE_TEXT, type CleanItem } from "@/core/events";
+import { cleanItems, eventSpan, fitsFreeTime, followUpLinks, htmlToText, jsonLdEvents, MAX_PAGE_TEXT, MAX_SOURCE_TEXT, type CleanItem } from "@/core/events";
 import { mergeRanges } from "@/core/ranges";
 import { APP_TIMEZONE, type EventSourceKind } from "@/lib/domain";
 import { parseSourceUrl } from "@/lib/url-safety";
@@ -25,8 +25,10 @@ const REFRESH_HOURS = 20;
 const REFRESH_FROM_HOUR = 5;
 /** A fetch that started longer ago than this is considered dead. */
 const STALE_FETCH_MS = 5 * 60_000;
-/** With this many JSON-LD events on a calendar page, Claude is not asked at all. */
-const ENOUGH_STRUCTURED = 3;
+/** With this many JSON-LD events (over all pages read), Claude is not asked at all. */
+const ENOUGH_STRUCTURED = 25;
+/** Further listing pages read per source besides the start page (page 2, "Wochenende" …). */
+const FOLLOW_UP_PAGES = 3;
 
 export const COLOGNE_SOURCES: Array<{ url: string; label: string; kind: EventSourceKind }> = [
   { url: "https://rausgegangen.de/cologne/", label: "rausgegangen", kind: "calendar" },
@@ -88,13 +90,20 @@ async function feedText(pageHtml: string | null, pageUrl: string): Promise<{ tex
     try {
       const feed = await fetchPublic(url, { accept: "application/rss+xml, application/atom+xml, application/xml, text/xml", types: /xml|rss|atom/i });
       const xml = new TextDecoder("utf-8", { fatal: false }).decode(feed.body);
-      const text = feedToText(parseFeed(xml, feed.url), feed.url, MAX_PAGE_TEXT);
+      const text = feedToText(parseFeed(xml, feed.url), feed.url, MAX_SOURCE_TEXT - MAX_PAGE_TEXT);
       if (text.length >= 200) return { text, url: feed.url };
     } catch {
       // no feed there – try the next candidate
     }
   }
   return null;
+}
+
+/** The start page's continuations (page 2, "Alle Events" …); pages that fail are skipped. */
+async function followUpPages(page: { html: string; url: string }): Promise<Array<{ html: string; url: string }>> {
+  const urls = followUpLinks(page.html, page.url, FOLLOW_UP_PAGES);
+  const results = await Promise.allSettled(urls.map((url) => fetchPage(url)));
+  return results.flatMap((r) => (r.status === "fulfilled" && r.value.url !== page.url ? [r.value] : []));
 }
 
 async function itemsFor(source: EventSource, now: Date): Promise<CleanItem[]> {
@@ -108,29 +117,32 @@ async function itemsFor(source: EventSource, now: Date): Promise<CleanItem[]> {
   }
   const baseUrl = page?.url ?? source.url;
   const options = { sourceUrl: baseUrl, sourceKind: source.kind, now };
-  const structured = page ? cleanItems(jsonLdEvents(page.html, page.url), options) : [];
-  if (source.kind === "calendar" && structured.length >= ENOUGH_STRUCTURED) return structured;
+  // A start page shows only a handful of entries – read its next pages too.
+  const pages = page ? [page, ...(await followUpPages(page))] : [];
+  const structured = cleanItems(pages.flatMap((p) => jsonLdEvents(p.html, p.url)), options);
+  if (structured.length >= ENOUGH_STRUCTURED) return structured;
   if (!env().ai) {
     if (structured.length > 0) return structured;
     throw new FetchPageError("Claude ist nicht eingerichtet (ANTHROPIC_API_KEY fehlt)");
   }
-  let text = page ? htmlToText(page.html, page.url) : "";
-  let textUrl = baseUrl;
-  // Magazines: the feed has the full articles, the start page only teasers.
-  if (!page || text.length < 200 || source.kind === "tips") {
+  const parts = pages.map((p, i) => ({ url: p.url, text: htmlToText(p.html, p.url, i === 0 ? MAX_PAGE_TEXT : MAX_PAGE_TEXT / 2) })).filter((p) => p.text.length >= 200);
+  // Magazines: the feed has the full articles (each with all its tips), the start page only teasers.
+  if (parts.length === 0 || source.kind === "tips") {
     const feed = await feedText(page?.html ?? null, baseUrl);
-    if (feed) {
-      text = feed.text;
-      textUrl = feed.url;
-    }
+    if (feed) parts.unshift(feed);
   }
-  if (text.length < 200) {
+  if (parts.length === 0) {
+    if (structured.length > 0) return structured;
     if (pageError) throw pageError;
     throw new FetchPageError("Seite ist fast leer (lädt ihre Inhalte vermutlich per JavaScript, und einen Feed gibt es nicht)");
   }
+  const text = parts
+    .map((p, i) => (i === 0 ? p.text : `\n\n--- ${p.url} ---\n${p.text}`))
+    .join("")
+    .slice(0, MAX_SOURCE_TEXT);
   const requestId = await reserveAiRequest({ coupleId: source.coupleId, kind: "events", model: EXTRACTION_MODEL, now });
   if (!requestId) throw new FetchPageError("Tageslimit für die KI-Auswertung erreicht – morgen geht's weiter");
-  const extracted = cleanItems(await extractItems({ requestId, pageText: text, url: textUrl, kind: source.kind, now }), options);
+  const extracted = cleanItems(await extractItems({ requestId, pageText: text, url: parts[0].url, kind: source.kind, now }), options);
   // JSON-LD first: it is exact, Claude's entries only add what is missing.
   return cleanItems([...structured, ...extracted].map(toRaw), options);
 }

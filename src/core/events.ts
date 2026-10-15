@@ -4,13 +4,15 @@
 import { DateTime } from "luxon";
 import { APP_TIMEZONE, type EventKind, type EventSourceKind } from "@/lib/domain";
 
-/** Upper bound for the page text sent to Claude (~10k tokens). */
+/** Upper bound for the text of one page sent to Claude (~10k tokens). */
 export const MAX_PAGE_TEXT = 40_000;
+/** Upper bound for all pages of one source together (start page, further pages, feed). */
+export const MAX_SOURCE_TEXT = 120_000;
 /** Events further ahead than this are ignored. */
 export const EVENT_HORIZON_DAYS = 60;
 /** A dated event without an end time is assumed to take this long. */
 export const DEFAULT_EVENT_HOURS = 3;
-const MAX_ITEMS = 60;
+const MAX_ITEMS = 120;
 
 /** One entry as Claude (or the page's JSON-LD) describes it – everything still untrusted. */
 export type RawItem = {
@@ -137,6 +139,55 @@ export function htmlToText(html: string, baseUrl: string, maxLength = MAX_PAGE_T
     .replace(/ *\n\s*/g, "\n")
     .trim();
   return s.length > maxLength ? s.slice(0, maxLength) : s;
+}
+
+// --- Further pages ------------------------------------------------------------------------
+
+const PAGINATION_HREF = /[?&](page|p|seite|pg)=(\d{1,3})\b|\/(page|seite)[/-]?(\d{1,3})\/?(?:[?#]|$)/i;
+const NEXT_TEXT = /^(nächste( seite)?|weiter|mehr laden|mehr anzeigen|›|»|>|→)$/i;
+const LISTING_TEXT = /^((alle|mehr|weitere) (events|veranstaltungen|termine|tipps|highlights)( anzeigen)?|heute|morgen|(dieses |am )?wochenende|diese woche|nächste woche)$/i;
+const SKIP_HREF = /\.(pdf|jpe?g|png|gif|webp|svg|zip|ics)(\?|$)|login|account|konto|impressum|datenschutz|privacy|agb|newsletter|warenkorb|cart/i;
+
+/**
+ * Listing pages that continue the given one on the same site: rel="next",
+ * page 2/3 of a pagination, "Alle Events", "Wochenende" … – a start page
+ * usually shows only a handful of entries. Best candidates first.
+ */
+export function followUpLinks(html: string, pageUrl: string, max = 3): string[] {
+  const s = html.slice(0, MAX_HTML);
+  const self = pageUrl.split("#")[0];
+  const found: Array<{ url: string; rank: number }> = [];
+  const add = (href: string | undefined, rank: number) => {
+    const url = href ? absoluteUrl(href, pageUrl)?.split("#")[0] : null;
+    if (!url || url === self || !sameSite(url, pageUrl) || SKIP_HREF.test(url)) return;
+    const known = found.find((f) => f.url === url);
+    if (known) known.rank = Math.min(known.rank, rank);
+    else found.push({ url, rank });
+  };
+  const linkTag = new RegExp(`<(?:link|a)\\b([^<>]{0,${MAX_TAG}})>`, "gi");
+  for (let m = linkTag.exec(s); m; m = linkTag.exec(s)) {
+    if (/\brel\s*=\s*["']?[^"'>]*\bnext\b/i.test(m[1])) add(/href\s*=\s*["']([^"']+)["']/i.exec(m[1])?.[1], 0);
+  }
+  const lower = s.toLowerCase();
+  const anchor = new RegExp(`<a\\b([^<>]{0,${MAX_TAG}})>`, "gi");
+  let close = -1; // next "</a" – searched again only once we are past it (linear, like linksToText)
+  for (let m = anchor.exec(s); m; m = anchor.exec(s)) {
+    const contentStart = m.index + m[0].length;
+    if (close < contentStart) close = lower.indexOf("</a", contentStart);
+    if (close === -1) break;
+    const href = /href\s*=\s*["']([^"']+)["']/i.exec(m[1])?.[1];
+    if (!href || close - contentStart > MAX_LINK_TEXT) continue;
+    const label = decodeEntities(s.slice(contentStart, close).replace(new RegExp(`<[^<>]{0,${MAX_TAG}}>`, "g"), " ")).replace(/\s+/g, " ").trim();
+    const page = PAGINATION_HREF.exec(href);
+    const number = page ? Number(page[2] ?? page[4]) : NaN;
+    if (number >= 2 && number <= 3) add(href, number - 1);
+    else if (NEXT_TEXT.test(label)) add(href, 1);
+    else if (LISTING_TEXT.test(label)) add(href, 3);
+  }
+  return found
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, max)
+    .map((f) => f.url);
 }
 
 // --- JSON-LD (schema.org Event) ---------------------------------------------------------

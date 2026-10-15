@@ -6,7 +6,7 @@ import { decodeEntities, htmlToText, MAX_HTML } from "./events";
 
 export type FeedItem = { title: string; link: string | null; date: string | null; html: string };
 
-const MAX_ITEMS = 12;
+const MAX_ITEMS = 20;
 const MAX_ITEM = 200_000;
 
 function absolute(href: string, base: string): string | null {
@@ -75,7 +75,7 @@ export function parseFeed(xml: string, baseUrl: string): FeedItem[] {
 
 /** One text for Claude: every article as "## [title](link) (date)" plus its readable text. */
 export function feedToText(items: FeedItem[], baseUrl: string, maxLength: number): string {
-  const per = Math.max(800, Math.floor(maxLength / Math.max(1, items.length)));
+  const per = Math.max(2_000, Math.floor(maxLength / Math.max(1, items.length)));
   const parts = items.map((item) => {
     const head = `## ${item.link ? `[${item.title}](${item.link})` : item.title}${item.date ? ` (${item.date})` : ""}`;
     return `${head}\n${htmlToText(item.html, item.link ?? baseUrl, per)}`;

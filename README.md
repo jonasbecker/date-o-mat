@@ -377,10 +377,14 @@ scripts/              Migration beim Build, Secret-Generator
 
 - In den **Einstellungen → Event-Quellen** tragt ihr Seiten ein (Veranstaltungskalender oder
   Tipps-/Magazinseite). Ein Knopf fügt die vier Köln-Quellen auf einmal hinzu.
-- **Lesen** (`src/server/events/`): Der Server holt die Seite selbst (`fetch-page.ts`). Stehen
-  genug Events als schema.org-JSON-LD drin, werden nur die genommen – exakt und ohne KI.
+- **Lesen** (`src/server/events/`): Der Server holt die Seite selbst (`fetch-page.ts`) und dazu
+  bis zu drei Folgeseiten (`followUpLinks()`: `rel="next"`, Seite 2/3, „Alle Events“,
+  „Wochenende“ …), denn eine Startseite zeigt meist nur eine Handvoll. Stehen über alle Seiten
+  mindestens 25 Events als schema.org-JSON-LD drin, werden nur die genommen – exakt und ohne KI.
   Sonst wird die Seite zu Text mit `[Link](url)` gekürzt (`htmlToText`) und **Claude Haiku 5.5**
-  füllt per Structured Output eine feste Liste (Titel, Zeit, Ort, Preis, Link, Kurztext).
+  füllt per Structured Output eine feste Liste (Titel, Zeit, Ort, Preis, Link, Kurztext) – alle
+  Seiten einer Quelle in einer Anfrage, bis zu 100 Einträge, jeder Tipp eines Listen-Artikels
+  einzeln.
 - **Prüfen** (`cleanItems()` in `src/core/events.ts`, mit Tests): Vergangenes und mehr als
   60 Tage Entferntes fliegt raus, Links zu fremden Domains werden verworfen, Doppelte entfernt.
 - **Wann:** Der Cron-Tick liest ab 5 Uhr pro Lauf höchstens eine Quelle, die älter als 20 Std.
@@ -392,7 +396,8 @@ scripts/              Migration beim Build, Secret-Generator
 - **Feed als zweiter Weg** (`src/core/feeds.ts`, mit Tests): Blockt eine Seite automatische
   Abrufe (z. B. HTTP 403), ist sie fast leer (JavaScript) oder ist sie eine Tipps-/Magazinseite,
   liest der Server ihren RSS-/Atom-Feed – aus dem Seitenkopf verlinkt oder WordPress-typisch
-  unter `/feed/`. Feeds enthalten oft die ganzen Artikel, also mehr Tipps als die Startseite.
+  unter `/feed/` (die 20 neuesten Artikel). Feeds enthalten oft die ganzen Artikel, also mehr
+  Tipps als die Startseite.
   Findet eine als „Kalender“ eingetragene Seite nichts, liest die App sie noch einmal als
   Tipps-Seite und stellt sie um, wenn das etwas bringt.
 - **Ohne `ANTHROPIC_API_KEY`** werden nur JSON-LD-Seiten gelesen; die Einstellungen sagen das.
