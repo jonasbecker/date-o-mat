@@ -393,6 +393,8 @@ scripts/              Migration beim Build, Secret-Generator
   Abrufe (z. B. HTTP 403), ist sie fast leer (JavaScript) oder ist sie eine Tipps-/Magazinseite,
   liest der Server ihren RSS-/Atom-Feed – aus dem Seitenkopf verlinkt oder WordPress-typisch
   unter `/feed/`. Feeds enthalten oft die ganzen Artikel, also mehr Tipps als die Startseite.
+  Findet eine als „Kalender“ eingetragene Seite nichts, liest die App sie noch einmal als
+  Tipps-Seite und stellt sie um, wenn das etwas bringt.
 - **Ohne `ANTHROPIC_API_KEY`** werden nur JSON-LD-Seiten gelesen; die Einstellungen sagen das.
 
 ### Slot-Finder in Kürze

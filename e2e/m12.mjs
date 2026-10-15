@@ -84,7 +84,8 @@ const claude = createServer((req, res) => {
     res.setHeader("content-type", "application/json");
     res.end(JSON.stringify({
       id: "msg_test", type: "message", role: "assistant", model: request.model,
-      content: [{ type: "text", text: JSON.stringify({ items: answers[path] ?? [] }) }],
+      // The magazine has no dated events: as a calendar Claude finds nothing, as a tips page it does.
+      content: [{ type: "text", text: JSON.stringify({ items: path === "/feed" && !request.system.includes("tips page") ? [] : (answers[path] ?? []) }) }],
       stop_reason: "end_turn", stop_sequence: null, usage: { input_tokens: 1000, output_tokens: 200 },
     }));
   });
@@ -240,16 +241,17 @@ await j.locator('a[href="http://localhost:4040/tips"]').waitFor({ state: "detach
 const { rows: [left] } = await db.query("SELECT count(*)::int AS c FROM events WHERE kind = 'tip'");
 check(`removing a source deletes its entries (${removeCount.rows[0].c} → tips left ${left.c})`, left.c === 0);
 
-// 9) Blocked magazine (HTTP 403): read through its feed instead
+// 9) Blocked magazine (HTTP 403), added as a calendar by mistake: read through its feed, as tips
 await j.getByRole("textbox", { name: "Weitere Seite" }).fill("http://localhost:4041/");
-await j.locator("#events select[name=\"kind\"]").selectOption("tips");
+await j.locator("#events select[name=\"kind\"]").selectOption("calendar");
 await j.locator("#events").getByRole("button", { name: "Hinzufügen", exact: true }).click();
 await j.locator('a[href="http://localhost:4041/"]').waitFor({ timeout: 10000 });
 let magazineSource;
 for (let i = 0; i < 40 && !magazineSource?.last_status; i++) {
   await sleep(500);
-  magazineSource = (await db.query("SELECT id, last_status, last_error, last_count FROM event_sources WHERE url = 'http://localhost:4041/'")).rows[0];
+  magazineSource = (await db.query("SELECT id, kind, last_status, last_error, last_count FROM event_sources WHERE url = 'http://localhost:4041/'")).rows[0];
 }
+check(`calendar without dated events switches itself to tips (${magazineSource?.kind})`, magazineSource?.kind === "tips");
 const { rows: feedTips } = await db.query("SELECT title, url FROM events WHERE source_id = $1", [magazineSource?.id]);
 check(`blocked page read via its feed (${magazineSource?.last_status} ${magazineSource?.last_error ?? ""}, ${JSON.stringify(feedTips)})`, magazineSource?.last_status === "ok" && feedTips[0]?.title === "Lichterfest im Rheinpark" && feedTips[0]?.url === "http://localhost:4041/lichterfest");
 

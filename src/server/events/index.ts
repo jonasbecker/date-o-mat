@@ -156,7 +156,17 @@ export async function refreshSource(sourceId: string, now: Date): Promise<boolea
   const source = await claim(sourceId, now);
   if (!source) return false;
   try {
-    const items = await itemsFor(source, now);
+    let items = await itemsFor(source, now);
+    let kind = source.kind;
+    // Added as a calendar but no dated events (a magazine like Mit Vergnügen)? Read it once more as a
+    // tips page – with its feed – and keep it that way if that finds something.
+    if (items.length === 0 && source.kind === "calendar" && env().ai) {
+      const asTips = await itemsFor({ ...source, kind: "tips" }, now).catch(() => []);
+      if (asTips.length > 0) {
+        items = asTips;
+        kind = "tips";
+      }
+    }
     await db.transaction(async (tx) => {
       await tx.delete(events).where(eq(events.sourceId, source.id));
       if (items.length > 0) {
@@ -164,7 +174,7 @@ export async function refreshSource(sourceId: string, now: Date): Promise<boolea
       }
       await tx
         .update(eventSources)
-        .set({ fetchStartedAt: null, lastFetchedAt: now, lastStatus: items.length ? "ok" : "empty", lastError: null, lastCount: items.length })
+        .set({ kind, fetchStartedAt: null, lastFetchedAt: now, lastStatus: items.length ? "ok" : "empty", lastError: null, lastCount: items.length })
         .where(eq(eventSources.id, source.id));
     });
   } catch (error) {
