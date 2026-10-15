@@ -387,8 +387,11 @@ scripts/              Migration beim Build, Secret-Generator
   einzeln.
 - **Prüfen** (`cleanItems()` in `src/core/events.ts`, mit Tests): Vergangenes und mehr als
   60 Tage Entferntes fliegt raus, Links zu fremden Domains werden verworfen, Doppelte entfernt.
-- **Wann:** Der Cron-Tick liest ab 5 Uhr pro Lauf höchstens eine Quelle, die älter als 20 Std.
-  ist – nach der Antwort an cron-job.org (`after()`). „Jetzt lesen“ geht jederzeit.
+- **Wann:** Der Cron-Tick liest ab 5 Uhr pro Lauf höchstens eine Quelle, die älter als 44 Std.
+  ist (also jeden zweiten Morgen). Hat sich der Text seit dem letzten Mal nicht geändert
+  (sha256 in `event_sources.content_hash`), bleiben die Einträge und Claude wird nicht gefragt;
+  „Jetzt lesen“ fragt immer und geht jederzeit. Gelesen wird nach der Antwort an cron-job.org
+  (`after()`).
 - **„Was läuft“** (`/events`, Tab neben der Wunschliste): Events der nächsten drei Wochen nach
   Tagen, mit „✓ Ihr habt beide Zeit“ (eine FreeBusy-Abfrage pro Person, inkl. Puffer).
   „Als Date planen“ legt das Date direkt zur Event-Zeit an (mit Google-Einladung),

@@ -67,7 +67,7 @@ export async function refreshSourceAction(sourceId: string): Promise<void> {
   const source = id.success ? (await listSources(coupleId)).find((s) => s.id === id.data) : undefined;
   // Each read can cost a Claude call – not more often than every 10 minutes per source.
   const recent = source?.lastFetchedAt && now.getTime() - source.lastFetchedAt.getTime() < MANUAL_REFRESH_COOLDOWN_MS;
-  if (source && !recent) after(() => refreshSource(source.id, now));
+  if (source && !recent) after(() => refreshSource(source.id, now, { force: true }));
   refresh();
 }
 

@@ -1,5 +1,6 @@
 // Event sources: the websites a couple follows, and what was found on them.
 import "server-only";
+import { createHash } from "node:crypto";
 import { and, asc, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { DateTime } from "luxon";
 import { cleanItems, eventSpan, fitsFreeTime, followUpLinks, htmlToText, jsonLdEvents, MAX_PAGE_TEXT, MAX_SOURCE_TEXT, type CleanItem } from "@/core/events";
@@ -19,8 +20,8 @@ import { fetchPage, FetchPageError, fetchPublic } from "./fetch-page";
 import { feedToText, findFeedLink, guessFeedUrl, parseFeed } from "@/core/feeds";
 
 export const MAX_SOURCES = 12;
-/** How often the tick reads a source again. */
-const REFRESH_HOURS = 20;
+/** How often the tick reads a source again (every second morning – events are shown 60 days ahead). */
+const REFRESH_HOURS = 44;
 /** The tick starts reading sources from this hour on (Berlin), so it happens early in the morning. */
 const REFRESH_FROM_HOUR = 5;
 /** A fetch that started longer ago than this is considered dead. */
@@ -106,7 +107,10 @@ async function followUpPages(page: { html: string; url: string }): Promise<Array
   return results.flatMap((r) => (r.status === "fulfilled" && r.value.url !== page.url ? [r.value] : []));
 }
 
-async function itemsFor(source: EventSource, now: Date): Promise<CleanItem[]> {
+/** What reading a source found; "unchanged" when its text is the same as last time (no Claude call). */
+type ReadResult = { items: CleanItem[]; contentHash: string | null } | { unchanged: true };
+
+async function itemsFor(source: EventSource, now: Date, force: boolean): Promise<ReadResult> {
   // Some sites block automated page requests or render with JavaScript – their feed often still works.
   let page: { html: string; url: string } | null = null;
   let pageError: unknown = null;
@@ -120,9 +124,9 @@ async function itemsFor(source: EventSource, now: Date): Promise<CleanItem[]> {
   // A start page shows only a handful of entries – read its next pages too.
   const pages = page ? [page, ...(await followUpPages(page))] : [];
   const structured = cleanItems(pages.flatMap((p) => jsonLdEvents(p.html, p.url)), options);
-  if (structured.length >= ENOUGH_STRUCTURED) return structured;
+  if (structured.length >= ENOUGH_STRUCTURED) return { items: structured, contentHash: null };
   if (!env().ai) {
-    if (structured.length > 0) return structured;
+    if (structured.length > 0) return { items: structured, contentHash: null };
     throw new FetchPageError("Claude ist nicht eingerichtet (ANTHROPIC_API_KEY fehlt)");
   }
   const parts = pages.map((p, i) => ({ url: p.url, text: htmlToText(p.html, p.url, i === 0 ? MAX_PAGE_TEXT : MAX_PAGE_TEXT / 2) })).filter((p) => p.text.length >= 200);
@@ -132,7 +136,7 @@ async function itemsFor(source: EventSource, now: Date): Promise<CleanItem[]> {
     if (feed) parts.unshift(feed);
   }
   if (parts.length === 0) {
-    if (structured.length > 0) return structured;
+    if (structured.length > 0) return { items: structured, contentHash: null };
     if (pageError) throw pageError;
     throw new FetchPageError("Seite ist fast leer (lädt ihre Inhalte vermutlich per JavaScript, und einen Feed gibt es nicht)");
   }
@@ -140,11 +144,14 @@ async function itemsFor(source: EventSource, now: Date): Promise<CleanItem[]> {
     .map((p, i) => (i === 0 ? p.text : `\n\n--- ${p.url} ---\n${p.text}`))
     .join("")
     .slice(0, MAX_SOURCE_TEXT);
+  const contentHash = createHash("sha256").update(`${source.kind}\n${text}`).digest("hex");
+  // Same text as last time → same entries; only "Jetzt lesen" asks Claude again.
+  if (!force && contentHash === source.contentHash && source.lastStatus !== "error") return { unchanged: true };
   const requestId = await reserveAiRequest({ coupleId: source.coupleId, kind: "events", model: EXTRACTION_MODEL, now });
   if (!requestId) throw new FetchPageError("Tageslimit für die KI-Auswertung erreicht – morgen geht's weiter");
   const extracted = cleanItems(await extractItems({ requestId, pageText: text, url: parts[0].url, kind: source.kind, now }), options);
   // JSON-LD first: it is exact, Claude's entries only add what is missing.
-  return cleanItems([...structured, ...extracted].map(toRaw), options);
+  return { items: cleanItems([...structured, ...extracted].map(toRaw), options), contentHash };
 }
 
 function toRaw(item: CleanItem) {
@@ -163,22 +170,31 @@ function toRaw(item: CleanItem) {
 /** "Jetzt lesen" is ignored if the source was read this recently. */
 export const MANUAL_REFRESH_COOLDOWN_MS = 10 * 60_000;
 
-/** Reads one source now and replaces its events. Returns false if it was already running. */
-export async function refreshSource(sourceId: string, now: Date): Promise<boolean> {
+/**
+ * Reads one source now and replaces its events. Returns false if it was already running.
+ * `force` (the "Jetzt lesen" button) asks Claude even if the page has not changed.
+ */
+export async function refreshSource(sourceId: string, now: Date, options: { force?: boolean } = {}): Promise<boolean> {
   const source = await claim(sourceId, now);
   if (!source) return false;
+  const force = options.force ?? false;
   try {
-    let items = await itemsFor(source, now);
+    let result = await itemsFor(source, now, force);
+    if ("unchanged" in result) {
+      await db.update(eventSources).set({ fetchStartedAt: null, lastFetchedAt: now }).where(eq(eventSources.id, source.id));
+      return true;
+    }
     let kind = source.kind;
     // Added as a calendar but no dated events (a magazine like Mit Vergnügen)? Read it once more as a
     // tips page – with its feed – and keep it that way if that finds something.
-    if (items.length === 0 && source.kind === "calendar" && env().ai) {
-      const asTips = await itemsFor({ ...source, kind: "tips" }, now).catch(() => []);
-      if (asTips.length > 0) {
-        items = asTips;
+    if (result.items.length === 0 && source.kind === "calendar" && env().ai) {
+      const asTips = await itemsFor({ ...source, kind: "tips" }, now, true).catch(() => null);
+      if (asTips && "items" in asTips && asTips.items.length > 0) {
+        result = asTips;
         kind = "tips";
       }
     }
+    const { items, contentHash } = result;
     await db.transaction(async (tx) => {
       await tx.delete(events).where(eq(events.sourceId, source.id));
       if (items.length > 0) {
@@ -186,7 +202,7 @@ export async function refreshSource(sourceId: string, now: Date): Promise<boolea
       }
       await tx
         .update(eventSources)
-        .set({ kind, fetchStartedAt: null, lastFetchedAt: now, lastStatus: items.length ? "ok" : "empty", lastError: null, lastCount: items.length })
+        .set({ kind, contentHash, fetchStartedAt: null, lastFetchedAt: now, lastStatus: items.length ? "ok" : "empty", lastError: null, lastCount: items.length })
         .where(eq(eventSources.id, source.id));
     });
   } catch (error) {

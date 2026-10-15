@@ -79,6 +79,7 @@ const claude = createServer((req, res) => {
   req.on("data", (c) => (body += c));
   req.on("end", () => {
     const request = JSON.parse(body);
+    if (!/extract date ideas/.test(request.system ?? "")) return res.writeHead(400).end(); // only event reads (the deck refill also asks)
     claudeCalls.push({ request, headers: req.headers });
     const text = request.messages[0].content;
     const path = text.startsWith("Page: http://localhost:4041/feed/") ? "/feed" : /Page: http:\/\/localhost:4040(\/\w+)/.exec(text)?.[1];
@@ -226,6 +227,11 @@ check("tabs switch to the wishlist", true);
 
 // 7) Tick refreshes due sources (one per tick), not before 05:00
 await db.query("UPDATE event_sources SET last_fetched_at = now() - interval '1 day'");
+await fetch(`${BASE}/api/cron/tick`, { headers: { authorization: "Bearer test-cron-secret-123456" } });
+await sleep(1500);
+const { rows: [early] } = await db.query("SELECT count(*)::int AS c FROM event_sources WHERE last_fetched_at > now() - interval '1 minute'");
+check(`sources read a day ago are not due yet (${early.c})`, early.c === 0);
+await db.query("UPDATE event_sources SET last_fetched_at = now() - interval '2 days'");
 const before = claudeCalls.length;
 await fetch(`${BASE}/api/cron/tick`, { headers: { authorization: "Bearer test-cron-secret-123456" } });
 await sleep(2500);
@@ -233,6 +239,19 @@ const { rows: [fresh] } = await db.query("SELECT count(*)::int AS c FROM event_s
 const hour = DateTime.now().setZone(ZONE).hour;
 check(`tick reads exactly one due source (${fresh.c}, hour ${hour})`, hour < 5 ? fresh.c === 0 : fresh.c === 1);
 console.log(`  (Claude calls during tick: ${claudeCalls.length - before})`);
+
+// 7b) An unchanged page is not sent to Claude again – "Jetzt lesen" still is
+await db.query("UPDATE event_sources SET last_fetched_at = CASE WHEN url = 'http://localhost:4040/html' THEN now() - interval '2 days' ELSE now() END");
+const beforeSame = claudeCalls.length;
+await fetch(`${BASE}/api/cron/tick`, { headers: { authorization: "Bearer test-cron-secret-123456" } });
+await sleep(2500);
+const { rows: [same] } = await db.query("SELECT last_count, last_fetched_at > now() - interval '1 minute' AS fresh, content_hash FROM event_sources WHERE url = 'http://localhost:4040/html'");
+if (hour >= 5) check(`unchanged page: no Claude call, entries kept (${claudeCalls.length - beforeSame} calls, ${same.last_count} entries)`, claudeCalls.length === beforeSame && same.fresh && same.last_count === 2 && /^[0-9a-f]{64}$/.test(same.content_hash));
+await db.query("UPDATE event_sources SET last_fetched_at = now() - interval '1 hour' WHERE url = 'http://localhost:4040/html'");
+await j.goto(`${BASE}/settings#events`);
+await j.locator("li", { has: j.locator('a[href="http://localhost:4040/html"]') }).getByRole("button", { name: "Jetzt lesen" }).click();
+await sleep(2500);
+check(`"Jetzt lesen" asks Claude even when unchanged (${claudeCalls.length - beforeSame})`, claudeCalls.length === beforeSame + 1);
 
 // 8) Remove a source → its events go too
 await j.goto(`${BASE}/settings#events`);

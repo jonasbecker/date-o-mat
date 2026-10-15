@@ -350,6 +350,8 @@ export const eventSources = pgTable(
     lastStatus: text({ enum: FETCH_STATUSES }),
     lastError: text(),
     lastCount: smallint(),
+    // sha256 of the text Claude last read: unchanged pages are not sent again.
+    contentHash: text(),
   },
   (t) => [unique("event_sources_couple_url_unique").on(t.coupleId, t.url)],
 );

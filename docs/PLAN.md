@@ -122,3 +122,11 @@ Abweichungen in V2:
 7. FreeBusy-Scope `calendar.events.freebusy` statt `calendar.freebusy`, weil er laut Google auch
    Kalender abdeckt, auf die man nur Zugriff hat (z. B. abonnierte Uni-Kalender).
 8. Calendar API per `fetch` statt `@googleapis/calendar`: drei Endpunkte, kein großes SDK nötig.
+
+## Für später
+
+- **Event-Quellen über die Batch-API lesen** (50 % günstiger): Der Tick schickt alle fälligen
+  Quellen morgens als einen Batch ab, ein späterer Tick holt die Ergebnisse ab (meist nach
+  Minuten, spätestens nach 24 Std.). Braucht eine Spalte für die Batch-ID und einen
+  Abhol-Schritt im Tick. „Jetzt lesen“ bleibt eine normale Anfrage. Lohnt sich erst bei
+  deutlich mehr Quellen – heute kostet das Lesen weniger als 1 € im Monat.
