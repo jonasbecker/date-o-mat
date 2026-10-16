@@ -92,6 +92,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M21 | Extras: iOS-Kurzbefehl zum Teilen, Überraschungs-Date, Vorbereitungs-Checkliste, Anfahrt, Gesprächskarten | ✅ |
 | M22 | Aufräumen: ein Filter, 3 Ideen-Reiter, Planen ohne Reiter, Extras nach und nach, Einstellungen gestaffelt, Kontrast | ✅ |
 | M23 | Event-Quellen mit Unterseiten (KI wählt bis zu 6, bearbeitbar) | ✅ |
+| M24 | Navigation Ideen · Date planen · Dates, Startseite aufgeteilt, `/` leitet passend weiter | ✅ |
 
 Abweichungen in V2:
 

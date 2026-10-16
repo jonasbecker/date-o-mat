@@ -125,9 +125,9 @@ const { rows: [onList] } = await db.query("SELECT count(*)::int AS c FROM ideas 
 check("it was put on the wishlist first", onList.c === 1);
 
 // 4) Home stays focused; dark mode
-await j.goto(`${BASE}/`);
-await j.getByText("Hey Jonas!").waitFor({ timeout: 15000 });
-check("home stays focused: no Überrasch-uns button", (await j.getByRole("button", { name: /Überrasch uns|Zufall/ }).count()) === 0);
+await j.goto(`${BASE}/dates`);
+await j.getByRole("heading", { name: "Eure Dates" }).waitFor({ timeout: 15000 });
+check("Dates stays focused: no Zufall button", (await j.getByRole("button", { name: /Überrasch uns|Zufall/ }).count()) === 0);
 await j.screenshot({ path: `${OUT}m10-05-home.png` });
 const jd = await pageFor(jonas.token, "dark");
 await jd.goto(`${BASE}/plan`);

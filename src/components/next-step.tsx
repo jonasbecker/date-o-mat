@@ -73,6 +73,7 @@ export function NextStepCard({
   partner,
   now,
   date,
+  onPlanPage = false,
 }: {
   step: NextStep;
   cycle: Cycle;
@@ -81,6 +82,8 @@ export function NextStepCard({
   now: Date;
   /** The upcoming date (for confirm / wait / date ahead). */
   date?: DatePlan;
+  /** On "Date planen" itself: no button that leads there, a bit smaller. */
+  onPlanPage?: boolean;
 }) {
   let title: string;
   let body: React.ReactNode = null;
@@ -118,10 +121,12 @@ export function NextStepCard({
         </>
       );
       actions = (
-        <div className="flex flex-col items-center gap-2">
-          <Link href="/plan" className={buttonClass("primary", "lg", "w-full")}>
-            <SparkleIcon /> Date planen
-          </Link>
+        <div className={onPlanPage ? "flex" : "flex flex-col items-center gap-2"}>
+          {!onPlanPage && (
+            <Link href="/plan" className={buttonClass("primary", "lg", "w-full")}>
+              <SparkleIcon /> Date planen
+            </Link>
+          )}
           <form action={swapTurnAction}>
             <button type="submit" className="text-sm font-extrabold underline">
               Diese Runde an {partner.name} abgeben
@@ -194,9 +199,11 @@ export function NextStepCard({
       );
       actions = (
         <div className="flex flex-wrap items-center gap-3">
-          <Link href="/ideas" className={buttonClass("secondary", "sm")}>
-            💡 Ideen sammeln
-          </Link>
+          {!onPlanPage && (
+            <Link href="/ideas" className={buttonClass("secondary", "sm")}>
+              💡 Ideen sammeln
+            </Link>
+          )}
           <form action={swapTurnAction}>
             <button type="submit" className={buttonClass("secondary", "sm")}>
               Ich übernehme diese Runde
@@ -216,7 +223,7 @@ export function NextStepCard({
   }
 
   return (
-    <Card tone={tone(step, me, partner)} size="lg" className="animate-pop-in relative flex flex-col gap-3.5 overflow-hidden">
+    <Card data-next-step={step.kind} tone={tone(step, me, partner)} size="lg" className="animate-pop-in relative flex flex-col gap-3.5 overflow-hidden">
       <div className="flex flex-wrap items-center gap-2">
         <Chip className="bg-bg">{periodLabel(cycle.startsAt, cycle.endsAt)}</Chip>
         <Chip className="bg-bg">{formatCycleRange(cycle.startsAt, cycle.endsAt)}</Chip>
@@ -224,10 +231,10 @@ export function NextStepCard({
       <p className="-mb-2 text-[13px] font-extrabold uppercase tracking-wide opacity-80">
         {ACTIONABLE.has(step.kind) ? "Dein nächster Schritt" : "Stand der Dinge"}
       </p>
-      <h1 className="text-[38px] font-bold leading-[1.05]">{title}</h1>
+      <h2 className={onPlanPage ? "text-[28px] font-bold leading-[1.1]" : "text-[38px] font-bold leading-[1.05]"}>{title}</h2>
       {body}
       {actions}
-      <CycleStepper status={cycle.status === "skipped" ? "open" : cycle.status} />
+      {!onPlanPage && <CycleStepper status={cycle.status === "skipped" ? "open" : cycle.status} />}
     </Card>
   );
 }

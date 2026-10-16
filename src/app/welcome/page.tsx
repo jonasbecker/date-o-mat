@@ -49,8 +49,8 @@ async function Welcome() {
     },
     {
       emoji: "💡",
-      title: "Ideen & Erinnerungen",
-      text: "Fällt dir was ein? Gelbes + unten antippen. Unter „Ideen“ könnt ihr neue Vorschläge swipen – wischt ihr beide nach rechts, landet die Idee auf eurer Wunschliste. Was noch fehlt, zeigt euch die Startseite.",
+      title: "Ideen → Planen → Dates",
+      text: "Unten drei Schritte: 💡 Ideen sammeln (oder swipen – wischt ihr beide nach rechts, landet die Idee auf der Wunschliste), 📅 Date planen in der Mitte, 💞 Dates – was ansteht und was ihr erlebt habt.",
       tone: "bg-minze-soft",
     },
   ];

@@ -6,7 +6,7 @@ import { PlusIcon } from "./icons";
 import { IdeaForm } from "./idea-form";
 import { Sheet, type SheetHandle } from "./sheet";
 
-/** The yellow "+" in the navigation: capture an idea from any screen. */
+/** "+ Idee" in the Ideen tab: capture an idea in a sheet. */
 export function QuickAdd() {
   const sheet = useRef<SheetHandle>(null);
   const [toast, setToast] = useState(false);
@@ -22,19 +22,9 @@ export function QuickAdd() {
 
   return (
     <>
-      <div className="flex flex-col items-center gap-0.5">
-        <button
-          type="button"
-          aria-label="Idee hinzufügen"
-          onClick={() => sheet.current?.open()}
-          className="press -mt-8 flex size-[60px] items-center justify-center rounded-full border-[2.5px] border-line bg-zitrone text-tinte shadow-[3px_3px_0_var(--line)]"
-        >
-          <PlusIcon width={28} height={28} />
-        </button>
-        <span aria-hidden="true" className="text-[11px] font-extrabold text-muted">
-          Idee
-        </span>
-      </div>
+      <button type="button" aria-label="Idee hinzufügen" onClick={() => sheet.current?.open()} className="sticker press inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-zitrone px-4 font-display text-[15px] font-semibold text-tinte">
+        <PlusIcon width={18} height={18} /> Idee
+      </button>
 
       <Sheet ref={sheet} title="Neue Idee">
         <IdeaForm key={formKey} action={createIdeaAction} onSaved={saved} footnote="Enter speichert · ihr seht sie beide sofort" />

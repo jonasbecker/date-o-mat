@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { Avatar } from "@/components/avatar";
 import { CycleHistory } from "@/components/cycle";
+import { AppHeader, PageSkeleton } from "@/components/app-header";
+import { loadOverview, UpcomingSection } from "../overview";
 import { cycleHistory } from "@/server/cycles";
 import { Hearts } from "@/components/hearts";
 import { reviewStats, visibleRatings, visibleReviews } from "@/core/reviews";
@@ -26,11 +27,12 @@ export default function DatesPage() {
 }
 
 async function Dates() {
-  const { user, partner, coupleId } = await requireCouple();
+  const ctx = await requireCouple();
+  const { user, partner, coupleId } = ctx;
   await connection();
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
-  const [dates, history] = await Promise.all([pastDates(coupleId), cycleHistory(coupleId)]);
+  const [dates, history, overview] = await Promise.all([pastDates(coupleId), cycleHistory(coupleId), loadOverview(ctx, settings, now)]);
   const covers = await coverPhotos(coupleId, dates.map((d) => d.id));
   const stats = reviewStats(
     dates.map((d) => ({ id: d.id, title: d.title, startsAt: d.startsAt, ratings: visibleRatings(d.reviews, user.id) })),
@@ -40,7 +42,21 @@ async function Dates() {
   return (
     <div className="flex flex-col gap-5">
       <AutoRefresh />
-      <h1 className="text-[30px] font-bold">Unsere Dates</h1>
+      <AppHeader user={user} partner={partner} />
+      <h1 className="text-[30px] font-bold">Eure Dates</h1>
+      {/* What is coming up (and what to rate) first, then what you had. */}
+      <UpcomingSection o={overview} ctx={ctx} now={now} />
+      {!overview.shownDate && !overview.toReview && (
+        <Link href="/plan" className="press sticker flex items-center gap-3 rounded-[20px] bg-zitrone-soft px-4 py-3 text-tinte">
+          <span className="text-2xl" aria-hidden="true">
+            📅
+          </span>
+          <span className="font-bold">
+            Gerade steht kein Date an. <span className="underline">Jetzt eins planen</span>
+          </span>
+        </Link>
+      )}
+      <h2 className="-mb-2 mt-2 text-[21px] font-semibold">Bisher</h2>
       {history.length > 0 && <CycleHistory history={history} currentId={history.at(-1)!.id} />}
 
       {dates.length === 0 ? (

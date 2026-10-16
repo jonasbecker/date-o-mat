@@ -129,7 +129,7 @@ const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/plan`);
 await j.locator("ol li button").first().waitFor({ timeout: 15000 });
 await j.getByRole("button", { name: "Date festlegen 🎉" }).click();
-await j.waitForURL(`${BASE}/`, { timeout: 15000 });
+await j.waitForURL(`${BASE}/dates`, { timeout: 15000 });
 await new Promise((r) => setTimeout(r, 1500));
 check(`Sam: "Jonas hat ein Date geplant 🎉" (${titles("sam-phone")})`, titles("sam-phone").includes("Jonas hat ein Date geplant 🎉"));
 const planned = inbox.find((m) => m.title.startsWith("Jonas hat"));
@@ -171,7 +171,7 @@ const before = titles("sam-phone").length;
 await j.goto(`${BASE}/`);
 await j.getByRole("button", { name: "Absagen" }).click();
 await j.getByRole("button", { name: "Ja, absagen" }).click();
-await j.getByRole("heading", { name: "Du bist dran!" }).waitFor({ timeout: 10000 });
+await j.getByRole("link", { name: /Jetzt eins planen/ }).waitFor({ timeout: 10000 });
 await new Promise((r) => setTimeout(r, 1500));
 check("Sam gets no 'abgesagt' push after turning it off", titles("sam-phone").length === before);
 

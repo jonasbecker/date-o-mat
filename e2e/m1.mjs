@@ -86,9 +86,9 @@ for (let i = 0; i < 3; i++) {
 }
 await b.screenshot({ path: `${SHOTS}05b-welcome-last.png` });
 await b.getByRole("button", { name: "Los geht's 🎉" }).click();
-await b.waitForURL(`${BASE}/`, { timeout: 10000 }).catch(() => {});
-await b.getByText("Dein nächster Schritt").waitFor({ timeout: 10000 }).catch(() => {});
-check("after the intro: home with the next step (connect calendar)", b.url() === `${BASE}/` && (await b.getByRole("heading", { name: "Verbinde deinen Kalender" }).count()) === 1);
+await b.waitForURL(`${BASE}/plan`, { timeout: 10000 }).catch(() => {});
+await b.getByRole("heading", { name: "Verbinde deinen Google Kalender" }).waitFor({ timeout: 10000 }).catch(() => {});
+check("after the intro: Date planen asks to connect the calendar", b.url() === `${BASE}/plan` && (await b.getByRole("heading", { name: "Verbinde deinen Google Kalender" }).count()) === 1);
 check("setup checklist shows what is missing", await b.getByText(/Startklar\? \d von \d/).isVisible());
 await b.waitForTimeout(400);
 await b.screenshot({ path: `${SHOTS}05-home.png`, fullPage: true });
@@ -97,11 +97,13 @@ await b.screenshot({ path: `${SHOTS}05-home.png`, fullPage: true });
 await a.waitForURL("**/welcome", { timeout: 15000 }).catch(() => {});
 check("creator's pairing screen moves on automatically", a.url().endsWith("/welcome"));
 await a.getByRole("button", { name: "Überspringen" }).click();
-await a.waitForURL(`${BASE}/`, { timeout: 10000 }).catch(() => {});
+await a.waitForURL(`${BASE}/plan`, { timeout: 10000 }).catch(() => {});
 const { rows: onboarded } = await db.query("SELECT count(*)::int AS n FROM users WHERE onboarded_at IS NOT NULL");
 check(`both marked as introduced (${onboarded[0].n})`, onboarded[0].n === 2);
 await a.goto(`${BASE}/`);
-check("intro is not shown again", (await a.getByText("Dein nächster Schritt").waitFor({ timeout: 10000 }).then(() => true, () => false)) && a.url() === `${BASE}/`);
+await a.waitForURL(`${BASE}/plan`, { timeout: 10000 }).catch(() => {});
+check("intro is not shown again: / lands on Date planen", a.url() === `${BASE}/plan`);
+check("three tabs: Ideen · Date planen · Dates", (await a.getByRole("navigation", { name: "Hauptnavigation" }).getByRole("link").allInnerTexts()).map((t) => t.trim()).join("|") === "Ideen|Date planen|Dates");
 
 // A third person cannot use the (now deleted) code
 const c = await (await contextFor(tokenC)).newPage();
@@ -116,7 +118,7 @@ check("couple has exactly two members", members[0].n === 2);
 // Dark mode screenshot
 const dark = await (await contextFor(tokenB, "dark")).newPage();
 await dark.goto(`${BASE}/`);
-await dark.getByText("Diese Woche", { exact: true }).waitFor();
+await dark.getByRole("heading", { name: "Date planen" }).waitFor();
 await dark.waitForTimeout(400);
 await dark.screenshot({ path: `${SHOTS}06-home-dark.png` });
 

@@ -3,7 +3,7 @@ import { after, connection } from "next/server";
 import { Suspense } from "react";
 import { PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { IdeasTabs } from "@/components/ideas-tabs";
+import { IdeasTop } from "@/components/ideas-top";
 import { DECK_REFILL_BELOW } from "@/core/deck";
 import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
@@ -18,7 +18,7 @@ export const maxDuration = 90;
 export default function DiscoverPage() {
   return (
     <div className="flex flex-col gap-4">
-      <IdeasTabs current="entdecken" />
+      <IdeasTop current="entdecken" />
       <Suspense fallback={<PageSkeleton />}>
         <Discover />
       </Suspense>

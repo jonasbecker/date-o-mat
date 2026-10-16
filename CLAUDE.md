@@ -40,6 +40,8 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - **Weekday/date-sensitive tests:** the suites run on any day. Round logic → pin the dev clock with
   `tuesdayMorningOffset()` (`e2e/clock.mjs`); slot lists late in the week → `/plan?later=1`;
   decks/lists that a test empties → seed spare rows. A test that only fails on some days is a test bug.
+- **Hidden pages in e2e:** Next keeps the last visited pages mounted but hidden, so `getByText` can match
+  twice – prefer `getByRole` (ignores hidden elements) or `{ exact: true }` / `.filter({ visible: true })`.
 - **Timing in e2e:** CI is slower than the container. Wait for the UI that proves a state (e.g. the
   filter button showing the stored filter after hydration) instead of checking right after a load.
 - **After every push:** check the CI run (GitHub MCP `actions_list` → `list_workflow_runs`) until

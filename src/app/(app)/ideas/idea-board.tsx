@@ -118,7 +118,7 @@ function EmptyState() {
       </span>
       <h2 className="text-[22px] font-bold">Noch keine Ideen</h2>
       <p className="font-semibold text-muted">
-        Tippt unten auf das gelbe <strong className="text-ink">+</strong>, sobald euch etwas einfällt – Titel und Größe
+        Tippt oben auf <strong className="text-ink">+ Idee</strong>, sobald euch etwas einfällt – Titel und Größe
         reichen.
       </p>
     </div>

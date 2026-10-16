@@ -137,10 +137,12 @@ const OUT = new URL("./shots/", import.meta.url).pathname;
 // 2) Home asks Sam; Sam reviews first
 const s = await pageFor(sam.token);
 await s.goto(`${BASE}/`);
-await s.getByText("Wie war „Picknick im Stadtwald“?").waitFor({ timeout: 15000 });
-check("home: review prompt", true);
+// Either the step card ("Wie war's?") or – when it is Sam's turn to plan – the reminder link.
+const reviewLink = s.getByRole("link", { name: /Jetzt bewerten/ }).first();
+await reviewLink.waitFor({ timeout: 15000 });
+check("/ lands on Dates, which asks for the review", s.url() === `${BASE}/dates`);
 await s.screenshot({ path: `${OUT}m8-01-home-prompt.png` });
-await s.getByText("Wie war „Picknick im Stadtwald“?").click();
+await reviewLink.click();
 await s.getByRole("heading", { name: "Wie war's für dich?" }).waitFor({ timeout: 10000 });
 await s.getByLabel("4 Herzen").check({ force: true });
 await s.getByText("Richtig schön 🥰").waitFor();
@@ -151,18 +153,18 @@ await s.getByRole("heading", { name: "Deine Herzen" }).waitFor({ timeout: 10000 
 check("Sam's review saved", true);
 await new Promise((r) => setTimeout(r, 800));
 check(`Jonas is told (${titles("jonas-phone")})`, titles("jonas-phone").some((t) => t.startsWith("Sam hat verraten")));
-await s.goto(`${BASE}/`);
-await s.getByText("Hey Sam!").waitFor({ timeout: 10000 });
-check("home prompt gone after reviewing", !(await s.getByText("Wie war „Picknick").isVisible()));
+await s.goto(`${BASE}/dates`);
+await s.getByRole("heading", { name: "Eure Dates" }).waitFor({ timeout: 10000 });
+check("review prompt gone after reviewing", (await s.getByRole("link", { name: /Wie war „Picknick/ }).count()) === 0);
 
 // 3) Jonas: Sam's hearts are hidden until he reviews
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/dates`);
-await j.getByRole("heading", { name: "Unsere Dates" }).waitFor({ timeout: 15000 });
+await j.getByRole("heading", { name: "Eure Dates" }).waitFor({ timeout: 15000 });
 check("list: Sam's review is locked", await j.getByText("hat bewertet 🔒").isVisible());
 const hiddenStats = await j.locator("dl").innerText();
 check(`stats do not reveal Sam's hidden hearts (${hiddenStats.replace(/\n/g, " ")})`, !hiddenStats.includes("4") && !(await j.getByText("Euer Lieblingsdate").isVisible()));
-await j.getByText("Picknick im Stadtwald").first().click();
+await j.getByRole("link", { name: /Picknick im Stadtwald/ }).last().click();
 await j.getByText("Sam hat schon bewertet").waitFor({ timeout: 10000 });
 check("detail: note not visible yet", !(await j.getByText("Das Eis am Weiher!").isVisible()));
 await j.getByLabel("5 Herzen").check({ force: true });

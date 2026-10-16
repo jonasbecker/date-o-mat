@@ -80,7 +80,8 @@ const nextMonthName = month.plus({ months: 1 }).setLocale("de").toFormat("LLLL")
 // 1) No budget yet: no bar on the home screen
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/`);
-await j.getByText("Hey Jonas!").waitFor({ timeout: 15000 });
+await j.waitForURL(/\/(plan|dates)$/, { timeout: 15000 });
+await j.locator("h1").filter({ visible: true }).first().waitFor({ timeout: 15000 });
 check("no budget → no bar", (await j.getByRole("meter").count()) === 0);
 
 // 2) Set 80 € in the settings
@@ -98,7 +99,8 @@ check("invalid budget is rejected", await j.getByRole("alert").filter({ hasText:
 // 3) Plan page: 30 (Kino, done) + 20 (Bowling, planned) of 80 – the cancelled one does not count.
 //    The home page stays quiet while the budget is fine.
 await j.goto(`${BASE}/`);
-await j.getByText("Hey Jonas!").waitFor({ timeout: 15000 });
+await j.waitForURL(/\/(plan|dates)$/, { timeout: 15000 });
+await j.locator("h1").filter({ visible: true }).first().waitFor({ timeout: 15000 });
 check("home: no budget bar while it is fine", (await j.getByRole("link", { name: new RegExp(`${monthName}: \\d+ von 80 €`) }).count()) === 0);
 await j.goto(`${BASE}/plan`);
 const bar = j.getByRole("link", { name: new RegExp(`${monthName}: 50 von 80 €`) });
@@ -148,7 +150,7 @@ check("hint in the footer", await j.getByText("⚠️ Sprengt euer Budget (noch 
 await j.getByLabel(/Aus dem Spartopf \(15 €\)/).check();
 await j.screenshot({ path: `${OUT}m18-03-plan.png` });
 await j.getByRole("button", { name: "Date festlegen 🎉" }).click();
-await j.waitForURL(`${BASE}/`, { timeout: 15000 });
+await j.waitForURL(`${BASE}/dates`, { timeout: 15000 });
 const { rows: [planned] } = await db.query("SELECT title, from_pot, estimated_cost_eur FROM date_plans WHERE couple_id = $1 AND status = 'planned' ORDER BY created_at DESC LIMIT 1", [couple.id]);
 check(`planned from the pot with the estimate (${JSON.stringify(planned)})`, planned.title === "Sushi-Abend" && planned.from_pot === true && planned.estimated_cost_eur === 40);
 await j.goto(`${BASE}/budget`);

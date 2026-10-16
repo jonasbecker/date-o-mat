@@ -52,12 +52,17 @@ async function pageFor(token, scheme = "light") {
   return page;
 }
 
-const heading = async (p) => (await p.locator("h1").first().innerText()).trim();
+// The state of the round / of the next date: the step card on "Date planen" or "Dates".
+const heading = async (p) => {
+  const h = p.locator("[data-next-step] h2").filter({ visible: true }).first();
+  await h.waitFor({ timeout: 15000 }).catch(() => {});
+  return (await h.innerText()).trim();
+};
 
 // 1) Jonas' turn: one big next step
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/`);
-await j.getByText("Dein nächster Schritt").waitFor({ timeout: 15000 });
+await heading(j);
 check(`next step: "${await heading(j)}"`, (await heading(j)) === "Du bist dran!");
 check("period instead of round number", await j.getByText("Diese Woche", { exact: true }).isVisible());
 check("home is focused: no separate surprise / push cards", (await j.getByRole("button", { name: /Überrasch uns/ }).count()) === 0);
@@ -75,7 +80,7 @@ check("info popover closes", !(await j.getByText("Bis dahin sollte euer Date fes
 // 3) Sam's view: partner's turn
 const s = await pageFor(sam.token);
 await s.goto(`${BASE}/`);
-await s.getByText("Stand der Dinge").waitFor({ timeout: 15000 });
+await heading(s);
 check(`Sam: "${await heading(s)}"`, (await heading(s)) === "Jonas ist dran");
 
 // 4) Plan page: quick plan + tabs
@@ -102,11 +107,10 @@ check("no surprise option before the first date", (await j.getByText("🎁 Als �
 
 // 5) Quick plan in one tap → Sam's next step is "Passt!"
 await j.locator("form", { hasText: "⚡ Schnell planen" }).getByRole("button", { name: "So festlegen 🎉" }).click();
-await j.waitForURL(`${BASE}/`, { timeout: 20000 });
-await j.getByText("Stand der Dinge").waitFor({ timeout: 10000 });
+await j.waitForURL(`${BASE}/dates`, { timeout: 20000 });
 check(`Jonas waits: "${await heading(j)}"`, (await heading(j)) === "Wartet auf Sams „Passt!“");
-await s.reload();
-await s.getByText("Dein nächster Schritt").waitFor({ timeout: 15000 });
+await s.goto(`${BASE}/`);
+await s.waitForURL(`${BASE}/dates`, { timeout: 15000 });
 check(`Sam must confirm: "${await heading(s)}"`, (await heading(s)) === "Jonas hat ein Date geplant 🎉");
 check("only one Passt! button on the page", (await s.getByRole("button", { name: "Passt! 💚" }).count()) === 1);
 await s.screenshot({ path: `${OUT}m13-05-home-confirm.png`, fullPage: true });
@@ -141,7 +145,7 @@ await j.screenshot({ path: `${OUT}m13-07-welcome.png` });
 // 7) Dark mode + nav label
 const jd = await pageFor(jonas.token, "dark");
 await jd.goto(`${BASE}/`);
-await jd.getByText("Stand der Dinge").waitFor({ timeout: 15000 });
+await heading(jd);
 check("nav says Ideen", await jd.getByRole("link", { name: "Ideen", exact: true }).isVisible());
 await jd.screenshot({ path: `${OUT}m13-08-home-dark.png`, fullPage: true });
 // Light cards stay light in dark mode – their text must stay dark (it used to turn light-on-light).

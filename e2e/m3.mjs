@@ -86,8 +86,8 @@ await j.reload();
 await j.getByText("Sam muss den Kalender noch verbinden").waitFor({ timeout: 10000 });
 check("with only one calendar, the partner hint shows", true);
 await j.goto(`${BASE}/`);
-await j.getByText("Stand der Dinge").or(j.getByText("Dein nächster Schritt")).first().waitFor({ timeout: 10000 });
-check("home: next step says Sam still has to connect", (await j.getByText("Sam muss noch den Kalender verbinden").count()) === 1);
+await j.waitForURL(`${BASE}/plan`, { timeout: 10000 }).catch(() => {});
+check("/ lands on Date planen, which says Sam still has to connect", (await j.getByText("Sam muss den Kalender noch verbinden").count()) === 1);
 
 // 3) Both connected → slots
 await connect(sam, "token-sam", ["primary"]);

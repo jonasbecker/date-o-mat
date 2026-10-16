@@ -35,6 +35,7 @@ gemeinsame Ideen-Wunschliste.
 | M21 | Extras: Überraschungs-Date, Vorbereitungs-Checkliste, Route (ÖPNV), Gesprächskarten, iPhone-Teilen per Kurzbefehl | ✅ |
 | M22 | Aufgeräumt: ein Filter für alles, 3 Ideen-Reiter, Planen ohne Reiter, Extras nach und nach, Kontrast im dunklen Modus | ✅ |
 | M23 | Event-Quellen mit Unterseiten: KI sucht bis zu 6 Veranstaltungs-Seiten aus, ihr könnt welche entfernen oder hinzufügen | ✅ |
+| M24 | Navigation in der Reihenfolge eines Dates: Ideen · Date planen (Mitte) · Dates – die Startseite ist darin aufgegangen | ✅ |
 
 ## Tech-Stack
 
@@ -188,6 +189,20 @@ scripts/              Migration beim Build, Secret-Generator
 - **Wörter:** Kurz/Lang statt Klein/Groß, „Diese Woche“ statt „Runde 3“, „Plan bis …“ statt
   „Deadline“. Einstellungen: „Das Wichtigste“ oben, der Rest eingeklappt (M22).
 
+### Navigation in Kürze (M24)
+
+- **Unten drei Punkte** in der Reihenfolge eines Dates: 💡 **Ideen** (Wunschliste, Swipen, Was läuft,
+  „+ Idee“) · 📅 **Date planen** (der große Knopf in der Mitte) · 💞 **Dates** (was ansteht und was
+  ihr erlebt habt). Einstellungen über das Regler-Symbol oben.
+- **Die Startseite ist aufgeteilt** (`src/app/(app)/overview.tsx`): Auf „Date planen“ steht oben der
+  Stand der Runde („Du bist dran“, „Sam ist dran – übernehmen?“, Vorschlag, besondere Tage,
+  Start-Checkliste). Auf „Dates“ steht oben, was ein Date betrifft („Passt!“ geben, „Wartet auf …“,
+  „Date steht“, „Wie war's?“), darunter das nächste Date mit Checkliste und die Historie.
+- **`/` leitet weiter:** Steht ein Date an oder ist eins zu bewerten → „Dates“, sonst → „Date planen“
+  (`landingPath()`). Nach dem Planen (auch per Vorschlag) geht es direkt zu „Dates“.
+- Steht schon ein Date, zeigt „Date planen“ nur einen Hinweis mit Link zu „Dates“ und darunter die
+  Termin-Änderung – der große Status-Kasten steht nur an einer Stelle.
+
 ### Aufgeräumt in Kürze (M22)
 
 - **Ein Filter für alles** (`src/core/filters.ts`, mit Tests; Knopf + Sheet in
@@ -207,9 +222,8 @@ scripts/              Migration beim Build, Secret-Generator
   Dates, Budget auf der Startseite nur wenn es knapp wird. Unter Einstellungen → ✨ Extras lassen
   sich Überraschung, Checkliste, Gesprächskarten und Story für beide abschalten
   (`couple_settings.hidden_extras`).
-- **Startseite:** nächster Schritt, nächstes Date, höchstens zwei Hinweise, Start-Checkliste und
-  nur dann Kacheln, wenn es neue Karten oder Events gibt. „Eure letzten Runden“ steht jetzt
-  unter Dates.
+- **Startseite:** nächster Schritt, nächstes Date, höchstens zwei Hinweise und Start-Checkliste
+  (seit M24 auf „Date planen“ und „Dates“ verteilt). „Eure letzten Runden“ steht unter Dates.
 - **Einstellungen:** „Das Wichtigste“ (Kalender, Rhythmus, Erinnerungen – die einzelnen
   Erinnerungen eingeklappt) und „Mehr einstellen“ mit eingeklappten Bereichen. Links wie
   `/settings#budget` klappen den passenden Bereich auf (`fold.tsx`).

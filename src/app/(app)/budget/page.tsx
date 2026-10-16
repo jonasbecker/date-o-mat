@@ -18,7 +18,7 @@ export default function BudgetPage() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1">
         <Link href="/" className="self-start text-sm font-extrabold text-muted underline">
-          ← Start
+          ← Zurück
         </Link>
         <h1 className="text-[30px] font-bold">Budget & Spartopf</h1>
       </div>

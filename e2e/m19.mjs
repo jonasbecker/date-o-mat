@@ -106,14 +106,16 @@ await j.screenshot({ path: `${OUT}m19-01-settings.png`, fullPage: false });
 
 // 2) Home: Jonas sees both, Sam does not see her own birthday
 await j.goto(`${BASE}/`);
-await j.getByText("Hey Jonas!").waitFor({ timeout: 15000 });
+await j.waitForURL(/\/(plan|dates)$/, { timeout: 15000 });
+await j.locator("h1").filter({ visible: true }).first().waitFor({ timeout: 15000 });
 check("Jonas: anniversary card", await j.getByText("💞 2. Jahrestag in 14 Tagen").isVisible());
 check("Jonas: Sam's birthday card", await j.getByText("🎂 Sams Geburtstag (25) in 5 Tagen").isVisible());
 check("plan link asks for a big date", (await j.getByRole("link", { name: "Großes Date planen →" }).getAttribute("href")) === "/plan?size=large");
 await j.screenshot({ path: `${OUT}m19-02-home.png` });
 const s = await pageFor(sam.token);
 await s.goto(`${BASE}/`);
-await s.getByText("Hey Sam!").waitFor({ timeout: 15000 });
+await s.waitForURL(/\/(plan|dates)$/, { timeout: 15000 });
+await s.locator("h1").filter({ visible: true }).first().waitFor({ timeout: 15000 });
 check("Sam: anniversary yes, own birthday no", (await s.getByText("💞 2. Jahrestag in 14 Tagen").isVisible()) && (await s.getByText(/Geburtstag/).count()) === 0);
 
 // 3) Reminders: today 10:05 = 14 days before the anniversary → both; 3 days later → birthday only for Jonas

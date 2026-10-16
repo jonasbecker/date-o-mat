@@ -150,8 +150,8 @@ await card(dark, "Ramen selbst kochen").waitFor();
 await dark.waitForTimeout(400);
 await dark.screenshot({ path: `${SHOTS}m2-06-list-dark.png` });
 check("wishlist heading shows the count", (await dark.getByRole("heading", { level: 1 }).innerText()).includes("3"));
-await a.goto(`${BASE}/`);
-await a.getByText(`Hey`).first().waitFor({ timeout: 10000 });
+await a.goto(`${BASE}/plan`);
+await a.getByRole("heading", { name: "Date planen" }).waitFor({ timeout: 10000 });
 await a.screenshot({ path: `${SHOTS}m2-07-home.png` });
 
 await browser.close();

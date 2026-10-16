@@ -256,9 +256,7 @@ await card("Kino unterm Sternenhimmel").getByRole("button", { name: "Ja, planen 
 await card("Kino unterm Sternenhimmel").getByText("schon ein Date geplant").waitFor({ timeout: 15000 });
 check("second date in the same round is refused with a message", true);
 
-// 6) Home card + dark mode + tabs
-await j.goto(`${BASE}/`);
-await j.getByText("in den nächsten 7 Tagen").waitFor({ timeout: 15000 }).then(() => check("home: events card", true), () => check("home: events card", false));
+// 6) Dark mode + tabs
 const jd = await pageFor(jonas.token, "dark");
 await jd.goto(`${BASE}/events`);
 await jd.getByText("Jazz im Stadtgarten").waitFor({ timeout: 15000 });

@@ -95,12 +95,12 @@ async function pageFor(token) {
   return page;
 }
 
-// 1) Home in late December: the story is ready
+// 1) Dates in late December: the story is ready
 const j = await pageFor(jonas.token);
-await j.goto(`${BASE}/`);
+await j.goto(`${BASE}/dates`);
 const tile = j.getByRole("link", { name: `Eure Date-Story ${year} ist da – tipp rein!` });
 await tile.waitFor({ timeout: 15000 });
-check("home tile for the story", (await tile.getAttribute("href")) === `/story?year=${year}`);
+check("tile for the story on Dates", (await tile.getAttribute("href")) === `/story?year=${year}`);
 
 // 2) Tap through
 await tile.click();
@@ -143,7 +143,7 @@ check("last year: 1 date", await slide.getByText(/Ihr hattet/).waitFor({ timeout
 
 // 4) Dates page links to the story; the swipe page shows "Euer Ding"
 await j.goto(`${BASE}/dates`);
-check("dates page link", (await j.getByRole("link", { name: /Eure Date-Story/ }).getAttribute("href")) === "/story");
+check("dates page link", (await j.getByRole("link", { name: /Euer Jahr zum Durchtippen/ }).getAttribute("href")) === "/story");
 await j.goto(`${BASE}/ideas/entdecken`);
 await j.getByText(/Euer Ding: Essen & Trinken/).waitFor({ timeout: 15000 }).then(() => check("swipe page: Euer Ding", true), () => check("swipe page: Euer Ding", false));
 

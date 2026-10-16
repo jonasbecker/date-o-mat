@@ -58,7 +58,7 @@ export function SetupChecklist({
         </a>
       ),
     },
-    { key: "partner", done: partnerCalendar, label: `${genitive(partnerName)} Kalender ist verbunden`, hint: `${partnerName} verbindet ihn in der App unter „Planen“.` },
+    { key: "partner", done: partnerCalendar, label: `${genitive(partnerName)} Kalender ist verbunden`, hint: `${partnerName} verbindet ihn in der App unter „Date planen“.` },
   ];
   if (env.phone) {
     items.push({

@@ -235,10 +235,7 @@ await j.getByRole("radio", { name: "Viele" }).click();
 await j.waitForTimeout(800);
 check("event mix saved", (await db.query("SELECT deck_event_mix FROM couple_settings WHERE couple_id = $1", [couple.id])).rows[0].deck_event_mix === "lots");
 
-// 10) Home tile and "Neue Ideen holen" when everything is swiped
-await j.goto(`${BASE}/`);
-const tile = j.getByRole("link", { name: /neue Ideen zum Swipen/ });
-check(`home tile (${await tile.innerText().catch(() => "–")})`, await tile.isVisible());
+// 10) "Neue Ideen holen" when everything is swiped
 await db.query("UPDATE deck_cards SET status = 'passed' WHERE couple_id = $1 AND status = 'open'", [couple.id]);
 const callsBefore = claudeCalls.length;
 await db.query("UPDATE couple_settings SET deck_refill_started_at = now() WHERE couple_id = $1", [couple.id]); // as if a batch were running

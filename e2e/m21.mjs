@@ -117,7 +117,7 @@ await j.getByLabel("🎁 Als Überraschung planen").check();
 await j.getByLabel("Hinweis für Sam (optional)").fill("Hunger mitbringen!");
 await j.screenshot({ path: `${OUT}m21-01-plan-surprise.png` });
 await j.getByRole("button", { name: "Date festlegen 🎉" }).click();
-await j.waitForURL(`${BASE}/`, { timeout: 15000 });
+await j.waitForURL(`${BASE}/dates`, { timeout: 15000 });
 const { rows: [date] } = await db.query("SELECT * FROM date_plans WHERE couple_id = $1 ORDER BY created_at DESC LIMIT 1", [couple.id]);
 check(`surprise saved (${date.title}, ${date.surprise_hint})`, date.surprise === true && date.surprise_hint === "Hunger mitbringen!" && date.title === "Sushi-Abend");
 const event = [...googleEvents["token-jonas"].values()].at(-1);
@@ -125,7 +125,7 @@ check(`Google event keeps the secret (${event?.summary})`, event?.summary === "�
 
 // 3) Jonas sees everything, plus the checklist with a suggestion and the route
 await j.reload();
-await j.getByText("Euer nächstes Date").waitFor({ timeout: 15000 });
+await j.getByText("Euer nächstes Date", { exact: true }).waitFor({ timeout: 15000 });
 check("Jonas sees the real title and the surprise note", (await j.getByRole("heading", { name: "Sushi-Abend" }).isVisible()) && (await j.getByText(/🎁 Überraschung: Sam sieht bis zum Tag selbst nur Zeit und deinen Hinweis/).isVisible()));
 const route = await j.getByRole("link", { name: "🗺️ Route (ÖPNV)" }).getAttribute("href");
 check(`route link with his start point (${route})`, new URL(route).searchParams.get("origin") === "Ehrenfeld, Köln" && new URL(route).searchParams.get("destination") === "Belgisches Viertel, Köln");
@@ -144,7 +144,7 @@ await j.screenshot({ path: `${OUT}m21-02-jonas.png`, fullPage: true });
 // 4) Sam sees only time and hint – no title, place, checklist; budget page keeps the secret too
 const s = await pageFor(sam.token);
 await s.goto(`${BASE}/`);
-await s.getByText("Euer nächstes Date").waitFor({ timeout: 15000 });
+await s.getByText("Euer nächstes Date", { exact: true }).waitFor({ timeout: 15000 });
 const samText = await s.locator("main").innerText();
 check("Sam: surprise title + hint", samText.includes("🎁 Überraschung von Jonas") && samText.includes("Hinweis: Hunger mitbringen!") && samText.includes("erfährst du am Tag selbst"));
 check("Sam: no title, place, checklist or route", !/Sushi|Belgisches|Vorbereitung|Route/.test(samText));
@@ -159,7 +159,7 @@ check("reschedule page does not show the title", !(await s.locator("main").inner
 await s.waitForTimeout(800);
 await s.locator("ol li button").nth(1).click();
 await s.getByRole("button", { name: "Termin ändern" }).click();
-await s.waitForURL(`${BASE}/`, { timeout: 15000 });
+await s.waitForURL(`${BASE}/dates`, { timeout: 15000 });
 const { rows: [moved] } = await db.query("SELECT title, location, surprise, starts_at, organizer_id FROM date_plans WHERE id = $1", [date.id]);
 check(`moved, still the same secret (${moved.title})`, moved.title === "Sushi-Abend" && moved.location === "Belgisches Viertel" && moved.surprise === true && moved.starts_at.getTime() !== date.starts_at.getTime());
 
@@ -178,7 +178,7 @@ check("revealed in the database", revealed.surprise_revealed_at !== null);
 const event2 = [...googleEvents["token-jonas"].values()].at(-1);
 check(`Google event now says what it is (${event2?.summary})`, event2?.summary === "💞 Date: Sushi-Abend" && event2.location === "Belgisches Viertel");
 await s.goto(`${BASE}/`);
-await s.getByText("Euer nächstes Date").waitFor({ timeout: 15000 });
+await s.getByText("Euer nächstes Date", { exact: true }).waitFor({ timeout: 15000 });
 check("Sam sees the real date now", await s.getByRole("heading", { name: "Sushi-Abend" }).isVisible());
 await s.getByRole("button", { name: "💬 Gesprächskarte ziehen" }).click();
 const question = await s.locator("p[aria-live=polite]").innerText();

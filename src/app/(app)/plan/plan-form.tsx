@@ -107,7 +107,7 @@ export function PlanForm({
     if (result.status === "saved") {
       setLeaving(true);
       celebrate();
-      setTimeout(() => router.push("/"), 1000);
+      setTimeout(() => router.push("/dates"), 1000);
     }
     return result;
   }, { status: "idle" });
@@ -362,7 +362,7 @@ export function PlanForm({
               chooseIdea(chosen);
               moreSheet.current?.close();
             }}
-            onEventPlanned={() => setTimeout(() => router.push("/"), 1000)}
+            onEventPlanned={() => setTimeout(() => router.push("/dates"), 1000)}
           />
         </Sheet>
 

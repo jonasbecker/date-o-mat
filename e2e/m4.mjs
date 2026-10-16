@@ -53,7 +53,11 @@ const check = (label, ok) => {
   console.log(`${ok ? "✓" : "✗"} ${label}`);
   if (!ok) failures++;
 };
-const heading = (page) => page.locator("h1").first().textContent();
+// The state of the round sits on top of "Date planen" (where / lands without a date).
+const heading = async (page) => {
+  await page.locator("[data-next-step] h2").first().waitFor({ timeout: 15000 }).catch(() => {});
+  return page.locator("[data-next-step] h2").first().textContent();
+};
 const cyclesInDb = async () =>
   (await db.query("SELECT seq, status, mode, planner_id, starts_at, ends_at, deadline_at FROM cycles WHERE couple_id = $1 ORDER BY seq", [couple.id])).rows;
 
@@ -62,12 +66,12 @@ const s = await pageFor(sam.token);
 
 // Round 1 – Jonas starts
 await j.goto(`${BASE}/`);
+await heading(j);
 check("round 1 is created on first visit", (await j.getByText("Diese Woche", { exact: true }).count()) === 1);
 check(`Jonas sees "Du bist dran!" (${await heading(j)})`, (await heading(j)) === "Du bist dran!");
 check("deadline with time left is shown", await j.getByText(/^Plan bis \w/).waitFor({ timeout: 10000 }).then(() => true, () => false));
-await j.getByRole("link", { name: "Date planen" }).waitFor({ timeout: 10000 }).catch(() => {});
-const planLinks = await j.getByRole("link", { name: "Date planen" }).count();
-check(`big 'Date planen' button for the planner (${planLinks})`, planLinks === 1);
+check("/ lands on Date planen", j.url() === `${BASE}/plan`);
+check("no second 'Date planen' button inside the card", (await j.locator("[data-next-step]").getByRole("link", { name: "Date planen" }).count()) === 0);
 await j.waitForTimeout(300);
 await j.screenshot({ path: `${SHOTS}m4-01-my-turn.png` });
 const [c1] = await cyclesInDb();
@@ -146,14 +150,14 @@ rows = await cyclesInDb();
 check("open round switched to suggestion mode immediately", rows.at(-1).mode === "suggestion" && rows.at(-1).planner_id === null);
 await j.goto(`${BASE}/`);
 await j.getByText("Der Date-O-Mat schlägt vor").waitFor({ timeout: 15000 });
-const first = await j.locator("h2").filter({ hasNotText: /Runden/ }).first().textContent();
+const first = await j.locator("h2:not([data-next-step] h2)").filter({ hasNotText: /Runden/ }).first().textContent();
 check(`a suggestion with an idea is shown (${first})`, ["Picknick im Stadtwald", "Ramen kochen", "Wandern"].includes(first));
 await j.waitForTimeout(300);
 await j.screenshot({ path: `${SHOTS}m4-05-suggestion.png` });
 const before = (await db.query("SELECT starts_at, idea_id FROM suggestions WHERE status = 'pending'")).rows[0];
 await s.goto(`${BASE}/`);
 await s.getByText("Der Date-O-Mat schlägt vor").waitFor({ timeout: 15000 });
-const samSees = await s.locator("h2").filter({ hasNotText: /Runden/ }).first().textContent();
+const samSees = await s.locator("h2:not([data-next-step] h2)").filter({ hasNotText: /Runden/ }).first().textContent();
 check("both partners see the same suggestion", samSees === first);
 await j.getByRole("button", { name: "Anderer Vorschlag" }).click();
 await j.waitForTimeout(1500);

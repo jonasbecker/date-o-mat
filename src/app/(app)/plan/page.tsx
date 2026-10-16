@@ -21,14 +21,12 @@ import { BudgetBar } from "@/components/budget-bar";
 import { countDoneDates, dateForViewer, getDate } from "@/server/dates";
 import { ideaCandidates } from "@/server/idea-sources";
 import { PlanForm, type IdeaOption, type RescheduleInfo } from "./plan-form";
+import { AppHeader } from "@/components/app-header";
+import { loadOverview, RoundSection } from "../overview";
 
 export default function PlanPage({ searchParams }: PageProps<"/plan">) {
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-[30px] font-bold leading-tight">Date planen</h1>
-        <p className="font-bold text-muted">Zeit und Idee wählen – fertig.</p>
-      </div>
       <Suspense fallback={<SlotsSkeleton />}>
         <Plan searchParams={searchParams} />
       </Suspense>
@@ -36,13 +34,28 @@ export default function PlanPage({ searchParams }: PageProps<"/plan">) {
   );
 }
 
+const planHeading = (
+  <div>
+    <h1 className="text-[30px] font-bold leading-tight">Date planen</h1>
+    <p className="font-bold text-muted">Zeit und Idee wählen – fertig.</p>
+  </div>
+);
+
 async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["searchParams"] }) {
   const ctx = await requireCouple();
   await connection();
   const settings = await getCoupleSettings(ctx.coupleId);
   const now = coupleNow(settings);
   const cycle = await ensureCurrentCycle(ctx.coupleId, now);
-  const params = await searchParams;
+  const [params, overview] = await Promise.all([searchParams, loadOverview(ctx, settings, now)]);
+  // Header and the state of the round ("Du bist dran", "Sam muss noch Passt! sagen") above the form.
+  const top = (
+    <>
+      <AppHeader user={ctx.user} partner={ctx.partner} />
+      <RoundSection o={overview} ctx={ctx} now={now} />
+      {planHeading}
+    </>
+  );
   const later = params.later === "1";
   const rescheduleId = typeof params.reschedule === "string" ? params.reschedule : undefined;
   // An explicit ?reschedule=…, or – if this round already has a date – that one.
@@ -104,17 +117,28 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
     events = plannable.filter((e) => free?.get(e.id) === true).map((e) => eventView(e, { free: true, saved: saved.has(e.dedupeKey), now }));
   }
 
-  if (search.status === "not_connected") return <ConnectCalendarCard people={search.people} next="/plan" />;
+  if (search.status === "not_connected") {
+    return (
+      <>
+        {top}
+        <ConnectCalendarCard people={search.people} next="/plan" />
+      </>
+    );
+  }
   if (search.status === "google_error") {
     return (
-      <p role="alert" className="rounded-[20px] border-2 border-line bg-himbeere-soft px-4 py-3 font-bold text-tinte">
-        Google Kalender antwortet gerade nicht. Versuch es in einer Minute nochmal.
-      </p>
+      <>
+        {top}
+        <p role="alert" className="rounded-[20px] border-2 border-line bg-himbeere-soft px-4 py-3 font-bold text-tinte">
+          Google Kalender antwortet gerade nicht. Versuch es in einer Minute nochmal.
+        </p>
+      </>
     );
   }
 
   return (
     <>
+      {top}
       {roundInfo}
       {search.failedCalendars > 0 && (
         <p className="rounded-[20px] border-2 border-line bg-zitrone-soft px-4 py-3 text-sm font-bold text-tinte">

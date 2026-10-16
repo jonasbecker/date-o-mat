@@ -68,7 +68,7 @@ export default function SettingsPage({ searchParams }: PageProps<"/settings">) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
         <Link href="/" className="self-start text-sm font-extrabold text-muted underline">
-          ← Start
+          ← Zurück
         </Link>
         <h1 className="text-[30px] font-bold">Einstellungen</h1>
       </div>
