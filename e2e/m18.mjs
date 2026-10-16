@@ -84,7 +84,7 @@ await j.getByText("Hey Jonas!").waitFor({ timeout: 15000 });
 check("no budget → no bar", (await j.getByRole("meter").count()) === 0);
 
 // 2) Set 80 € in the settings
-await j.goto(`${BASE}/settings`);
+await j.goto(`${BASE}/settings#budget`);
 await j.getByLabel("Monatsbudget für Dates").waitFor({ timeout: 15000 }).catch(async () => console.log("DEBUG", (await j.locator("main").innerText()).slice(0, 3000)));
 await j.getByLabel("Monatsbudget für Dates").fill("80 €");
 await j.locator("form", { has: j.getByLabel("Monatsbudget für Dates") }).getByRole("button", { name: "Speichern" }).click();
@@ -95,11 +95,15 @@ await j.getByLabel("Monatsbudget für Dates").fill("viel");
 await j.locator("form", { has: j.getByLabel("Monatsbudget für Dates") }).getByRole("button", { name: "Speichern" }).click();
 check("invalid budget is rejected", await j.getByRole("alert").filter({ hasText: "zwischen 1 und 10.000" }).waitFor({ timeout: 5000 }).then(() => true, () => false));
 
-// 3) Home: 30 (Kino, done) + 20 (Bowling, planned) of 80 – the cancelled one does not count
+// 3) Plan page: 30 (Kino, done) + 20 (Bowling, planned) of 80 – the cancelled one does not count.
+//    The home page stays quiet while the budget is fine.
 await j.goto(`${BASE}/`);
+await j.getByText("Hey Jonas!").waitFor({ timeout: 15000 });
+check("home: no budget bar while it is fine", (await j.getByRole("link", { name: new RegExp(`${monthName}: \\d+ von 80 €`) }).count()) === 0);
+await j.goto(`${BASE}/plan`);
 const bar = j.getByRole("link", { name: new RegExp(`${monthName}: 50 von 80 €`) });
 await bar.waitFor({ timeout: 15000 });
-check("home bar: 50 von 80 €, noch 30 €", (await bar.innerText()).includes("noch 30 €") && (await bar.innerText()).includes("davon 20 € schon verplant"));
+check("plan bar: 50 von 80 €, noch 30 €", (await bar.innerText()).includes("noch 30 €"));
 await j.screenshot({ path: `${OUT}m18-01-home.png` });
 
 // 4) Review: the real amount (prefilled with the estimate)
@@ -129,10 +133,9 @@ const { rows: closed } = await db.query("SELECT month, budget_eur, spent_eur, po
 check(`month closed (${JSON.stringify(closed)})`, closed.length === 1 && closed[0].spent_eur === 65 && closed[0].pot_after_eur === 15 && closed[0].dates === 2);
 const { rows: recaps } = await db.query("SELECT user_id, ref_id FROM notification_log WHERE type = 'budget'");
 check(`recap once for both (${recaps.length})`, recaps.length === 2 && recaps.every((r) => r.ref_id === month.toFormat("yyyy-LL")));
-await j.goto(`${BASE}/`);
-const bar2 = j.getByRole("link", { name: new RegExp(`${nextMonthName}: 0 von 80 €`) });
-await bar2.waitFor({ timeout: 15000 });
-check("new month starts at 0, pot shows 15 €", (await bar2.innerText()).includes("Spartopf: 15 €"));
+await j.goto(`${BASE}/budget`);
+await j.getByText(`${nextMonthName}: 0 von 80 €`).waitFor({ timeout: 15000 });
+check("new month starts at 0, pot shows 15 €", (await j.locator("main").innerText()).includes("Spartopf: 15 €"));
 
 // 7) Planning: an idea over budget is marked; pay from the pot
 await db.query("UPDATE couple_settings SET monthly_budget_eur = 30 WHERE couple_id = $1", [couple.id]);
@@ -148,9 +151,9 @@ await j.getByRole("button", { name: "Date festlegen 🎉" }).click();
 await j.waitForURL(`${BASE}/`, { timeout: 15000 });
 const { rows: [planned] } = await db.query("SELECT title, from_pot, estimated_cost_eur FROM date_plans WHERE couple_id = $1 AND status = 'planned' ORDER BY created_at DESC LIMIT 1", [couple.id]);
 check(`planned from the pot with the estimate (${JSON.stringify(planned)})`, planned.title === "Sushi-Abend" && planned.from_pot === true && planned.estimated_cost_eur === 40);
-const bar3 = j.getByRole("link", { name: new RegExp(`${nextMonthName}: 0 von 30 €`) });
-await bar3.waitFor({ timeout: 15000 });
-check("month budget untouched, pot used up", (await bar3.innerText()).includes("Spartopf: 0 €"));
+await j.goto(`${BASE}/budget`);
+await j.getByText(`${nextMonthName}: 0 von 30 €`).waitFor({ timeout: 15000 });
+check("month budget untouched, pot used up", (await j.locator("main").innerText()).includes("Spartopf: 0 €"));
 
 // 8) Sam sees the same numbers
 const s = await pageFor(sam.token);

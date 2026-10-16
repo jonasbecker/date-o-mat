@@ -16,7 +16,9 @@ export function SurpriseButton({
   size = "md",
   ideaSize,
   onChoose,
+  label = "🎲 Überrasch uns",
 }: {
+  label?: string;
   className?: string;
   variant?: "primary" | "secondary";
   size?: "sm" | "md";
@@ -65,7 +67,7 @@ export function SurpriseButton({
   return (
     <>
       <button type="button" onClick={open} className={buttonClass(variant, size, cn("w-full", className))}>
-        🎲 Überrasch uns
+        {label}
       </button>
       <Sheet ref={sheet} title="Der Date-O-Mat zieht …">
         <div aria-live="polite" className="flex min-h-56 flex-col gap-4">

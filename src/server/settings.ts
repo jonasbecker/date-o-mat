@@ -1,7 +1,7 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import type { SlotRules } from "@/core/slots";
-import type { EventMix } from "@/lib/domain";
+import type { EventMix, Extra } from "@/lib/domain";
 import type { SlotSettingsValues } from "@/lib/slot-settings";
 import { db } from "@/server/db";
 import { coupleSettings, cycles, datePhotos, type CoupleSettings } from "@/server/db/schema";
@@ -49,6 +49,19 @@ export async function setFirstPlanner(coupleId: string, userId: string): Promise
 export async function setDeckEventMix(coupleId: string, mix: EventMix): Promise<void> {
   await getCoupleSettings(coupleId);
   await db.update(coupleSettings).set({ deckEventMix: mix }).where(eq(coupleSettings.coupleId, coupleId));
+}
+
+export async function setExtraShown(coupleId: string, extra: Extra, shown: boolean): Promise<void> {
+  const settings = await getCoupleSettings(coupleId);
+  const hidden = new Set(settings.hiddenExtras);
+  if (shown) hidden.delete(extra);
+  else hidden.add(extra);
+  await db.update(coupleSettings).set({ hiddenExtras: [...hidden] }).where(eq(coupleSettings.coupleId, coupleId));
+}
+
+/** Is this extra switched on for the couple? */
+export function extraOn(settings: { hiddenExtras: readonly string[] }, extra: Extra): boolean {
+  return !settings.hiddenExtras.includes(extra);
 }
 
 export async function setDevClockOffset(coupleId: string, minutes: number): Promise<void> {

@@ -128,8 +128,8 @@ check("now Jonas confirms Sam's new time", (await theDate()).confirmed_by_id ===
 // 4) The chosen slot got taken meanwhile → friendly error, nothing changes
 await openPlan(j, `?reschedule=${date.id}`);
 await j.locator("ol li button").nth(2).click();
-const takenStart = await j.locator('form:has([role="tablist"]) input[name="start"]').inputValue();
-const takenEnd = await j.locator('form:has([role="tablist"]) input[name="end"]').inputValue();
+const takenStart = await j.locator('form:has(#custom-title) input[name="start"]').inputValue();
+const takenEnd = await j.locator('form:has(#custom-title) input[name="end"]').inputValue();
 BUSY["token-sam"].primary.push({ start: takenStart, end: takenEnd });
 await j.getByRole("button", { name: "Termin ändern" }).click();
 await j.getByText("Dieser Zeitraum ist inzwischen belegt").waitFor({ timeout: 10000 });
@@ -189,7 +189,7 @@ check("deleting the event in Google cancels the date", afterDelete.status === "c
 await db.query("UPDATE couple_settings SET mode = 'alternating' WHERE couple_id = $1", [couple.id]);
 await db.query("UPDATE cycles SET mode = 'alternating', planner_id = $2 WHERE couple_id = $1 AND status = 'open'", [couple.id, jonas.id]);
 await openPlan(j);
-const chosenEnd = new Date(await j.locator('form:has([role="tablist"]) input[name="end"]').inputValue());
+const chosenEnd = new Date(await j.locator('form:has(#custom-title) input[name="end"]').inputValue());
 await j.getByRole("button", { name: "Date festlegen 🎉" }).click();
 await j.waitForURL(`${BASE}/`, { timeout: 15000 });
 const roundEnd = (await db.query("SELECT ends_at FROM cycles WHERE couple_id = $1 ORDER BY seq DESC LIMIT 1", [couple.id])).rows[0].ends_at;

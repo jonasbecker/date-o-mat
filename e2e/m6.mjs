@@ -158,6 +158,7 @@ check("'in 2 hours' is sent with high urgency", soon?.headers.urgency === "high"
 // 6) Preferences: Sam turns partner news off → no push when Jonas cancels
 await at(start.minus({ hours: 5 }));
 await s.goto(`${BASE}/settings`);
+await s.getByText("Welche Erinnerungen?").click();
 const toggle = s.getByRole("switch", { name: /Jonas plant, bestätigt oder sagt ab/ });
 await toggle.waitFor({ timeout: 10000 });
 check("all reminder types are on by default", (await s.getByRole("switch").evaluateAll((els) => els.every((e) => e.getAttribute("aria-checked") === "true"))));

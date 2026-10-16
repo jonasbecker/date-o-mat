@@ -33,6 +33,7 @@ gemeinsame Ideen-Wunschliste.
 | M19 | Besondere Tage (Jahrestag, Geburtstage) mit Erinnerung, „Vielleicht“-Stapel, alte Ideen auffrischen | ✅ |
 | M20 | Eure Date-Story: Jahresrückblick zum Durchtippen, Swipe-Statistik „Euer Ding“ | ✅ |
 | M21 | Extras: Überraschungs-Date, Vorbereitungs-Checkliste, Route (ÖPNV), Gesprächskarten, iPhone-Teilen per Kurzbefehl | ✅ |
+| M22 | Aufgeräumt: ein Filter für alles, 3 Ideen-Reiter, Planen ohne Reiter, Extras nach und nach, Kontrast im dunklen Modus | ✅ |
 
 ## Tech-Stack
 
@@ -176,15 +177,44 @@ scripts/              Migration beim Build, Secret-Generator
 - **Startseite:** oben genau eine Karte „Dein nächster Schritt“ (`nextStep()` in
   `src/core/next-step.ts`, mit Tests): Kalender verbinden → „Passt!“ geben → planen →
   bewerten → sonst „Stand der Dinge“. Darunter das nächste Date, eine **Start-Checkliste**
-  (Kalender, Home-Bildschirm, Push; verschwindet, wenn alles erledigt ist) und zwei kleine
-  Kacheln zu Ideen und Events.
+  (Kalender, Home-Bildschirm, Push; verschwindet, wenn alles erledigt ist) und – nur wenn es
+  welche gibt – Kacheln zu neuen Swipe-Karten und Events.
 - **ⓘ-Hilfen:** `<Info term="…">` mit Texten aus `src/lib/glossary.ts`, über die Popover-API
   des Browsers (kein eigenes JavaScript).
 - **Planen:** „⚡ Schnell planen“ (Top-Termin + älteste kurze Idee, ein Tipp) und unter
-  „Was machen wir?“ alle Quellen als Reiter: Wunschliste, Köln, Events (nur wo ihr beide Zeit
-  habt), KI, Zufall, Eigene. Was man nimmt, landet auf der Wunschliste und ist sofort gewählt.
+  „Was machen wir?“ die Wunschliste, „🎲 Zufall“, „Was anderes …“ und die eigene Idee (M22).
+  Was man nimmt, landet auf der Wunschliste und ist sofort gewählt.
 - **Wörter:** Kurz/Lang statt Klein/Groß, „Diese Woche“ statt „Runde 3“, „Plan bis …“ statt
-  „Deadline“. Einstellungen in „Für euch beide“ und „Nur für dich“, Zeitfenster eingeklappt.
+  „Deadline“. Einstellungen: „Das Wichtigste“ oben, der Rest eingeklappt (M22).
+
+### Aufgeräumt in Kürze (M22)
+
+- **Ein Filter für alles** (`src/core/filters.ts`, mit Tests; Knopf + Sheet in
+  `src/components/idea-filter.tsx`): drei Fragen – Wie lang? Was darf es kosten (Gratis / bis
+  20 €)? Drinnen oder draußen? Gilt gleichzeitig für Wunschliste, Swipen, „Was läuft“ und die
+  Ideen beim Planen und bleibt pro Gerät gespeichert (`localStorage`). Unbekanntes passt immer
+  (ein Event hat keine Dauer), außer bei „Gratis“. „Mehr … holen“ im Stapel bittet Claude um
+  passende Karten.
+- **Ideen = 3 Reiter:** 💡 Wunschliste · 💞 Swipen · 🎟️ Was läuft. Die Köln-Ideen sind kein
+  eigener Reiter mehr: Jede Ladung im Stapel bringt drei davon mit (📍), auch ohne KI oder wenn
+  die KI ausfällt (`curatedForDeck()`); `/ideas/koeln` leitet zum Stapel um. Die KI-Ideen mit
+  eigenen Chips (Budget, Stimmung, Ort) sind weg – die KI steckt im Stapel und beim Planen.
+- **Planen ohne Reiter:** „Von eurer Wunschliste“ (mit Filter), daneben „🎲 Zufall“ und
+  „Was anderes …“ – ein Sheet mit Suche über Events (beide frei), Köln-Ideen und
+  „✨ 3 Ideen von der KI“. Darunter ein Feld für die eigene Idee.
+- **Extras nach und nach:** Überraschungs-Date erst ab dem ersten Date, Date-Story-Link ab drei
+  Dates, Budget auf der Startseite nur wenn es knapp wird. Unter Einstellungen → ✨ Extras lassen
+  sich Überraschung, Checkliste, Gesprächskarten und Story für beide abschalten
+  (`couple_settings.hidden_extras`).
+- **Startseite:** nächster Schritt, nächstes Date, höchstens zwei Hinweise, Start-Checkliste und
+  nur dann Kacheln, wenn es neue Karten oder Events gibt. „Eure letzten Runden“ steht jetzt
+  unter Dates.
+- **Einstellungen:** „Das Wichtigste“ (Kalender, Rhythmus, Erinnerungen – die einzelnen
+  Erinnerungen eingeklappt) und „Mehr einstellen“ mit eingeklappten Bereichen. Links wie
+  `/settings#budget` klappen den passenden Bereich auf (`fold.tsx`).
+- **Kontrast:** Helle Flächen (`bg-zitrone-soft`, `bg-himbeere` …) bleiben im dunklen Modus hell
+  – in `globals.css` bekommen sie dort die hellen Farb-Tokens, damit Schrift darauf dunkel
+  bleibt. m13 misst das Kontrastverhältnis der Einführung im dunklen Modus (vorher 1,1 : 1).
 
 ### Entdecken (Swipen) in Kürze
 
@@ -204,7 +234,7 @@ scripts/              Migration beim Build, Secret-Generator
   Viele. Kombi-Karten verschwinden, wenn das Event begonnen hat.
 - **Swipen:** rechts/💚 = gerne, links/✕ = nö, hoch/⭐ = Super-Like (einmal am Tag, der Partner
   sieht ihn mit Namen), ↩️ nimmt den letzten Swipe zurück – beliebig oft hintereinander.
-  Tastatur: ← → ↑ und Rücktaste. Filter: Günstig, Drinnen, Draußen, Kurz, Lang, Mit Event;
+  Tastatur: ← → ↑ und Rücktaste. Es gilt der gemeinsame Filter (M22);
   „Mehr … holen“ macht gezielt passende Karten.
 - **Match:** Jede:r swipet für sich. Erst wenn beide 💚 geben: „Match! 💞“ mit Konfetti, Push an
   beide, Idee auf der Wunschliste (`source = 'deck'`) und „📅 Jetzt planen“. Ein ✕ von einem
@@ -334,9 +364,9 @@ scripts/              Migration beim Build, Secret-Generator
 
 ### KI-Vorschläge in Kürze
 
-- **„✨ Ideen von der KI“** auf der Planen-Seite (kennt den gewählten Termin und die Größe;
-  „Nehmen“ wählt die Idee direkt aus) und als „✨ KI-Ideen“ auf der Wunschliste.
-- Ihr wählt Budget, Stimmung und drinnen/draußen; **Claude Haiku 5.5** liefert per
+- **„✨ 3 Ideen von der KI“** beim Planen unter „Was anderes …“ (kennt den gewählten Termin und
+  die Größe; „Nehmen“ wählt die Idee direkt aus).
+- Budget und drinnen/draußen kommen aus dem gemeinsamen Filter; **Claude Haiku 5.5** liefert per
   Structured Output drei Ideen (`src/server/ai-ideas.ts`, Prompt und Prüfung in
   `src/core/ai-ideas.ts`, mit Tests).
 - **Wetter** für den Termin kommt von Open-Meteo (kostenlos, ohne Schlüssel, bis ~14 Tage
@@ -349,14 +379,13 @@ scripts/              Migration beim Build, Secret-Generator
 
 ### Köln-Ideen & „Überrasch uns“ in Kürze
 
-- **Köln-Ideen** (`/ideas/koeln`, Tab neben Wunschliste und „Was läuft“): 40 handverlesene Ideen
-  in `src/core/curated-ideas.ts` (feste IDs, grobe Kosten für zwei, drinnen/draußen), filterbar
-  nach Ort, Budget und Größe. „Auf die Wunschliste“ legt eine Idee mit `source = 'curated'`
-  und `external_ref = <id>` an. Neue Ideen: einfach einen Eintrag in der Datei ergänzen.
-- **„Überrasch uns“** (Startseite neben „Date planen“, Wunschliste, Köln-Tab): zieht zufällig
-  aus Wunschliste (doppelt gewichtet) und noch nicht gemerkten Köln-Ideen, ohne die letzten
-  Ziehungen zu wiederholen (`pickSurprise()` in `src/core/surprise.ts`, mit Tests).
-  „Damit planen“ öffnet `/plan?idea=…` mit der Idee vorausgewählt; eine Köln-Idee kommt dafür
+- **Köln-Ideen:** 40 handverlesene Ideen in `src/core/curated-ideas.ts` (feste IDs, grobe Kosten
+  für zwei, drinnen/draußen). Seit M22 kommen sie als 📍-Karten in den Swipe-Stapel und stehen
+  beim Planen unter „Was anderes …“. „Nehmen“ legt eine Idee mit `source = 'curated'` und
+  `external_ref = <id>` an. Neue Ideen: einfach einen Eintrag in der Datei ergänzen.
+- **„🎲 Zufall“** (beim Planen): zieht zufällig aus Wunschliste (doppelt gewichtet) und noch
+  nicht gemerkten Köln-Ideen, ohne die letzten Ziehungen zu wiederholen (`pickSurprise()` in
+  `src/core/surprise.ts`, mit Tests). „Nehmen“ wählt die Idee; eine Köln-Idee kommt dafür
   vorher auf die Wunschliste.
 - Der Vorschlag-Modus nutzt weiterhin nur die Wunschliste – was ihr euch selbst ausgesucht habt.
 

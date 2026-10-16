@@ -1,68 +1,44 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { FilteredEmpty, FilterButton, useIdeaFilter } from "@/components/idea-filter";
+import { matchesIdeaFilter } from "@/core/filters";
 import { Avatar } from "@/components/avatar";
 import { IdeaForm, type IdeaFormDefaults } from "@/components/idea-form";
 import { Sheet, type SheetHandle } from "@/components/sheet";
-import { SIZE_LABEL, SizeChip } from "@/components/size-chip";
-import { cn } from "@/lib/cn";
-import type { IdeaSize, UserColor } from "@/lib/domain";
+import { SizeChip } from "@/components/size-chip";
+import type { UserColor } from "@/lib/domain";
 import { displayHost, formatCost } from "@/lib/idea-input";
 import { archiveIdeaAction, updateIdeaAction } from "./actions";
 
 export type BoardPerson = { name: string; color: UserColor | null };
 export type BoardIdea = IdeaFormDefaults & { id: string; createdById: string | null; updatedById: string | null };
 
-type Filter = "all" | IdeaSize;
-
 export function IdeaBoard({ ideas, people }: { ideas: BoardIdea[]; people: Record<string, BoardPerson> }) {
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filter] = useIdeaFilter();
   const [editing, setEditing] = useState<BoardIdea | null>(null);
   const sheet = useRef<SheetHandle>(null);
 
-  const counts = { all: ideas.length, small: 0, large: 0 };
-  for (const idea of ideas) counts[idea.size]++;
-  const visible = filter === "all" ? ideas : ideas.filter((idea) => idea.size === filter);
+  const visible = ideas.filter((idea) => matchesIdeaFilter({ size: idea.size, costEur: idea.costEur }, filter));
 
   function edit(idea: BoardIdea) {
     setEditing(idea);
     sheet.current?.open();
   }
 
-  const filters: Array<{ value: Filter; label: string }> = [
-    { value: "all", label: "Alle" },
-    { value: "small", label: `${SIZE_LABEL.small.emoji} ${SIZE_LABEL.small.label} · ${counts.small}` },
-    { value: "large", label: `${SIZE_LABEL.large.emoji} ${SIZE_LABEL.large.label} · ${counts.large}` },
-  ];
-
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-[30px] font-bold">Wunschliste</h1>
-        <span className="rounded-full border-2 border-line bg-surface px-3 py-0.5 text-[13px] font-extrabold">
-          {counts.all} {counts.all === 1 ? "Idee" : "Ideen"}
-        </span>
-      </div>
-
-      <div role="group" aria-label="Nach Größe filtern" className="flex gap-2">
-        {filters.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={filter === option.value}
-            onClick={() => setFilter(option.value)}
-            className={cn(
-              "h-9 rounded-full border-2 border-line px-3.5 text-sm font-extrabold",
-              filter === option.value ? "bg-ink text-bg" : "bg-surface text-ink",
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-[30px] font-bold">
+          Wunschliste <span className="font-sans text-base font-extrabold text-muted">· {ideas.length}</span>
+        </h1>
+        {ideas.length > 0 && <FilterButton />}
       </div>
 
       {ideas.length === 0 ? (
         <EmptyState />
+      ) : visible.length === 0 ? (
+        <FilteredEmpty what="Ideen" />
       ) : (
         <ul className="flex flex-col gap-3.5">
           {visible.map((idea) => (

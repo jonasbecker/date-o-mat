@@ -99,6 +99,13 @@
       "when": 1792052020671,
       "tag": "0013_event_content_hash",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792157609763,
+      "tag": "0014_hidden_extras",
+      "breakpoints": true
     }
   ]
 }

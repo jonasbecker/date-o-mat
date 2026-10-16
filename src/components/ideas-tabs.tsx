@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 
-/** Switch between swiping, the wishlist and what's on in town. */
-export function IdeasTabs({ current }: { current: "entdecken" | "wishlist" | "koeln" | "events" }) {
+/** Switch between the wishlist, swiping new ideas and what's on in town. */
+export function IdeasTabs({ current }: { current: "entdecken" | "wishlist" | "events" }) {
   const tabs = [
-    { key: "entdecken", href: "/ideas/entdecken", label: "💞 Entdecken" },
     { key: "wishlist", href: "/ideas", label: "💡 Wunschliste" },
-    { key: "koeln", href: "/ideas/koeln", label: "📍 Köln" },
+    { key: "entdecken", href: "/ideas/entdecken", label: "💞 Swipen" },
     { key: "events", href: "/events", label: "🎟️ Was läuft" },
   ] as const;
   return (

@@ -90,6 +90,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M19 | Besondere Tage, „Vielleicht“-Stapel, alte Ideen auffrischen | ✅ |
 | M20 | Date-Story (Jahresrückblick) & Statistik | ✅ |
 | M21 | Extras: iOS-Kurzbefehl zum Teilen, Überraschungs-Date, Vorbereitungs-Checkliste, Anfahrt, Gesprächskarten | ✅ |
+| M22 | Aufräumen: ein Filter, 3 Ideen-Reiter, Planen ohne Reiter, Extras nach und nach, Einstellungen gestaffelt, Kontrast | ✅ |
 
 Abweichungen in V2:
 
@@ -110,6 +111,10 @@ Abweichungen in V2:
    der App bräuchte einen Routen-Dienst mit Schlüssel und Kosten.
 8. iPhone-Teilen über einen Kurzbefehl mit persönlichem Schlüssel statt eines fertigen
    Kurzbefehls zum Herunterladen (Apple verlangt dafür signierte Dateien).
+9. Der Filter wird pro Gerät gespeichert (nicht pro Paar): Jede:r stöbert anders, und so bleibt
+   er auch ohne Server-Anfrage sofort da.
+10. Die Stimmungs-Auswahl der KI-Ideen (gemütlich, aktiv …) ist mit M22 entfallen – sie war
+    der vierte Filter neben Dauer, Budget und Ort; die KI überrascht jetzt immer.
 
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 

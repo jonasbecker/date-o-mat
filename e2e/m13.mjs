@@ -83,23 +83,22 @@ await j.goto(`${BASE}/plan`);
 await j.getByText("⚡ Schnell planen").waitFor({ timeout: 20000 });
 check("quick plan suggests top slot + oldest short idea", await j.locator("form", { hasText: "⚡ Schnell planen" }).getByText("Picknick im Stadtwald").isVisible());
 await j.screenshot({ path: `${OUT}m13-03-plan-top.png` });
-const tabs = await j.getByRole("tab").allInnerTexts();
-check(`idea sources bundled as tabs (${tabs.join(" | ")})`, ["💡 Wunschliste", "📍 Köln", "🎟️ Events", "🎲 Zufall", "✏️ Eigene"].every((t) => tabs.includes(t)));
-await j.getByRole("tab", { name: "📍 Köln" }).click();
-const row = j.locator("li", { hasText: "Sonnenuntergang am Rheinboulevard" });
+check("no tab row for idea sources any more", (await j.getByRole("tab").count()) === 0);
+check("wishlist first, then Zufall / Was anderes", (await j.getByRole("button", { name: "🎲 Zufall" }).isVisible()) && (await j.getByRole("button", { name: "Was anderes …" }).isVisible()));
+await j.getByRole("button", { name: "Was anderes …" }).click();
+const row = j.locator("dialog[open] li", { hasText: "Sonnenuntergang am Rheinboulevard" });
 await row.getByRole("button", { name: "Nehmen" }).click();
 await j.locator("p", { hasText: "Ausgewählt" }).getByText("Sonnenuntergang am Rheinboulevard").waitFor({ timeout: 10000 });
-check("Köln idea taken right on the plan page", true);
+check("Köln idea taken right on the plan page", !(await j.locator("dialog[open]").count()));
 const { rows: curated } = await db.query("SELECT count(*)::int AS n FROM ideas WHERE source = 'curated'");
 check("…and put on the wishlist", curated[0].n === 1);
-await j.getByRole("tab", { name: "🎟️ Events" }).click();
-check("events tab explains how to set up sources", await j.getByText("Noch keine Event-Quellen.").isVisible());
-await j.getByRole("tab", { name: "✏️ Eigene" }).click();
-await j.getByLabel("Eure Idee").fill("Eis am Rhein");
-await j.getByRole("tab", { name: "💡 Wunschliste" }).click();
-check("own idea stays selected while browsing tabs", await j.locator("p", { hasText: "Ausgewählt" }).getByText("Eis am Rhein").isVisible());
-await j.getByRole("tab", { name: "📍 Köln" }).click();
+await j.getByLabel("Oder eure eigene Idee").fill("Eis am Rhein");
+check("own idea becomes the selection", await j.locator("p", { hasText: "Ausgewählt" }).getByText("Eis am Rhein").isVisible());
+check("place field appears for an own idea", await j.getByLabel("Ort (optional)").isVisible());
 await j.screenshot({ path: `${OUT}m13-04-plan-tabs.png`, fullPage: true });
+await j.getByRole("button", { name: /Picknick im Stadtwald/ }).click();
+check("picking a wishlist idea replaces the own idea", (await j.getByLabel("Oder eure eigene Idee").inputValue()) === "" && (await j.locator("p", { hasText: "Ausgewählt" }).getByText("Picknick im Stadtwald").isVisible()));
+check("no surprise option before the first date", (await j.getByText("🎁 Als Überraschung planen").count()) === 0);
 
 // 5) Quick plan in one tap → Sam's next step is "Passt!"
 await j.locator("form", { hasText: "⚡ Schnell planen" }).getByRole("button", { name: "So festlegen 🎉" }).click();
@@ -115,11 +114,21 @@ await s.getByRole("button", { name: "Passt! 💚" }).click();
 await s.getByRole("heading", { name: "Date steht! 🎉" }).waitFor({ timeout: 15000 });
 check("after Passt!: Date steht!", true);
 
-// 6) Settings: grouped, advanced folded, intro again
+// 6) Settings: the important things first, the rest folded away, intro again
 await j.goto(`${BASE}/settings`);
-await j.getByText("Für euch beide").waitFor({ timeout: 15000 });
-check("settings grouped (beide / nur für dich)", await j.getByText("Nur für dich").isVisible());
+await j.getByText("Das Wichtigste").waitFor({ timeout: 15000 });
+check("settings grouped (Das Wichtigste / Mehr einstellen)", await j.getByText("Mehr einstellen").isVisible());
 check("advanced slot settings folded", !(await j.getByLabel("Suchen für").isVisible()));
+check("budget, special days, extras folded", (await j.locator(":is(#zeiten, #events, #entdecken, #budget, #besondere-tage, #unterwegs, #extras)[open]").count()) === 0);
+await j.getByText("✨ Extras").click();
+const surpriseSwitch = j.getByRole("checkbox", { name: /Überraschungs-Date/ });
+check("extras are on by default", await surpriseSwitch.isChecked());
+await surpriseSwitch.uncheck();
+await j.waitForTimeout(800);
+const { rows: [hidden] } = await db.query("SELECT hidden_extras FROM couple_settings WHERE couple_id = $1", [couple.id]);
+check(`switching an extra off is saved for both (${JSON.stringify(hidden.hidden_extras)})`, JSON.stringify(hidden.hidden_extras) === '["surprise"]');
+await surpriseSwitch.check();
+await j.waitForTimeout(800);
 await j.screenshot({ path: `${OUT}m13-06-settings.png`, fullPage: true });
 await j.getByRole("link", { name: "👋 Einführung nochmal ansehen" }).click();
 await j.getByRole("heading", { name: "Willkommen, Jonas!" }).waitFor({ timeout: 10000 });
@@ -133,10 +142,31 @@ await j.screenshot({ path: `${OUT}m13-07-welcome.png` });
 const jd = await pageFor(jonas.token, "dark");
 await jd.goto(`${BASE}/`);
 await jd.getByText("Stand der Dinge").waitFor({ timeout: 15000 });
-check("nav says Inspiration", await jd.getByRole("link", { name: "Inspiration" }).isVisible());
+check("nav says Ideen", await jd.getByRole("link", { name: "Ideen", exact: true }).isVisible());
 await jd.screenshot({ path: `${OUT}m13-08-home-dark.png`, fullPage: true });
+// Light cards stay light in dark mode – their text must stay dark (it used to turn light-on-light).
+async function contrastOf(page, textLocator) {
+  return textLocator.evaluate((el) => {
+    const rgb = (c) => c.match(/[\d.]+/g).slice(0, 3).map(Number);
+    const lum = ([r, g, b]) => {
+      const f = (v) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+      return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+    };
+    let bgEl = el;
+    while (bgEl && getComputedStyle(bgEl).backgroundColor.match(/[\d.]+/g)?.[3] === "0") bgEl = bgEl.parentElement;
+    const [a, b] = [lum(rgb(getComputedStyle(el).color)), lum(rgb(getComputedStyle(bgEl).backgroundColor))].sort((x, y) => y - x);
+    return Math.round(((a + 0.05) / (b + 0.05)) * 10) / 10;
+  });
+}
+await jd.goto(`${BASE}/welcome`);
+await jd.getByRole("heading", { name: "Willkommen, Jonas!" }).waitFor({ timeout: 10000 });
+await jd.waitForTimeout(800);
+const welcomeContrast = await contrastOf(jd, jd.getByRole("heading", { name: "Willkommen, Jonas!" }));
+const textContrast = await contrastOf(jd, jd.locator("p", { hasText: "regelmäßig Dates" }));
+check(`welcome slide readable in dark mode (heading ${welcomeContrast}:1, text ${textContrast}:1)`, welcomeContrast >= 7 && textContrast >= 7);
+await jd.screenshot({ path: `${OUT}m13-10-welcome-dark.png` });
 await jd.goto(`${BASE}/plan`);
-await jd.getByRole("tab", { name: "📍 Köln" }).waitFor({ timeout: 20000 });
+await jd.getByRole("button", { name: "Was anderes …" }).waitFor({ timeout: 20000 });
 await jd.screenshot({ path: `${OUT}m13-09-plan-dark.png` });
 
 await browser.close();

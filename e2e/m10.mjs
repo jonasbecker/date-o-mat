@@ -1,4 +1,4 @@
-// M10: Köln ideas + "Überrasch uns".
+// M10: Köln ideas (swipe deck, "Was anderes …" when planning) + "🎲 Zufall".
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import pg from "pg";
@@ -51,74 +51,89 @@ async function pageFor(token, scheme = "light") {
   return page;
 }
 
-// 1) Köln tab: list, filters, save
+// 1) The old Köln tab now leads to the swipe deck, which has the Köln ideas as cards
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/ideas/koeln`);
-await j.getByRole("heading", { name: "Köln-Ideen" }).waitFor({ timeout: 15000 });
-const all = await j.locator("article").count();
-check(`all Köln ideas listed (${all})`, all >= 40);
-await j.getByRole("button", { name: "Gratis" }).click();
-await j.getByRole("button", { name: "🌳 Draußen" }).click();
-const free = await j.locator("article").count();
-check(`filter gratis + draußen (${free})`, free > 3 && free < all && (await j.locator("article").filter({ hasText: "~" }).count()) === 0);
+await j.waitForURL(/\/ideas\/entdecken/, { timeout: 15000 });
+check("/ideas/koeln redirects to the swipe deck", true);
+check("three tabs: Wunschliste, Swipen, Was läuft", (await j.getByRole("navigation", { name: "Ideen" }).getByRole("link").allInnerTexts()).join("|") === "💡 Wunschliste|💞 Swipen|🎟️ Was läuft");
+let koelnCards = 0;
+for (let i = 0; i < 20 && koelnCards === 0; i++) {
+  await j.waitForTimeout(500);
+  koelnCards = (await db.query("SELECT count(*)::int AS c FROM deck_cards WHERE emoji = '📍'")).rows[0].c;
+}
+check(`Köln ideas come into the deck even without the AI (${koelnCards})`, koelnCards >= 3);
+await j.reload();
+await j.locator('[aria-roledescription="Karte"]').first().waitFor({ timeout: 15000 });
 await j.screenshot({ path: `${OUT}m10-01-koeln.png`, fullPage: false });
-await j.getByRole("button", { name: "Jedes Budget" }).click();
-const picnic = j.locator("article", { hasText: "Picknick im Rheinpark" });
-await picnic.getByRole("button", { name: "Auf die Wunschliste" }).click();
-await picnic.getByText("Auf der Wunschliste").waitFor({ timeout: 10000 });
-const { rows: saved } = await db.query("SELECT title, source, external_ref, cost_eur FROM ideas WHERE source = 'curated'");
-check(`saved with source curated (${JSON.stringify(saved[0])})`, saved.length === 1 && saved[0].external_ref === "rheinpark-picknick");
-await picnic.getByText("Auf der Wunschliste").isVisible();
 
-// 2) Überrasch uns on the wishlist page
-await j.goto(`${BASE}/ideas`);
-await j.getByRole("button", { name: "🎲 Überrasch uns" }).click();
+// 2) Plan → "Was anderes …": Köln ideas with search and the shared filter
+await j.goto(`${BASE}/plan`);
+await j.getByRole("button", { name: "Was anderes …" }).click();
+const more = j.locator("dialog[open]");
+await more.getByRole("heading", { name: "📍 Ideen für Köln" }).waitFor({ timeout: 10000 });
+const all = await more.locator("li").count();
+check(`all short Köln ideas listed (${all})`, all >= 20);
+await more.getByRole("searchbox", { name: "Ideen durchsuchen" }).fill("rhein");
+const found = await more.locator("li").count();
+check(`search narrows the list (${found})`, found > 0 && found < all && (await more.locator("li").allInnerTexts()).every((t) => /rhein/i.test(t)));
+await more.getByRole("searchbox", { name: "Ideen durchsuchen" }).fill("");
+await j.screenshot({ path: `${OUT}m10-03-plan.png` });
+await j.locator("dialog[open]").getByRole("button", { name: "Filter", exact: true }).click();
+// The filter sheet opens on top; its choices apply right away.
+const filterSheet = j.locator("dialog[open]").last();
+await filterSheet.getByRole("button", { name: "🆓 Gratis" }).click();
+await filterSheet.getByRole("button", { name: "🌳 Draußen" }).click();
+await filterSheet.getByRole("button", { name: "Fertig" }).click();
+const freeOut = await more.locator("li").count();
+check(`filter gratis + draußen (${freeOut})`, freeOut > 2 && freeOut < all && (await more.locator("li").filter({ hasText: "~" }).count()) === 0 && (await more.locator("li").filter({ hasText: "Drinnen" }).count()) === 0);
+await more.getByRole("button", { name: "Filter: 🆓 Gratis · 🌳 Draußen" }).click();
+await j.locator("dialog[open]").last().getByRole("button", { name: "Zurücksetzen" }).click();
+await j.locator("dialog[open]").last().getByRole("button", { name: "Fertig" }).click();
+const picnic = more.locator("li", { hasText: "Picknick im Rheinpark" });
+await picnic.getByRole("button", { name: "Nehmen" }).click();
+await j.locator("p", { hasText: "Ausgewählt" }).getByText("Picknick im Rheinpark").waitFor({ timeout: 10000 });
+const { rows: saved } = await db.query("SELECT title, source, external_ref FROM ideas WHERE source = 'curated'");
+check(`"Nehmen" saves it (curated) and selects it (${JSON.stringify(saved[0])})`, saved.length === 1 && saved[0].external_ref === "rheinpark-picknick");
+
+// 3) Plan → "🎲 Zufall": draws without repeats, Köln tips too, "Nehmen" selects
+await j.goto(`${BASE}/plan`);
+await j.getByRole("button", { name: "🎲 Zufall" }).click();
 await j.getByText("Kurbel dreht sich").waitFor({ timeout: 5000 }).then(() => check("draw animation", true), () => check("draw animation", false));
-await j.getByRole("button", { name: "Damit planen" }).waitFor({ timeout: 10000 });
+await j.locator("dialog[open]").getByRole("button", { name: "Nehmen" }).waitFor({ timeout: 10000 });
 await j.screenshot({ path: `${OUT}m10-02-surprise.png` });
 const titles = new Set();
 for (let i = 0; i < 6; i++) {
   titles.add(await j.locator("dialog[open] h3").innerText());
   await j.getByRole("button", { name: "Nochmal ziehen" }).click();
-  await j.getByRole("button", { name: "Damit planen" }).waitFor({ timeout: 10000 });
+  await j.locator("dialog[open]").getByRole("button", { name: "Nehmen" }).waitFor({ timeout: 10000 });
 }
 check(`six draws, no immediate repeats (${titles.size} different)`, titles.size === 6);
-
-// 3) Draw until a Köln idea, then "Damit planen" → plan page with it preselected
 let label = "";
 for (let i = 0; i < 20 && !/köln-tipp/i.test(label); i++) {
   await j.getByRole("button", { name: "Nochmal ziehen" }).click();
-  await j.getByRole("button", { name: "Damit planen" }).waitFor({ timeout: 10000 });
+  await j.locator("dialog[open]").getByRole("button", { name: "Nehmen" }).waitFor({ timeout: 10000 });
   label = await j.locator("dialog[open] p.uppercase").innerText();
 }
-const curatedTitle = await j.locator("dialog[open] h3").innerText();
-check(`a Köln tip came up (${curatedTitle})`, /köln-tipp/i.test(label));
-await j.getByRole("button", { name: "Damit planen" }).click();
-await j.waitForURL(/\/plan\?idea=/, { timeout: 15000 });
-await j.getByRole("button", { name: new RegExp(curatedTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) }).first().waitFor({ timeout: 20000 });
-const pressed = await j.getByRole("button", { name: new RegExp(curatedTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) }).first().getAttribute("aria-pressed");
-check(`plan page preselects "${curatedTitle}" (${pressed})`, pressed === "true");
-const { rows: [onList] } = await db.query("SELECT count(*)::int AS c FROM ideas WHERE title = $1", [curatedTitle]);
-check("it was put on the wishlist first", onList.c === 1);
-await j.screenshot({ path: `${OUT}m10-03-plan.png` });
-
-// 4) Home: button next to "Date planen", dark mode tabs
-await j.goto(`${BASE}/`);
-await j.getByText("Hey Jonas!").waitFor({ timeout: 15000 });
-check("home stays focused: no extra Überrasch-uns button", (await j.getByRole("button", { name: "🎲 Überrasch uns" }).count()) === 0);
-await j.goto(`${BASE}/plan`);
-await j.getByRole("tab", { name: "🎲 Zufall" }).click();
-await j.getByRole("button", { name: "🎲 Überrasch uns" }).click();
-await j.getByRole("button", { name: "Nehmen" }).waitFor({ timeout: 10000 });
 const drawn = await j.locator("dialog[open] h3").innerText();
-await j.getByRole("button", { name: "Nehmen" }).click();
+check(`a Köln tip came up (${drawn})`, /köln-tipp/i.test(label));
+await j.locator("dialog[open]").getByRole("button", { name: "Nehmen" }).click();
 await j.locator("p", { hasText: "Ausgewählt" }).getByText(drawn).waitFor({ timeout: 10000 }).catch(() => {});
 await j.screenshot({ path: `${OUT}m10-06-plan-zufall.png` });
-check(`plan page: Zufall tab picks "${drawn}" without leaving the page`, (await j.locator("p", { hasText: "Ausgewählt" }).innerText()).includes(drawn) && j.url().endsWith("/plan"));
+check(`Zufall picks "${drawn}" without leaving the page`, (await j.locator("p", { hasText: "Ausgewählt" }).innerText()).includes(drawn) && j.url().endsWith("/plan"));
+const { rows: [onList] } = await db.query("SELECT count(*)::int AS c FROM ideas WHERE title = $1", [drawn]);
+check("it was put on the wishlist first", onList.c === 1);
+
+// 4) Home stays focused; dark mode
+await j.goto(`${BASE}/`);
+await j.getByText("Hey Jonas!").waitFor({ timeout: 15000 });
+check("home stays focused: no Überrasch-uns button", (await j.getByRole("button", { name: /Überrasch uns|Zufall/ }).count()) === 0);
 await j.screenshot({ path: `${OUT}m10-05-home.png` });
 const jd = await pageFor(jonas.token, "dark");
-await jd.goto(`${BASE}/ideas/koeln`);
-await jd.getByRole("heading", { name: "Köln-Ideen" }).waitFor({ timeout: 15000 });
+await jd.goto(`${BASE}/plan`);
+await jd.getByRole("button", { name: "Was anderes …" }).click();
+await jd.locator("dialog[open]").getByRole("heading", { name: "📍 Ideen für Köln" }).waitFor({ timeout: 15000 });
+await jd.waitForTimeout(400);
 await jd.screenshot({ path: `${OUT}m10-04-koeln-dark.png` });
 
 await browser.close();

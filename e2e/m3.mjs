@@ -104,6 +104,9 @@ const fri = small.find((s) => s.weekday === "Fr" && s.day === String(DAYS.friday
 if (fri) {
   const start = Number(fri.time.slice(0, 2)) * 60 + Number(fri.time.slice(3, 5));
   check(`Friday slot (${fri.time}) starts after Jonas' busy block + buffer (17:30)`, start >= 17 * 60 + 30);
+} else if (DAYS.friday > DateTime.now().setZone(ZONE).endOf("week")) {
+  // On Fridays and weekends "next Friday" is in the next round – not searched by default.
+  console.log("  (next Friday is in the next round – fine)");
 } else check("Friday slot present", false);
 const wed = small.find((s) => s.weekday === "Mi" && s.day === String(DAYS.wednesday.day));
 if (wed) {
@@ -138,7 +141,7 @@ check("calendar selection saved (only primary)", JSON.stringify(conn.busy_calend
 
 // 5) Slot settings (folded away by default)
 check("advanced slot settings are folded away", !(await j.getByLabel("Suchen für").isVisible()));
-await j.getByText("Zeitfenster, Puffer & Vorlauf anpassen").click();
+await j.getByText("⏰ Freie Zeiten finden").click();
 const form = j.locator("form").filter({ has: j.getByLabel("Suchen für") });
 await form.getByLabel("Suchen für").selectOption("7");
 await form.getByLabel("Puffer um Termine").selectOption("0");

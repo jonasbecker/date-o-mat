@@ -56,6 +56,11 @@ export type SaveDateResult =
 // --- Queries -----------------------------------------------------------------------
 
 /** The next date that has not happened yet (from any round). */
+/** How many dates they have had – some extras only show up after the first. */
+export async function countDoneDates(coupleId: string): Promise<number> {
+  return db.$count(datePlans, and(eq(datePlans.coupleId, coupleId), eq(datePlans.status, "done")));
+}
+
 export async function upcomingDate(coupleId: string, now: Date): Promise<DatePlan | undefined> {
   const [date] = await db
     .select()

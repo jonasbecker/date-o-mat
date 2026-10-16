@@ -196,6 +196,7 @@ await j.goto(`${BASE}/`);
 await j.getByRole("link", { name: "Einstellungen" }).click();
 await j.getByRole("heading", { name: "Einstellungen" }).waitFor({ timeout: 10000 });
 check("settings reachable from the header", true);
+await j.getByText("Welche Erinnerungen?").click();
 await j.getByText("Wie war's? (am Tag nach dem Date)").waitFor({ timeout: 10000 }).catch(() => {});
 check("review reminder can be switched off", await j.getByText("Wie war's? (am Tag nach dem Date)").isVisible());
 

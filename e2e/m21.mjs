@@ -87,7 +87,7 @@ const tick = () => fetch(`${BASE}/api/cron/tick`, CRON);
 
 // 1) Jonas sets his start point
 const j = await pageFor(jonas.token);
-await j.goto(`${BASE}/settings`);
+await j.goto(`${BASE}/settings#unterwegs`);
 await j.getByLabel("Dein Startpunkt").waitFor({ timeout: 15000 });
 await j.waitForTimeout(800);
 await j.getByLabel("Dein Startpunkt").fill("Ehrenfeld");
@@ -95,8 +95,22 @@ await j.locator("form", { has: j.getByLabel("Dein Startpunkt") }).getByRole("but
 await j.getByText("Gespeichert ✓").first().waitFor({ timeout: 10000 });
 check("start point saved", (await db.query("SELECT start_location FROM users WHERE id = $1", [jonas.id])).rows[0].start_location === "Ehrenfeld");
 
-// 2) Jonas plans a surprise
+// 2) Jonas plans a surprise – an extra that shows up once they have had a date
 await j.goto(`${BASE}/plan`);
+await j.locator("ol li button").first().waitFor({ timeout: 20000 });
+check("no surprise option before the first date", (await j.getByLabel("🎁 Als Überraschung planen").count()) === 0);
+// An earlier round with a date (seq 0 – before the current one the app made).
+const { rows: [oldCycle] } = await db.query(
+  `INSERT INTO cycles (couple_id, seq, starts_at, ends_at, deadline_at, mode, planner_id, status, closed_at)
+   VALUES ($1, 0, now() - interval '30 days', now() - interval '23 days', now() - interval '25 days', 'alternating', $2, 'done', now() - interval '23 days') RETURNING id`,
+  [couple.id, jonas.id],
+);
+await db.query(
+  `INSERT INTO date_plans (couple_id, cycle_id, title, size, starts_at, ends_at, organizer_id, proposed_by_id, status, sync_status)
+   VALUES ($1, $2, 'Erstes Date', 'small', now() - interval '26 days', now() - interval '26 days' + interval '2 hours', $3, $3, 'done', 'synced')`,
+  [couple.id, oldCycle.id, jonas.id],
+);
+await j.reload();
 await j.locator("ol li button").first().waitFor({ timeout: 20000 });
 await j.waitForTimeout(800);
 await j.getByLabel("🎁 Als Überraschung planen").check();
@@ -137,7 +151,8 @@ check("Sam: no title, place, checklist or route", !/Sushi|Belgisches|Vorbereitun
 await s.screenshot({ path: `${OUT}m21-03-sam-surprise.png`, fullPage: true });
 
 // Sam moves the time: details stay secret and unchanged
-await s.goto(`${BASE}/plan?reschedule=${date.id}`);
+// later=1: also after the end of this round – late in the week only one slot may be left.
+await s.goto(`${BASE}/plan?reschedule=${date.id}&later=1`);
 await s.locator("ol li button").first().waitFor({ timeout: 20000 });
 check("reschedule: only the time can change", await s.getByText("🤫 Das ist eine Überraschung").isVisible());
 check("reschedule page does not show the title", !(await s.locator("main").innerText()).includes("Sushi"));
@@ -173,7 +188,7 @@ await s.screenshot({ path: `${OUT}m21-04-revealed.png`, fullPage: true });
 await setClock(DateTime.now());
 
 // 7) iPhone share key: create, use, reject wrong keys, delete
-await j.goto(`${BASE}/settings`);
+await j.goto(`${BASE}/settings#unterwegs`);
 await j.getByRole("button", { name: "Schlüssel erstellen" }).click();
 const shareKey = (await j.locator("code").innerText()).trim();
 check(`key shown once (${shareKey.slice(0, 8)}…)`, /^dom_[A-Za-z0-9_-]{40,}$/.test(shareKey));

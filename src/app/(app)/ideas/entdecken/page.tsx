@@ -32,7 +32,8 @@ async function Discover() {
   const now = coupleNow(await getCoupleSettings(ctx.coupleId));
   const [deck, taste] = await Promise.all([deckFor(ctx, now), deckTaste(ctx)]);
   // Running low: the next batch is made in the background, AutoRefresh brings it in.
-  if (deck.ai && !deck.generating && deck.cards.length < DECK_REFILL_BELOW) {
+  // (Without the AI the hand-picked Köln ideas still come in.)
+  if (!deck.generating && deck.cards.length < DECK_REFILL_BELOW) {
     after(() => refillDeck(ctx.coupleId, now));
   }
   return (

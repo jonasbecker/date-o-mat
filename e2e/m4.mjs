@@ -102,10 +102,14 @@ await j.goto(`${BASE}/settings`);
 await j.getByRole("button", { name: "+1 Woche" }).click();
 await j.getByText(`verstellt um ${Math.round((offsetBefore + 7 * 24 * 60) / 60)} Std`).waitFor({ timeout: 10000 });
 await j.goto(`${BASE}/`);
-check("one week later: round 2", (await j.getByLabel("Runde 2: läuft").count()) === 1);
 check(`round 2 is Sam's (${await heading(j)})`, (await heading(j)) === "Sam ist dran");
 check("friendly note about the missed round", (await j.getByText("Letzte Runde ist ausgefallen – passiert!").count()) === 1);
-check("history shows the missed round", (await j.getByLabel("Runde 1: ausgefallen").count()) === 1);
+await j.goto(`${BASE}/dates`);
+await j.getByLabel("Runde 2: läuft").waitFor({ timeout: 10000 }).catch(() => {});
+if ((await j.getByLabel("Runde 2: läuft").count()) !== 1) console.log("DEBUG", (await j.locator("main").innerText()).slice(0, 400));
+check("one week later: round 2", (await j.getByLabel("Runde 2: läuft").count()) === 1);
+check("history (on the dates page) shows the missed round", (await j.getByLabel("Runde 1: ausgefallen").count()) === 1);
+await j.goto(`${BASE}/`);
 await j.waitForTimeout(300);
 await j.screenshot({ path: `${SHOTS}m4-03-missed.png` });
 

@@ -146,7 +146,7 @@ check("events page: empty state points to settings", true);
 
 // 2) Add four sources in settings
 await j.goto(`${BASE}/settings#events`);
-await j.getByRole("heading", { name: "Event-Quellen" }).waitFor({ timeout: 15000 });
+await j.locator("details#events[open]").waitFor({ timeout: 15000 });
 for (const [path, kind] of [["/jsonld", "calendar"], ["/html", "calendar"], ["/tips", "tips"], ["/spa", "calendar"]]) {
   await j.getByRole("textbox", { name: "Weitere Seite" }).fill(`http://localhost:4040${path}`);
   await j.locator("#events select[name=\"kind\"]").selectOption(kind);
@@ -188,9 +188,18 @@ check("Flohmarkt Friday 14:00: Jonas busy", await card("Flohmarkt am Rhein").get
 check("exhibition under 'Läuft gerade'", await j.getByRole("heading", { name: "Läuft gerade" }).isVisible());
 check("tips section", await j.getByText("Neues Café in Ehrenfeld").isVisible());
 await j.screenshot({ path: `${OUT}m12-02-events.png`, fullPage: true });
-await j.getByRole("button", { name: /Ihr habt Zeit/ }).click();
-check("filter 'Ihr habt Zeit' hides busy ones", !(await card("Kammerkonzert").isVisible()) && (await card("Jazz im Stadtgarten").isVisible()));
-await j.getByRole("button", { name: /^Alle/ }).click();
+await j.getByRole("button", { name: "✓ Nur wenn ihr Zeit habt" }).click();
+check("toggle 'Nur wenn ihr Zeit habt' hides busy ones", !(await card("Kammerkonzert").isVisible()) && (await card("Jazz im Stadtgarten").isVisible()));
+await j.getByRole("button", { name: "✓ Nur wenn ihr Zeit habt" }).click();
+// The shared filter: "Gratis" keeps the free flea market, hides the 15 € jazz
+await j.getByRole("button", { name: "Filter", exact: true }).click();
+await j.locator("dialog[open]").getByRole("button", { name: "🆓 Gratis" }).click();
+await j.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
+check("shared filter 'Gratis' works on events", (await card("Flohmarkt am Rhein").isVisible()) && !(await card("Jazz im Stadtgarten").isVisible()));
+await j.getByRole("button", { name: "Filter: 🆓 Gratis" }).click();
+await j.locator("dialog[open]").getByRole("button", { name: "Zurücksetzen" }).click();
+await j.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
+await card("Jazz im Stadtgarten").waitFor();
 
 // 4) Save a tip to the wishlist
 await card("Neues Café in Ehrenfeld").getByRole("button", { name: "Merken" }).click();

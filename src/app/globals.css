@@ -46,6 +46,30 @@
   }
 }
 
+/* Bright and pastel fills keep their light color in dark mode – so everything on them
+   (text, muted text, chips, inputs) uses the light tokens too. `~=` matches whole class
+   names only, so `hover:bg-zitrone` or `bg-zitrone/30` do not count. */
+@media (prefers-color-scheme: dark) {
+  :is(
+      [class~="bg-himbeere"],
+      [class~="bg-himbeere-soft"],
+      [class~="bg-zitrone"],
+      [class~="bg-zitrone-soft"],
+      [class~="bg-minze"],
+      [class~="bg-minze-soft"],
+      [class~="bg-mandarine"],
+      [class~="bg-himmel"],
+      [class~="bg-lavendel"]
+    ) {
+    --bg: #fff6ec;
+    --surface: #ffffff;
+    --ink: #2a1b3d;
+    --muted: #5e4f70;
+    --track: #d9cbbb;
+    color-scheme: light;
+  }
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);

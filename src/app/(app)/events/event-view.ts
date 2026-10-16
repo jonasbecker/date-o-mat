@@ -1,3 +1,4 @@
+import { parsePriceEur } from "@/core/budget";
 import { eventSpan } from "@/core/events";
 import { dayHeading, formatClock, formatShortDate } from "@/lib/format";
 import type { EventWithSource } from "@/server/events";
@@ -12,6 +13,7 @@ export function eventView(e: EventWithSource, extra: { free: boolean | null; sav
     time: !e.startsAt ? "" : e.allDay ? (e.endsAt ? `bis ${formatShortDate(e.endsAt)}` : "ganztägig") : formatClock(e.startsAt),
     venue: e.venue,
     price: e.priceText,
+    costEur: parsePriceEur(e.priceText),
     summary: e.summary,
     url: e.url,
     source: e.sourceLabel,

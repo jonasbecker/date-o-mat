@@ -7,7 +7,7 @@ import { requireCouple } from "@/server/auth/dal";
 import { searchSlots } from "@/server/availability";
 import { coupleNow } from "@/server/clock";
 import { activeDateOf, ensureCurrentCycle } from "@/server/cycles";
-import { getCoupleSettings } from "@/server/settings";
+import { extraOn, getCoupleSettings } from "@/server/settings";
 import { env } from "@/server/env";
 import { periodLabel } from "@/core/next-step";
 import { freeForEvents, listSources, savedRefs, upcomingEvents } from "@/server/events";
@@ -18,7 +18,7 @@ import { formatCost } from "@/lib/idea-input";
 import { budgetState } from "@/server/budget";
 import { budgetHint } from "@/core/budget";
 import { BudgetBar } from "@/components/budget-bar";
-import { dateForViewer, getDate } from "@/server/dates";
+import { countDoneDates, dateForViewer, getDate } from "@/server/dates";
 import { ideaCandidates } from "@/server/idea-sources";
 import { PlanForm, type IdeaOption, type RescheduleInfo } from "./plan-form";
 
@@ -79,7 +79,7 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
     </Link>
   );
 
-  const budget = await budgetState(ctx.coupleId, now);
+  const [budget, doneDates] = await Promise.all([budgetState(ctx.coupleId, now), countDoneDates(ctx.coupleId)]);
   // Longest waiting first – the same order the suggestion mode uses.
   const ideas: IdeaOption[] = (await ideaCandidates({ coupleId: ctx.coupleId }))
     .filter((c) => c.ideaId)
@@ -135,6 +135,7 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
         preselectIdeaId={typeof params.idea === "string" ? params.idea : undefined}
         preselectSize={params.size === "large" ? "large" : undefined}
         aiEnabled={env().ai}
+        surpriseEnabled={extraOn(settings, "surprise") && doneDates > 0}
         events={events}
       />
     </>

@@ -5,7 +5,9 @@ import { useEffect, useRef, useState, useTransition, type PointerEvent as ReactP
 import { buttonClass, Button } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
 import { SizeChip } from "@/components/size-chip";
-import { DECK_FILTER_LABEL, DECK_FILTERS, DECK_THEMES, matchesFilter, type DeckCardView, type DeckFilter } from "@/core/deck";
+import { DECK_THEMES, matchesFilter, type DeckCardView } from "@/core/deck";
+import { activeFilterCount, filterSummary } from "@/core/filters";
+import { FilterButton, useIdeaFilter } from "@/components/idea-filter";
 import { cn } from "@/lib/cn";
 import { formatCost } from "@/lib/idea-input";
 import { bringBackMaybesAction, moreCardsAction, swipeAction, undoSwipeAction } from "./actions";
@@ -91,7 +93,8 @@ export function SwipeDeck({
   // Swiped here (hidden at once), and cards brought back with ↩️ (shown first).
   const [handled, setHandled] = useState<Set<string>>(() => new Set());
   const [restored, setRestored] = useState<DeckCardView[]>([]);
-  const [filter, setFilter] = useState<DeckFilter>("all");
+  const [filter, setFilter] = useIdeaFilter();
+  const filtered = activeFilterCount(filter) > 0;
   // The card super-liked here – undoing that swipe gives the super-like back.
   const [superCard, setSuperCard] = useState<string | null>(null);
   const [match, setMatch] = useState<{ title: string; ideaId: string } | null>(null);
@@ -198,7 +201,7 @@ export function SwipeDeck({
       });
       setRestored((prev) => [card, ...prev.filter((c) => c.id !== card.id)]);
       if (card.id === superCard) setSuperCard(null);
-      if (!matchesFilter(card, filter)) setFilter("all");
+      if (!matchesFilter(card, filter)) setFilter({});
     });
   }
 
@@ -269,21 +272,8 @@ export function SwipeDeck({
 
   return (
     <div className="flex flex-col gap-4">
-      <div role="group" aria-label="Filter" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
-        {DECK_FILTERS.map((f) => (
-          <button
-            key={f}
-            type="button"
-            aria-pressed={filter === f}
-            onClick={() => setFilter(f)}
-            className={cn(
-              "shrink-0 rounded-full border-2 border-line px-3 py-1 text-[13px] font-extrabold whitespace-nowrap",
-              filter === f ? "bg-ink text-bg" : "bg-surface text-ink",
-            )}
-          >
-            {DECK_FILTER_LABEL[f]}
-          </button>
-        ))}
+      <div className="flex justify-end">
+        <FilterButton />
       </div>
 
       <div className="relative h-[460px]">
@@ -337,12 +327,12 @@ export function SwipeDeck({
             ) : (
               <>
                 <span className="text-5xl" aria-hidden="true">
-                  {filter === "all" ? "🎉" : "🔍"}
+                  {filtered ? "🔍" : "🎉"}
                 </span>
-                <p className="font-display text-xl font-semibold">{filter === "all" ? "Alles durchgeswipt!" : "Gerade nichts Passendes"}</p>
+                <p className="font-display text-xl font-semibold">{filtered ? "Gerade nichts Passendes" : "Alles durchgeswipt!"}</p>
                 {ai ? (
                   <Button onClick={more} disabled={loading}>
-                    {filter === "all" ? "✨ Neue Ideen holen" : `✨ Mehr „${DECK_FILTER_LABEL[filter].replace(/^\S+\s/, "")}“ holen`}
+                    {filtered ? `✨ Mehr „${filterSummary(filter)}“ holen` : "✨ Neue Ideen holen"}
                   </Button>
                 ) : (
                   <p className="text-sm font-bold text-muted">Neue Karten macht die KI – sie ist noch nicht eingerichtet.</p>
@@ -391,7 +381,7 @@ export function SwipeDeck({
 
       {top && ai && cards.length < 8 && !generating && (
         <button type="button" onClick={more} disabled={loading} className="self-center text-sm font-extrabold text-muted underline disabled:opacity-60">
-          {loading ? "Mische neue Ideen …" : filter === "all" ? "✨ Mehr Ideen holen" : `✨ Mehr „${DECK_FILTER_LABEL[filter].replace(/^\S+\s/, "")}“ holen`}
+          {loading ? "Mische neue Ideen …" : filtered ? `✨ Mehr „${filterSummary(filter)}“ holen` : "✨ Mehr Ideen holen"}
         </button>
       )}
 

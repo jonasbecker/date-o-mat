@@ -1,6 +1,7 @@
 // The swipe deck ("Entdecken"): stores Claude's cards, the swipes of both,
 // matches (→ wishlist) and refills the deck in the background.
 import "server-only";
+import type { IdeaFilter } from "@/core/filters";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { and, desc, eq, gt, inArray, isNull, lt, max, ne, or } from "drizzle-orm";
 import { DateTime } from "luxon";
@@ -10,6 +11,8 @@ import {
   buildDeckPrompt,
   cleanDeckCards,
   comboCount,
+  CURATED_PER_BATCH,
+  curatedForDeck,
   DECK_AUTO_BATCHES_PER_DAY,
   DECK_BATCH_SIZE,
   DECK_SYSTEM_PROMPT,
@@ -17,14 +20,15 @@ import {
   needsRefill,
   NUDGE_MIN_LIKES,
   orderDeck,
+  matchesFilter,
   maybeRevisitAt,
   pickThemes,
   REVISIT_AFTER_DAYS,
   revisitOutcome,
   superLikeLeft,
   swipeOutcome,
+  type CardDraft,
   type DeckCardView,
-  type DeckFilter,
   type SwipeOutcome,
 } from "@/core/deck";
 import { APP_TIMEZONE, type SwipeVerdict } from "@/lib/domain";
@@ -36,7 +40,8 @@ import { upcomingDaysFor } from "@/server/special-days";
 import { db } from "@/server/db";
 import { coupleSettings, datePlans, deckCards, deckSwipes, ideas, notificationLog, users, type DeckCard } from "@/server/db/schema";
 import { env } from "@/server/env";
-import { freeForEvents, upcomingEvents } from "@/server/events";
+import { freeForEvents, upcomingEvents, type EventWithSource } from "@/server/events";
+import { CURATED_IDEAS } from "@/core/curated-ideas";
 import { sendToUser } from "@/server/push";
 import { getCoupleSettings } from "@/server/settings";
 import { weatherFor } from "@/server/weather";
@@ -394,8 +399,7 @@ async function releaseRefill(coupleId: string): Promise<void> {
  * Makes a new batch when someone runs low (automatic, from the tick or a page
  * view), or right away ("Mehr davon", optionally matching a filter).
  */
-export async function refillDeck(coupleId: string, now: Date, options: { manual?: boolean; focus?: DeckFilter } = {}): Promise<RefillResult> {
-  if (!env().ai) return "off";
+export async function refillDeck(coupleId: string, now: Date, options: { manual?: boolean; focus?: IdeaFilter } = {}): Promise<RefillResult> {
   await getCoupleSettings(coupleId);
   const members = await db.select().from(users).where(eq(users.coupleId, coupleId));
   if (members.length !== 2) return "not_needed";
@@ -408,20 +412,23 @@ export async function refillDeck(coupleId: string, now: Date, options: { manual?
     ]);
     if (!needsRefill({ remainingPerPerson: [remainingA, remainingB], openTotal, autoBatchesToday: Math.min(batchesToday, DECK_AUTO_BATCHES_PER_DAY) })) return "not_needed";
   }
+  // Without the AI the deck still gets the hand-picked Köln ideas.
+  if (!env().ai) return (await curatedBatch(coupleId, Math.floor(DECK_BATCH_SIZE / 2))) ? "made" : "off";
   if (!(await claimRefill(coupleId, new Date()))) return "busy";
   try {
     const requestId = await reserveAiRequest({ coupleId, kind: "deck", model: DECK_MODEL, now });
     if (!requestId) return "limit";
-    return (await makeBatch(coupleId, now, requestId, options.focus)) ? "made" : "failed";
+    if (await makeBatch(coupleId, now, requestId, options.focus)) return "made";
   } catch (error) {
     console.error(`[deck] refill for couple ${coupleId} failed`, error instanceof Error ? error.message : error);
-    return "failed";
   } finally {
     await releaseRefill(coupleId);
   }
+  // The AI did not deliver – the Köln ideas keep the deck going.
+  return (await curatedBatch(coupleId, CURATED_PER_BATCH)) ? "made" : "failed";
 }
 
-async function makeBatch(coupleId: string, now: Date, requestId: string, focus?: DeckFilter): Promise<boolean> {
+async function makeBatch(coupleId: string, now: Date, requestId: string, focus?: IdeaFilter): Promise<boolean> {
   const settings = await getCoupleSettings(coupleId);
   const [cards, swipes, wishlist, past, upcoming, weather, budget] = await Promise.all([
     db
@@ -445,7 +452,7 @@ async function makeBatch(coupleId: string, now: Date, requestId: string, focus?:
   const batch = (cards.reduce((m, c) => Math.max(m, c.batch), 0) || 0) + 1;
   const usedEvents = new Set(cards.map((c) => c.eventKey).filter(Boolean));
   const events = upcoming.filter((e) => e.startsAt && e.startsAt > now && !usedEvents.has(e.dedupeKey)).slice(0, MAX_PROMPT_EVENTS);
-  const combos = focus === "events" ? Math.min(events.length, 8) : comboCount(settings.deckEventMix, events.length);
+  const combos = comboCount(settings.deckEventMix, events.length);
   const liked = [...new Set(swipes.filter((s) => s.verdict === "like" || s.verdict === "super").map((s) => s.title))];
   const passed = [...new Set(swipes.filter((s) => s.verdict === "nope").map((s) => s.title))];
   const exclude = [...new Set([...cards.map((c) => c.title), ...wishlist.map((w) => w.title), ...past.map((p) => p.title)])];
@@ -457,7 +464,7 @@ async function makeBatch(coupleId: string, now: Date, requestId: string, focus?:
     now,
     weather,
     themes: pickThemes(batch),
-    ideaCount: focus === "events" ? Math.max(4, DECK_BATCH_SIZE - combos * 2) : DECK_BATCH_SIZE - combos,
+    ideaCount: DECK_BATCH_SIZE - combos,
     events: events.map((e) => ({ title: e.title, when: when(e), venue: e.venue, price: e.priceText })),
     comboCount: combos,
     liked,
@@ -481,6 +488,27 @@ async function makeBatch(coupleId: string, now: Date, requestId: string, focus?:
   const existingKeys = [...cards.map((c) => c.key), ...wishlist.map((w) => dedupeKey(w.title)), ...past.map((p) => dedupeKey(p.title))];
   const drafts = cleanDeckCards(response.parsed_output.cards, { existingKeys, eventCount: events.length, maxCombos: combos });
   if (drafts.length === 0) return false;
+  // A few hand-picked Köln ideas in every batch.
+  const curated = curatedForDeck(CURATED_IDEAS, [...existingKeys, ...drafts.map((d) => d.dedupeKey)], CURATED_PER_BATCH).filter((c) => !focus || matchesFilter(c, focus));
+  await insertCards(coupleId, [...drafts, ...curated], events, batch);
+  return true;
+}
+
+/** Only Köln ideas (no AI configured). False when all of them have been in the deck. */
+async function curatedBatch(coupleId: string, count: number): Promise<boolean> {
+  const [cards, wishlist, past] = await Promise.all([
+    db.select({ key: deckCards.dedupeKey, batch: deckCards.batch }).from(deckCards).where(eq(deckCards.coupleId, coupleId)),
+    db.select({ title: ideas.title }).from(ideas).where(and(eq(ideas.coupleId, coupleId), isNull(ideas.archivedAt))),
+    db.select({ title: datePlans.title }).from(datePlans).where(and(eq(datePlans.coupleId, coupleId), eq(datePlans.status, "done"))),
+  ]);
+  const existingKeys = [...cards.map((c) => c.key), ...wishlist.map((w) => dedupeKey(w.title)), ...past.map((p) => dedupeKey(p.title))];
+  const drafts = curatedForDeck(CURATED_IDEAS, existingKeys, count);
+  if (drafts.length === 0) return false;
+  await insertCards(coupleId, drafts, [], cards.reduce((m, c) => Math.max(m, c.batch), 0) + 1);
+  return true;
+}
+
+async function insertCards(coupleId: string, drafts: CardDraft[], events: EventWithSource[], batch: number): Promise<void> {
   await db
     .insert(deckCards)
     .values(
@@ -512,7 +540,6 @@ async function makeBatch(coupleId: string, now: Date, requestId: string, focus?:
       }),
     )
     .onConflictDoNothing();
-  return true;
 }
 
 // --- Old wishlist ideas and "Vielleicht" ------------------------------------------------------------

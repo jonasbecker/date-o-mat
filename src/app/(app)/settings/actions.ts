@@ -4,7 +4,7 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isPushEndpointAllowed } from "@/lib/allowlist";
-import { EVENT_MIXES, NOTIFICATION_TYPES, PLAN_MODES, RHYTHMS } from "@/lib/domain";
+import { EVENT_MIXES, EXTRAS, NOTIFICATION_TYPES, PLAN_MODES, RHYTHMS } from "@/lib/domain";
 import { parseSlotSettings, type SlotSettingsErrors } from "@/lib/slot-settings";
 import { parseBudget } from "@/core/budget";
 import { parseSpecialDay } from "@/core/special-days";
@@ -18,7 +18,7 @@ import { disconnect, setBusyCalendars } from "@/server/google/connection";
 import { coupleNow } from "@/server/clock";
 import { applySettingsToOpenCycle } from "@/server/cycles";
 import { env } from "@/server/env";
-import { getCoupleSettings, resetDevClock, setDeckEventMix, setDevClockOffset, updateCycleSettings, updateSlotSettings } from "@/server/settings";
+import { getCoupleSettings, resetDevClock, setDeckEventMix, setDevClockOffset, setExtraShown, updateCycleSettings, updateSlotSettings } from "@/server/settings";
 import { removeSubscription, saveSubscription, sendToUser, setPref } from "@/server/push";
 import { tickCouple } from "@/server/tick";
 
@@ -141,6 +141,14 @@ export async function setEventMixAction(mix: string): Promise<void> {
   const parsed = z.enum(EVENT_MIXES).safeParse(mix);
   if (!parsed.success) return;
   await setDeckEventMix(coupleId, parsed.data);
+  refresh();
+}
+
+export async function setExtraAction(extra: string, shown: boolean): Promise<void> {
+  const { coupleId } = await requireCouple();
+  const parsed = z.enum(EXTRAS).safeParse(extra);
+  if (!parsed.success) return;
+  await setExtraShown(coupleId, parsed.data, shown === true);
   refresh();
 }
 

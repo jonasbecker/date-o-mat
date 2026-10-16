@@ -1,5 +1,6 @@
 // "Eure Date-Story": collects a year of dates, hearts, photos and swipes.
 import "server-only";
+import { extraOn, getCoupleSettings } from "@/server/settings";
 import { and, asc, desc, eq, gte, inArray, lt, ne } from "drizzle-orm";
 import { DateTime } from "luxon";
 import { dateCost } from "@/core/budget";
@@ -104,6 +105,7 @@ export async function deckTaste(ctx: CoupleContext): Promise<string[]> {
 export async function sendStoryReady(coupleId: string, now: Date): Promise<void> {
   const t = DateTime.fromJSDate(now, { zone: APP_TIMEZONE });
   if (storyYearToShow(now) !== t.year || t.hour < 10) return;
+  if (!extraOn(await getCoupleSettings(coupleId), "story")) return;
   const { start, end } = yearRange(t.year);
   const dates = (await pastDates(coupleId)).filter((d) => d.startsAt >= start && d.startsAt < end);
   if (dates.length === 0) return;

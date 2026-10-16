@@ -32,6 +32,8 @@ import { EventMixPicker } from "./event-mix-picker";
 import { BudgetForm } from "./budget-form";
 import { ShareShortcut, StartLocationForm } from "./on-the-go";
 import { SpecialDays, type SpecialDayView } from "./special-days";
+import { ExtrasForm } from "./extras-form";
+import { Fold, OpenFromHash } from "./fold";
 import { upcomingDaysFor } from "@/server/special-days";
 import { inDaysLabel } from "@/core/special-days";
 
@@ -106,16 +108,26 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
   return (
     <>
       <SystemStatusCard rows={status} />
+      <OpenFromHash />
 
       <div className="-mb-3 mt-2 flex flex-col">
-        <p className="text-[13px] font-extrabold uppercase tracking-wide text-muted">Für euch beide</p>
-        <p className="text-sm font-semibold text-muted">Was du hier änderst, gilt auch für {partner.name}.</p>
+        <p className="text-[13px] font-extrabold uppercase tracking-wide text-muted">Das Wichtigste</p>
       </div>
+
+      <CalendarSection
+        me={me}
+        partner={other}
+        email={user.email}
+        calendars={calendars}
+        busyCalendarIds={googleConnection?.busyCalendarIds ?? []}
+        message={typeof message === "string" ? message : undefined}
+      />
 
       <section className="flex flex-col gap-3" aria-labelledby="rhythm-heading">
         <h2 id="rhythm-heading" className="text-[21px] font-semibold">
           Rhythmus &amp; Modus <Info term="runde" />
         </h2>
+        <p className="-mt-2 px-1 text-sm font-semibold text-muted">Gilt für euch beide.</p>
         <Card>
           <CycleSettingsForm
             values={{ rhythm: settings.rhythm, mode: settings.mode, deadlineDaysBeforeEnd: settings.deadlineDaysBeforeEnd }}
@@ -123,19 +135,23 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
         </Card>
       </section>
 
-      <section className="flex flex-col gap-3" aria-labelledby="slots-heading">
-        <h2 id="slots-heading" className="text-[21px] font-semibold">
-          Freie Zeiten finden
+      <section id="push" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="push-heading">
+        <h2 id="push-heading" className="text-[21px] font-semibold">
+          Erinnerungen
         </h2>
-        <p className="-mt-1 px-1 font-semibold text-muted">Wann ein Date frühestens beginnt, wie lange es dauert und wie viel Luft um eure Termine bleibt.</p>
-        <details className="group rounded-[24px] border-[2.5px] border-line bg-surface">
-          <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 font-display text-lg font-semibold">
-            Zeitfenster, Puffer &amp; Vorlauf anpassen
-            <span aria-hidden="true" className="transition-transform group-open:rotate-180">
-              ⌄
-            </span>
-          </summary>
-          <div className="border-t-2 border-track px-5 py-4">
+        <p className="-mt-2 px-1 text-sm font-semibold text-muted">Stellt jede:r für sich ein.</p>
+        <Card>
+          <PushSettings publicKey={pushPublicKey()} prefs={prefs} partnerName={partner.name} />
+        </Card>
+      </section>
+
+      <div className="-mb-3 mt-2 flex flex-col">
+        <p className="text-[13px] font-extrabold uppercase tracking-wide text-muted">Mehr einstellen</p>
+        <p className="text-sm font-semibold text-muted">Braucht ihr am Anfang nicht – schaut rein, wenn ihr mögt.</p>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <Fold id="zeiten" title="⏰ Freie Zeiten finden" hint="Zeitfenster, Puffer und Vorlauf – für euch beide">
           <SlotSettingsForm
             values={{
               smallDurationMinutes: settings.smallDurationMinutes,
@@ -150,78 +166,35 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
               horizonDays: settings.horizonDays,
             }}
           />
-          </div>
-        </details>
-      </section>
+        </Fold>
 
-      <section id="events" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="events-heading">
-        <h2 id="events-heading" className="text-[21px] font-semibold">
-          Event-Quellen
-        </h2>
-        <Card>
+        <Fold id="events" title="🎟️ Event-Quellen" hint={sources.length ? `${sources.length} ${sources.length === 1 ? "Seite" : "Seiten"} für „Was läuft“` : "Seiten für „Was läuft“"}>
           <EventSources sources={sources.map((s) => sourceView(s, now))} aiReady={env().ai} />
-        </Card>
-      </section>
+        </Fold>
 
-      <section id="besondere-tage" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="special-heading">
-        <h2 id="special-heading" className="text-[21px] font-semibold">
-          Besondere Tage
-        </h2>
-        <Card>
-          <SpecialDays days={specialDayViews} people={[user, partner].map((p) => ({ id: p.id, name: p.name }))} />
-        </Card>
-      </section>
-
-      <section id="budget" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="budget-heading">
-        <h2 id="budget-heading" className="text-[21px] font-semibold">
-          Budget
-        </h2>
-        <Card>
-          <BudgetForm budget={settings.monthlyBudgetEur} />
-        </Card>
-      </section>
-
-      <section id="entdecken" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="deck-heading">
-        <h2 id="deck-heading" className="text-[21px] font-semibold">
-          Entdecken
-        </h2>
-        <Card>
+        <Fold id="entdecken" title="💞 Swipen" hint="Wie viele Events in den Stapel kommen">
           <EventMixPicker value={settings.deckEventMix} />
-        </Card>
-      </section>
+        </Fold>
 
-      <div className="-mb-3 mt-2 flex flex-col">
-        <p className="text-[13px] font-extrabold uppercase tracking-wide text-muted">Nur für dich</p>
-        <p className="text-sm font-semibold text-muted">Erinnerungen und dein Kalender – das stellt jede:r selbst ein.</p>
+        <Fold id="budget" title="💶 Budget &amp; Spartopf" hint={settings.monthlyBudgetEur ? `${settings.monthlyBudgetEur} € im Monat` : "Aus – ohne Budget gibt es keine Beträge"}>
+          <BudgetForm budget={settings.monthlyBudgetEur} />
+        </Fold>
+
+        <Fold id="besondere-tage" title="🎂 Besondere Tage" hint={specialDayViews.length ? `${specialDayViews.length} eingetragen` : "Geburtstage, Jahrestag – mit Erinnerung"}>
+          <SpecialDays days={specialDayViews} people={[user, partner].map((p) => ({ id: p.id, name: p.name }))} />
+        </Fold>
+
+        <Fold id="unterwegs" title="🧭 Unterwegs &amp; Teilen" hint="Startort für die Anfahrt, Links vom iPhone teilen">
+          <div className="flex flex-col gap-5">
+            <StartLocationForm value={user.startLocation} />
+            <ShareShortcut hasKey={Boolean(user.shareTokenHash)} endpoint={`${env().appUrl}/api/share`} />
+          </div>
+        </Fold>
+
+        <Fold id="extras" title="✨ Extras" hint="An- und ausschalten, was ihr nicht braucht">
+          <ExtrasForm hidden={settings.hiddenExtras} />
+        </Fold>
       </div>
-
-      <section id="push" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="push-heading">
-        <h2 id="push-heading" className="text-[21px] font-semibold">
-          Erinnerungen
-        </h2>
-        <Card>
-          <PushSettings publicKey={pushPublicKey()} prefs={prefs} partnerName={partner.name} />
-        </Card>
-      </section>
-
-      <section id="unterwegs" className="flex scroll-mt-6 flex-col gap-3" aria-labelledby="go-heading">
-        <h2 id="go-heading" className="text-[21px] font-semibold">
-          Unterwegs & Teilen
-        </h2>
-        <Card className="flex flex-col gap-5">
-          <StartLocationForm value={user.startLocation} />
-          <ShareShortcut hasKey={Boolean(user.shareTokenHash)} endpoint={`${env().appUrl}/api/share`} />
-        </Card>
-      </section>
-
-      <CalendarSection
-        me={me}
-        partner={other}
-        email={user.email}
-        calendars={calendars}
-        busyCalendarIds={googleConnection?.busyCalendarIds ?? []}
-        message={typeof message === "string" ? message : undefined}
-      />
 
       <section className="flex flex-col gap-3" aria-labelledby="help-heading">
         <h2 id="help-heading" className="text-[21px] font-semibold">

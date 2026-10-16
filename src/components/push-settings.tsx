@@ -135,7 +135,7 @@ export function PushSettings({
     review_due: "Wie war's? (am Tag nach dem Date)",
     system: "Wichtiges (z. B. ein Kalender wurde getrennt)",
     match: "Match! – ihr mögt beide dieselbe Idee",
-    deck_nudge: `Entdecken: ${partnerName} hat Ideen geliked oder super-geliked`,
+    deck_nudge: `Swipen: ${partnerName} hat Ideen geliked oder super-geliked`,
     budget: "Monatsrückblick: Budget und Spartopf",
     special_day: "Besondere Tage (2 Wochen und 2 Tage vorher)",
     story: "Eure Date-Story ist fertig (Ende Dezember)",
@@ -179,7 +179,19 @@ export function PushSettings({
         </p>
       )}
 
-      <fieldset className="flex flex-col gap-2">
+      <details className="group">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-extrabold">
+          <span>
+            Welche Erinnerungen?{" "}
+            <span className="text-sm text-muted">
+              {NOTIFICATION_TYPES.filter((t) => prefs[t]).length} von {NOTIFICATION_TYPES.length} an
+            </span>
+          </span>
+          <span aria-hidden="true" className="text-xl transition-transform group-open:rotate-180">
+            ⌄
+          </span>
+        </summary>
+      <fieldset className="mt-3 flex flex-col gap-2">
         <legend className="mb-1 text-[13px] font-extrabold text-muted">Erinnere mich an …</legend>
         {NOTIFICATION_TYPES.map((type) => (
           <button
@@ -208,7 +220,8 @@ export function PushSettings({
           </button>
         ))}
       </fieldset>
-      <p className="text-sm font-semibold text-muted">Zwischen 22 und 8 Uhr ist Ruhe – außer bei „Date in 2 Stunden“.</p>
+      <p className="mt-2 text-sm font-semibold text-muted">Zwischen 22 und 8 Uhr ist Ruhe – außer bei „Date in 2 Stunden“.</p>
+      </details>
     </div>
   );
 }

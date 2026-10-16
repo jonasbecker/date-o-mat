@@ -1,0 +1,1 @@
+ALTER TABLE "couple_settings" ADD COLUMN "hidden_extras" text[] DEFAULT '{}' NOT NULL;

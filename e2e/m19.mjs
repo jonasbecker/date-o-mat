@@ -87,7 +87,7 @@ async function pageFor(token) {
 
 // 1) Settings: anniversary in 14 days (2nd), Sam's birthday in 5 days
 const j = await pageFor(jonas.token);
-await j.goto(`${BASE}/settings`);
+await j.goto(`${BASE}/settings#besondere-tage`);
 await j.getByLabel("Besonderer Tag").waitFor({ timeout: 15000 });
 await j.waitForTimeout(800);
 async function addDay(kind, date, title) {

@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { after } from "next/server";
 import { z } from "zod";
-import { DECK_FILTERS, type DeckFilter } from "@/core/deck";
+import { parseFilter } from "@/core/filters";
 import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
 import { bringBackMaybes, notifyMatch, notifySuperLike, refillDeck, swipe, undoLastSwipe, type SwipeResult, type UndoResult } from "@/server/deck";
@@ -44,9 +44,9 @@ const MESSAGES = {
 } as const;
 
 /** "Neue Ideen holen" / "Mehr davon": a batch right away, matching the filter. */
-export async function moreCardsAction(filter: DeckFilter): Promise<{ ok: boolean; message: string | null }> {
+export async function moreCardsAction(filter: unknown): Promise<{ ok: boolean; message: string | null }> {
   const ctx = await requireCouple();
-  const focus = (DECK_FILTERS as readonly string[]).includes(filter) ? filter : "all";
+  const focus = parseFilter(filter);
   const result = await refillDeck(ctx.coupleId, coupleNow(await getCoupleSettings(ctx.coupleId)), { manual: true, focus });
   refresh();
   return { ok: result === "made", message: MESSAGES[result] };

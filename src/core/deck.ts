@@ -2,6 +2,8 @@
 // person swipes on their own, and a card becomes a wishlist idea only when
 // both like it. Pure – the server stores cards and swipes and calls Claude.
 
+import type { CuratedIdea } from "./curated-ideas";
+import { filterPrompt, matchesIdeaFilter, type IdeaFilter } from "./filters";
 import { DateTime } from "luxon";
 import { APP_TIMEZONE, SEASON_KEYS, type DeckCardKind, type EventMix, type IdeaSize, type PlaceSetting, type SeasonKey, type SwipeVerdict } from "@/lib/domain";
 
@@ -101,26 +103,6 @@ export function comboCount(mix: EventMix, availableEvents: number): number {
 
 // --- The prompt ---------------------------------------------------------------------------------
 
-/** What the person picked in the filter, so "Mehr davon" makes matching cards. */
-export const DECK_FILTERS = ["all", "cheap", "indoor", "outdoor", "short", "long", "events"] as const;
-export type DeckFilter = (typeof DECK_FILTERS)[number];
-export const DECK_FILTER_LABEL: Record<DeckFilter, string> = {
-  all: "Alle",
-  cheap: "💸 Günstig",
-  indoor: "🏠 Drinnen",
-  outdoor: "🌳 Draußen",
-  short: "☕ Kurz",
-  long: "🎡 Lang",
-  events: "🎟️ Mit Event",
-};
-const FILTER_PROMPT: Record<Exclude<DeckFilter, "all" | "events">, string> = {
-  cheap: "All ideas must be free or cheap (at most about 15 euros for both).",
-  indoor: "All ideas must work indoors.",
-  outdoor: "All ideas should be outdoors.",
-  short: "All ideas must be small dates (up to about 3 hours).",
-  long: "All ideas must be big dates (half a day or more).",
-};
-
 export type PromptEvent = { title: string; when: string; venue: string | null; price: string | null };
 
 export type DeckPromptInput = {
@@ -140,7 +122,8 @@ export type DeckPromptInput = {
   specialDays?: string | null;
   /** Budget left this month in euros, if they set one (M18). */
   budgetLeft?: number | null;
-  focus?: DeckFilter;
+  /** The shared filter: "Mehr holen" makes cards that match it. */
+  focus?: IdeaFilter;
 };
 
 export const DECK_SYSTEM_PROMPT = [
@@ -164,7 +147,7 @@ export function buildDeckPrompt(input: DeckPromptInput, zone = APP_TIMEZONE): st
     `Make ${input.ideaCount} normal ideas. Themes for this batch (spread the ideas over them): ${input.themes.map((t) => t.prompt).join("; ")}.`,
     "About a quarter of the ideas should be wildcards: something they would not pick themselves.",
   ];
-  if (input.focus && input.focus !== "all" && input.focus !== "events") lines.push(FILTER_PROMPT[input.focus]);
+  if (input.focus) lines.push(...filterPrompt(input.focus));
   if (typeof input.budgetLeft === "number") {
     lines.push(
       input.budgetLeft <= 10
@@ -316,23 +299,39 @@ export function orderDeck<T extends CardForOrder>(cards: T[], partnerVerdicts: M
   });
 }
 
-export function matchesFilter(card: Pick<DeckCardView, "kind" | "costEur" | "setting" | "size">, filter: DeckFilter): boolean {
-  switch (filter) {
-    case "all":
-      return true;
-    case "cheap":
-      return card.costEur !== null && card.costEur <= 15;
-    case "indoor":
-      return card.setting === "indoor";
-    case "outdoor":
-      return card.setting === "outdoor";
-    case "short":
-      return card.size === "small";
-    case "long":
-      return card.size === "large";
-    case "events":
-      return card.kind === "combo";
+export function matchesFilter(card: Pick<DeckCardView, "costEur" | "setting" | "size">, filter: IdeaFilter): boolean {
+  return matchesIdeaFilter({ size: card.size, costEur: card.costEur, setting: card.setting }, filter);
+}
+
+/** How many hand-picked Köln ideas go into each batch (all of them, a few at a time, without the AI). */
+export const CURATED_PER_BATCH = 3;
+
+/** Köln ideas as swipe cards: the ones that are not in the deck, on the wishlist or done yet. */
+export function curatedForDeck(curated: readonly CuratedIdea[], existingKeys: string[], count: number): CardDraft[] {
+  const keys = [...existingKeys];
+  const result: CardDraft[] = [];
+  for (const idea of curated) {
+    if (result.length >= count) break;
+    const key = dedupeKey(idea.title);
+    if (isNearDuplicate(key, keys)) continue;
+    keys.push(key);
+    result.push({
+      kind: "idea",
+      title: idea.title,
+      note: idea.note,
+      emoji: "📍",
+      size: idea.size,
+      costEur: idea.costEur,
+      location: idea.location,
+      setting: idea.setting,
+      theme: idea.costEur === 0 ? "free" : null,
+      wildcard: false,
+      bestSeason: null,
+      dedupeKey: key,
+      eventIndex: null,
+    });
   }
+  return result;
 }
 
 /** One super-like per person and day (Berlin). */

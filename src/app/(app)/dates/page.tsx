@@ -4,6 +4,8 @@ import { Suspense } from "react";
 import { PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { Avatar } from "@/components/avatar";
+import { CycleHistory } from "@/components/cycle";
+import { cycleHistory } from "@/server/cycles";
 import { Hearts } from "@/components/hearts";
 import { reviewStats, visibleRatings, visibleReviews } from "@/core/reviews";
 import { formatLongDate } from "@/lib/format";
@@ -12,7 +14,8 @@ import { coupleNow } from "@/server/clock";
 import type { User } from "@/server/db/schema";
 import { pastDates, type PastDate } from "@/server/reviews";
 import { coverPhotos } from "@/server/photos";
-import { getCoupleSettings } from "@/server/settings";
+import { extraOn, getCoupleSettings } from "@/server/settings";
+import { STORY_MIN_DATES } from "@/core/story";
 
 export default function DatesPage() {
   return (
@@ -25,8 +28,9 @@ export default function DatesPage() {
 async function Dates() {
   const { user, partner, coupleId } = await requireCouple();
   await connection();
-  const now = coupleNow(await getCoupleSettings(coupleId));
-  const dates = await pastDates(coupleId);
+  const settings = await getCoupleSettings(coupleId);
+  const now = coupleNow(settings);
+  const [dates, history] = await Promise.all([pastDates(coupleId), cycleHistory(coupleId)]);
   const covers = await coverPhotos(coupleId, dates.map((d) => d.id));
   const stats = reviewStats(
     dates.map((d) => ({ id: d.id, title: d.title, startsAt: d.startsAt, ratings: visibleRatings(d.reviews, user.id) })),
@@ -37,6 +41,7 @@ async function Dates() {
     <div className="flex flex-col gap-5">
       <AutoRefresh />
       <h1 className="text-[30px] font-bold">Unsere Dates</h1>
+      {history.length > 0 && <CycleHistory history={history} currentId={history.at(-1)!.id} />}
 
       {dates.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-[24px] border-[2.5px] border-dashed border-line px-6 py-10 text-center">
@@ -53,6 +58,7 @@ async function Dates() {
             <Stat label="Ø Herzen" value={stats.averageRating?.toLocaleString("de-DE") ?? "–"} tone="bg-himbeere-soft" />
             <Stat label="dieses Jahr" value={String(stats.thisYear)} tone="bg-zitrone-soft" />
           </dl>
+          {extraOn(settings, "story") && dates.length >= STORY_MIN_DATES && (
           <Link href="/story" className="press sticker flex items-center gap-3 rounded-[22px] bg-himbeere px-4 py-3.5 text-tinte">
             <span className="text-3xl" aria-hidden="true">
               📖
@@ -62,9 +68,12 @@ async function Dates() {
               <span className="text-sm font-bold">Euer Jahr zum Durchtippen – Lieblingsdate, Herzen, Fotos …</span>
             </span>
           </Link>
-          <Link href="/fragen" className="self-start text-sm font-extrabold underline">
-            💬 Gesprächskarten für euer nächstes Date
-          </Link>
+          )}
+          {extraOn(settings, "cards") && (
+            <Link href="/fragen" className="self-start text-sm font-extrabold underline">
+              💬 Gesprächskarten für euer nächstes Date
+            </Link>
+          )}
           {stats.favorite && (
             <Link
               href={`/dates/${stats.favorite.id}`}

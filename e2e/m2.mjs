@@ -125,9 +125,20 @@ for (const [title, size] of [["Ramen selbst kochen", "Kurz"], ["Bouldern ausprob
   await b.keyboard.press("Enter");
   await card(b, title).waitFor({ timeout: 5000 });
 }
-await b.getByRole("button", { name: /Lang · 1/ }).click();
+// One filter button for the whole app
+await b.getByRole("button", { name: "Filter", exact: true }).click();
+const filterSheet = b.locator("dialog[open]");
+await filterSheet.getByRole("button", { name: "🎡 Lang" }).click();
+await filterSheet.getByRole("button", { name: "Fertig" }).click();
 check("filter shows only large ideas", (await b.locator("li").filter({ hasText: "Ramen" }).count()) === 0 && (await card(b, "Wandern im Siebengebirge").count()) === 1);
-await b.getByRole("button", { name: "Alle" }).click();
+check("the button shows the active filter", await b.getByRole("button", { name: "Filter: 🎡 Lang" }).isVisible());
+await b.reload();
+await card(b, "Wandern im Siebengebirge").waitFor();
+check("the filter is remembered", (await b.locator("li").filter({ hasText: "Ramen" }).count()) === 0);
+await b.getByRole("button", { name: "Filter: 🎡 Lang" }).click();
+await b.locator("dialog[open]").getByRole("button", { name: "Zurücksetzen" }).click();
+await b.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
+await card(b, "Ramen selbst kochen").waitFor({ timeout: 5000 });
 await b.waitForTimeout(400);
 await b.screenshot({ path: `${SHOTS}m2-05-list.png` });
 
@@ -137,9 +148,9 @@ await dark.goto(`${BASE}/ideas`);
 await card(dark, "Ramen selbst kochen").waitFor();
 await dark.waitForTimeout(400);
 await dark.screenshot({ path: `${SHOTS}m2-06-list-dark.png` });
+check("wishlist heading shows the count", (await dark.getByRole("heading", { level: 1 }).innerText()).includes("3"));
 await a.goto(`${BASE}/`);
-await a.getByText("auf eurer Wunschliste").waitFor({ timeout: 10000 });
-check("home shows the wishlist count", (await a.locator("a", { hasText: "auf eurer Wunschliste" }).innerText()).includes("3 Ideen"));
+await a.getByText(`Hey`).first().waitFor({ timeout: 10000 });
 await a.screenshot({ path: `${SHOTS}m2-07-home.png` });
 
 await browser.close();

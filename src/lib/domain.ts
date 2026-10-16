@@ -98,6 +98,10 @@ export type SwipeVerdict = (typeof SWIPE_VERDICTS)[number];
 export const PLACE_SETTINGS = ["indoor", "outdoor"] as const;
 export type PlaceSetting = (typeof PLACE_SETTINGS)[number];
 /** How many event combos go into a new batch. */
+/** Extras you can switch off (Einstellungen → Extras); all on by default, each shows up only when it fits. */
+export const EXTRAS = ["checklist", "cards", "surprise", "story"] as const;
+export type Extra = (typeof EXTRAS)[number];
+
 export const EVENT_MIXES = ["none", "some", "lots"] as const;
 export type EventMix = (typeof EVENT_MIXES)[number];
 

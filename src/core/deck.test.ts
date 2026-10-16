@@ -6,6 +6,7 @@ import {
   DECK_THEMES,
   dedupeKey,
   isNearDuplicate,
+  curatedForDeck,
   matchesFilter,
   maybeRevisitAt,
   needsRefill,
@@ -75,8 +76,9 @@ describe("buildDeckPrompt", () => {
     expect(prompt).toContain("wildcards");
   });
   it("filter focus and budget", () => {
-    const prompt = buildDeckPrompt({ ...base, focus: "cheap", budgetLeft: 5, comboCount: 0 });
-    expect(prompt).toContain("free or cheap");
+    const prompt = buildDeckPrompt({ ...base, focus: { budget: "cheap", setting: "indoor" }, budgetLeft: 5, comboCount: 0 });
+    expect(prompt).toContain("must be cheap");
+    expect(prompt).toContain("indoors");
     expect(prompt).toContain("nearly used up");
     expect(prompt).not.toContain("combo cards");
   });
@@ -150,11 +152,11 @@ describe("swiping", () => {
 
   it("filters", () => {
     const card = { kind: "idea" as const, costEur: 10, setting: "indoor" as const, size: "small" as const };
-    expect(matchesFilter(card, "cheap")).toBe(true);
-    expect(matchesFilter({ ...card, costEur: null }, "cheap")).toBe(false);
-    expect(matchesFilter(card, "outdoor")).toBe(false);
-    expect(matchesFilter(card, "long")).toBe(false);
-    expect(matchesFilter({ ...card, kind: "combo" }, "events")).toBe(true);
+    expect(matchesFilter(card, { budget: "cheap" })).toBe(true);
+    expect(matchesFilter({ ...card, costEur: null }, { budget: "free" })).toBe(false);
+    expect(matchesFilter(card, { setting: "outdoor" })).toBe(false);
+    expect(matchesFilter(card, { size: "large" })).toBe(false);
+    expect(matchesFilter(card, { size: "small", setting: "indoor" })).toBe(true);
   });
 
   it("one super-like per Berlin day", () => {
@@ -191,5 +193,19 @@ describe("maybe and revisit", () => {
     const [card] = cleanDeckCards([raw({ best_season: "summer" })], { existingKeys: [], eventCount: 0, maxCombos: 0 });
     expect(card.bestSeason).toBe("summer");
     expect(cleanDeckCards([raw({ best_season: "monsoon" })], { existingKeys: [], eventCount: 0, maxCombos: 0 })[0].bestSeason).toBeNull();
+  });
+});
+
+describe("curatedForDeck", () => {
+  const curated = [
+    { id: "a", title: "Picknick im Stadtwald", size: "small", costEur: 10, location: "Lindenthal", setting: "outdoor", note: "Decke mit." },
+    { id: "b", title: "Museum Ludwig", size: "small", costEur: 0, location: "Altstadt", setting: "indoor", note: "Pop-Art." },
+    { id: "c", title: "Kanu auf der Sieg", size: "large", costEur: 60, location: "Siegburg", setting: "outdoor", note: "Ganzer Tag." },
+  ] as const;
+  it("skips what is already there, a few at a time", () => {
+    const cards = curatedForDeck(curated, [dedupeKey("Picknick im Stadtwald")], 1);
+    expect(cards.map((c) => c.title)).toEqual(["Museum Ludwig"]);
+    expect(cards[0]).toMatchObject({ kind: "idea", emoji: "📍", setting: "indoor", theme: "free", costEur: 0 });
+    expect(curatedForDeck(curated, [], 5)).toHaveLength(3);
   });
 });

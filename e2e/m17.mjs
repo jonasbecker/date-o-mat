@@ -116,7 +116,8 @@ const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/ideas/entdecken`);
 await topCard(j).waitFor({ timeout: 30000 });
 const { rows: cards } = await db.query("SELECT title, kind, event_title, batch FROM deck_cards WHERE couple_id = $1", [couple.id]);
-check(`a batch of 20 cards (${cards.length}, ${cards.filter((c) => c.kind === "combo").length} combos)`, cards.length === 20 && cards.filter((c) => c.kind === "combo").length === 2);
+const koeln = (await db.query("SELECT count(*)::int AS c FROM deck_cards WHERE emoji = '📍'")).rows[0].c;
+check(`a batch of 20 AI cards plus 3 Köln ideas (${cards.length}, ${cards.filter((c) => c.kind === "combo").length} combos, ${koeln} Köln)`, cards.length === 23 && koeln === 3 && cards.filter((c) => c.kind === "combo").length === 2);
 check("wishlist duplicate filtered out", !cards.some((c) => /Picknick/.test(c.title)));
 const call = claudeCalls[0];
 const prompt = call?.messages[0].content ?? "";
@@ -200,15 +201,27 @@ await s.getByRole("link", { name: "📅 Jetzt planen" }).click();
 await s.waitForURL(/\/plan\?idea=/, { timeout: 10000 });
 check("plan page opened from the match", new URL(s.url()).pathname === "/plan");
 
-// 7) Filter: only event combos
+// 7) The shared filter works on the deck; combo cards show their event
 await s.goto(`${BASE}/ideas/entdecken`);
 await topCard(s).waitFor({ timeout: 15000 });
 await s.waitForTimeout(800);
-await s.getByRole("button", { name: "🎟️ Mit Event" }).click();
+await s.getByRole("button", { name: "Filter", exact: true }).click();
+await s.locator("dialog[open]").getByRole("button", { name: "🎡 Lang" }).click();
+await s.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
+const longTop = await topTitle(s);
+const { rows: [longCard] } = await db.query("SELECT size FROM deck_cards WHERE title = $1", [longTop]);
+check(`filter "Lang" shows long cards only (${longTop})`, longCard?.size === "large");
+await s.getByRole("button", { name: "Filter: 🎡 Lang" }).click();
+await s.locator("dialog[open]").getByRole("button", { name: "Zurücksetzen" }).click();
+await s.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
+const { rows: others } = await db.query("UPDATE deck_cards SET status = 'passed' WHERE couple_id = $1 AND status = 'open' AND kind <> 'combo' RETURNING id", [couple.id]);
+await s.reload();
+await topCard(s).waitFor({ timeout: 15000 });
 const comboTitle = await topTitle(s);
-check(`event filter shows a combo (${comboTitle})`, comboTitle.startsWith("Kombi") && (await topCard(s).getByText("🎟️ Konzert: Annenmaykantereit").isVisible()));
+check(`combo card shows its event (${comboTitle})`, comboTitle.startsWith("Kombi") && (await topCard(s).getByText("🎟️ Konzert: Annenmaykantereit").isVisible()));
 check("combo knows you are both free", await topCard(s).getByText("✓ Ihr habt beide Zeit").isVisible());
 await s.screenshot({ path: `${OUT}m17-04-combo.png` });
+await db.query("UPDATE deck_cards SET status = 'open' WHERE id = ANY($1::uuid[])", [others.map((r) => r.id)]);
 
 // 8) Nudge: Jonas liked cards Sam has not seen → one push per day (logged)
 await fetch(`${BASE}/api/cron/tick`, CRON);
@@ -217,7 +230,7 @@ const { rows: nudges } = await db.query("SELECT user_id FROM notification_log WH
 check(`nudge for Sam, once (${nudges.length})`, nudges.length === 1 && nudges[0].user_id === sam.id);
 
 // 9) Settings: event combos "Viele"
-await j.goto(`${BASE}/settings`);
+await j.goto(`${BASE}/settings#entdecken`);
 await j.getByRole("radio", { name: "Viele" }).click();
 await j.waitForTimeout(800);
 check("event mix saved", (await db.query("SELECT deck_event_mix FROM couple_settings WHERE couple_id = $1", [couple.id])).rows[0].deck_event_mix === "lots");
@@ -234,7 +247,7 @@ await j.getByText("Neue Ideen werden gemischt").waitFor({ timeout: 10000 });
 await db.query("UPDATE couple_settings SET deck_refill_started_at = NULL WHERE couple_id = $1", [couple.id]);
 await topCard(j).waitFor({ timeout: 30000 });
 const { rows: batch2 } = await db.query("SELECT count(*)::int AS n, count(*) FILTER (WHERE kind = 'combo')::int AS combos FROM deck_cards WHERE batch = 2");
-check(`second batch, no repeats of the first (${batch2[0].n} cards, ${batch2[0].combos} combos – the two events are used already)`, claudeCalls.length === callsBefore + 1 && batch2[0].n === 20 && batch2[0].combos === 0);
+check(`second batch, no repeats of the first (${batch2[0].n} cards, ${batch2[0].combos} combos – the two events are used already)`, claudeCalls.length === callsBefore + 1 && batch2[0].n === 23 && batch2[0].combos === 0);
 check("second prompt excludes the first batch and knows the taste", claudeCalls.at(-1).messages[0].content.includes(first) && /They liked: .+/.test(claudeCalls.at(-1).messages[0].content));
 
 console.log(failures ? `\n${failures} check(s) failed` : "\nAll checks passed");

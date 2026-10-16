@@ -2,9 +2,6 @@ import { Suspense } from "react";
 import { PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { IdeasTabs } from "@/components/ideas-tabs";
-import { SurpriseButton } from "@/components/surprise-button";
-import { AiIdeas } from "@/components/ai-ideas";
-import { env } from "@/server/env";
 import { requireCouple } from "@/server/auth/dal";
 import { listIdeas } from "@/server/ideas";
 import { IdeaBoard, type BoardIdea, type BoardPerson } from "./idea-board";
@@ -39,15 +36,9 @@ async function Ideas() {
     updatedById: idea.updatedById,
   }));
 
-  // Read at request time (inside Suspense), not baked into the prerendered shell.
-  const ai = env().ai;
   return (
     <>
       <AutoRefresh />
-      <div className={ai ? "grid grid-cols-2 gap-2.5" : "flex"}>
-        <SurpriseButton size="sm" />
-        {ai && <AiIdeas buttonSize="sm" label="✨ KI-Ideen" />}
-      </div>
       <IdeaBoard ideas={boardIdeas} people={people} />
     </>
   );

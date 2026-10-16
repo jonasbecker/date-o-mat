@@ -134,6 +134,9 @@ export function swipeTaste(input: Pick<StoryInput, "swipes" | "matchThemes" | "p
   return { themes, matches: input.matchThemes.length, swipes: input.swipes.length, rightSwiper: rightSwiper && { name: rightSwiper.name, percent: rightSwiper.percent } };
 }
 
+/** The story link shows up on the dates page from this many dates on. */
+export const STORY_MIN_DATES = 3;
+
 /** The story is "ready" from 27 December; until the end of January the home screen points to last year's. */
 export function storyYearToShow(now: Date, zone = APP_TIMEZONE): number | null {
   const t = DateTime.fromJSDate(now, { zone });

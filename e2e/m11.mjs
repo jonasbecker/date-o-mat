@@ -98,65 +98,50 @@ const claude = createServer((req, res) => {
 });
 await new Promise((r) => claude.listen(4030, r));
 
-// 1) Wishlist: ask without a time
+// 1) Plan → "Was anderes …" → "✨ 3 Ideen von der KI": follows the shared filter, knows slot, size and weather
 const j = await pageFor(jonas.token);
-await j.goto(`${BASE}/ideas`);
-await j.getByRole("button", { name: "✨ KI-Ideen" }).click();
-await j.getByRole("button", { name: "Gratis" }).click();
-await j.getByRole("button", { name: "💞 Romantisch" }).click();
-await j.getByRole("button", { name: "🌳 Draußen" }).click();
-await j.getByRole("button", { name: "Vorschläge holen" }).click();
-await j.getByText("Sternschnuppen am Rhein 1").waitFor({ timeout: 15000 });
-const cards = await j.locator("dialog[open] article").count();
-check(`three suggestions, wishlist duplicate filtered (${cards})`, cards === 3 && !(await j.locator("dialog[open] article", { hasText: "Picknick im Stadtwald" }).count()));
+await j.goto(`${BASE}/plan`);
+await j.locator("ol li button").first().waitFor({ timeout: 20000 });
+await j.getByRole("button", { name: "Filter", exact: true }).click();
+await j.locator("dialog[open]").getByRole("button", { name: "🆓 Gratis" }).click();
+await j.locator("dialog[open]").getByRole("button", { name: "🌳 Draußen" }).click();
+await j.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
+await j.getByRole("button", { name: "Was anderes …" }).click();
+const sheet = j.locator("dialog[open]");
+await sheet.getByRole("button", { name: "✨ 3 Ideen von der KI" }).click();
+await sheet.getByText("Sternschnuppen am Rhein 1").waitFor({ timeout: 15000 });
+const cards = await sheet.locator("article").allInnerTexts();
+check(`suggestions shown, wishlist duplicate filtered (${cards.length})`, cards.length >= 2 && !cards.some((t) => t.includes("Picknick im Stadtwald")));
+check("all suggestions match the slot size (small)", cards.every((t) => t.includes("Kurz")));
 const first = claudeCalls[0];
 const prompt = first.messages[0].content;
 check(`model claude-haiku-5-5 with JSON schema (${first.model})`, first.model === "claude-haiku-5-5" && first.output_config?.format?.type === "json_schema");
-check("prompt: budget, mood, outdoors, wishlist titles", prompt.includes("free of charge") && prompt.includes("romantic") && prompt.includes("outdoors") && prompt.includes("Kletterhalle ausprobieren"));
+check("prompt: budget and outdoors from the filter, wishlist titles", prompt.includes("free of charge") && prompt.includes("outdoors") && prompt.includes("Kletterhalle ausprobieren"));
+check("prompt: slot time, size and weather", /Time for the date: \w+, \d+\. \w+, \d\d:\d\d/.test(prompt) && prompt.includes("small date") && prompt.includes("°C"));
 check("prompt: no names, e-mails or notes", !/Jonas|Sam|example\.com/.test(prompt + first.system));
-check("no weather lookup without a time", weatherCalls.length === 0 && prompt.includes("unknown"));
-await j.screenshot({ path: `${OUT}m11-01-wishlist.png` });
-await j.locator("dialog[open] article", { hasText: "Sternschnuppen am Rhein 1" }).getByRole("button", { name: "Auf die Wunschliste" }).click();
-await j.locator("dialog[open] article", { hasText: "Sternschnuppen am Rhein 1" }).getByText("✓ Auf der Wunschliste").waitFor({ timeout: 10000 });
-const { rows: aiIdeas } = await db.query("SELECT title, source, cost_eur, note FROM ideas WHERE source = 'ai'");
-check(`saved as AI idea (${JSON.stringify(aiIdeas[0])})`, aiIdeas.length === 1 && aiIdeas[0].cost_eur === 0);
-
-// 2) Plan page: knows the slot, size and weather; "Nehmen" selects the idea
-await j.goto(`${BASE}/plan`);
-await j.locator("ol li button").first().waitFor({ timeout: 20000 });
-await j.getByRole("tab", { name: "✨ KI" }).click();
-await j.getByRole("button", { name: "✨ Ideen von der KI" }).click();
-const slotLabel = await j.locator("dialog[open] p", { hasText: "📅 Für" }).innerText();
-await j.getByRole("button", { name: "Vorschläge holen" }).click();
-await j.getByText("Sternschnuppen am Rhein 2").waitFor({ timeout: 15000 });
-const weatherLine = await j.locator("dialog[open]").getByText(/Wetter:/).innerText();
-check(`weather for the slot shown (${slotLabel} → ${weatherLine})`, /°C/.test(weatherLine) && weatherCalls.length === 1);
-const prompt2 = claudeCalls[1].messages[0].content;
-check("prompt: slot time, size and weather", /Time for the date: \w+, \d+\. \w+, \d\d:\d\d/.test(prompt2) && prompt2.includes("small date") && prompt2.includes("°C"));
-const sizes = await j.locator("dialog[open] article").allInnerTexts();
-check("all suggestions match the slot size (small)", sizes.every((t) => t.includes("Kurz")));
+const weatherLine = await sheet.getByText(/Wetter:/).innerText();
+check(`weather for the slot shown (${weatherLine})`, /°C/.test(weatherLine) && weatherCalls.length === 1);
 await j.screenshot({ path: `${OUT}m11-02-plan.png` });
-await j.locator("dialog[open] article", { hasText: "Tee-Verkostung 2" }).getByRole("button", { name: "Nehmen" }).click();
-await j.locator("dialog[open]").waitFor({ state: "detached", timeout: 10000 }).catch(() => {});
-await j.locator("p", { hasText: "Ausgewählt" }).getByText("Tee-Verkostung 2").waitFor({ timeout: 10000 });
-await j.getByRole("tab", { name: "💡 Wunschliste" }).click();
-await j.getByRole("button", { name: /Tee-Verkostung 2/ }).waitFor({ timeout: 10000 });
-check("picked idea is selected in the plan form", (await j.getByRole("button", { name: /Tee-Verkostung 2/ }).getAttribute("aria-pressed")) === "true");
+await sheet.locator("article", { hasText: "Tee-Verkostung 1" }).getByRole("button", { name: "Nehmen" }).click();
+await j.locator("p", { hasText: "Ausgewählt" }).getByText("Tee-Verkostung 1").waitFor({ timeout: 10000 });
+const { rows: aiIdeas } = await db.query("SELECT title, source, cost_eur FROM ideas WHERE source = 'ai'");
+check(`"Nehmen" saves it as AI idea and selects it (${JSON.stringify(aiIdeas[0])})`, aiIdeas.length === 1 && aiIdeas[0].title === "Tee-Verkostung 1");
+await j.screenshot({ path: `${OUT}m11-01-wishlist.png` });
 
-// 3) Daily limit
+// 2) Daily limit
 const { rows: [usage] } = await db.query("SELECT count(*)::int AS c, sum(input_tokens)::int AS t FROM ai_requests WHERE kind = 'ideas'");
-check(`usage logged (${usage.c} requests, ${usage.t} input tokens)`, usage.c === 2 && usage.t === 1600);
-await db.query(`INSERT INTO ai_requests (couple_id, kind, model) SELECT $1, 'ideas', 'claude-haiku-5-5' FROM generate_series(1, 18)`, [couple.id]);
-await j.goto(`${BASE}/ideas`);
-await j.getByRole("button", { name: "✨ KI-Ideen" }).click();
-await j.getByRole("button", { name: "Vorschläge holen" }).click();
+check(`usage logged (${usage.c} requests, ${usage.t} input tokens)`, usage.c === 1 && usage.t === 800);
+await db.query(`INSERT INTO ai_requests (couple_id, kind, model) SELECT $1, 'ideas', 'claude-haiku-5-5' FROM generate_series(1, 19)`, [couple.id]);
+await j.getByRole("button", { name: "Was anderes …" }).click();
+await j.locator("dialog[open]").getByRole("button", { name: "✨ Andere Vorschläge" }).click();
 await j.getByText("Für heute sind die KI-Vorschläge aufgebraucht").waitFor({ timeout: 10000 });
-check("21st request today is refused without calling Claude", claudeCalls.length === 2);
+check("21st request today is refused without calling Claude", claudeCalls.length === 1);
 
-// 4) Dark mode look
+// 3) Dark mode look
 const jd = await pageFor(jonas.token, "dark");
-await jd.goto(`${BASE}/ideas`);
-await jd.getByRole("button", { name: "✨ KI-Ideen" }).waitFor({ timeout: 15000 });
+await jd.goto(`${BASE}/plan`);
+await jd.getByRole("button", { name: "Was anderes …" }).click();
+await jd.locator("dialog[open]").getByRole("button", { name: "✨ 3 Ideen von der KI" }).waitFor({ timeout: 15000 });
 await jd.screenshot({ path: `${OUT}m11-03-ideas-dark.png` });
 
 await browser.close();

@@ -50,7 +50,7 @@ async function Welcome() {
     {
       emoji: "💡",
       title: "Ideen & Erinnerungen",
-      text: "Fällt dir was ein? Gelbes + unten antippen. Inspiration gibt's mit Köln-Tipps, Events und KI-Vorschlägen. Und mit Erinnerungen verpasst du nichts – die Startseite zeigt dir, was noch fehlt.",
+      text: "Fällt dir was ein? Gelbes + unten antippen. Unter „Ideen“ könnt ihr neue Vorschläge swipen – wischt ihr beide nach rechts, landet die Idee auf eurer Wunschliste. Was noch fehlt, zeigt euch die Startseite.",
       tone: "bg-minze-soft",
     },
   ];

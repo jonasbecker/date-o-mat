@@ -5,7 +5,6 @@ import { Suspense } from "react";
 import { notHappenedAction } from "./actions";
 import { AppHeader, PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { CycleHistory } from "@/components/cycle";
 import { DateCard } from "@/components/date-card";
 import { NextStepCard } from "@/components/next-step";
 import { SetupChecklist } from "@/components/setup-checklist";
@@ -32,10 +31,9 @@ import { hasSeenIntro, requireCouple } from "@/server/auth/dal";
 import { calendarStates } from "@/server/availability";
 import { coupleNow } from "@/server/clock";
 import { activeDateOf, cycleHistory, ensureCurrentCycle } from "@/server/cycles";
-import { countIdeas } from "@/server/ideas";
 import { dateToReview } from "@/server/reviews";
 import { upcomingEvents } from "@/server/events";
-import { getCoupleSettings } from "@/server/settings";
+import { extraOn, getCoupleSettings } from "@/server/settings";
 import { currentSuggestion } from "@/server/suggestions";
 
 export default function HomePage() {
@@ -55,8 +53,7 @@ async function Home() {
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
   const cycle = await ensureCurrentCycle(coupleId, now);
-  const [ideaCount, calendars, history, nextDate, pushDevices, toReview, weekEvents, tick, deckCount, budget, specialDays] = await Promise.all([
-    countIdeas(coupleId),
+  const [calendars, history, nextDate, pushDevices, toReview, weekEvents, tick, deckCount, budget, specialDays] = await Promise.all([
     calendarStates(ctx),
     cycleHistory(coupleId),
     upcomingDate(coupleId, now),
@@ -73,15 +70,16 @@ async function Home() {
   // A surprise stays one: the partner sees time and hint only.
   const shownDate = nextDate ? dateForViewer(nextDate, user.id, [user, partner], now) : undefined;
   const hiddenForMe = nextDate ? isSurpriseHidden(nextDate, user.id, now) : false;
-  const tasks = nextDate && !hiddenForMe ? await listTasks(nextDate.id) : null;
+  const tasks = nextDate && !hiddenForMe && extraOn(settings, "checklist") ? await listTasks(nextDate.id) : null;
   const dateExtras: DateCardExtras | undefined = nextDate && {
     tasks: tasks?.map((t) => ({ id: t.id, title: t.title, done: t.doneAt !== null })) ?? null,
     suggestions: tasks ? suggestTasks(nextDate, tasks.map((t) => t.title)) : [],
-    isToday: DateTime.fromJSDate(nextDate.startsAt, { zone: APP_TIMEZONE }).hasSame(DateTime.fromJSDate(now, { zone: APP_TIMEZONE }), "day"),
+    // "isToday" brings the conversation cards.
+    isToday: extraOn(settings, "cards") && DateTime.fromJSDate(nextDate.startsAt, { zone: APP_TIMEZONE }).hasSame(DateTime.fromJSDate(now, { zone: APP_TIMEZONE }), "day"),
     surprise: hiddenForMe ? "hidden" : nextDate.surprise && nextDate.organizerId === user.id && isSurpriseHidden(nextDate, partner.id, now) ? "organizer" : null,
   };
   const realNow = new Date();
-  const storyYear = storyYearToShow(now);
+  const storyYear = extraOn(settings, "story") ? storyYearToShow(now) : null;
   const cronStale = Boolean(env().cronSecret) && tick !== null && tickHealth(tick.at, realNow) === "stale";
   const roundDate = cycle?.status === "done" ? await activeDateOf(cycle.id) : undefined;
   const calendarsReady = calendars.every((person) => person.state === "connected");
@@ -180,7 +178,8 @@ async function Home() {
         </div>
       )}
 
-      {budget && <BudgetBar {...budget} />}
+      {/* The budget only speaks up when it gets tight; otherwise it lives under /budget. */}
+      {budget && budget.level !== "ok" && <BudgetBar {...budget} />}
 
       <SetupChecklist
         calendar={calendars.find((p) => p.isMe)?.state === "connected"}
@@ -189,42 +188,32 @@ async function Home() {
         pushOn={pushDevices > 0}
       />
 
-      <CycleHistory history={history} currentId={cycle.id} />
-
-      {(deckCount > 0 || env().ai) && (
-        <Link href="/ideas/entdecken" className="press sticker flex items-center gap-3 rounded-[20px] bg-himbeere-soft px-4 py-3 text-tinte">
-          <span className="text-3xl" aria-hidden="true">
-            💞
-          </span>
-          <span className="flex flex-col">
-            <span className="font-display text-lg font-semibold leading-tight">
-              {deckCount > 0 ? `${deckCount} ${deckCount === 1 ? "neue Idee" : "neue Ideen"} zum Swipen` : "Ideen entdecken"}
-            </span>
-            <span className="text-xs font-bold">Wischt beide nach rechts – dann ist&apos;s ein Match</span>
-          </span>
-        </Link>
+      {(deckCount > 0 || weekEvents.length > 0) && (
+        <div className="grid grid-cols-2 gap-2.5">
+          {deckCount > 0 && (
+            <Link href="/ideas/entdecken" className="press sticker flex flex-col gap-0.5 rounded-[20px] bg-himbeere-soft px-3.5 py-3 text-tinte">
+              <span className="text-2xl" aria-hidden="true">
+                💞
+              </span>
+              <span className="font-display text-base font-semibold leading-tight">
+                {deckCount} {deckCount === 1 ? "neue Idee" : "neue Ideen"}
+              </span>
+              <span className="text-xs font-bold">zum Swipen</span>
+            </Link>
+          )}
+          {weekEvents.length > 0 && (
+            <Link href="/events" className="press sticker flex flex-col gap-0.5 rounded-[20px] bg-zitrone-soft px-3.5 py-3 text-tinte">
+              <span className="text-2xl" aria-hidden="true">
+                🎟️
+              </span>
+              <span className="font-display text-base font-semibold leading-tight">
+                {weekEvents.length} {weekEvents.length === 1 ? "Event" : "Events"}
+              </span>
+              <span className="text-xs font-bold">in den nächsten 7 Tagen</span>
+            </Link>
+          )}
+        </div>
       )}
-
-      <div className="grid grid-cols-2 gap-2.5">
-        <Link href="/ideas" className="press sticker flex flex-col gap-0.5 rounded-[20px] bg-zitrone-soft px-3.5 py-3 text-tinte">
-          <span className="text-2xl" aria-hidden="true">
-            💡
-          </span>
-          <span className="font-display text-base font-semibold leading-tight">
-            {ideaCount === 0 ? "Noch keine Ideen" : `${ideaCount} ${ideaCount === 1 ? "Idee" : "Ideen"}`}
-          </span>
-          <span className="text-xs font-bold">auf eurer Wunschliste</span>
-        </Link>
-        <Link href={weekEvents.length ? "/events" : "/ideas/koeln"} className="press sticker flex flex-col gap-0.5 rounded-[20px] bg-himmel/40 px-3.5 py-3 text-ink">
-          <span className="text-2xl" aria-hidden="true">
-            {weekEvents.length ? "🎟️" : "📍"}
-          </span>
-          <span className="font-display text-base font-semibold leading-tight">
-            {weekEvents.length ? `${weekEvents.length} ${weekEvents.length === 1 ? "Event" : "Events"}` : "Köln-Ideen"}
-          </span>
-          <span className="text-xs font-bold">{weekEvents.length ? "in den nächsten 7 Tagen" : "zum Stöbern"}</span>
-        </Link>
-      </div>
     </div>
   );
 }

@@ -26,6 +26,7 @@ import {
   DECK_CARD_STATUSES,
   EVENT_KINDS,
   EVENT_MIXES,
+  EXTRAS,
   EVENT_SOURCE_KINDS,
   FETCH_STATUSES,
   IDEA_SIZES,
@@ -142,6 +143,8 @@ export const coupleSettings = pgTable("couple_settings", {
   devClockOffsetMinutes: integer().notNull().default(0),
   // Swipe deck: share of event combos per batch, and a claim while a batch is being made.
   deckEventMix: text({ enum: EVENT_MIXES }).notNull().default("some"),
+  // Extras switched off in the settings (EXTRAS in domain.ts).
+  hiddenExtras: text({ enum: EXTRAS }).array().notNull().default([]),
   deckRefillStartedAt: timestamptz(),
   // Monthly date budget in euros (null = none) and the first month it counted ("2026-10").
   monthlyBudgetEur: integer(),

@@ -3,7 +3,9 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
+import { FilterButton, useIdeaFilter } from "@/components/idea-filter";
 import { Info } from "@/components/info";
+import { matchesIdeaFilter } from "@/core/filters";
 import { cn } from "@/lib/cn";
 import { planEventAction, saveEventIdeaAction } from "./actions";
 
@@ -13,6 +15,8 @@ export type EventView = {
   time: string;
   venue: string | null;
   price: string | null;
+  /** Rough price for both, from the price text (null = unknown) – for the shared filter. */
+  costEur: number | null;
   summary: string | null;
   url: string | null;
   source: string;
@@ -40,32 +44,29 @@ export function EventList({
   initialFilter: Filter;
 }) {
   const [filter, setFilter] = useState<Filter>(initialFilter);
+  const [shared] = useIdeaFilter();
+  const fits = (e: EventView) => matchesIdeaFilter({ costEur: e.costEur }, { ...shared, size: undefined, setting: undefined });
   const visible = groups
-    .map((g) => ({ ...g, events: filter === "free" ? g.events.filter((e) => e.free === true) : g.events }))
+    .map((g) => ({ ...g, events: g.events.filter((e) => fits(e) && (filter === "all" || e.free === true)) }))
     .filter((g) => g.events.length > 0);
   const total = groups.reduce((n, g) => n + g.events.length, 0);
-  const freeCount = groups.reduce((n, g) => n + g.events.filter((e) => e.free === true).length, 0);
+  const shownTips = tips.filter(fits);
 
   return (
     <div className="flex flex-col gap-5">
-      {calendarsReadable && total > 0 && (
-        <div role="group" aria-label="Filter" className="flex gap-2">
-          {(
-            [
-              ["all", `Alle · ${total}`],
-              ["free", `✓ Ihr habt Zeit · ${freeCount}`],
-            ] as const
-          ).map(([value, label]) => (
+      {total + tips.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {calendarsReadable && total > 0 && (
             <button
-              key={value}
               type="button"
-              aria-pressed={filter === value}
-              onClick={() => setFilter(value)}
-              className={cn("h-9 rounded-full border-2 border-line px-3.5 text-sm font-extrabold", filter === value ? "bg-ink text-bg" : "bg-surface text-ink")}
+              aria-pressed={filter === "free"}
+              onClick={() => setFilter(filter === "free" ? "all" : "free")}
+              className={cn("h-9 rounded-full border-2 border-line px-3.5 text-sm font-extrabold", filter === "free" ? "bg-ink text-bg" : "bg-surface text-ink")}
             >
-              {label}
+              ✓ Nur wenn ihr Zeit habt
             </button>
-          ))}
+          )}
+          <FilterButton />
         </div>
       )}
 
@@ -75,7 +76,9 @@ export function EventList({
         </p>
       )}
       {total > 0 && visible.length === 0 && (
-        <p className="rounded-[20px] border-2 border-dashed border-line px-4 py-3 font-bold">In den nächsten drei Wochen passt leider nichts in eure freie Zeit.</p>
+        <p className="rounded-[20px] border-2 border-dashed border-line px-4 py-3 font-bold">
+          {filter === "free" ? "In den nächsten drei Wochen passt leider nichts in eure freie Zeit." : "Gerade nichts, was zum Filter passt."}
+        </p>
       )}
 
       {visible.map((group) => (
@@ -91,11 +94,11 @@ export function EventList({
         </section>
       ))}
 
-      {tips.length > 0 && (
+      {shownTips.length > 0 && (
         <section className="flex flex-col gap-2.5">
           <h2 className="text-[17px] font-semibold">Tipps ohne festen Termin</h2>
           <ul className="flex flex-col gap-3">
-            {tips.map((tip) => (
+            {shownTips.map((tip) => (
               <li key={tip.id}>
                 <EventCard event={tip} />
               </li>

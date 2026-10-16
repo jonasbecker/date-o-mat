@@ -1,17 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useRef, useState } from "react";
 import { Button } from "@/components/button";
 import { Info } from "@/components/info";
 import { useCelebrate } from "@/components/celebration";
 import { SIZE_LABEL } from "@/components/size-chip";
 import type { SlotMood } from "@/core/slots";
-import { AiIdeas } from "@/components/ai-ideas";
+import { FilterButton, useIdeaFilter } from "@/components/idea-filter";
+import { Sheet, type SheetHandle } from "@/components/sheet";
 import { SurpriseButton } from "@/components/surprise-button";
-import { CURATED_IDEAS } from "@/core/curated-ideas";
-import { EventCard, type EventView } from "../events/event-list";
-import { saveCuratedAction } from "../ideas/inspiration-actions";
+import { matchesIdeaFilter } from "@/core/filters";
+import type { EventView } from "../events/event-list";
+import { MoreIdeas } from "./more-ideas";
 import { cn } from "@/lib/cn";
 import { IDEA_SIZES, type IdeaSize } from "@/lib/domain";
 import { budgetHint } from "@/core/budget";
@@ -36,8 +37,6 @@ export type RescheduleInfo = { dateId: string; size: IdeaSize; ideaId: string | 
 /** `title` is known right away for ideas that were just put on the wishlist (before the page refreshed). */
 type IdeaPick = { kind: "idea"; id: string; title?: string } | { kind: "custom" };
 
-type Tab = "wishlist" | "koeln" | "events" | "ai" | "random" | "own";
-
 const inputClass =
   "h-12 w-full rounded-2xl border-[2.5px] border-line bg-surface px-4 font-bold text-ink placeholder:font-semibold placeholder:text-muted/70 focus:shadow-[0_0_0_4px_var(--color-himbeere-soft)] focus:outline-none";
 
@@ -52,6 +51,7 @@ export function PlanForm({
   preselectIdeaId,
   preselectSize,
   aiEnabled = false,
+  surpriseEnabled = false,
   events = null,
   budget = null,
 }: {
@@ -69,6 +69,8 @@ export function PlanForm({
   preselectSize?: IdeaSize;
   /** Show "✨ Ideen von der KI" (Claude is configured). */
   aiEnabled?: boolean;
+  /** "🎁 Als Überraschung planen" – an extra that shows up after the first date. */
+  surpriseEnabled?: boolean;
   /** Events where both are free; null when no event sources are set up. */
   events?: EventView[] | null;
   /** Month budget left and savings pot (null = no budget set). */
@@ -92,10 +94,8 @@ export function PlanForm({
         ? { kind: "idea", id: preselected.id }
         : firstIdea(size),
   );
-  const [tab, setTab] = useState<Tab>(() =>
-    reschedule && !reschedule.ideaId ? "own" : ideas.some((i) => i.size === (reschedule?.size ?? preselected?.size ?? preselectSize ?? "small")) ? "wishlist" : "koeln",
-  );
-  const [saving, startSaving] = useTransition();
+  const moreSheet = useRef<SheetHandle>(null);
+  const [filter] = useIdeaFilter();
   const [customTitle, setCustomTitle] = useState(reschedule && !reschedule.ideaId ? reschedule.title : "");
   const [customLocation, setCustomLocation] = useState(reschedule?.location ?? "");
   const celebrate = useCelebrate();
@@ -112,6 +112,11 @@ export function PlanForm({
     return result;
   }, { status: "idle" });
 
+  function chooseIdea(chosen: { id: string; title?: string }) {
+    setPick({ kind: "idea", ...chosen });
+    setCustomTitle("");
+  }
+
   function chooseSize(next: IdeaSize) {
     setSize(next);
     setSlotKey((next === "small" ? small : large)[0]?.key ?? null);
@@ -122,15 +127,8 @@ export function PlanForm({
   const sizeIdeas = ideas.filter((i) => i.size === size);
   const idea = pick.kind === "idea" ? (ideas.find((i) => i.id === pick.id) ?? (pick.title ? { id: pick.id, title: pick.title } : undefined)) : undefined;
   const title = pick.kind === "custom" ? customTitle.trim() : (idea?.title ?? "");
-  const curated = CURATED_IDEAS.filter((c) => c.size === size);
-  const tabs: Array<{ key: Tab; label: string }> = [
-    { key: "wishlist", label: "💡 Wunschliste" },
-    { key: "koeln", label: "📍 Köln" },
-    { key: "events", label: "🎟️ Events" },
-    ...(aiEnabled ? [{ key: "ai" as const, label: "✨ KI" }] : []),
-    { key: "random", label: "🎲 Zufall" },
-    { key: "own", label: "✏️ Eigene" },
-  ];
+  // The length is chosen above; the filter adds budget and inside/outside.
+  const wishlist = sizeIdeas.filter((i) => matchesIdeaFilter({ costEur: i.costEur }, { ...filter, size: undefined }));
   const ready = Boolean(slot && title);
   const pickedCost = pick.kind === "idea" ? (ideas.find((i) => i.id === pick.id)?.costEur ?? null) : null;
   const budgetWarning = budget ? budgetHint(pickedCost, budget.left) : null;
@@ -265,9 +263,7 @@ export function PlanForm({
           </p>
         ) : (
           <>
-        <div className="flex items-center justify-between">
-          <h2 className="text-[21px] font-semibold">Was machen wir?</h2>
-        </div>
+        <h2 className="text-[21px] font-semibold">Was machen wir?</h2>
 
         <p className={cn("rounded-2xl border-2 px-3.5 py-2.5 font-bold", title ? "border-line bg-surface" : "border-dashed border-line text-muted")}>
           {title ? (
@@ -280,141 +276,66 @@ export function PlanForm({
           )}
         </p>
 
-        <div role="tablist" aria-label="Woher kommt die Idee?" className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
-          {tabs.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              role="tab"
-              aria-selected={tab === option.key}
-              onClick={() => setTab(option.key)}
-              className={cn(
-                "h-9 shrink-0 rounded-full border-2 border-line px-3.5 text-sm font-extrabold",
-                tab === option.key ? "bg-ink text-bg" : "bg-surface text-ink",
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-[13px] font-extrabold uppercase tracking-wide text-muted">Von eurer Wunschliste</h3>
+          <FilterButton />
+        </div>
+        {wishlist.length > 0 ? (
+          <ul className="-mx-5 flex snap-x gap-2.5 overflow-x-auto px-5 pb-2">
+            {wishlist.map((option) => {
+              const selected = pick.kind === "idea" && pick.id === option.id;
+              return (
+                <li key={option.id} className="snap-start">
+                  <button
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => chooseIdea({ id: option.id })}
+                    className={cn(
+                      "flex h-full w-[168px] flex-col gap-2 rounded-[20px] border-[2.5px] border-line p-3 text-left",
+                      selected ? (size === "small" ? "bg-zitrone" : "bg-lavendel") + " text-tinte shadow-[4px_4px_0_var(--line)]" : "bg-surface",
+                    )}
+                  >
+                    <span className="font-display text-base font-semibold leading-tight">{option.title}</span>
+                    {option.meta && <span className="text-xs font-extrabold opacity-80">{option.meta}</span>}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-sm font-bold text-muted">
+            {sizeIdeas.length > 0
+              ? "Auf der Wunschliste passt gerade nichts zum Filter."
+              : `Keine ${SIZE_LABEL[size].label.toLowerCase()}en Ideen auf eurer Wunschliste.`}{" "}
+            Tipp auf „Was anderes …“ oder schreib unten eure eigene Idee auf.
+          </p>
+        )}
+
+        <div className="grid grid-cols-2 gap-2.5">
+          <SurpriseButton size="sm" label="🎲 Zufall" ideaSize={size} onChoose={(chosen) => chooseIdea(chosen)} />
+          <Button variant="secondary" size="sm" className="w-full" onClick={() => moreSheet.current?.open()}>
+            Was anderes …
+          </Button>
         </div>
 
-        <div role="tabpanel" className="flex flex-col gap-3">
-          {tab === "wishlist" &&
-            (sizeIdeas.length > 0 ? (
-              <ul className="-mx-5 flex snap-x gap-2.5 overflow-x-auto px-5 pb-2">
-                {sizeIdeas.map((option) => {
-                  const selected = pick.kind === "idea" && pick.id === option.id;
-                  return (
-                    <li key={option.id} className="snap-start">
-                      <button
-                        type="button"
-                        aria-pressed={selected}
-                        onClick={() => setPick({ kind: "idea", id: option.id })}
-                        className={cn(
-                          "flex h-full w-[168px] flex-col gap-2 rounded-[20px] border-[2.5px] border-line p-3 text-left",
-                          selected ? (size === "small" ? "bg-zitrone" : "bg-lavendel") + " text-tinte shadow-[4px_4px_0_var(--line)]" : "bg-surface",
-                        )}
-                      >
-                        <span className="font-display text-base font-semibold leading-tight">{option.title}</span>
-                        {option.meta && <span className="text-xs font-extrabold opacity-80">{option.meta}</span>}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="text-sm font-bold text-muted">
-                Keine {SIZE_LABEL[size].label.toLowerCase()}en Ideen auf eurer Wunschliste. Schau bei den Köln-Ideen, frag die KI – oder schreib unter „Eigene“ etwas auf.
-              </p>
-            ))}
-
-          {tab === "koeln" && (
-            <ul className="flex flex-col gap-2">
-              {curated.map((option) => (
-                <li key={option.id} className="flex items-center gap-3 rounded-[18px] border-2 border-line bg-surface px-3 py-2.5">
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="font-display font-semibold leading-snug">{option.title}</span>
-                    <span className="text-xs font-extrabold text-muted">
-                      {option.setting === "indoor" ? "🏠 Drinnen" : "🌳 Draußen"} · {option.costEur === 0 ? "gratis" : `~${option.costEur} €`} · 📍 {option.location}
-                    </span>
-                  </span>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={saving}
-                    onClick={() =>
-                      startSaving(async () => {
-                        const { ideaId } = await saveCuratedAction(option.id);
-                        if (ideaId) setPick({ kind: "idea", id: ideaId, title: option.title });
-                      })
-                    }
-                  >
-                    Nehmen
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {tab === "events" &&
-            (events === null ? (
-              <p className="text-sm font-bold text-muted">
-                Noch keine Event-Quellen.{" "}
-                <a href="/settings#events" className="underline">
-                  In den Einstellungen einrichten
-                </a>{" "}
-                – dann stehen hier Events, bei denen ihr beide Zeit habt.
-              </p>
-            ) : events.length === 0 ? (
-              <p className="text-sm font-bold text-muted">Gerade kein Event, bei dem ihr beide Zeit habt.</p>
-            ) : (
-              <>
-                <p className="text-sm font-bold text-muted">Ihr habt bei allen beiden Zeit. Planen legt das Date direkt zur Event-Zeit an – unabhängig vom Termin oben.</p>
-                <ul className="flex flex-col gap-3">
-                  {events.map((event) => (
-                    <li key={event.id}>
-                      <EventCard event={event} onPlanned={() => setTimeout(() => router.push("/"), 1000)} />
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ))}
-
-          {tab === "ai" && (
+        <div className="flex flex-col gap-2">
+          <label htmlFor="custom-title" className="text-[13px] font-extrabold text-muted">
+            Oder eure eigene Idee
+          </label>
+          <input
+            id="custom-title"
+            name="customTitle"
+            value={customTitle}
+            onChange={(e) => {
+              setCustomTitle(e.target.value);
+              setPick({ kind: "custom" });
+            }}
+            maxLength={120}
+            placeholder="z. B. Eis essen und Rhein gucken"
+            className={inputClass}
+          />
+          {pick.kind === "custom" && customTitle.trim() !== "" && (
             <>
-              <p className="text-sm font-bold text-muted">Drei Ideen passend zu Termin, Dauer, Wetter und eurer Stimmung.</p>
-              <AiIdeas
-                size={size}
-                slot={slot ? { startIso: slot.startIso, endIso: slot.endIso, label: `${slot.dateLabel}, ${slot.timeLabel}` } : null}
-                onChoose={(chosen) => setPick({ kind: "idea", ...chosen })}
-              />
-            </>
-          )}
-
-          {tab === "random" && (
-            <>
-              <p className="text-sm font-bold text-muted">Der Date-O-Mat zieht eine Idee von eurer Wunschliste oder aus den Köln-Tipps.</p>
-              <SurpriseButton ideaSize={size} onChoose={(chosen) => setPick({ kind: "idea", ...chosen })} />
-            </>
-          )}
-
-          {tab === "own" && (
-            <div className="flex flex-col gap-2 rounded-[20px] border-2 border-dashed border-line p-3">
-              <label htmlFor="custom-title" className="text-[13px] font-extrabold text-muted">
-                Eure Idee
-              </label>
-              <input
-                id="custom-title"
-                name="customTitle"
-                value={customTitle}
-                onChange={(e) => {
-                  setCustomTitle(e.target.value);
-                  setPick({ kind: "custom" });
-                }}
-                maxLength={120}
-                placeholder="z. B. Eis essen und Rhein gucken"
-                className={inputClass}
-              />
               <label htmlFor="custom-location" className="text-[13px] font-extrabold text-muted">
                 Ort (optional)
               </label>
@@ -427,18 +348,25 @@ export function PlanForm({
                 placeholder="z. B. Rheinufer"
                 className={inputClass}
               />
-            </div>
-          )}
-          {/* Keep the typed text in the form while another tab is open. */}
-          {tab !== "own" && pick.kind === "custom" && (
-            <>
-              <input type="hidden" name="customTitle" value={customTitle} />
-              <input type="hidden" name="customLocation" value={customLocation} />
             </>
           )}
         </div>
 
-        {!reschedule && (
+        <Sheet ref={moreSheet} title="Was anderes?">
+          <MoreIdeas
+            size={size}
+            events={events}
+            aiEnabled={aiEnabled}
+            slot={slot ? { startIso: slot.startIso, endIso: slot.endIso, label: `${slot.dateLabel}, ${slot.timeLabel}` } : null}
+            onChoose={(chosen) => {
+              chooseIdea(chosen);
+              moreSheet.current?.close();
+            }}
+            onEventPlanned={() => setTimeout(() => router.push("/"), 1000)}
+          />
+        </Sheet>
+
+        {!reschedule && surpriseEnabled && (
           <div className="flex flex-col gap-2 rounded-[20px] border-2 border-dashed border-line p-3">
             <label className="flex items-center gap-2.5 font-extrabold">
               <input type="checkbox" name="surprise" value="1" checked={surprise} onChange={(e) => setSurprise(e.target.checked)} className="size-5 accent-himbeere" />
