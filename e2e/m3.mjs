@@ -3,6 +3,7 @@ import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { DateTime } from "luxon";
 import pg from "pg";
 import { chromium } from "playwright";
+import { customIdea } from "./flow.mjs";
 import { DAYS, requests, startMock } from "./google-mock.mjs";
 
 const BASE = "http://localhost:3000";
@@ -61,6 +62,9 @@ const ZONE = "Europe/Berlin";
 
 /** Reads the slot list from the page as {weekday, day, from, to}. */
 async function readSlots(page) {
+  // The free times are step 2 – without a wishlist, your own idea leads there.
+  await page.locator("ol li, #custom-title").first().waitFor({ timeout: 15000 });
+  if (await page.locator("#custom-title").isVisible()) await customIdea(page, "Spazieren gehen");
   await page.locator("ol li").first().waitFor({ timeout: 10000 });
   return page.locator("ol li").evaluateAll((items) =>
     items.map((li) => {

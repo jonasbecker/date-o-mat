@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { PageSkeleton } from "@/components/app-header";
+import { AppHeader, PageSkeleton } from "@/components/app-header";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
@@ -66,12 +66,8 @@ function sourceView(source: EventSource, now: Date, pages: EventSourcePage[]): S
 export default function SettingsPage({ searchParams }: PageProps<"/settings">) {
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <Link href="/" className="self-start text-sm font-extrabold text-muted underline">
-          ← Zurück
-        </Link>
-        <h1 className="text-[30px] font-bold">Einstellungen</h1>
-      </div>
+      <AppHeader current="settings" />
+      <h1 className="-mt-2 text-[30px] font-bold">Einstellungen</h1>
       <Suspense fallback={<PageSkeleton />}>
         <Settings searchParams={searchParams} />
       </Suspense>

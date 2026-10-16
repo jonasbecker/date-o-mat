@@ -4,6 +4,7 @@ import pg from "pg";
 import { chromium } from "playwright";
 import { startMock } from "./google-mock.mjs";
 import { tuesdayMorningOffset } from "./clock.mjs";
+import { openTimes } from "./flow.mjs";
 
 const BASE = "http://localhost:3000";
 const SHOTS = new URL("./shots/", import.meta.url).pathname;
@@ -169,6 +170,7 @@ check("…and a different idea", after && after.idea_id !== before.idea_id);
 await j.goto(`${BASE}/plan`);
 await j.getByText(/^Diese[r]? .+ · Vorschlag-Modus$/).waitFor({ timeout: 15000 });
 check("plan page shows the round", true);
+await openTimes(j, BASE);
 check("plan page offers searching after the round", (await j.getByRole("link", { name: "Auch nach dem Rundenende suchen" }).count()) === 1);
 
 // Dark mode home

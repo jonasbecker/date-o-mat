@@ -140,7 +140,7 @@ await s.goto(`${BASE}/`);
 // Either the step card ("Wie war's?") or – when it is Sam's turn to plan – the reminder link.
 const reviewLink = s.getByRole("link", { name: /Jetzt bewerten/ }).first();
 await reviewLink.waitFor({ timeout: 15000 });
-check("/ lands on Dates, which asks for the review", s.url() === `${BASE}/dates`);
+check("the start page asks for the review", s.url() === `${BASE}/plan`);
 await s.screenshot({ path: `${OUT}m8-01-home-prompt.png` });
 await reviewLink.click();
 await s.getByRole("heading", { name: "Wie war's für dich?" }).waitFor({ timeout: 10000 });

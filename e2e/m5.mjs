@@ -2,6 +2,7 @@
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import pg from "pg";
 import { chromium } from "playwright";
+import { backAtStart, openTimes, pickIdea } from "./flow.mjs";
 import { BUSY, events, failures, requests, startMock } from "./google-mock.mjs";
 import { tuesdayMorningOffset } from "./clock.mjs";
 
@@ -65,6 +66,7 @@ const cycleStatus = async () => (await db.query("SELECT status FROM cycles WHERE
 const eventsOf = (token) => [...events[token].values()];
 const tick = () => fetch(`${BASE}/api/cron/tick`, CRON).then((r) => r.json());
 async function openPlan(page, query = "") {
+  if (!query) return openTimes(page, BASE);
   await page.goto(`${BASE}/plan${query}`);
   await page.locator("ol li button").first().waitFor({ timeout: 15000 });
 }
@@ -72,15 +74,21 @@ async function openPlan(page, query = "") {
 const j = await pageFor(jonas.token);
 const s = await pageFor(sam.token);
 
-// 1) Jonas plans: Top-Tipp + oldest idea are preselected → one tap
-await openPlan(j);
+// 1) Jonas plans: the idea first (oldest on top), then the Top-Tipp time is preselected
+await j.goto(`${BASE}/plan`);
+const firstIdea = await j.getByRole("list", { name: "Eure Wunschliste" }).getByRole("button").first().textContent({ timeout: 20000 });
+check(`step 1 lists the oldest idea first (${firstIdea})`, firstIdea.startsWith("Picknick im Stadtwald"));
+check("no times before an idea is chosen", (await j.locator("ol li button").count()) === 0);
+await j.waitForTimeout(300);
+await j.screenshot({ path: `${SHOTS}m5-00-step1.png`, fullPage: true });
+await pickIdea(j, "Picknick im Stadtwald");
 check("Top-Tipp slot is preselected", (await j.locator('ol li button[aria-pressed="true"]').count()) === 1);
-check("oldest small idea is preselected", (await j.getByRole("button", { name: "Picknick im Stadtwald" }).getAttribute("aria-pressed")) === "true");
+check("step 2 shows the chosen idea", await j.getByText("Ihr macht", { exact: true }).isVisible());
 await j.waitForTimeout(300);
 await j.screenshot({ path: `${SHOTS}m5-01-plan.png` });
 const t0 = Date.now();
 await j.getByRole("button", { name: "Date festlegen 🎉" }).click();
-await j.waitForURL(`${BASE}/dates`, { timeout: 15000 });
+await backAtStart(j, BASE);
 console.log(`  (plan → saved → home in ${Date.now() - t0} ms incl. confetti)`);
 let date = await theDate();
 check("date saved as planned, Jonas organizer and proposer", date?.status === "planned" && date.organizer_id === jonas.id && date.proposed_by_id === jonas.id);
@@ -112,10 +120,10 @@ await s.screenshot({ path: `${SHOTS}m5-05-confirmed.png` });
 
 // 3) Sam proposes another time → same event is moved, Jonas has to confirm
 await openPlan(s, `?reschedule=${date.id}`);
-check("reschedule mode keeps the idea", (await s.getByRole("button", { name: "Picknick im Stadtwald" }).getAttribute("aria-pressed")) === "true");
+check("reschedule mode only changes the time", await s.getByText("„Picknick im Stadtwald“ bleibt, nur die Zeit ändert sich.").isVisible());
 await s.locator("ol li button").nth(1).click();
 await s.getByRole("button", { name: "Termin ändern" }).click();
-await s.waitForURL(`${BASE}/dates`, { timeout: 15000 });
+await backAtStart(s, BASE);
 const moved = await theDate();
 check("same date row, new time, back to 'planned', Sam is proposer", moved.id === date.id && moved.starts_at.getTime() !== date.starts_at.getTime() && moved.status === "planned" && moved.proposed_by_id === sam.id);
 const evMoved = events["token-jonas"].get(date.google_event_id);
@@ -128,8 +136,8 @@ check("now Jonas confirms Sam's new time", (await theDate()).confirmed_by_id ===
 // 4) The chosen slot got taken meanwhile → friendly error, nothing changes
 await openPlan(j, `?reschedule=${date.id}`);
 await j.locator("ol li button").nth(2).click();
-const takenStart = await j.locator('form:has(#custom-title) input[name="start"]').inputValue();
-const takenEnd = await j.locator('form:has(#custom-title) input[name="end"]').inputValue();
+const takenStart = await j.locator('form:has(ol) input[name="start"]').inputValue();
+const takenEnd = await j.locator('form:has(ol) input[name="end"]').inputValue();
 BUSY["token-sam"].primary.push({ start: takenStart, end: takenEnd });
 await j.getByRole("button", { name: "Termin ändern" }).click();
 await j.getByText("Dieser Zeitraum ist inzwischen belegt").waitFor({ timeout: 10000 });
@@ -142,7 +150,7 @@ failures.count = 2;
 await openPlan(j, `?reschedule=${date.id}`);
 await j.locator("ol li button").last().click();
 await j.getByRole("button", { name: "Termin ändern" }).click();
-await j.waitForURL(`${BASE}/dates`, { timeout: 15000 });
+await backAtStart(j, BASE);
 let failed = await theDate();
 check(`failed sync is recorded (${failed.sync_status}, attempt ${failed.sync_attempts})`, failed.sync_status === "error" && failed.sync_attempts === 1);
 await j.getByText("Google Kalender hakt gerade").waitFor({ timeout: 10000 });
@@ -157,10 +165,10 @@ check("event now has the latest time", events["token-jonas"].get(date.google_eve
 await j.goto(`${BASE}/`);
 await j.getByRole("button", { name: "Absagen" }).click();
 await j.getByRole("button", { name: "Ja, absagen" }).click();
-await j.getByRole("link", { name: /Jetzt eins planen/ }).waitFor({ timeout: 10000 });
+await j.getByRole("heading", { name: "Du bist dran!" }).waitFor({ timeout: 10000 });
 await j.goto(`${BASE}/`);
 await j.getByRole("heading", { name: "Du bist dran!" }).waitFor({ timeout: 10000 });
-check("no date left: / lands on Date planen again", j.url() === `${BASE}/plan`);
+check("no date left: the start page plans again", j.url() === `${BASE}/plan`);
 const cancelled = (await db.query("SELECT status FROM date_plans WHERE id = $1", [date.id])).rows[0];
 check("date cancelled and round open again", cancelled.status === "cancelled" && (await cycleStatus()) === "open");
 check("Google event deleted with notification", events["token-jonas"].get(date.google_event_id).status === "cancelled" && requests.some((r) => r.method === "DELETE" && r.url.includes("sendUpdates=all")));
@@ -171,7 +179,6 @@ await db.query("UPDATE cycles SET mode = 'suggestion', planner_id = NULL WHERE c
 await s.goto(`${BASE}/`);
 await s.getByRole("button", { name: "Übernehmen 🎉" }).waitFor({ timeout: 15000 });
 await s.getByRole("button", { name: "Übernehmen 🎉" }).click();
-await s.waitForURL(`${BASE}/dates`, { timeout: 15000 });
 await s.getByRole("heading", { name: /Wartet auf Jonas/ }).waitFor({ timeout: 15000 });
 const accepted = await theDate();
 const sug = (await db.query("SELECT status FROM suggestions WHERE status = 'accepted'")).rows.length;
@@ -193,9 +200,9 @@ check("deleting the event in Google cancels the date", afterDelete.status === "c
 await db.query("UPDATE couple_settings SET mode = 'alternating' WHERE couple_id = $1", [couple.id]);
 await db.query("UPDATE cycles SET mode = 'alternating', planner_id = $2 WHERE couple_id = $1 AND status = 'open'", [couple.id, jonas.id]);
 await openPlan(j);
-const chosenEnd = new Date(await j.locator('form:has(#custom-title) input[name="end"]').inputValue());
+const chosenEnd = new Date(await j.locator('form:has(ol) input[name="end"]').inputValue());
 await j.getByRole("button", { name: "Date festlegen 🎉" }).click();
-await j.waitForURL(`${BASE}/dates`, { timeout: 15000 });
+await backAtStart(j, BASE);
 const roundEnd = (await db.query("SELECT ends_at FROM cycles WHERE couple_id = $1 ORDER BY seq DESC LIMIT 1", [couple.id])).rows[0].ends_at;
 const minutes = Math.ceil((Math.min(chosenEnd.getTime() + 3_600_000, roundEnd.getTime() - 60_000) - Date.now()) / 60_000);
 await db.query("UPDATE couple_settings SET dev_clock_offset_minutes = $2 WHERE couple_id = $1", [couple.id, minutes]);

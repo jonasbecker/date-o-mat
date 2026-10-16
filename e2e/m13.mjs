@@ -3,6 +3,7 @@ import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import pg from "pg";
 import { chromium } from "playwright";
+import { backAtStart, customIdea, pickIdea } from "./flow.mjs";
 import { startMock } from "./google-mock.mjs";
 import { tuesdayMorningOffset } from "./clock.mjs";
 
@@ -93,24 +94,28 @@ check("wishlist first, then Zufall / Was anderes", (await j.getByRole("button", 
 await j.getByRole("button", { name: "Was anderes …" }).click();
 const row = j.locator("dialog[open] li", { hasText: "Sonnenuntergang am Rheinboulevard" });
 await row.getByRole("button", { name: "Nehmen" }).click();
-await j.locator("p", { hasText: "Ausgewählt" }).getByText("Sonnenuntergang am Rheinboulevard").waitFor({ timeout: 10000 });
-check("Köln idea taken right on the plan page", !(await j.locator("dialog[open]").count()));
+const chosen = (title) => j.locator("div", { hasText: "Ihr macht" }).getByText(title, { exact: true }).first();
+await chosen("Sonnenuntergang am Rheinboulevard").waitFor({ timeout: 10000 });
+check("Köln idea taken → straight on to the times", !(await j.locator("dialog[open]").count()) && (await j.getByRole("heading", { name: "Wann?" }).isVisible()));
 const { rows: curated } = await db.query("SELECT count(*)::int AS n FROM ideas WHERE source = 'curated'");
 check("…and put on the wishlist", curated[0].n === 1);
-await j.getByLabel("Oder eure eigene Idee").fill("Eis am Rhein");
-check("own idea becomes the selection", await j.locator("p", { hasText: "Ausgewählt" }).getByText("Eis am Rhein").isVisible());
+await j.getByRole("button", { name: "← Andere Idee" }).click();
+await customIdea(j, "Eis am Rhein");
+check("own idea goes on to the times too", await chosen("Eis am Rhein").isVisible());
 check("place field appears for an own idea", await j.getByLabel("Ort (optional)").isVisible());
 await j.screenshot({ path: `${OUT}m13-04-plan-tabs.png`, fullPage: true });
-await j.getByRole("button", { name: /Picknick im Stadtwald/ }).click();
-check("picking a wishlist idea replaces the own idea", (await j.getByLabel("Oder eure eigene Idee").inputValue()) === "" && (await j.locator("p", { hasText: "Ausgewählt" }).getByText("Picknick im Stadtwald").isVisible()));
+await j.getByRole("button", { name: "← Andere Idee" }).click();
+await pickIdea(j, "Picknick im Stadtwald");
+check("picking a wishlist idea replaces the own idea", await chosen("Picknick im Stadtwald").isVisible());
 check("no surprise option before the first date", (await j.getByText("🎁 Als Überraschung planen").count()) === 0);
 
 // 5) Quick plan in one tap → Sam's next step is "Passt!"
+await j.getByRole("button", { name: "← Andere Idee" }).click();
 await j.locator("form", { hasText: "⚡ Schnell planen" }).getByRole("button", { name: "So festlegen 🎉" }).click();
-await j.waitForURL(`${BASE}/dates`, { timeout: 20000 });
+await backAtStart(j, BASE);
 check(`Jonas waits: "${await heading(j)}"`, (await heading(j)) === "Wartet auf Sams „Passt!“");
 await s.goto(`${BASE}/`);
-await s.waitForURL(`${BASE}/dates`, { timeout: 15000 });
+await s.waitForURL(`${BASE}/plan`, { timeout: 15000 });
 check(`Sam must confirm: "${await heading(s)}"`, (await heading(s)) === "Jonas hat ein Date geplant 🎉");
 check("only one Passt! button on the page", (await s.getByRole("button", { name: "Passt! 💚" }).count()) === 1);
 await s.screenshot({ path: `${OUT}m13-05-home-confirm.png`, fullPage: true });
@@ -169,9 +174,23 @@ const welcomeContrast = await contrastOf(jd, jd.getByRole("heading", { name: "Wi
 const textContrast = await contrastOf(jd, jd.locator("p", { hasText: "regelmäßig Dates" }));
 check(`welcome slide readable in dark mode (heading ${welcomeContrast}:1, text ${textContrast}:1)`, welcomeContrast >= 7 && textContrast >= 7);
 await jd.screenshot({ path: `${OUT}m13-10-welcome-dark.png` });
+// The date stands: the start shows it, "Lieber was anderes machen?" leads to the ideas (swap mode)
 await jd.goto(`${BASE}/plan`);
-await jd.getByRole("button", { name: "Was anderes …" }).waitFor({ timeout: 20000 });
-await jd.screenshot({ path: `${OUT}m13-09-plan-dark.png` });
+const swapLink = jd.getByRole("link", { name: "🔄 Lieber was anderes machen?" });
+await swapLink.waitFor({ timeout: 20000 });
+check("with a date: no new plan, but 'Lieber was anderes machen?'", (await jd.getByRole("heading", { name: "Was wollt ihr machen?" }).count()) === 0);
+await jd.screenshot({ path: `${OUT}m13-09-plan-dark.png`, fullPage: true });
+await swapLink.click();
+await jd.getByText("Statt „Picknick im Stadtwald“", { exact: false }).waitFor({ timeout: 15000 });
+check("swap mode: tap an idea to do it instead", (await jd.locator("ol li button").count()) === 0 && (await jd.getByRole("link", { name: "💞 Neue Ideen swipen" }).isVisible()));
+await jd.getByRole("list", { name: "Eure Wunschliste" }).getByRole("button", { name: /^Sonnenuntergang/ }).click();
+await jd.locator("dialog[open]").getByText("Willst du das ändern?", { exact: false }).waitFor({ timeout: 10000 });
+await jd.screenshot({ path: `${OUT}m13-11-swap-dark.png` });
+await jd.locator("dialog[open]").getByRole("button", { name: "Ja, ändern" }).click();
+await jd.waitForURL(`${BASE}/plan`, { timeout: 15000 });
+await jd.getByRole("heading", { name: "Sonnenuntergang am Rheinboulevard" }).first().waitFor({ timeout: 15000 });
+const { rows: [swappedDate] } = await db.query("SELECT title, status FROM date_plans WHERE couple_id = $1 AND status <> 'cancelled' ORDER BY created_at DESC LIMIT 1", [couple.id]);
+check(`swapped on the start page, "Passt!" kept (${swappedDate.title}, ${swappedDate.status})`, swappedDate.title === "Sonnenuntergang am Rheinboulevard" && swappedDate.status === "confirmed");
 
 await browser.close();
 google.close();

@@ -103,7 +103,10 @@ check(`both marked as introduced (${onboarded[0].n})`, onboarded[0].n === 2);
 await a.goto(`${BASE}/`);
 await a.waitForURL(`${BASE}/plan`, { timeout: 10000 }).catch(() => {});
 check("intro is not shown again: / lands on Date planen", a.url() === `${BASE}/plan`);
-check("three tabs: Ideen · Date planen · Dates", (await a.getByRole("navigation", { name: "Hauptnavigation" }).getByRole("link").allInnerTexts()).map((t) => t.trim()).join("|") === "Ideen|Date planen|Dates");
+const header = a.locator("header").first();
+await a.getByRole("heading", { name: "Date planen" }).waitFor({ timeout: 15000 });
+check("no bottom bar – the start is the flow", (await a.getByRole("navigation", { name: "Hauptnavigation" }).count()) === 0 && (await a.getByRole("heading", { name: "Date planen" }).isVisible()));
+check("header icons: 💡 Ideen, 💞 Dates, ⚙️ Einstellungen", (await header.getByRole("link", { name: "Ideen" }).isVisible()) && (await header.getByRole("link", { name: "Eure Dates" }).isVisible()) && (await header.getByRole("link", { name: "Einstellungen" }).isVisible()));
 
 // A third person cannot use the (now deleted) code
 const c = await (await contextFor(tokenC)).newPage();

@@ -5,11 +5,11 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { Avatar } from "@/components/avatar";
 import { CycleHistory } from "@/components/cycle";
 import { AppHeader, PageSkeleton } from "@/components/app-header";
-import { loadOverview, UpcomingSection } from "../overview";
+import { dateForViewer, upcomingDate } from "@/server/dates";
 import { cycleHistory } from "@/server/cycles";
 import { Hearts } from "@/components/hearts";
 import { reviewStats, visibleRatings, visibleReviews } from "@/core/reviews";
-import { formatLongDate } from "@/lib/format";
+import { formatLongDate, formatShortDate } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
 import type { User } from "@/server/db/schema";
@@ -32,7 +32,8 @@ async function Dates() {
   await connection();
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
-  const [dates, history, overview] = await Promise.all([pastDates(coupleId), cycleHistory(coupleId), loadOverview(ctx, settings, now)]);
+  const [dates, history, upcoming] = await Promise.all([pastDates(coupleId), cycleHistory(coupleId), upcomingDate(coupleId, now)]);
+  const next = upcoming && dateForViewer(upcoming, user.id, [user, partner], now);
   const covers = await coverPhotos(coupleId, dates.map((d) => d.id));
   const stats = reviewStats(
     dates.map((d) => ({ id: d.id, title: d.title, startsAt: d.startsAt, ratings: visibleRatings(d.reviews, user.id) })),
@@ -42,21 +43,20 @@ async function Dates() {
   return (
     <div className="flex flex-col gap-5">
       <AutoRefresh />
-      <AppHeader user={user} partner={partner} />
-      <h1 className="text-[30px] font-bold">Eure Dates</h1>
-      {/* What is coming up (and what to rate) first, then what you had. */}
-      <UpcomingSection o={overview} ctx={ctx} now={now} />
-      {!overview.shownDate && !overview.toReview && (
-        <Link href="/plan" className="press sticker flex items-center gap-3 rounded-[20px] bg-zitrone-soft px-4 py-3 text-tinte">
+      <AppHeader current="dates" />
+      <h1 className="-mt-2 text-[30px] font-bold">Eure Dates</h1>
+      {/* What is coming up lives on the start page; here: what you had. */}
+      {next && (
+        <Link href="/plan" className="press flex items-center gap-3 rounded-[20px] border-2 border-line bg-surface px-4 py-3">
           <span className="text-2xl" aria-hidden="true">
             📅
           </span>
           <span className="font-bold">
-            Gerade steht kein Date an. <span className="underline">Jetzt eins planen</span>
+            Als Nächstes: {next.title} · {formatShortDate(next.startsAt)} <span className="underline">ansehen</span>
           </span>
         </Link>
       )}
-      <h2 className="-mb-2 mt-2 text-[21px] font-semibold">Bisher</h2>
+      <h2 className="-mb-2 mt-1 text-[21px] font-semibold">Bisher</h2>
       {history.length > 0 && <CycleHistory history={history} currentId={history.at(-1)!.id} />}
 
       {dates.length === 0 ? (

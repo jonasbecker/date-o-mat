@@ -36,7 +36,7 @@ export function SuggestionCard({ suggestion, idea }: { suggestion: SuggestionRow
           Auf eurer Wunschliste ist gerade keine passende Idee – tragt welche unter Ideen mit „+ Idee“ ein.
         </p>
       )}
-      <ConfettiActionButton action={acceptSuggestionAction.bind(null, suggestion.id)} variant="primary" size="md" className="w-full" goTo="/dates">
+      <ConfettiActionButton action={acceptSuggestionAction.bind(null, suggestion.id)} variant="primary" size="md" className="w-full" goTo="/plan">
         Übernehmen 🎉
       </ConfettiActionButton>
       <p className="-mt-1 text-center text-xs font-bold text-muted">Du wirst Organisator:in, die Einladung geht per Google raus.</p>

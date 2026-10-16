@@ -16,7 +16,7 @@ function matchesSearch(query: string, ...fields: Array<string | null | undefined
 }
 
 /**
- * "Was anderes?" on the plan page: everything that is not on the wishlist in one
+ * "Was anderes?" in the planning flow: everything that is not on the wishlist in one
  * list – events where both are free, the Köln ideas and the AI – with one search.
  */
 export function MoreIdeas({
@@ -27,12 +27,14 @@ export function MoreIdeas({
   onChoose,
   onEventPlanned,
 }: {
-  size: IdeaSize;
+  /** Only ideas of this length; without it the shared filter decides. */
+  size?: IdeaSize;
   /** null = no event sources set up */
   events: EventView[] | null;
   aiEnabled: boolean;
-  slot: { startIso: string; endIso: string; label: string } | null;
-  onChoose: (idea: { id: string; title: string }) => void;
+  /** The time the AI plans for (its length counts when no size is given). */
+  slot: { startIso: string; endIso: string; label: string; size?: IdeaSize } | null;
+  onChoose: (idea: { id: string; title: string; size?: IdeaSize }) => void;
   onEventPlanned: () => void;
 }) {
   const [filter] = useIdeaFilter();
@@ -40,7 +42,9 @@ export function MoreIdeas({
   const [saving, startSaving] = useTransition();
   const shownEvents = (events ?? []).filter((e) => matchesIdeaFilter({ costEur: e.costEur }, filter) && matchesSearch(query, e.title, e.venue, e.summary));
   const curated = CURATED_IDEAS.filter(
-    (c) => c.size === size && matchesIdeaFilter({ costEur: c.costEur, setting: c.setting }, { ...filter, size: undefined }) && matchesSearch(query, c.title, c.location, c.note),
+    (c) =>
+      (size ? c.size === size && matchesIdeaFilter({ costEur: c.costEur, setting: c.setting }, { ...filter, size: undefined }) : matchesIdeaFilter({ size: c.size, costEur: c.costEur, setting: c.setting }, filter)) &&
+      matchesSearch(query, c.title, c.location, c.note),
   );
 
   return (
@@ -92,7 +96,7 @@ export function MoreIdeas({
                   onClick={() =>
                     startSaving(async () => {
                       const { ideaId } = await saveCuratedAction(option.id);
-                      if (ideaId) onChoose({ id: ideaId, title: option.title });
+                      if (ideaId) onChoose({ id: ideaId, title: option.title, size: option.size });
                     })
                   }
                 >
@@ -107,7 +111,7 @@ export function MoreIdeas({
       {aiEnabled && (
         <section className="flex flex-col gap-2.5">
           <h3 className="text-[13px] font-extrabold uppercase tracking-wide text-muted">✨ Ganz was Neues</h3>
-          <AiIdeas size={size} slot={slot} onChoose={onChoose} />
+          <AiIdeas size={size ?? filter.size ?? slot?.size} slot={slot} onChoose={onChoose} />
         </section>
       )}
     </div>

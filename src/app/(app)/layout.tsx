@@ -1,4 +1,3 @@
-import { BottomNav } from "@/components/bottom-nav";
 import { CelebrationProvider } from "@/components/celebration";
 
 // Shell for all signed-in pages. Static on purpose: everything that reads the
@@ -6,8 +5,7 @@ import { CelebrationProvider } from "@/components/celebration";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <CelebrationProvider>
-      <main className="mx-auto max-w-md px-5 pb-32 pt-5">{children}</main>
-      <BottomNav />
+      <main className="mx-auto max-w-md px-5 pb-12 pt-5">{children}</main>
     </CelebrationProvider>
   );
 }

@@ -95,12 +95,12 @@ async function pageFor(token) {
   return page;
 }
 
-// 1) Dates in late December: the story is ready
+// 1) Late December: the story is ready – the start page says so
 const j = await pageFor(jonas.token);
-await j.goto(`${BASE}/dates`);
+await j.goto(`${BASE}/plan`);
 const tile = j.getByRole("link", { name: `Eure Date-Story ${year} ist da – tipp rein!` });
 await tile.waitFor({ timeout: 15000 });
-check("tile for the story on Dates", (await tile.getAttribute("href")) === `/story?year=${year}`);
+check("tile for the story on the start page", (await tile.getAttribute("href")) === `/story?year=${year}`);
 
 // 2) Tap through
 await tile.click();

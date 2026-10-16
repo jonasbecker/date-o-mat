@@ -2,22 +2,23 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { FilteredEmpty, FilterButton, useIdeaFilter } from "@/components/idea-filter";
 import { matchesIdeaFilter } from "@/core/filters";
 import { Avatar } from "@/components/avatar";
 import { Button, buttonClass } from "@/components/button";
+import { SwapConfirm, type NextDateInfo } from "@/components/swap-confirm";
 import { IdeaForm, type IdeaFormDefaults } from "@/components/idea-form";
 import { Sheet, type SheetHandle } from "@/components/sheet";
 import { SizeChip } from "@/components/size-chip";
-import type { IdeaSize, UserColor } from "@/lib/domain";
+import type { UserColor } from "@/lib/domain";
 import { displayHost, formatCost } from "@/lib/idea-input";
-import { archiveIdeaAction, swapDateIdeaAction, updateIdeaAction } from "./actions";
+import { archiveIdeaAction, updateIdeaAction } from "./actions";
 
 export type BoardPerson = { name: string; color: UserColor | null };
 export type BoardIdea = IdeaFormDefaults & { id: string; createdById: string | null; updatedById: string | null; matched: boolean };
 /** The next date – an idea can take its place. */
-export type BoardNextDate = { id: string; title: string; when: string; size: IdeaSize; ideaId: string | null; swappable: boolean };
+export type BoardNextDate = NextDateInfo & { ideaId: string | null; swappable: boolean };
 
 export function IdeaBoard({
   ideas,
@@ -107,47 +108,20 @@ function IdeaMenu({
 }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
   const isNext = next?.ideaId === idea.id;
   const swap = next?.swappable && !isNext;
 
   if (confirming && next) {
     return (
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1 rounded-[20px] border-2 border-line bg-zitrone-soft px-4 py-3 text-tinte">
-          <p className="text-[13px] font-extrabold uppercase tracking-wide">Euer nächstes Date</p>
-          <p className="font-display text-lg font-semibold leading-snug">{next.title}</p>
-          <p className="text-sm font-bold">{next.when}</p>
-        </div>
-        <p className="font-bold">
-          Willst du das ändern? Dann macht ihr stattdessen „{idea.title}“ – der Termin bleibt.
-          {idea.size === "large" && next.size === "small" && <span className="mt-1 block text-sm text-muted">Das ist eher was Langes – euer Termin ist kürzer.</span>}
-        </p>
-        {message && (
-          <p role="alert" className="rounded-xl bg-zitrone-soft px-3 py-2 text-sm font-bold text-tinte">
-            {message}
-          </p>
-        )}
-        <div className="grid grid-cols-2 gap-2.5">
-          <Button variant="secondary" disabled={pending} onClick={() => setConfirming(false)}>
-            Nein
-          </Button>
-          <Button
-            disabled={pending}
-            onClick={() =>
-              startTransition(async () => {
-                const result = await swapDateIdeaAction(next.id, idea.id).catch(() => ({ ok: false, message: "Das hat nicht geklappt – bist du offline?" }));
-                if (!result.ok) return setMessage(result.message ?? "Das hat nicht geklappt.");
-                onDone();
-                router.push("/dates");
-              })
-            }
-          >
-            {pending ? "Wird geändert …" : "Ja, ändern"}
-          </Button>
-        </div>
-      </div>
+      <SwapConfirm
+        next={next}
+        idea={idea}
+        onCancel={() => setConfirming(false)}
+        onDone={() => {
+          onDone();
+          router.push("/plan");
+        }}
+      />
     );
   }
 

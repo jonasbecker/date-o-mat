@@ -49,8 +49,8 @@ async function Welcome() {
     },
     {
       emoji: "💡",
-      title: "Ideen → Planen → Dates",
-      text: "Unten drei Schritte: 💡 Ideen sammeln (oder swipen – was du nach rechts wischst, kommt auf die Wunschliste; wollt ihr beide, ist es ein 💞 Match), 📅 Date planen in der Mitte, 💞 Dates – was ansteht und was ihr erlebt habt.",
+      title: "Idee → Zeit → fertig",
+      text: "Die App ist ein Weg: Idee aussuchen, Zeit wählen, fertig 🎉. Steht ein Date, siehst du es gleich beim Öffnen. Oben links 💡 sammelt ihr Ideen (oder swipt – was du nach rechts wischst, kommt auf die Wunschliste; wollt ihr beide, ist es ein 💞 Match), oben rechts 💞 eure bisherigen Dates und ⚙️ die Einstellungen.",
       tone: "bg-minze-soft",
     },
   ];

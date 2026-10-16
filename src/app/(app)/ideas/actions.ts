@@ -71,12 +71,12 @@ export async function swapDateIdeaAction(dateId: string, id: string): Promise<{ 
   const ctx = await requireCouple();
   const parsedDate = ideaId.safeParse(dateId);
   const parsedIdea = ideaId.safeParse(id);
-  if (!parsedDate.success || !parsedIdea.success) return { ok: false, message: "Das Date gibt es so nicht mehr – schau unter Dates." };
+  if (!parsedDate.success || !parsedIdea.success) return { ok: false, message: "Das Date gibt es so nicht mehr – schau auf der Startseite." };
   const now = coupleNow(await getCoupleSettings(ctx.coupleId));
   const result = await swapDateIdea(ctx, parsedDate.data, parsedIdea.data, now);
   if (!result.ok) {
     const messages = {
-      invalid: "Das Date gibt es so nicht mehr – schau unter Dates.",
+      invalid: "Das Date gibt es so nicht mehr – schau auf der Startseite.",
       surprise: `Das ist eine Überraschung – die kann nur ${ctx.partner.name} ändern.`,
       same: "Das macht ihr schon.",
     };

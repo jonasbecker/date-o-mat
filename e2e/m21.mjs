@@ -5,6 +5,7 @@ import { createServer } from "node:http";
 import { DateTime } from "luxon";
 import pg from "pg";
 import { chromium } from "playwright";
+import { backAtStart, openTimes } from "./flow.mjs";
 import { tuesdayMorningOffset } from "./clock.mjs";
 import { events as googleEvents, startMock } from "./google-mock.mjs";
 
@@ -98,8 +99,7 @@ await j.getByText("Gespeichert ✓").first().waitFor({ timeout: 10000 });
 check("start point saved", (await db.query("SELECT start_location FROM users WHERE id = $1", [jonas.id])).rows[0].start_location === "Ehrenfeld");
 
 // 2) Jonas plans a surprise – an extra that shows up once they have had a date
-await j.goto(`${BASE}/plan`);
-await j.locator("ol li button").first().waitFor({ timeout: 20000 });
+await openTimes(j, BASE);
 check("no surprise option before the first date", (await j.getByLabel("🎁 Als Überraschung planen").count()) === 0);
 // An earlier round with a date (seq 0 – before the current one the app made).
 const { rows: [oldCycle] } = await db.query(
@@ -112,14 +112,13 @@ await db.query(
    VALUES ($1, $2, 'Erstes Date', 'small', now() - interval '26 days', now() - interval '26 days' + interval '2 hours', $3, $3, 'done', 'synced')`,
   [couple.id, oldCycle.id, jonas.id],
 );
-await j.reload();
-await j.locator("ol li button").first().waitFor({ timeout: 20000 });
+await openTimes(j, BASE);
 await j.waitForTimeout(800);
 await j.getByLabel("🎁 Als Überraschung planen").check();
 await j.getByLabel("Hinweis für Sam (optional)").fill("Hunger mitbringen!");
 await j.screenshot({ path: `${OUT}m21-01-plan-surprise.png` });
 await j.getByRole("button", { name: "Date festlegen 🎉" }).click();
-await j.waitForURL(`${BASE}/dates`, { timeout: 15000 });
+await backAtStart(j, BASE);
 const { rows: [date] } = await db.query("SELECT * FROM date_plans WHERE couple_id = $1 ORDER BY created_at DESC LIMIT 1", [couple.id]);
 check(`surprise saved (${date.title}, ${date.surprise_hint})`, date.surprise === true && date.surprise_hint === "Hunger mitbringen!" && date.title === "Sushi-Abend");
 const event = [...googleEvents["token-jonas"].values()].at(-1);
@@ -161,7 +160,7 @@ check("reschedule page does not show the title", !(await s.locator("main").inner
 await s.waitForTimeout(800);
 await s.locator("ol li button").nth(1).click();
 await s.getByRole("button", { name: "Termin ändern" }).click();
-await s.waitForURL(`${BASE}/dates`, { timeout: 15000 });
+await backAtStart(s, BASE);
 const { rows: [moved] } = await db.query("SELECT title, location, surprise, starts_at, organizer_id FROM date_plans WHERE id = $1", [date.id]);
 check(`moved, still the same secret (${moved.title})`, moved.title === "Sushi-Abend" && moved.location === "Belgisches Viertel" && moved.surprise === true && moved.starts_at.getTime() !== date.starts_at.getTime());
 
@@ -224,7 +223,7 @@ await menu.getByRole("button", { name: "🔄 Statt „Sushi-Abend“ machen" }).
 await menu.getByText("Willst du das ändern?", { exact: false }).waitFor({ timeout: 10000 });
 await j.screenshot({ path: `${OUT}m21-05-swap.png` });
 await menu.getByRole("button", { name: "Ja, ändern" }).click();
-await j.waitForURL(`${BASE}/dates`, { timeout: 15000 });
+await j.waitForURL(`${BASE}/plan`, { timeout: 15000 });
 const { rows: [swapped] } = await db.query("SELECT title, location, starts_at FROM date_plans WHERE id = $1", [date.id]);
 check(`idea swapped, same time (${swapped.title})`, swapped.title === "Kino: Dune" && swapped.starts_at.getTime() === moved.starts_at.getTime());
 // Back before the day, so it is Jonas' secret again: the Google event is updated but still hides it.

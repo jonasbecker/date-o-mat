@@ -4,6 +4,7 @@ import { mkdirSync } from "node:fs";
 import { DateTime } from "luxon";
 import pg from "pg";
 import { chromium } from "playwright";
+import { backAtStart, openTimes, pickIdea } from "./flow.mjs";
 import { startMock } from "./google-mock.mjs";
 
 const BASE = "http://localhost:3000";
@@ -97,12 +98,12 @@ await j.locator("form", { has: j.getByLabel("Monatsbudget für Dates") }).getByR
 check("invalid budget is rejected", await j.getByRole("alert").filter({ hasText: "zwischen 1 und 10.000" }).waitFor({ timeout: 5000 }).then(() => true, () => false));
 
 // 3) Plan page: 30 (Kino, done) + 20 (Bowling, planned) of 80 – the cancelled one does not count.
-//    The home page stays quiet while the budget is fine.
+//    The start page stays quiet while the budget is fine; the bar shows next to the times.
 await j.goto(`${BASE}/`);
-await j.waitForURL(/\/(plan|dates)$/, { timeout: 15000 });
-await j.locator("h1").filter({ visible: true }).first().waitFor({ timeout: 15000 });
-check("home: no budget bar while it is fine", (await j.getByRole("link", { name: new RegExp(`${monthName}: \\d+ von 80 €`) }).count()) === 0);
-await j.goto(`${BASE}/plan`);
+await j.waitForURL(`${BASE}/plan`, { timeout: 15000 });
+await j.getByRole("heading", { name: "Was wollt ihr machen?" }).waitFor({ timeout: 15000 });
+check("start: no budget bar while it is fine", (await j.getByRole("link", { name: new RegExp(`${monthName}: \\d+ von 80 €`) }).count()) === 0);
+await openTimes(j, BASE);
 const bar = j.getByRole("link", { name: new RegExp(`${monthName}: 50 von 80 €`) });
 await bar.waitFor({ timeout: 15000 });
 check("plan bar: 50 von 80 €, noch 30 €", (await bar.innerText()).includes("noch 30 €"));
@@ -142,15 +143,15 @@ check("new month starts at 0, pot shows 15 €", (await j.locator("main").innerT
 // 7) Planning: an idea over budget is marked; pay from the pot
 await db.query("UPDATE couple_settings SET monthly_budget_eur = 30 WHERE couple_id = $1", [couple.id]);
 await j.goto(`${BASE}/plan`);
-await j.locator("ol li button").first().waitFor({ timeout: 20000 });
+await j.getByRole("list", { name: "Eure Wunschliste" }).waitFor({ timeout: 20000 });
 await j.waitForTimeout(800);
-await j.getByRole("button", { name: /Sushi-Abend/ }).first().click();
 check("idea over budget is marked", await j.getByText("⚠️ über Budget").first().isVisible());
+await pickIdea(j, "Sushi-Abend");
 check("hint in the footer", await j.getByText("⚠️ Sprengt euer Budget (noch 30 €)").isVisible());
 await j.getByLabel(/Aus dem Spartopf \(15 €\)/).check();
 await j.screenshot({ path: `${OUT}m18-03-plan.png` });
 await j.getByRole("button", { name: "Date festlegen 🎉" }).click();
-await j.waitForURL(`${BASE}/dates`, { timeout: 15000 });
+await backAtStart(j, BASE);
 const { rows: [planned] } = await db.query("SELECT title, from_pot, estimated_cost_eur FROM date_plans WHERE couple_id = $1 AND status = 'planned' ORDER BY created_at DESC LIMIT 1", [couple.id]);
 check(`planned from the pot with the estimate (${JSON.stringify(planned)})`, planned.title === "Sushi-Abend" && planned.from_pot === true && planned.estimated_cost_eur === 40);
 await j.goto(`${BASE}/budget`);

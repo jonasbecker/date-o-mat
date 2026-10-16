@@ -94,6 +94,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M23 | Event-Quellen mit Unterseiten (KI wählt bis zu 6, bearbeitbar) | ✅ |
 | M24 | Navigation Ideen · Date planen · Dates, Startseite aufgeteilt, `/` leitet passend weiter | ✅ |
 | M25 | Idee antippen: planen oder das nächste Date tauschen (Termin bleibt); ein 💚 beim Swipen speichert sofort | ✅ |
+| M26 | Ein Ablauf: Start mit dem, was ansteht, darunter Idee → Zeit → fertig; keine Leiste unten, Icons oben | ✅ |
 
 Abweichungen in V2:
 
@@ -122,6 +123,8 @@ Abweichungen in V2:
     nur ein Match). Ein Match bleibt sichtbar („💞 Match“), die Karte bleibt im Stapel des anderen.
 12. „Statt … machen“ tauscht nur die Idee eines Dates, der Termin und ein „Passt!“ bleiben – ein
     neuer Termin geht weiter über „Termin ändern“.
+13. Seit M26 gibt es keine Reiter mehr (M24 hatte drei): Planen ist der Start, erst die Idee, dann
+    die Zeit. Beim Termin-Ändern bleibt die Idee fest – tauschen geht über „Lieber was anderes?“.
 
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 

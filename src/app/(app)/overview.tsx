@@ -1,6 +1,5 @@
-// What used to be the home screen, split along the order of a date:
-// the state of the round sits on top of "Date planen", what is coming up
-// (and what to rate) on top of "Dates". `/` sends you to whichever needs you.
+// The top of the start page: the next date, what to rate and the state of the
+// round. Below it runs the planning flow (idea → time → done).
 import Link from "next/link";
 import { DateTime } from "luxon";
 import { notHappenedAction } from "./actions";
@@ -95,95 +94,18 @@ export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings,
 
 export type Overview = Awaited<ReturnType<typeof loadOverview>>;
 
-/** Steps that are about a date – they head the Dates tab. */
+/** Steps that are about a date – the full status card heads the start page. */
 const DATE_STEPS: string[] = ["confirm", "wait_confirm", "date_ahead", "review"];
 
-/** Where opening the app lands: something coming up or to rate → Dates, otherwise → Date planen. */
-export function landingPath(o: Pick<Overview, "nextDate" | "toReview">): "/dates" | "/plan" {
-  return o.nextDate || o.toReview ? "/dates" : "/plan";
-}
-
-/** Top of "Date planen": the state of the round and what it needs. */
-export function RoundSection({ o, ctx, now }: { o: Overview; ctx: CoupleContext; now: Date }) {
+/**
+ * Top of the start page ("Date planen"): what needs you right now – the next
+ * date with "Passt!", what to rate, the state of the round – above the planning flow.
+ */
+export function StartSection({ o, ctx, now, afterDate }: { o: Overview; ctx: CoupleContext; now: Date; afterDate?: React.ReactNode }) {
   const { user, partner } = ctx;
-  if (!o.cycle || !o.step) return null;
-  // The plan page shows its own "connect your calendar" card; date steps live on "Dates".
-  const showStep = !["connect_calendar", "partner_calendar", ...DATE_STEPS].includes(o.step.kind);
-  const dateNote =
-    o.step.kind === "confirm"
-      ? { text: `${partner.name} hat schon ein Date geplant.`, link: "Unter Dates „Passt!“ sagen →", href: "/dates" }
-      : o.step.kind === "wait_confirm" || o.step.kind === "date_ahead"
-        ? { text: "Diese Runde steht euer Date schon – hier unten könnt ihr den Termin ändern.", link: "Zum Date →", href: "/dates" }
-        : o.step.kind === "review"
-          ? { text: `Erst mal: Wie war „${o.step.title}“?`, link: "Bewerten →", href: `/dates/${o.step.dateId}` }
-          : null;
-  return (
-    <>
-      {o.cronStale && o.tick && (
-        <Link href="/settings#status" role="alert" className="sticker block rounded-[20px] bg-zitrone px-4 py-3 font-bold text-tinte">
-          ⚠️ Die Automatik ist zuletzt {agoLabel(o.realNow, o.tick.at)} gelaufen – Erinnerungen kommen gerade nicht.{" "}
-          <span className="underline">Läuft alles?</span>
-        </Link>
-      )}
-
-      {showStep && <NextStepCard step={o.step} cycle={o.cycle} me={user} partner={partner} now={now} date={o.shownDate} onPlanPage />}
-      {dateNote && (
-        <p className="rounded-[20px] border-2 border-line bg-surface px-4 py-3 font-bold">
-          {dateNote.text}{" "}
-          <Link href={dateNote.href} className="underline">
-            {dateNote.link}
-          </Link>
-        </p>
-      )}
-
-      {o.suggestion?.status === "ok" && <SuggestionCard suggestion={o.suggestion.suggestion} idea={o.suggestion.idea} />}
-      {o.suggestion?.status === "no_slots" && (
-        <p className="rounded-[20px] border-2 border-dashed border-line px-4 py-3 font-bold">
-          Diese Runde findet der Date-O-Mat keine gemeinsame Lücke mehr. Sucht unten auch nach dem Rundenende.
-        </p>
-      )}
-
-      {o.specialDays.slice(0, 2).map((day) => (
-        <div key={day.id} className="sticker flex flex-col gap-2 rounded-[20px] bg-himbeere-soft px-4 py-3.5 text-tinte">
-          <p className="font-display text-lg font-semibold">
-            {day.emoji} {day.label} {inDaysLabel(day.days)}
-          </p>
-          <p className="text-sm font-bold">
-            {day.kind === "birthday" ? "Zeit für eine Überraschung." : "Wie wär's mit einem großen Date?"}
-            {o.budget && o.budget.pot > 0 ? ` Im Spartopf: ${o.budget.pot} € 🎁` : ""}
-          </p>
-          <Link href="/plan?size=large" className="self-start text-sm font-extrabold underline">
-            {day.kind === "birthday" ? "Überraschung planen →" : "Großes Date planen →"}
-          </Link>
-        </div>
-      ))}
-
-      {o.cycle.status === "open" && o.previous?.status === "skipped" && (
-        <div className="flex items-start gap-3 rounded-[20px] border-2 border-line bg-zitrone-soft px-4 py-3.5 text-tinte">
-          <span className="text-2xl leading-none" aria-hidden="true">
-            🌦️
-          </span>
-          <p>
-            <strong className="block font-extrabold">Letzte Runde ist ausgefallen – passiert!</strong>
-            <span className="font-semibold">Kein Stress. Diese Runde holt ihr&apos;s nach.</span>
-          </p>
-        </div>
-      )}
-
-      <SetupChecklist
-        calendar={o.calendars.find((p) => p.isMe)?.state === "connected"}
-        partnerName={partner.name}
-        partnerCalendar={o.calendars.find((p) => !p.isMe)?.state === "connected"}
-        pushOn={o.pushDevices > 0}
-      />
-    </>
-  );
-}
-
-/** Top of "Dates": the next date (with "Passt!"), what to rate, the story. */
-export function UpcomingSection({ o, ctx, now }: { o: Overview; ctx: CoupleContext; now: Date }) {
-  const { user, partner } = ctx;
-  const stepCard = o.cycle && o.step && DATE_STEPS.includes(o.step.kind);
+  const dateStep = Boolean(o.cycle && o.step && DATE_STEPS.includes(o.step.kind));
+  // The flow below shows its own "connect your calendar" card.
+  const roundStep = o.cycle && o.step && !dateStep && !["connect_calendar", "partner_calendar"].includes(o.step.kind);
   return (
     <>
       {o.cronStale && o.tick && (
@@ -202,7 +124,8 @@ export function UpcomingSection({ o, ctx, now }: { o: Overview; ctx: CoupleConte
         </Link>
       )}
 
-      {stepCard && <NextStepCard step={o.step!} cycle={o.cycle!} me={user} partner={partner} now={now} date={o.shownDate} />}
+      {dateStep && <NextStepCard step={o.step!} cycle={o.cycle!} me={user} partner={partner} now={now} date={o.shownDate} />}
+      {roundStep && <NextStepCard step={o.step!} cycle={o.cycle!} me={user} partner={partner} now={now} date={o.shownDate} onPlanPage />}
 
       {o.toReview && o.step?.kind !== "review" && (
         <Link href={`/dates/${o.toReview.id}`} className="press sticker flex items-center gap-3 rounded-[20px] bg-lavendel px-4 py-3 text-tinte">
@@ -216,7 +139,9 @@ export function UpcomingSection({ o, ctx, now }: { o: Overview; ctx: CoupleConte
       )}
 
       {/* "Passt!" sits in the step card when there is one. */}
-      {o.shownDate && <DateCard date={o.shownDate} me={user} partner={partner} showConfirm={!stepCard} extras={o.dateExtras} />}
+      {o.shownDate && <DateCard date={o.shownDate} me={user} partner={partner} showConfirm={!dateStep} extras={o.dateExtras} />}
+
+      {afterDate}
 
       {o.roundDate?.status === "done" && (
         <form action={notHappenedAction.bind(null, o.roundDate.id)} className="-mt-2 self-center">
@@ -226,8 +151,50 @@ export function UpcomingSection({ o, ctx, now }: { o: Overview; ctx: CoupleConte
         </form>
       )}
 
+      {o.suggestion?.status === "ok" && <SuggestionCard suggestion={o.suggestion.suggestion} idea={o.suggestion.idea} />}
+      {o.suggestion?.status === "no_slots" && (
+        <p className="rounded-[20px] border-2 border-dashed border-line px-4 py-3 font-bold">
+          Diese Runde findet der Date-O-Mat keine gemeinsame Lücke mehr. Sucht unten auch nach dem Rundenende.
+        </p>
+      )}
+
+      {!o.shownDate &&
+        o.specialDays.slice(0, 2).map((day) => (
+          <div key={day.id} className="sticker flex flex-col gap-2 rounded-[20px] bg-himbeere-soft px-4 py-3.5 text-tinte">
+            <p className="font-display text-lg font-semibold">
+              {day.emoji} {day.label} {inDaysLabel(day.days)}
+            </p>
+            <p className="text-sm font-bold">
+              {day.kind === "birthday" ? "Zeit für eine Überraschung." : "Wie wär's mit einem großen Date?"}
+              {o.budget && o.budget.pot > 0 ? ` Im Spartopf: ${o.budget.pot} € 🎁` : ""}
+            </p>
+            <Link href="/plan?size=large" className="self-start text-sm font-extrabold underline">
+              {day.kind === "birthday" ? "Überraschung planen →" : "Großes Date planen →"}
+            </Link>
+          </div>
+        ))}
+
+      {o.cycle?.status === "open" && o.previous?.status === "skipped" && (
+        <div className="flex items-start gap-3 rounded-[20px] border-2 border-line bg-zitrone-soft px-4 py-3.5 text-tinte">
+          <span className="text-2xl leading-none" aria-hidden="true">
+            🌦️
+          </span>
+          <p>
+            <strong className="block font-extrabold">Letzte Runde ist ausgefallen – passiert!</strong>
+            <span className="font-semibold">Kein Stress. Diese Runde holt ihr&apos;s nach.</span>
+          </p>
+        </div>
+      )}
+
       {/* The budget only speaks up when it gets tight; otherwise it lives under /budget. */}
       {o.budget && o.budget.level !== "ok" && <BudgetBar {...o.budget} />}
+
+      <SetupChecklist
+        calendar={o.calendars.find((p) => p.isMe)?.state === "connected"}
+        partnerName={partner.name}
+        partnerCalendar={o.calendars.find((p) => !p.isMe)?.state === "connected"}
+        pushOn={o.pushDevices > 0}
+      />
     </>
   );
 }

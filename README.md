@@ -37,6 +37,7 @@ gemeinsame Ideen-Wunschliste.
 | M23 | Event-Quellen mit Unterseiten: KI sucht bis zu 6 Veranstaltungs-Seiten aus, ihr könnt welche entfernen oder hinzufügen | ✅ |
 | M24 | Navigation in der Reihenfolge eines Dates: Ideen · Date planen (Mitte) · Dates – die Startseite ist darin aufgegangen | ✅ |
 | M25 | Idee antippen → „Date damit planen“ oder „Statt … machen“ (nach Rückfrage, Termin bleibt); ein 💚 beim Swipen landet gleich auf der Wunschliste | ✅ |
+| M26 | Ein Ablauf statt Reitern: der Start zeigt, was ansteht, darunter Idee → Zeit → fertig; Ideen, Dates und Einstellungen als Icons oben | ✅ |
 
 ## Tech-Stack
 
@@ -190,19 +191,24 @@ scripts/              Migration beim Build, Secret-Generator
 - **Wörter:** Kurz/Lang statt Klein/Groß, „Diese Woche“ statt „Runde 3“, „Plan bis …“ statt
   „Deadline“. Einstellungen: „Das Wichtigste“ oben, der Rest eingeklappt (M22).
 
-### Navigation in Kürze (M24)
+### Ein Ablauf in Kürze (M26, löst die Navigation von M24 ab)
 
-- **Unten drei Punkte** in der Reihenfolge eines Dates: 💡 **Ideen** (Wunschliste, Swipen, Was läuft,
-  „+ Idee“) · 📅 **Date planen** (der große Knopf in der Mitte) · 💞 **Dates** (was ansteht und was
-  ihr erlebt habt). Einstellungen über das Regler-Symbol oben.
-- **Die Startseite ist aufgeteilt** (`src/app/(app)/overview.tsx`): Auf „Date planen“ steht oben der
-  Stand der Runde („Du bist dran“, „Sam ist dran – übernehmen?“, Vorschlag, besondere Tage,
-  Start-Checkliste). Auf „Dates“ steht oben, was ein Date betrifft („Passt!“ geben, „Wartet auf …“,
-  „Date steht“, „Wie war's?“), darunter das nächste Date mit Checkliste und die Historie.
-- **`/` leitet weiter:** Steht ein Date an oder ist eins zu bewerten → „Dates“, sonst → „Date planen“
-  (`landingPath()`). Nach dem Planen (auch per Vorschlag) geht es direkt zu „Dates“.
-- Steht schon ein Date, zeigt „Date planen“ nur einen Hinweis mit Link zu „Dates“ und darunter die
-  Termin-Änderung – der große Status-Kasten steht nur an einer Stelle.
+- **Keine Leiste unten mehr.** Die App ist ein Weg: `/plan` ist der Start. Oben stehen nur kleine
+  Icons: links 💡 Ideen (Wunschliste, Swipen, Was läuft, „+ Idee“), rechts 💞 eure bisherigen Dates
+  und ⚙️ Einstellungen. Das Logo führt zurück, andere Seiten haben zusätzlich „← Date planen“.
+- **Start = was gerade ansteht** (`StartSection` in `src/app/(app)/overview.tsx`): das nächste Date
+  mit „Passt!“, „Wie war's?“, der Stand der Runde, die Start-Checkliste.
+- **Steht nichts an:** darunter der Ablauf (`PlanFlow` in `plan/plan-form.tsx`):
+  1. **Was wollt ihr machen?** Wunschliste antippen, oder 🎲 Zufall, „Was anderes …“ (Events,
+     Köln, KI), 💞 Neue Ideen swipen oder die eigene Idee.
+  2. **Wann?** Die Länge kommt von der Idee (umstellbar), dazu die freien Zeiten, Überraschung,
+     Spartopf und das Budget.
+  3. **Date festlegen 🎉:** Konfetti, danach zeigt der Start das Date.
+- **Steht das Date der Runde:** „🔄 Lieber was anderes machen?“ öffnet Schritt 1. Eine angetippte
+  Idee ersetzt nach der Rückfrage die des Dates, der Termin bleibt (wie in M25). „Ändern“ an der
+  Date-Karte ändert nur die Zeit (`/plan?reschedule=…`).
+- **Eure Dates** (`/dates`) ist nur noch die Historie: Runden, bisherige Dates, Statistik, Story.
+- KI-Ideen planen für den nächsten freien Termin (Top-Tipp), damit Wetter und Länge passen.
 
 ### Ideen antippen in Kürze (M25)
 

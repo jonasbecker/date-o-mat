@@ -55,7 +55,7 @@ export function DateCard({
   const canConfirm = showConfirm && date.status === "planned" && date.proposedById !== me.id;
 
   return (
-    <Card size="lg" className="flex flex-col gap-4">
+    <Card size="lg" className="flex flex-col gap-4" data-date-card={date.id}>
       <div className="flex items-center justify-between gap-2">
         <p className="text-[13px] font-extrabold uppercase tracking-wide text-muted">Euer nächstes Date</p>
         <Chip className={date.status === "confirmed" ? "bg-minze text-tinte" : "bg-zitrone text-tinte"}>

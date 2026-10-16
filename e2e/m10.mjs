@@ -73,10 +73,11 @@ await j.getByRole("button", { name: "Was anderes …" }).click();
 const more = j.locator("dialog[open]");
 await more.getByRole("heading", { name: "📍 Ideen für Köln" }).waitFor({ timeout: 10000 });
 const all = await more.locator("li").count();
-check(`all short Köln ideas listed (${all})`, all >= 20);
+check(`all Köln ideas listed (${all})`, all >= 20);
 await more.getByRole("searchbox", { name: "Ideen durchsuchen" }).fill("rhein");
 const found = await more.locator("li").count();
-check(`search narrows the list (${found})`, found > 0 && found < all && (await more.locator("li").allInnerTexts()).every((t) => /rhein/i.test(t)));
+// The search also looks at the note, which the list does not show.
+check(`search narrows the list (${found})`, found > 0 && found < all && (await more.locator("li").allInnerTexts()).some((t) => /rhein/i.test(t)));
 await more.getByRole("searchbox", { name: "Ideen durchsuchen" }).fill("");
 await j.screenshot({ path: `${OUT}m10-03-plan.png` });
 await j.locator("dialog[open]").getByRole("button", { name: "Filter", exact: true }).click();
@@ -92,7 +93,7 @@ await j.locator("dialog[open]").last().getByRole("button", { name: "Zurücksetze
 await j.locator("dialog[open]").last().getByRole("button", { name: "Fertig" }).click();
 const picnic = more.locator("li", { hasText: "Picknick im Rheinpark" });
 await picnic.getByRole("button", { name: "Nehmen" }).click();
-await j.locator("p", { hasText: "Ausgewählt" }).getByText("Picknick im Rheinpark").waitFor({ timeout: 10000 });
+await j.locator("div", { hasText: "Ihr macht" }).getByText("Picknick im Rheinpark", { exact: true }).first().waitFor({ timeout: 10000 });
 const { rows: saved } = await db.query("SELECT title, source, external_ref FROM ideas WHERE source = 'curated'");
 check(`"Nehmen" saves it (curated) and selects it (${JSON.stringify(saved[0])})`, saved.length === 1 && saved[0].external_ref === "rheinpark-picknick");
 
@@ -118,9 +119,10 @@ for (let i = 0; i < 20 && !/köln-tipp/i.test(label); i++) {
 const drawn = await j.locator("dialog[open] h3").innerText();
 check(`a Köln tip came up (${drawn})`, /köln-tipp/i.test(label));
 await j.locator("dialog[open]").getByRole("button", { name: "Nehmen" }).click();
-await j.locator("p", { hasText: "Ausgewählt" }).getByText(drawn).waitFor({ timeout: 10000 }).catch(() => {});
+const chosen = j.locator("div", { hasText: "Ihr macht" }).getByText(drawn, { exact: true }).first();
+await chosen.waitFor({ timeout: 10000 }).catch(() => {});
 await j.screenshot({ path: `${OUT}m10-06-plan-zufall.png` });
-check(`Zufall picks "${drawn}" without leaving the page`, (await j.locator("p", { hasText: "Ausgewählt" }).innerText()).includes(drawn) && j.url().endsWith("/plan"));
+check(`Zufall picks "${drawn}" and goes on to the times`, (await chosen.isVisible()) && j.url().endsWith("/plan"));
 const { rows: [onList] } = await db.query("SELECT count(*)::int AS c FROM ideas WHERE title = $1", [drawn]);
 check("it was put on the wishlist first", onList.c === 1);
 
