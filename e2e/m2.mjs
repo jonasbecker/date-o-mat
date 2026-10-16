@@ -133,8 +133,9 @@ await filterSheet.getByRole("button", { name: "Fertig" }).click();
 check("filter shows only large ideas", (await b.locator("li").filter({ hasText: "Ramen" }).count()) === 0 && (await card(b, "Wandern im Siebengebirge").count()) === 1);
 check("the button shows the active filter", await b.getByRole("button", { name: "Filter: 🎡 Lang" }).isVisible());
 await b.reload();
-await card(b, "Wandern im Siebengebirge").waitFor();
-check("the filter is remembered", (await b.locator("li").filter({ hasText: "Ramen" }).count()) === 0);
+// The filter lives in the browser: the button shows it once the page has hydrated.
+await b.getByRole("button", { name: "Filter: 🎡 Lang" }).waitFor({ timeout: 10000 });
+check("the filter is remembered", (await b.locator("li").filter({ hasText: "Ramen" }).count()) === 0 && (await card(b, "Wandern im Siebengebirge").count()) === 1);
 await b.getByRole("button", { name: "Filter: 🎡 Lang" }).click();
 await b.locator("dialog[open]").getByRole("button", { name: "Zurücksetzen" }).click();
 await b.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
