@@ -20,9 +20,9 @@ import { PushSettings } from "@/components/push-settings";
 import { getPrefs, pushPublicKey } from "@/server/push";
 import { CalendarSection } from "./calendar-section";
 import { SlotSettingsForm } from "./slot-settings-form";
-import { EventSources, type SourceView } from "./event-sources";
-import { listSources } from "@/server/events";
-import type { EventSource } from "@/server/db/schema";
+import { EventSources, type SourcePageView, type SourceView } from "./event-sources";
+import { listSourcePages, listSources } from "@/server/events";
+import type { EventSource, EventSourcePage } from "@/server/db/schema";
 import { agoLabel } from "@/lib/format";
 import { buttonClass } from "@/components/button";
 import { Info } from "@/components/info";
@@ -40,8 +40,16 @@ import { inDaysLabel } from "@/core/special-days";
 // "Jetzt lesen" fetches a page and asks Claude (runs after the response).
 export const maxDuration = 120;
 
-function sourceView(source: EventSource, now: Date): SourceView {
-  const base = { id: source.id, label: source.label, url: source.url, kind: source.kind };
+function pageView(page: EventSourcePage): SourcePageView {
+  const base = { id: page.id, label: page.label, url: page.url, addedBy: page.addedBy };
+  if (!page.lastStatus) return { ...base, status: "Wird beim nächsten Lesen dabei sein", tone: "new" };
+  if (page.lastStatus === "error") return { ...base, status: `⚠️ ${page.lastError ?? "Fehler"}`, tone: "warn" };
+  const count = page.lastCount ?? 0;
+  return count ? { ...base, status: `✓ ${count} ${count === 1 ? "Eintrag" : "Einträge"}`, tone: "ok" } : { ...base, status: "Nichts gefunden", tone: "warn" };
+}
+
+function sourceView(source: EventSource, now: Date, pages: EventSourcePage[]): SourceView {
+  const base = { id: source.id, label: source.label, url: source.url, kind: source.kind, pages: pages.filter((p) => p.sourceId === source.id).map(pageView), picking: !source.pagesPickedAt };
   if (source.fetchStartedAt) {
     return now.getTime() - source.fetchStartedAt.getTime() < 5 * 60_000
       ? { ...base, status: "Wird gerade gelesen …", tone: "busy" }
@@ -86,7 +94,7 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
     listSources(coupleId),
   ]);
   const now = coupleNow(settings);
-  const status = await systemStatus(ctx, now);
+  const [status, sourcePages] = await Promise.all([systemStatus(ctx, now), listSourcePages(sources.map((s) => s.id))]);
   const specialDayViews: SpecialDayView[] = (await upcomingDaysFor(coupleId, now, 366)).map((d) => ({
     id: d.id,
     emoji: d.emoji,
@@ -169,7 +177,7 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
         </Fold>
 
         <Fold id="events" title="🎟️ Event-Quellen" hint={sources.length ? `${sources.length} ${sources.length === 1 ? "Seite" : "Seiten"} für „Was läuft“` : "Seiten für „Was läuft“"}>
-          <EventSources sources={sources.map((s) => sourceView(s, now))} aiReady={env().ai} />
+          <EventSources sources={sources.map((s) => sourceView(s, now, sourcePages))} aiReady={env().ai} />
         </Fold>
 
         <Fold id="entdecken" title="💞 Swipen" hint="Wie viele Events in den Stapel kommen">

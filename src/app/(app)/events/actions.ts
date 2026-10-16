@@ -11,7 +11,17 @@ import { coupleNow } from "@/server/clock";
 import { getDate, saveDate } from "@/server/dates";
 import { db } from "@/server/db";
 import { ideas } from "@/server/db/schema";
-import { addSource, COLOGNE_SOURCES, getEvent, listSources, MANUAL_REFRESH_COOLDOWN_MS, refreshSource, removeSource } from "@/server/events";
+import {
+  addSource,
+  addSourcePage,
+  COLOGNE_SOURCES,
+  getEvent,
+  listSources,
+  MANUAL_REFRESH_COOLDOWN_MS,
+  refreshSource,
+  removeSource,
+  removeSourcePage,
+} from "@/server/events";
 import { notifyPartner } from "@/server/notifications";
 import { getCoupleSettings } from "@/server/settings";
 
@@ -49,6 +59,31 @@ export async function addCologneSourcesAction(): Promise<void> {
   after(async () => {
     for (const id of added) await refreshSource(id, now);
   });
+  refresh();
+}
+
+const PAGE_ERRORS = {
+  invalid: "Das ist keine gültige Adresse.",
+  other_site: "Nur Unterseiten derselben Website.",
+  duplicate: "Die Seite ist schon dabei.",
+  limit: "Mehr als 10 Unterseiten gehen nicht.",
+} as const;
+
+/** "+ Unterseite": a listing page of the same site, read along from the next read on. */
+export async function addSourcePageAction(sourceId: string, _prev: SourceFormState, formData: FormData): Promise<SourceFormState> {
+  const { coupleId } = await requireCouple();
+  const id = z.uuid().safeParse(sourceId);
+  if (!id.success) return { status: "error", message: PAGE_ERRORS.invalid };
+  const result = await addSourcePage(coupleId, id.data, String(formData.get("url") ?? ""));
+  if (!result.ok) return { status: "error", message: PAGE_ERRORS[result.error] };
+  refresh();
+  return { status: "saved", savedAt: Date.now() };
+}
+
+export async function removeSourcePageAction(pageId: string): Promise<void> {
+  const { coupleId } = await requireCouple();
+  const id = z.uuid().safeParse(pageId);
+  if (id.success) await removeSourcePage(coupleId, id.data);
   refresh();
 }
 

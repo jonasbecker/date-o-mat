@@ -2,7 +2,24 @@
 
 import { useActionState, useTransition } from "react";
 import { Button } from "@/components/button";
-import { addCologneSourcesAction, addSourceAction, refreshSourceAction, removeSourceAction, type SourceFormState } from "@/app/(app)/events/actions";
+import {
+  addCologneSourcesAction,
+  addSourceAction,
+  addSourcePageAction,
+  refreshSourceAction,
+  removeSourceAction,
+  removeSourcePageAction,
+  type SourceFormState,
+} from "@/app/(app)/events/actions";
+
+export type SourcePageView = {
+  id: string;
+  label: string;
+  url: string;
+  addedBy: "ai" | "user";
+  status: string;
+  tone: "ok" | "warn" | "new";
+};
 
 export type SourceView = {
   id: string;
@@ -12,6 +29,10 @@ export type SourceView = {
   /** "✓ 23 Einträge · vor 3 Std." / "⚠️ HTTP 403" / "Wird gelesen …" */
   status: string;
   tone: "ok" | "warn" | "busy" | "new";
+  /** Listing pages read along with the start page. */
+  pages: SourcePageView[];
+  /** Sub-pages not picked yet (happens on the next read). */
+  picking: boolean;
 };
 
 const TONE = {
@@ -60,6 +81,7 @@ export function EventSources({ sources, aiReady }: { sources: SourceView[]; aiRe
                   Entfernen
                 </button>
               </div>
+              <SubPages source={source} />
             </li>
           ))}
         </ul>
@@ -97,5 +119,70 @@ export function EventSources({ sources, aiReady }: { sources: SourceView[]; aiRe
         </p>
       </form>
     </div>
+  );
+}
+
+/** The source's sub-pages, folded: status per page, remove, add one of the same site. */
+function SubPages({ source }: { source: SourceView }) {
+  const [state, action, pending] = useActionState<SourceFormState, FormData>(addSourcePageAction.bind(null, source.id), { status: "idle" });
+  const [busy, startTransition] = useTransition();
+  return (
+    <details className="group/sub mt-1 rounded-2xl border-2 border-track">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-sm font-extrabold">
+        <span>
+          Unterseiten · {source.pages.length}
+          {source.picking && source.pages.length === 0 && <span className="font-bold text-muted"> (werden beim Lesen gesucht)</span>}
+        </span>
+        <span aria-hidden="true" className="transition-transform group-open/sub:rotate-180">
+          ⌄
+        </span>
+      </summary>
+      <div className="flex flex-col gap-2 border-t-2 border-track px-3 py-2.5">
+        {source.pages.length === 0 && !source.picking && <p className="text-sm font-semibold text-muted">Keine – gelesen wird nur die Hauptseite (und ihre Seite 2).</p>}
+        <ul className="flex flex-col gap-2">
+          {source.pages.map((page) => (
+            <li key={page.id} className="flex items-start justify-between gap-3">
+              <span className="flex min-w-0 flex-col">
+                <a href={page.url} target="_blank" rel="noopener noreferrer" className="truncate text-sm font-extrabold underline decoration-2 underline-offset-2">
+                  {page.label}
+                </a>
+                <span className={`self-start text-xs font-bold ${TONE[page.tone]}`}>
+                  {page.status}
+                  {page.addedBy === "ai" && " · von der KI"}
+                </span>
+              </span>
+              <button
+                type="button"
+                disabled={busy}
+                aria-label={`${page.label} entfernen`}
+                className="shrink-0 text-xs font-extrabold text-muted underline"
+                onClick={() => startTransition(() => removeSourcePageAction(page.id))}
+              >
+                Entfernen
+              </button>
+            </li>
+          ))}
+        </ul>
+        <form key={state.savedAt ?? 0} action={action} className="flex gap-2">
+          <input
+            name="url"
+            type="url"
+            inputMode="url"
+            required
+            aria-label={`Unterseite von ${source.label}`}
+            placeholder={`${new URL(source.url).origin}/…`}
+            className="h-10 min-w-0 flex-1 rounded-full border-2 border-line bg-bg px-3.5 text-sm font-semibold placeholder:text-muted/70"
+          />
+          <Button type="submit" variant="secondary" size="sm" disabled={pending}>
+            + Hinzufügen
+          </Button>
+        </form>
+        {state.status === "error" && (
+          <p role="alert" className="text-sm font-bold">
+            {state.message}
+          </p>
+        )}
+      </div>
+    </details>
   );
 }

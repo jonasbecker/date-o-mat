@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { describe, expect, it } from "vitest";
-import { cleanItems, decodeEntities, eventSpan, fitsFreeTime, followUpLinks, htmlToText, jsonLdEvents, parseEventTime, sameSite } from "./events";
+import { cleanItems, decodeEntities, eventSpan, fitsFreeTime, followUpLinks, htmlToText, jsonLdEvents, pageLinks, parseEventTime, sameSite } from "./events";
 
 const ZONE = "Europe/Berlin";
 const at = (s: string) => DateTime.fromISO(s, { zone: ZONE }).toJSDate();
@@ -46,6 +46,7 @@ describe("hostile pages stay fast", () => {
       htmlToText(html, SOURCE);
       jsonLdEvents(html, SOURCE);
       followUpLinks(html, SOURCE);
+      pageLinks(html, SOURCE);
       expect(performance.now() - started).toBeLessThan(1500);
     });
   }
@@ -138,25 +139,31 @@ describe("cleanItems", () => {
 
 describe("followUpLinks", () => {
   const page = "https://www.koeln.de/veranstaltungen/";
-  it("rel=next first, then page 2/3, then listing links – same site only", () => {
+  it("rel=next first, then page 2/3 – same site only, no guessing of other listings", () => {
     const html = `<head><link rel="next" href="/veranstaltungen/?page=2"></head><body>
       <a href="/konzert/123">Jazz im Stadtgarten</a>
       <a href="/veranstaltungen/?page=2">2</a><a href="/veranstaltungen/?page=3">3</a><a href="/veranstaltungen/?page=9">9</a>
       <a href="/veranstaltungen/wochenende/"><span>Wochenende</span></a>
-      <a href="https://other.example/?page=2">2</a>
-      <a href="/impressum/">Impressum</a><a href="/veranstaltungen/#top">Alle Events</a></body>`;
-    expect(followUpLinks(html, page)).toEqual([
-      "https://www.koeln.de/veranstaltungen/?page=2",
-      "https://www.koeln.de/veranstaltungen/?page=3",
-      "https://www.koeln.de/veranstaltungen/wochenende/",
-    ]);
+      <a href="https://other.example/?page=2">2</a></body>`;
+    expect(followUpLinks(html, page, 3)).toEqual(["https://www.koeln.de/veranstaltungen/?page=2", "https://www.koeln.de/veranstaltungen/?page=3"]);
   });
-  it("'Nächste Seite' and /seite/2/ paths; at most max", () => {
-    const html = `<a href="/tipps/seite/2/">Nächste Seite</a><a href="/heute">Heute</a><a href="/morgen">Morgen</a>`;
-    expect(followUpLinks(html, "https://koeln.mitvergnuegen.com/tipps/", 2)).toEqual(["https://koeln.mitvergnuegen.com/tipps/seite/2/", "https://koeln.mitvergnuegen.com/heute"]);
+  it("'Nächste Seite' and /seite/2/ paths", () => {
+    expect(followUpLinks(`<a href="/tipps/seite/2/">Nächste Seite</a><a href="/heute">Heute</a>`, "https://koeln.mitvergnuegen.com/tipps/")).toEqual(["https://koeln.mitvergnuegen.com/tipps/seite/2/"]);
   });
   it("nothing to follow", () => {
     expect(followUpLinks(`<a href="/kino">Mehr</a>`, page)).toEqual([]);
+  });
+});
+
+describe("pageLinks", () => {
+  it("same-site links with their text, once each, without pagination, files or legal pages", () => {
+    const html = `<a href="/cologne/konzerte"><b>Konzerte</b></a><a href="/cologne/konzerte#top">Konzerte</a>
+      <a href="/cologne/party">Party</a><a href="/cologne/?page=2">2</a><a href="/impressum">Impressum</a>
+      <a href="https://instagram.com/x">Insta</a><a href="/flyer.pdf">Flyer</a><a href="/cologne/">Start</a>`;
+    expect(pageLinks(html, "https://rausgegangen.de/cologne/")).toEqual([
+      { url: "https://rausgegangen.de/cologne/konzerte", label: "Konzerte" },
+      { url: "https://rausgegangen.de/cologne/party", label: "Party" },
+    ]);
   });
 });
 

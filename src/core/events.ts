@@ -145,21 +145,45 @@ export function htmlToText(html: string, baseUrl: string, maxLength = MAX_PAGE_T
 
 const PAGINATION_HREF = /[?&](page|p|seite|pg)=(\d{1,3})\b|\/(page|seite)[/-]?(\d{1,3})\/?(?:[?#]|$)/i;
 const NEXT_TEXT = /^(nächste( seite)?|weiter|mehr laden|mehr anzeigen|›|»|>|→)$/i;
-const LISTING_TEXT = /^((alle|mehr|weitere) (events|veranstaltungen|termine|tipps|highlights)( anzeigen)?|heute|morgen|(dieses |am )?wochenende|diese woche|nächste woche)$/i;
 const SKIP_HREF = /\.(pdf|jpe?g|png|gif|webp|svg|zip|ics)(\?|$)|login|account|konto|impressum|datenschutz|privacy|agb|newsletter|warenkorb|cart/i;
 
-/**
- * Listing pages that continue the given one on the same site: rel="next",
- * page 2/3 of a pagination, "Alle Events", "Wochenende" … – a start page
- * usually shows only a handful of entries. Best candidates first.
- */
-export function followUpLinks(html: string, pageUrl: string, max = 3): string[] {
+/** Every <a href> with its visible text, in one linear pass (bounded like linksToText). */
+function anchors(html: string): Array<{ href: string; label: string }> {
   const s = html.slice(0, MAX_HTML);
-  const self = pageUrl.split("#")[0];
+  const lower = s.toLowerCase();
+  const open = new RegExp(`<a\\b([^<>]{0,${MAX_TAG}})>`, "gi");
+  const result: Array<{ href: string; label: string }> = [];
+  let close = -1; // next "</a" – searched again only once we are past it
+  for (let m = open.exec(s); m; m = open.exec(s)) {
+    const contentStart = m.index + m[0].length;
+    if (close < contentStart) close = lower.indexOf("</a", contentStart);
+    if (close === -1) break;
+    const href = /href\s*=\s*["']([^"']+)["']/i.exec(m[1])?.[1];
+    if (!href || close - contentStart > MAX_LINK_TEXT) continue;
+    const label = decodeEntities(s.slice(contentStart, close).replace(new RegExp(`<[^<>]{0,${MAX_TAG}}>`, "g"), " ")).replace(/\s+/g, " ").trim();
+    result.push({ href, label });
+  }
+  return result;
+}
+
+/** Same site, not the page itself, not a file or a login/legal page – without the #fragment. */
+function siteLink(href: string, pageUrl: string): string | null {
+  const url = absoluteUrl(href, pageUrl)?.split("#")[0];
+  if (!url || url === pageUrl.split("#")[0] || !sameSite(url, pageUrl) || SKIP_HREF.test(url)) return null;
+  return url;
+}
+
+/**
+ * Pages that continue the given one: rel="next" and page 2/3 of a pagination
+ * ("Nächste Seite", "?page=2", "/seite/2/"). Best candidates first. Which other
+ * listing pages to read is the couple's list of sub-pages (picked once by Claude).
+ */
+export function followUpLinks(html: string, pageUrl: string, max = 2): string[] {
+  const s = html.slice(0, MAX_HTML);
   const found: Array<{ url: string; rank: number }> = [];
   const add = (href: string | undefined, rank: number) => {
-    const url = href ? absoluteUrl(href, pageUrl)?.split("#")[0] : null;
-    if (!url || url === self || !sameSite(url, pageUrl) || SKIP_HREF.test(url)) return;
+    const url = href ? siteLink(href, pageUrl) : null;
+    if (!url) return;
     const known = found.find((f) => f.url === url);
     if (known) known.rank = Math.min(known.rank, rank);
     else found.push({ url, rank });
@@ -168,26 +192,30 @@ export function followUpLinks(html: string, pageUrl: string, max = 3): string[] 
   for (let m = linkTag.exec(s); m; m = linkTag.exec(s)) {
     if (/\brel\s*=\s*["']?[^"'>]*\bnext\b/i.test(m[1])) add(/href\s*=\s*["']([^"']+)["']/i.exec(m[1])?.[1], 0);
   }
-  const lower = s.toLowerCase();
-  const anchor = new RegExp(`<a\\b([^<>]{0,${MAX_TAG}})>`, "gi");
-  let close = -1; // next "</a" – searched again only once we are past it (linear, like linksToText)
-  for (let m = anchor.exec(s); m; m = anchor.exec(s)) {
-    const contentStart = m.index + m[0].length;
-    if (close < contentStart) close = lower.indexOf("</a", contentStart);
-    if (close === -1) break;
-    const href = /href\s*=\s*["']([^"']+)["']/i.exec(m[1])?.[1];
-    if (!href || close - contentStart > MAX_LINK_TEXT) continue;
-    const label = decodeEntities(s.slice(contentStart, close).replace(new RegExp(`<[^<>]{0,${MAX_TAG}}>`, "g"), " ")).replace(/\s+/g, " ").trim();
+  for (const { href, label } of anchors(s)) {
     const page = PAGINATION_HREF.exec(href);
     const number = page ? Number(page[2] ?? page[4]) : NaN;
     if (number >= 2 && number <= 3) add(href, number - 1);
     else if (NEXT_TEXT.test(label)) add(href, 1);
-    else if (LISTING_TEXT.test(label)) add(href, 3);
   }
   return found
     .sort((a, b) => a.rank - b.rank)
     .slice(0, max)
     .map((f) => f.url);
+}
+
+/** The links of a page that could be listing pages – what Claude picks the sub-pages from. */
+export function pageLinks(html: string, pageUrl: string, max = 250): Array<{ url: string; label: string }> {
+  const seen = new Set<string>();
+  const result: Array<{ url: string; label: string }> = [];
+  for (const { href, label } of anchors(html)) {
+    if (result.length >= max) break;
+    const url = siteLink(href, pageUrl);
+    if (!url || seen.has(url) || PAGINATION_HREF.test(url)) continue;
+    seen.add(url);
+    result.push({ url, label: label.slice(0, 80) });
+  }
+  return result;
 }
 
 // --- JSON-LD (schema.org Event) ---------------------------------------------------------

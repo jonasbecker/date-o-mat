@@ -1,20 +1,21 @@
 // Event sources: the websites a couple follows, and what was found on them.
 import "server-only";
 import { createHash } from "node:crypto";
-import { and, asc, eq, isNull, lt, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { DateTime } from "luxon";
-import { cleanItems, eventSpan, fitsFreeTime, followUpLinks, htmlToText, jsonLdEvents, MAX_PAGE_TEXT, MAX_SOURCE_TEXT, type CleanItem } from "@/core/events";
+import { cleanItems, eventSpan, fitsFreeTime, followUpLinks, htmlToText, jsonLdEvents, MAX_PAGE_TEXT, MAX_SOURCE_TEXT, pageLinks, sameSite, type CleanItem } from "@/core/events";
+import { cleanPicked, MAX_PICKED_PAGES, MAX_SOURCE_PAGES, pageLabel } from "@/core/source-pages";
 import { mergeRanges } from "@/core/ranges";
 import { APP_TIMEZONE, type EventSourceKind } from "@/lib/domain";
 import { parseSourceUrl } from "@/lib/url-safety";
 import type { CoupleContext } from "@/server/auth/dal";
 import { db } from "@/server/db";
-import { eventSources, events, ideas, type EventRow, type EventSource } from "@/server/db/schema";
+import { eventSourcePages, eventSources, events, ideas, type EventRow, type EventSource, type EventSourcePage } from "@/server/db/schema";
 import { env } from "@/server/env";
 import { queryFreeBusy } from "@/server/google/calendar-api";
 import { getConnection } from "@/server/google/connection";
 import { getCoupleSettings } from "@/server/settings";
-import { EXTRACTION_MODEL, extractItems } from "./extract";
+import { EXTRACTION_MODEL, extractItems, pickSourcePages } from "./extract";
 import { reserveAiRequest } from "@/server/anthropic";
 import { fetchPage, FetchPageError, fetchPublic } from "./fetch-page";
 import { feedToText, findFeedLink, guessFeedUrl, parseFeed } from "@/core/feeds";
@@ -28,8 +29,8 @@ const REFRESH_FROM_HOUR = 5;
 const STALE_FETCH_MS = 5 * 60_000;
 /** With this many JSON-LD events (over all pages read), Claude is not asked at all. */
 const ENOUGH_STRUCTURED = 25;
-/** Further listing pages read per source besides the start page (page 2, "Wochenende" …). */
-const FOLLOW_UP_PAGES = 3;
+/** Without sub-pages: how many pagination pages (page 2, 3) are read along with the start page. */
+const FOLLOW_UP_PAGES = 2;
 
 export const COLOGNE_SOURCES: Array<{ url: string; label: string; kind: EventSourceKind }> = [
   { url: "https://rausgegangen.de/cologne/", label: "rausgegangen", kind: "calendar" },
@@ -61,6 +62,57 @@ export async function addSource(ctx: CoupleContext, input: { url: string; kind: 
 
 export async function removeSource(coupleId: string, sourceId: string): Promise<void> {
   await db.delete(eventSources).where(and(eq(eventSources.id, sourceId), eq(eventSources.coupleId, coupleId)));
+}
+
+// --- Sub-pages ------------------------------------------------------------------------------
+
+export async function listSourcePages(sourceIds: string[]): Promise<EventSourcePage[]> {
+  if (sourceIds.length === 0) return [];
+  return db.select().from(eventSourcePages).where(inArray(eventSourcePages.sourceId, sourceIds)).orderBy(asc(eventSourcePages.createdAt));
+}
+
+export type AddPageResult = { ok: true } | { ok: false; error: "invalid" | "other_site" | "duplicate" | "limit" };
+
+/** A sub-page added by hand – same website as the source. */
+export async function addSourcePage(coupleId: string, sourceId: string, input: string): Promise<AddPageResult> {
+  const [source] = await db.select().from(eventSources).where(and(eq(eventSources.id, sourceId), eq(eventSources.coupleId, coupleId))).limit(1);
+  const url = parseSourceUrl(input, env().allowPrivateEventUrls);
+  if (!source || !url) return { ok: false, error: "invalid" };
+  if (!sameSite(url.toString(), source.url)) return { ok: false, error: "other_site" };
+  if (url.toString() === source.url) return { ok: false, error: "duplicate" };
+  if ((await db.$count(eventSourcePages, eq(eventSourcePages.sourceId, sourceId))) >= MAX_SOURCE_PAGES) return { ok: false, error: "limit" };
+  const [row] = await db
+    .insert(eventSourcePages)
+    .values({ sourceId, url: url.toString(), label: pageLabel(url.toString()), addedBy: "user" })
+    .onConflictDoNothing()
+    .returning({ id: eventSourcePages.id });
+  return row ? { ok: true } : { ok: false, error: "duplicate" };
+}
+
+export async function removeSourcePage(coupleId: string, pageId: string): Promise<void> {
+  const owned = db.select({ id: eventSources.id }).from(eventSources).where(eq(eventSources.coupleId, coupleId));
+  await db.delete(eventSourcePages).where(and(eq(eventSourcePages.id, pageId), inArray(eventSourcePages.sourceId, owned)));
+}
+
+/** Once per source: Claude picks the listing pages from the start page's links. Never fails the read. */
+async function pickPages(source: EventSource, page: { html: string; url: string }, now: Date): Promise<void> {
+  try {
+    const links = pageLinks(page.html, page.url);
+    if (links.length > 0 && env().ai) {
+      const requestId = await reserveAiRequest({ coupleId: source.coupleId, kind: "events", model: EXTRACTION_MODEL, now });
+      if (!requestId) return; // try again on the next read
+      const picked = cleanPicked(await pickSourcePages({ requestId, url: page.url, kind: source.kind, links }), links, page.url, MAX_PICKED_PAGES);
+      if (picked.length > 0) {
+        await db
+          .insert(eventSourcePages)
+          .values(picked.map((p) => ({ sourceId: source.id, url: p.url, label: p.label, addedBy: "ai" as const })))
+          .onConflictDoNothing();
+      }
+    }
+    await db.update(eventSources).set({ pagesPickedAt: now }).where(eq(eventSources.id, source.id));
+  } catch (error) {
+    console.warn(`[events] picking sub-pages for ${source.id} failed: ${error instanceof Error ? error.message : error}`);
+  }
 }
 
 // --- Reading a source ------------------------------------------------------------------------
@@ -100,15 +152,16 @@ async function feedText(pageHtml: string | null, pageUrl: string): Promise<{ tex
   return null;
 }
 
-/** The start page's continuations (page 2, "Alle Events" …); pages that fail are skipped. */
-async function followUpPages(page: { html: string; url: string }): Promise<Array<{ html: string; url: string }>> {
-  const urls = followUpLinks(page.html, page.url, FOLLOW_UP_PAGES);
+/** Pages read in parallel; a page that fails is skipped (and reported for sub-pages). */
+async function fetchAll(urls: string[]): Promise<Array<{ html: string; url: string } | Error>> {
   const results = await Promise.allSettled(urls.map((url) => fetchPage(url)));
-  return results.flatMap((r) => (r.status === "fulfilled" && r.value.url !== page.url ? [r.value] : []));
+  return results.map((r) => (r.status === "fulfilled" ? r.value : r.reason instanceof Error ? r.reason : new Error(String(r.reason))));
 }
 
+type PageStat = { id: string; status: "ok" | "empty" | "error"; count: number; error: string | null };
+
 /** What reading a source found; "unchanged" when its text is the same as last time (no Claude call). */
-type ReadResult = { items: CleanItem[]; contentHash: string | null } | { unchanged: true };
+type ReadResult = { items: CleanItem[]; contentHash: string | null; pageStats: PageStat[] } | { unchanged: true };
 
 async function itemsFor(source: EventSource, now: Date, force: boolean): Promise<ReadResult> {
   // Some sites block automated page requests or render with JavaScript – their feed often still works.
@@ -121,27 +174,57 @@ async function itemsFor(source: EventSource, now: Date, force: boolean): Promise
   }
   const baseUrl = page?.url ?? source.url;
   const options = { sourceUrl: baseUrl, sourceKind: source.kind, now };
-  // A start page shows only a handful of entries – read its next pages too.
-  const pages = page ? [page, ...(await followUpPages(page))] : [];
-  const structured = cleanItems(pages.flatMap((p) => jsonLdEvents(p.html, p.url)), options);
-  if (structured.length >= ENOUGH_STRUCTURED) return { items: structured, contentHash: null };
+  if (page && !source.pagesPickedAt) await pickPages(source, page, now);
+  const subPages = await listSourcePages([source.id]);
+
+  // The start page, its page 2 (and 3 without sub-pages) and its sub-pages.
+  const followUps = page ? followUpLinks(page.html, page.url, subPages.length > 0 ? 1 : FOLLOW_UP_PAGES).filter((u) => !subPages.some((sp) => sp.url === u)) : [];
+  const [fetched, nextPages] = await Promise.all([fetchAll(subPages.map((p) => p.url)), fetchAll(followUps)]);
+  const isPage = (f: { html: string; url: string } | Error): f is { html: string; url: string } => !(f instanceof Error) && f.url !== page?.url;
+  const pages = page ? [page, ...nextPages.filter(isPage), ...fetched.filter(isPage)] : [];
+  const pageStats: PageStat[] = subPages.map((sp, i) => {
+    const f = fetched[i];
+    return f instanceof Error
+      ? { id: sp.id, status: "error", count: 0, error: (f instanceof FetchPageError ? f.reason : "Nicht erreichbar").slice(0, 200) }
+      : { id: sp.id, status: "empty", count: 0, error: null };
+  });
+  // A sub-page by its own and by its final URL (after redirects).
+  const statByUrl = new Map<string, PageStat>();
+  subPages.forEach((sp, i) => {
+    statByUrl.set(sp.url, pageStats[i]);
+    const f = fetched[i];
+    if (!(f instanceof Error)) statByUrl.set(f.url, pageStats[i]);
+  });
+  const statFor = (url: string) => statByUrl.get(url);
+
+  const structuredByPage = pages.map((p) => cleanItems(jsonLdEvents(p.html, p.url), options));
+  const structured = cleanItems(structuredByPage.flat().map(toRaw), options);
+  pages.forEach((p, i) => {
+    const stat = statFor(p.url);
+    if (stat && structuredByPage[i].length) Object.assign(stat, { status: "ok", count: structuredByPage[i].length });
+  });
+  if (structured.length >= ENOUGH_STRUCTURED) return { items: structured, contentHash: null, pageStats };
   if (!env().ai) {
-    if (structured.length > 0) return { items: structured, contentHash: null };
+    if (structured.length > 0) return { items: structured, contentHash: null, pageStats };
     throw new FetchPageError("Claude ist nicht eingerichtet (ANTHROPIC_API_KEY fehlt)");
   }
-  const parts = pages.map((p, i) => ({ url: p.url, text: htmlToText(p.html, p.url, i === 0 ? MAX_PAGE_TEXT : MAX_PAGE_TEXT / 2) })).filter((p) => p.text.length >= 200);
+  // The start page gets the most room, the others share the rest.
+  const extraBudget = pages.length > 1 ? Math.min(MAX_PAGE_TEXT / 2, Math.floor((MAX_SOURCE_TEXT - MAX_PAGE_TEXT * 0.75) / (pages.length - 1))) : 0;
+  const parts = pages
+    .map((p, i) => ({ url: p.url, text: htmlToText(p.html, p.url, i === 0 ? (pages.length > 1 ? MAX_PAGE_TEXT * 0.75 : MAX_PAGE_TEXT) : extraBudget) }))
+    .filter((p) => p.text.length >= 200);
   // Magazines: the feed has the full articles (each with all its tips), the start page only teasers.
   if (parts.length === 0 || source.kind === "tips") {
     const feed = await feedText(page?.html ?? null, baseUrl);
     if (feed) parts.unshift(feed);
   }
   if (parts.length === 0) {
-    if (structured.length > 0) return { items: structured, contentHash: null };
+    if (structured.length > 0) return { items: structured, contentHash: null, pageStats };
     if (pageError) throw pageError;
     throw new FetchPageError("Seite ist fast leer (lädt ihre Inhalte vermutlich per JavaScript, und einen Feed gibt es nicht)");
   }
   const text = parts
-    .map((p, i) => (i === 0 ? p.text : `\n\n--- ${p.url} ---\n${p.text}`))
+    .map((p, i) => `${i === 0 ? "" : "\n\n"}--- [${i + 1}] ${p.url} ---\n${p.text}`)
     .join("")
     .slice(0, MAX_SOURCE_TEXT);
   const contentHash = createHash("sha256").update(`${source.kind}\n${text}`).digest("hex");
@@ -149,9 +232,17 @@ async function itemsFor(source: EventSource, now: Date, force: boolean): Promise
   if (!force && contentHash === source.contentHash && source.lastStatus !== "error") return { unchanged: true };
   const requestId = await reserveAiRequest({ coupleId: source.coupleId, kind: "events", model: EXTRACTION_MODEL, now });
   if (!requestId) throw new FetchPageError("Tageslimit für die KI-Auswertung erreicht – morgen geht's weiter");
-  const extracted = cleanItems(await extractItems({ requestId, pageText: text, url: parts[0].url, kind: source.kind, now }), options);
+  const raw = await extractItems({ requestId, pageText: text, url: parts[0].url, kind: source.kind, now });
+  // Entries per sub-page (Claude names the section each one came from).
+  parts.forEach((part, i) => {
+    const stat = statFor(part.url);
+    if (!stat) return;
+    const count = cleanItems(raw.filter((r) => r.page === i + 1), options).length;
+    if (count > 0) Object.assign(stat, { status: "ok", count: stat.count + count });
+  });
+  const extracted = cleanItems(raw, options);
   // JSON-LD first: it is exact, Claude's entries only add what is missing.
-  return { items: cleanItems([...structured, ...extracted].map(toRaw), options), contentHash };
+  return { items: cleanItems([...structured, ...extracted].map(toRaw), options), contentHash, pageStats };
 }
 
 function toRaw(item: CleanItem) {
@@ -188,14 +279,17 @@ export async function refreshSource(sourceId: string, now: Date, options: { forc
     // Added as a calendar but no dated events (a magazine like Mit Vergnügen)? Read it once more as a
     // tips page – with its feed – and keep it that way if that finds something.
     if (result.items.length === 0 && source.kind === "calendar" && env().ai) {
-      const asTips = await itemsFor({ ...source, kind: "tips" }, now, true).catch(() => null);
+      const asTips = await itemsFor({ ...source, kind: "tips", pagesPickedAt: source.pagesPickedAt ?? now }, now, true).catch(() => null);
       if (asTips && "items" in asTips && asTips.items.length > 0) {
         result = asTips;
         kind = "tips";
       }
     }
-    const { items, contentHash } = result;
+    const { items, contentHash, pageStats } = result;
     await db.transaction(async (tx) => {
+      for (const stat of pageStats) {
+        await tx.update(eventSourcePages).set({ lastStatus: stat.status, lastCount: stat.count, lastError: stat.error }).where(eq(eventSourcePages.id, stat.id));
+      }
       await tx.delete(events).where(eq(events.sourceId, source.id));
       if (items.length > 0) {
         await tx.insert(events).values(items.map((item) => ({ ...item, coupleId: source.coupleId, sourceId: source.id })));

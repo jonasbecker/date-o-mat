@@ -75,6 +75,9 @@ export const EVENT_SOURCE_KINDS = ["calendar", "tips"] as const;
 export type EventSourceKind = (typeof EVENT_SOURCE_KINDS)[number];
 
 export const FETCH_STATUSES = ["ok", "empty", "error"] as const;
+/** Who added a sub-page of an event source. */
+export const SOURCE_PAGE_ORIGINS = ["ai", "user"] as const;
+export type SourcePageOrigin = (typeof SOURCE_PAGE_ORIGINS)[number];
 export type FetchStatus = (typeof FETCH_STATUSES)[number];
 
 export const EVENT_KINDS = ["event", "tip"] as const;

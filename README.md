@@ -34,6 +34,7 @@ gemeinsame Ideen-Wunschliste.
 | M20 | Eure Date-Story: Jahresrückblick zum Durchtippen, Swipe-Statistik „Euer Ding“ | ✅ |
 | M21 | Extras: Überraschungs-Date, Vorbereitungs-Checkliste, Route (ÖPNV), Gesprächskarten, iPhone-Teilen per Kurzbefehl | ✅ |
 | M22 | Aufgeräumt: ein Filter für alles, 3 Ideen-Reiter, Planen ohne Reiter, Extras nach und nach, Kontrast im dunklen Modus | ✅ |
+| M23 | Event-Quellen mit Unterseiten: KI sucht bis zu 6 Veranstaltungs-Seiten aus, ihr könnt welche entfernen oder hinzufügen | ✅ |
 
 ## Tech-Stack
 
@@ -409,10 +410,16 @@ scripts/              Migration beim Build, Secret-Generator
 
 - In den **Einstellungen → Event-Quellen** tragt ihr Seiten ein (Veranstaltungskalender oder
   Tipps-/Magazinseite). Ein Knopf fügt die vier Köln-Quellen auf einmal hinzu.
-- **Lesen** (`src/server/events/`): Der Server holt die Seite selbst (`fetch-page.ts`) und dazu
-  bis zu drei Folgeseiten (`followUpLinks()`: `rel="next"`, Seite 2/3, „Alle Events“,
-  „Wochenende“ …), denn eine Startseite zeigt meist nur eine Handvoll. Stehen über alle Seiten
-  mindestens 25 Events als schema.org-JSON-LD drin, werden nur die genommen – exakt und ohne KI.
+- **Unterseiten** (M23, `src/core/source-pages.ts`, mit Tests): Beim ersten Lesen bekommt Claude
+  einmal die Links der Startseite und sucht bis zu 6 Seiten mit vielen Events/Tipps aus
+  (Kategorien, „Wochenende“, „Alle Events“) – nur Links von derselben Website, sonst wird
+  verworfen. Sie stehen in `event_source_pages` und in den Einstellungen aufklappbar unter der
+  Quelle, mit Einträgen pro Unterseite; ihr könnt sie entfernen oder eigene derselben Website
+  hinzufügen (zusammen höchstens 10). Bestehende Quellen bekommen ihre Unterseiten beim
+  nächsten Lesen (`event_sources.pages_picked_at`).
+- **Lesen** (`src/server/events/`): Der Server holt die Seite selbst (`fetch-page.ts`), ihre
+  Seite 2 (`followUpLinks()`: `rel="next"`, `?page=2` …) und alle Unterseiten. Stehen über alle
+  Seiten mindestens 25 Events als schema.org-JSON-LD drin, werden nur die genommen – exakt und ohne KI.
   Sonst wird die Seite zu Text mit `[Link](url)` gekürzt (`htmlToText`) und **Claude Haiku 5.5**
   füllt per Structured Output eine feste Liste (Titel, Zeit, Ort, Preis, Link, Kurztext) – alle
   Seiten einer Quelle in einer Anfrage, bis zu 100 Einträge, jeder Tipp eines Listen-Artikels

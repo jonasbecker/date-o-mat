@@ -27,6 +27,7 @@ import {
   EVENT_KINDS,
   EVENT_MIXES,
   EXTRAS,
+  SOURCE_PAGE_ORIGINS,
   EVENT_SOURCE_KINDS,
   FETCH_STATUSES,
   IDEA_SIZES,
@@ -355,9 +356,33 @@ export const eventSources = pgTable(
     lastCount: smallint(),
     // sha256 of the text Claude last read: unchanged pages are not sent again.
     contentHash: text(),
+    // When Claude picked the sub-pages (null = not yet – happens on the next read).
+    pagesPickedAt: timestamptz(),
   },
   (t) => [unique("event_sources_couple_url_unique").on(t.coupleId, t.url)],
 );
+
+// Listing pages of a source that are read along with it ("Konzerte", "Wochenende" …):
+// picked once by Claude, then removed or added by the couple.
+export const eventSourcePages = pgTable(
+  "event_source_pages",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    sourceId: uuid()
+      .notNull()
+      .references(() => eventSources.id, { onDelete: "cascade" }),
+    url: text().notNull(),
+    label: text().notNull(),
+    // "ai" = picked by Claude, "user" = added by hand
+    addedBy: text({ enum: SOURCE_PAGE_ORIGINS }).notNull(),
+    lastStatus: text({ enum: FETCH_STATUSES }),
+    lastError: text(),
+    lastCount: smallint(),
+    createdAt: createdAt(),
+  },
+  (t) => [unique("event_source_pages_source_url_unique").on(t.sourceId, t.url)],
+);
+export type EventSourcePage = typeof eventSourcePages.$inferSelect;
 
 // What was found on a source. Replaced as a whole on every successful fetch.
 export const events = pgTable(
