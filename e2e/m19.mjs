@@ -169,6 +169,13 @@ await j.getByText("Bleibt auf eurer Wunschliste 💚").waitFor({ timeout: 10000 
 check("kept: card leaves the deck for both", (await db.query("SELECT status FROM deck_cards WHERE idea_id = $1", [zoo])).rows[0].status === "matched");
 
 // 6) "Vielleicht": an idea for another season comes back when that season starts
+// (a few spare cards, so the deck never runs empty while we look for the seasonal one)
+for (let i = 1; i <= 6; i++) {
+  await db.query(
+    "INSERT INTO deck_cards (couple_id, kind, title, size, dedupe_key, batch) VALUES ($1, 'idea', $2, 'small', $3, 99) ON CONFLICT DO NOTHING",
+    [couple.id, `Ersatzkarte ${i}`, `ersatzkarte ${i}`],
+  );
+}
 const target = [6, 7, 8].includes(appNow.month) ? { title: "Eislaufen Abend", month: 12 } : { title: "Freibad Abend", month: 6 };
 let title = await topTitle(j);
 for (let n = 0; n < 15 && title !== target.title; n++) {
