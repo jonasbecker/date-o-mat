@@ -221,6 +221,28 @@ export async function saveDate(ctx: CoupleContext, choice: DateChoice, now: Date
   return { ok: true, dateId: savedId, synced };
 }
 
+export type SwapIdeaResult = { ok: true; date: DatePlan } | { ok: false; error: "invalid" | "surprise" | "same" };
+
+/**
+ * "Statt „X“ lieber „Y“": the next date keeps its time, only what you do changes.
+ * A "Passt!" stays – the time is still the same. Someone else's hidden surprise is theirs to change.
+ */
+export async function swapDateIdea(ctx: CoupleContext, dateId: string, ideaId: string, now: Date): Promise<SwapIdeaResult> {
+  const existing = await getDate(ctx.coupleId, dateId);
+  if (!existing || !["planned", "confirmed"].includes(existing.status) || existing.endsAt <= now) return { ok: false, error: "invalid" };
+  if (dateForViewer(existing, ctx.user.id, [ctx.user, ctx.partner], now) !== existing) return { ok: false, error: "surprise" };
+  if (existing.ideaId === ideaId) return { ok: false, error: "same" };
+  const details = await snapshot(ctx.coupleId, { start: existing.startsAt, end: existing.endsAt, size: existing.size, ideaId, customTitle: null, customLocation: null });
+  if (!details) return { ok: false, error: "invalid" };
+  const [date] = await db
+    .update(datePlans)
+    .set({ ...details, syncStatus: "pending", syncAttempts: 0 })
+    .where(eq(datePlans.id, existing.id))
+    .returning();
+  await syncDate(date.id);
+  return { ok: true, date };
+}
+
 /** "Passt!" – only the person who did not propose the current time can confirm. */
 export async function confirmDate(ctx: CoupleContext, dateId: string, now: Date): Promise<boolean> {
   const updated = await db

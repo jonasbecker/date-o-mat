@@ -2,6 +2,7 @@
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { createServer } from "node:http";
+import { DateTime } from "luxon";
 import pg from "pg";
 import { chromium } from "playwright";
 import { tuesdayMorningOffset } from "./clock.mjs";
@@ -43,10 +44,16 @@ const sam = await makeUser("Sam", "partnerin@example.com", "himmel", "token-sam"
 await db.query("INSERT INTO couple_settings (couple_id, first_planner_id, dev_clock_offset_minutes) VALUES ($1, $2, $3)", [couple.id, jonas.id, tuesdayMorningOffset() + 120]);
 await db.query("INSERT INTO ideas (couple_id, title, size, created_by_id) VALUES ($1, 'Picknick im Stadtwald', 'small', $2)", [couple.id, jonas.id]);
 const { rows: [source] } = await db.query("INSERT INTO event_sources (couple_id, url, label, kind) VALUES ($1, 'https://example.com/events', 'Test-Events', 'calendar') RETURNING id", [couple.id]);
+// Evenings on days the Google mock keeps free (it is busy on Wednesday, Friday and Saturday).
+const eventStart = (days) => {
+  let d = DateTime.now().setZone("Europe/Berlin").startOf("day").plus({ days });
+  while ([3, 5, 6].includes(d.weekday)) d = d.plus({ days: 1 });
+  return d.set({ hour: 19 }).toUTC().toISO();
+};
 for (const [title, days, venue] of [["Konzert: Annenmaykantereit", 8, "Palladium"], ["Lesung im Literaturhaus", 9, "Literaturhaus"]]) {
   await db.query(
-    "INSERT INTO events (couple_id, source_id, kind, title, starts_at, venue, url, dedupe_key) VALUES ($1, $2, 'event', $3, date_trunc('day', now()) + ($4 || ' days')::interval + interval '18 hours', $5, 'https://example.com/e', $6)",
-    [couple.id, source.id, title, days, venue, `key-${title}`],
+    "INSERT INTO events (couple_id, source_id, kind, title, starts_at, venue, url, dedupe_key) VALUES ($1, $2, 'event', $3, $4, $5, 'https://example.com/e', $6)",
+    [couple.id, source.id, title, eventStart(days), venue, `key-${title}`],
   );
 }
 
@@ -148,6 +155,10 @@ const swipes = async (userId) => (await db.query("SELECT c.title, s.verdict FROM
 let js = await swipes(jonas.id);
 check(`swipes stored (${js.map((s) => s.verdict).join(",")})`, js.map((s) => `${s.title}:${s.verdict}`).join("|") === `${first}:like|${second}:nope|${third}:super|${fourth}:like`);
 check("nope passes the card for both", (await db.query("SELECT status FROM deck_cards WHERE title = $1", [second])).rows[0].status === "passed");
+const deckIdeas = async () => (await db.query("SELECT title FROM ideas WHERE source = 'deck' AND archived_at IS NULL ORDER BY title")).rows.map((r) => r.title);
+let saved = await deckIdeas();
+check(`a like alone puts the card on the wishlist (${saved.join(", ")})`, saved.join("|") === [first, third, fourth].sort().join("|"));
+check("…and the card stays open for Sam", (await db.query("SELECT status FROM deck_cards WHERE title = $1", [first])).rows[0].status === "open");
 
 // 3) Undo – twice: the drag-like and the super-like come back, the super-like is free again
 await j.getByRole("button", { name: "Rückgängig" }).click();
@@ -156,6 +167,8 @@ await j.getByRole("button", { name: "Rückgängig" }).click();
 check(`second undo (${await nextTop(j, fourth)})`, (await topTitle(j)) === third);
 js = await swipes(jonas.id);
 check("undone swipes are gone", js.length === 2);
+saved = await deckIdeas();
+check(`undoing a like takes it off the wishlist (${saved.join(", ")})`, saved.join("|") === first);
 await j.reload();
 await topCard(j).waitFor({ timeout: 15000 });
 await j.waitForTimeout(800);
@@ -189,17 +202,30 @@ check(`wishlist idea from the match (${JSON.stringify(matched[0])})`, matched[0]
 const planHref = await s.getByRole("link", { name: "📅 Jetzt planen" }).getAttribute("href");
 check(`"Jetzt planen" opens the plan page with the idea (${planHref})`, planHref === `/plan?idea=${matched[0]?.id}`);
 
-// 6) Undo a match: the idea leaves the wishlist again
+check("the match reuses Jonas' wishlist idea", (await db.query("SELECT 1 FROM ideas WHERE title = $1", [third])).rowCount === 1);
+
+// 6) Undo a match: the match is gone, Jonas' like keeps the idea on the wishlist
 await s.getByRole("button", { name: "Weiter swipen" }).click();
 await s.getByRole("button", { name: "Rückgängig" }).click();
 await s.waitForTimeout(800);
-check("undo of a match removes the wishlist idea", (await db.query("SELECT 1 FROM ideas WHERE source = 'deck'")).rowCount === 0);
+const { rows: [undone] } = await db.query("SELECT c.status, c.idea_id FROM deck_cards c WHERE c.title = $1", [third]);
+check(`undo of a match keeps Jonas' idea (${undone.status})`, undone.status === "open" && undone.idea_id === matched[0].id);
 check("…and the card is back on top", (await topTitle(s)) === third);
 await s.getByRole("button", { name: "Gefällt mir" }).click();
 await s.getByRole("dialog").getByText("Match!").waitFor({ timeout: 10000 });
+check("matched again – still one idea", (await db.query("SELECT 1 FROM ideas WHERE title = $1", [third])).rowCount === 1);
 await s.getByRole("link", { name: "📅 Jetzt planen" }).click();
 await s.waitForURL(/\/plan\?idea=/, { timeout: 10000 });
 check("plan page opened from the match", new URL(s.url()).pathname === "/plan");
+await s.goto(`${BASE}/ideas`);
+const matchedCard = s.locator("li").filter({ has: s.getByRole("button", { name: third }) });
+await matchedCard.waitFor({ timeout: 10000 });
+check("the wishlist marks the match", await matchedCard.getByText("💞 Match").isVisible());
+check("a single like is on the wishlist without the mark", (await s.locator("li").filter({ has: s.getByRole("button", { name: first }) }).getByText("💞 Match").count()) === 0);
+await s.getByRole("button", { name: first }).click();
+check("tapping an idea offers to plan it", await s.locator("dialog[open]").getByRole("link", { name: "📅 Date damit planen" }).isVisible());
+await s.locator("dialog[open]").getByRole("link", { name: "📅 Date damit planen" }).click();
+await s.waitForURL(/\/plan\?idea=/, { timeout: 10000 });
 
 // 7) The shared filter works on the deck; combo cards show their event
 await s.goto(`${BASE}/ideas/entdecken`);

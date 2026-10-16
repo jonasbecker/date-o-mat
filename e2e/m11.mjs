@@ -118,7 +118,8 @@ const prompt = first.messages[0].content;
 check(`model claude-haiku-5-5 with JSON schema (${first.model})`, first.model === "claude-haiku-5-5" && first.output_config?.format?.type === "json_schema");
 check("prompt: budget and outdoors from the filter, wishlist titles", prompt.includes("free of charge") && prompt.includes("outdoors") && prompt.includes("Kletterhalle ausprobieren"));
 check("prompt: slot time, size and weather", /Time for the date: \w+, \d+\. \w+, \d\d:\d\d/.test(prompt) && prompt.includes("small date") && prompt.includes("°C"));
-check("prompt: no names, e-mails or notes", !/Jonas|Sam|example\.com/.test(prompt + first.system));
+// Word boundaries: "Samstag" is a weekday, not Sam.
+check("prompt: no names, e-mails or notes", !/\bJonas\b|\bSam\b|example\.com/.test(prompt + first.system));
 const weatherLine = await sheet.getByText(/Wetter:/).innerText();
 check(`weather for the slot shown (${weatherLine})`, /°C/.test(weatherLine) && weatherCalls.length === 1);
 await j.screenshot({ path: `${OUT}m11-02-plan.png` });

@@ -50,7 +50,7 @@ async function Welcome() {
     {
       emoji: "💡",
       title: "Ideen → Planen → Dates",
-      text: "Unten drei Schritte: 💡 Ideen sammeln (oder swipen – wischt ihr beide nach rechts, landet die Idee auf der Wunschliste), 📅 Date planen in der Mitte, 💞 Dates – was ansteht und was ihr erlebt habt.",
+      text: "Unten drei Schritte: 💡 Ideen sammeln (oder swipen – was du nach rechts wischst, kommt auf die Wunschliste; wollt ihr beide, ist es ein 💞 Match), 📅 Date planen in der Mitte, 💞 Dates – was ansteht und was ihr erlebt habt.",
       tone: "bg-minze-soft",
     },
   ];

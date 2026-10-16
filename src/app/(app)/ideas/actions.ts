@@ -1,10 +1,16 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
+import { isSurpriseHidden } from "@/core/date-extras";
 import { parseIdeaInput, type IdeaFieldErrors } from "@/lib/idea-input";
 import { requireCouple } from "@/server/auth/dal";
+import { coupleNow } from "@/server/clock";
+import { swapDateIdea } from "@/server/dates";
 import { archiveIdea, createIdea, updateIdea } from "@/server/ideas";
+import { notifyPartner } from "@/server/notifications";
+import { getCoupleSettings } from "@/server/settings";
 
 export type IdeaFormState = {
   status: "idle" | "saved" | "error";
@@ -57,4 +63,27 @@ export async function archiveIdeaAction(id: string): Promise<void> {
     await archiveIdea(coupleId, user.id, parsed.data);
   }
   refresh();
+}
+
+
+/** "Statt „X“ lieber diese Idee": the next date keeps its time and gets this idea. */
+export async function swapDateIdeaAction(dateId: string, id: string): Promise<{ ok: boolean; message?: string }> {
+  const ctx = await requireCouple();
+  const parsedDate = ideaId.safeParse(dateId);
+  const parsedIdea = ideaId.safeParse(id);
+  if (!parsedDate.success || !parsedIdea.success) return { ok: false, message: "Das Date gibt es so nicht mehr – schau unter Dates." };
+  const now = coupleNow(await getCoupleSettings(ctx.coupleId));
+  const result = await swapDateIdea(ctx, parsedDate.data, parsedIdea.data, now);
+  if (!result.ok) {
+    const messages = {
+      invalid: "Das Date gibt es so nicht mehr – schau unter Dates.",
+      surprise: `Das ist eine Überraschung – die kann nur ${ctx.partner.name} ändern.`,
+      same: "Das macht ihr schon.",
+    };
+    return { ok: false, message: messages[result.error] };
+  }
+  // A surprise stays quiet – the partner only knows the time anyway.
+  if (!isSurpriseHidden(result.date, ctx.partner.id, now)) after(() => notifyPartner(ctx, "changed", result.date));
+  refresh();
+  return { ok: true };
 }

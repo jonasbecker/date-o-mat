@@ -93,6 +93,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M22 | Aufräumen: ein Filter, 3 Ideen-Reiter, Planen ohne Reiter, Extras nach und nach, Einstellungen gestaffelt, Kontrast | ✅ |
 | M23 | Event-Quellen mit Unterseiten (KI wählt bis zu 6, bearbeitbar) | ✅ |
 | M24 | Navigation Ideen · Date planen · Dates, Startseite aufgeteilt, `/` leitet passend weiter | ✅ |
+| M25 | Idee antippen: planen oder das nächste Date tauschen (Termin bleibt); ein 💚 beim Swipen speichert sofort | ✅ |
 
 Abweichungen in V2:
 
@@ -117,6 +118,10 @@ Abweichungen in V2:
    er auch ohne Server-Anfrage sofort da.
 10. Die Stimmungs-Auswahl der KI-Ideen (gemütlich, aktiv …) ist mit M22 entfallen – sie war
     der vierte Filter neben Dauer, Budget und Ort; die KI überrascht jetzt immer.
+11. Seit M25 speichert schon ein einzelnes 💚 beim Swipen auf die gemeinsame Wunschliste (vorher
+    nur ein Match). Ein Match bleibt sichtbar („💞 Match“), die Karte bleibt im Stapel des anderen.
+12. „Statt … machen“ tauscht nur die Idee eines Dates, der Termin und ein „Passt!“ bleiben – ein
+    neuer Termin geht weiter über „Termin ändern“.
 
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 

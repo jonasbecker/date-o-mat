@@ -1,8 +1,8 @@
 import "server-only";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, ne } from "drizzle-orm";
 import type { IdeaInput } from "@/lib/idea-input";
 import { db } from "@/server/db";
-import { ideas } from "@/server/db/schema";
+import { deckCards, ideas } from "@/server/db/schema";
 
 export type Idea = typeof ideas.$inferSelect;
 
@@ -14,6 +14,15 @@ export async function listIdeas(coupleId: string): Promise<Idea[]> {
     .from(ideas)
     .where(and(eq(ideas.coupleId, coupleId), isNull(ideas.archivedAt)))
     .orderBy(desc(ideas.createdAt));
+}
+
+/** Ideas both swiped right on in the deck (shown with 💞 on the wishlist). */
+export async function matchedIdeaIds(coupleId: string): Promise<Set<string>> {
+  const rows = await db
+    .select({ ideaId: deckCards.ideaId })
+    .from(deckCards)
+    .where(and(eq(deckCards.coupleId, coupleId), eq(deckCards.status, "matched"), ne(deckCards.kind, "revisit"), isNotNull(deckCards.ideaId)));
+  return new Set(rows.map((r) => r.ideaId!));
 }
 
 export async function countIdeas(coupleId: string): Promise<number> {

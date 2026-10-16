@@ -166,6 +166,7 @@ export function SwipeDeck({
           archive: "Von der Wunschliste genommen – ihr wart euch einig.",
         };
         if (verdict === "maybe") setMessage("Kommt später wieder 🤔");
+        else if (result.saved) setMessage(`Steht auf eurer Wunschliste 💚 Will ${partnerName} auch, ist's ein Match.`);
         else if (notes[result.outcome]) setMessage(notes[result.outcome]!);
         else if (card.kind === "revisit" && verdict === "nope") setMessage(`Wenn ${partnerName} auch ✕ sagt, fliegt sie von der Liste.`);
       }
@@ -190,7 +191,7 @@ export function SwipeDeck({
       const result = await undoSwipeAction().catch(() => null);
       if (!result) return setMessage("Das hat nicht geklappt – bist du offline?");
       if (!result.ok) {
-        setMessage(result.error === "planned" ? "Das ist schon als Date geplant – das Match bleibt 💞" : "Da gibt's nichts mehr rückgängig zu machen.");
+        setMessage(result.error === "planned" ? "Das ist schon als Date geplant – die Idee bleibt 💞" : "Da gibt's nichts mehr rückgängig zu machen.");
         return;
       }
       const card = result.card;

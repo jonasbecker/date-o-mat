@@ -191,7 +191,14 @@ export async function remainingCards(ctx: CoupleContext, now: Date): Promise<num
 // --- Swiping -------------------------------------------------------------------------------------
 
 export type SwipeResult =
-  | { ok: true; outcome: SwipeOutcome; title: string; match: { ideaId: string; title: string } | null }
+  | {
+      ok: true;
+      outcome: SwipeOutcome;
+      title: string;
+      match: { ideaId: string; title: string } | null;
+      /** The like put the card on the wishlist (or it was there already). */
+      saved: boolean;
+    }
   | { ok: false; error: "gone" | "super_used" };
 
 function matchNote(card: DeckCard): string | null {
@@ -236,14 +243,18 @@ export async function swipe(ctx: CoupleContext, cardId: string, verdict: SwipeVe
         await tx.update(deckCards).set({ status: "passed" }).where(eq(deckCards.id, cardId));
         await tx.update(ideas).set({ archivedAt: new Date(), updatedById: ctx.user.id }).where(and(eq(ideas.id, card.ideaId), eq(ideas.coupleId, ctx.coupleId)));
       }
-      return { ok: true, outcome, title: card.title, match: null } as const;
+      return { ok: true, outcome, title: card.title, match: null, saved: false } as const;
     }
     const outcome = swipeOutcome(verdict, partner?.verdict ?? null);
     if (outcome === "pass") {
       await tx.update(deckCards).set({ status: "passed" }).where(eq(deckCards.id, cardId));
-      return { ok: true, outcome, title: card.title, match: null } as const;
+      return { ok: true, outcome, title: card.title, match: null, saved: false } as const;
     }
-    if (outcome === "match") {
+    if (outcome === "wait" && verdict === "maybe") return { ok: true, outcome, title: card.title, match: null, saved: false } as const;
+    // A like goes onto the wishlist right away (the first like adds it); the card stays in
+    // the partner's deck, and their like makes it a match.
+    let ideaId = card.ideaId;
+    if (!ideaId) {
       const [idea] = await tx
         .insert(ideas)
         .values({
@@ -260,10 +271,16 @@ export async function swipe(ctx: CoupleContext, cardId: string, verdict: SwipeVe
           updatedById: ctx.user.id,
         })
         .returning({ id: ideas.id });
-      await tx.update(deckCards).set({ status: "matched", matchedAt: new Date(), ideaId: idea.id }).where(eq(deckCards.id, cardId));
-      return { ok: true, outcome, title: card.title, match: { ideaId: idea.id, title: card.title } } as const;
+      ideaId = idea.id;
     }
-    return { ok: true, outcome, title: card.title, match: null } as const;
+    if (outcome === "match") {
+      await tx.update(deckCards).set({ status: "matched", matchedAt: new Date(), ideaId }).where(eq(deckCards.id, cardId));
+      // Taken off the list in the meantime? Now both want it – back it comes.
+      if (card.ideaId) await tx.update(ideas).set({ archivedAt: null }).where(and(eq(ideas.id, ideaId), eq(ideas.coupleId, ctx.coupleId)));
+      return { ok: true, outcome, title: card.title, match: { ideaId, title: card.title }, saved: true } as const;
+    }
+    await tx.update(deckCards).set({ ideaId }).where(eq(deckCards.id, cardId));
+    return { ok: true, outcome, title: card.title, match: null, saved: true } as const;
   });
 }
 
@@ -284,21 +301,22 @@ export async function undoLastSwipe(ctx: CoupleContext, now: Date): Promise<Undo
     if (card.kind === "revisit") {
       // Kept or removed from the wishlist: back to how it was.
       if (card.status === "passed" && card.ideaId) await tx.update(ideas).set({ archivedAt: null }).where(and(eq(ideas.id, card.ideaId), eq(ideas.coupleId, ctx.coupleId)));
-    } else if (card.status === "matched" && card.ideaId) {
-      // Already planned as a date: the match stays.
-      const used = await tx.$count(datePlans, eq(datePlans.ideaId, card.ideaId));
-      if (used > 0) return { ok: false, error: "planned" } as const;
-      await tx.delete(ideas).where(and(eq(ideas.id, card.ideaId), eq(ideas.coupleId, ctx.coupleId)));
     }
-    await tx
-      .update(deckCards)
-      .set({ status: "open", matchedAt: null, ideaId: card.kind === "revisit" ? card.ideaId : null })
-      .where(eq(deckCards.id, card.id));
-    await tx.delete(deckSwipes).where(and(eq(deckSwipes.cardId, card.id), eq(deckSwipes.userId, ctx.user.id)));
     const [partner] = await tx
       .select({ verdict: deckSwipes.verdict })
       .from(deckSwipes)
       .where(and(eq(deckSwipes.cardId, card.id), eq(deckSwipes.userId, ctx.partner.id)));
+    const partnerLikes = partner?.verdict === "like" || partner?.verdict === "super";
+    let ideaId = card.ideaId;
+    // Taking back the only like takes the idea off the wishlist again – unless it is planned already.
+    if (card.kind !== "revisit" && card.ideaId && !partnerLikes && (last.swipe.verdict === "like" || last.swipe.verdict === "super")) {
+      const used = await tx.$count(datePlans, eq(datePlans.ideaId, card.ideaId));
+      if (used > 0) return { ok: false, error: "planned" } as const;
+      await tx.delete(ideas).where(and(eq(ideas.id, card.ideaId), eq(ideas.coupleId, ctx.coupleId)));
+      ideaId = null;
+    }
+    await tx.update(deckCards).set({ status: "open", matchedAt: null, ideaId }).where(eq(deckCards.id, card.id));
+    await tx.delete(deckSwipes).where(and(eq(deckSwipes.cardId, card.id), eq(deckSwipes.userId, ctx.user.id)));
     return { ok: true, card: cardView({ ...card, status: "open" }, partner?.verdict) } as const;
   });
 }

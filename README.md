@@ -36,6 +36,7 @@ gemeinsame Ideen-Wunschliste.
 | M22 | Aufgeräumt: ein Filter für alles, 3 Ideen-Reiter, Planen ohne Reiter, Extras nach und nach, Kontrast im dunklen Modus | ✅ |
 | M23 | Event-Quellen mit Unterseiten: KI sucht bis zu 6 Veranstaltungs-Seiten aus, ihr könnt welche entfernen oder hinzufügen | ✅ |
 | M24 | Navigation in der Reihenfolge eines Dates: Ideen · Date planen (Mitte) · Dates – die Startseite ist darin aufgegangen | ✅ |
+| M25 | Idee antippen → „Date damit planen“ oder „Statt … machen“ (nach Rückfrage, Termin bleibt); ein 💚 beim Swipen landet gleich auf der Wunschliste | ✅ |
 
 ## Tech-Stack
 
@@ -203,6 +204,18 @@ scripts/              Migration beim Build, Secret-Generator
 - Steht schon ein Date, zeigt „Date planen“ nur einen Hinweis mit Link zu „Dates“ und darunter die
   Termin-Änderung – der große Status-Kasten steht nur an einer Stelle.
 
+### Ideen antippen in Kürze (M25)
+
+- **Tippen auf eine Idee** der Wunschliste öffnet ein kleines Menü: „📅 Date damit planen“ (öffnet
+  „Date planen“ mit der Idee) und „✏️ Bearbeiten“.
+- **Steht schon ein Date an**, heißt der erste Knopf „🔄 Statt „…“ machen“. Davor kommt die Frage
+  „Willst du das ändern?“ mit dem jetzigen Date. Mit „Ja, ändern“ bleibt der Termin, nur die Idee
+  (Titel, Ort, Notiz, Kosten) wechselt (`swapDateIdea()` in `src/server/dates.ts`). Ein „Passt!“
+  bleibt bestehen, der Google-Termin wird angepasst, und der/die andere bekommt einen Push.
+- Die Überraschung des anderen kann man so nicht ändern, und sie wird auf der Wunschliste auch
+  nicht markiert. Die eigene Überraschung bleibt beim Tauschen geheim (kein Push).
+- Auf der Karte stehen „📅 Nächstes Date“ und „💞 Match“ (wenn ihr beide nach rechts gewischt habt).
+
 ### Aufgeräumt in Kürze (M22)
 
 - **Ein Filter für alles** (`src/core/filters.ts`, mit Tests; Knopf + Sheet in
@@ -251,11 +264,12 @@ scripts/              Migration beim Build, Secret-Generator
   sieht ihn mit Namen), ↩️ nimmt den letzten Swipe zurück – beliebig oft hintereinander.
   Tastatur: ← → ↑ und Rücktaste. Es gilt der gemeinsame Filter (M22);
   „Mehr … holen“ macht gezielt passende Karten.
-- **Match:** Jede:r swipet für sich. Erst wenn beide 💚 geben: „Match! 💞“ mit Konfetti, Push an
-  beide, Idee auf der Wunschliste (`source = 'deck'`) und „📅 Jetzt planen“. Ein ✕ von einem
-  nimmt die Karte für beide aus dem Stapel. Was der Partner gemocht hat, kommt bei dir früher
-  dran – ohne es zu verraten. Rückgängig nach einem Match nimmt die Idee wieder von der Liste
-  (außer sie ist schon als Date geplant).
+- **Match:** Jede:r swipet für sich. Seit M25 kommt schon ein einzelnes 💚 auf die Wunschliste
+  (`source = 'deck'`, mit deinem Avatar); die Karte bleibt im Stapel des anderen. Gibt der/die
+  andere auch 💚: „Match! 💞“ mit Konfetti, Push an beide, „📅 Jetzt planen“ und auf der
+  Wunschliste das Abzeichen „💞 Match“. Ein ✕ zuerst nimmt die Karte für beide aus dem Stapel.
+  Rückgängig nimmt dein 💚 wieder von der Liste, solange es das einzige war (außer die Idee ist
+  schon als Date geplant); ein Match zurücknehmen lässt das 💚 des anderen stehen.
 - **Nachrichten** (einzeln abschaltbar unter Erinnerungen): „Match!“, „⭐ … findet etwas super“
   und höchstens einmal am Tag „Sam hat 4 Ideen geliked 👀“ (ab 3 wartenden Likes, nicht nachts).
 

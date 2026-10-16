@@ -93,7 +93,7 @@ export async function sendDueReminders(coupleId: string, now: Date): Promise<num
   return sent;
 }
 
-export type PartnerEvent = "planned" | "rescheduled" | "confirmed" | "cancelled";
+export type PartnerEvent = "planned" | "rescheduled" | "changed" | "confirmed" | "cancelled";
 
 /** Tells the partner right away what just happened (sent after the response). */
 export async function notifyPartner(ctx: CoupleContext, event: PartnerEvent, fullDate: DatePlan) {
@@ -103,6 +103,7 @@ export async function notifyPartner(ctx: CoupleContext, event: PartnerEvent, ful
   const payloads: Record<PartnerEvent, PushPayload> = {
     planned: { title: `${name} hat ein Date geplant 🎉`, body: `${date.title} · ${when} – passt dir das?`, url: "/", tag: "date" },
     rescheduled: { title: `${name} schlägt eine neue Zeit vor`, body: `${date.title} · ${when} – passt dir das?`, url: "/", tag: "date" },
+    changed: { title: `${name} hat euer Date geändert`, body: `Jetzt: ${date.title} · ${when}`, url: "/dates", tag: "date" },
     confirmed: { title: `${name} sagt: Passt! 💚`, body: `${date.title} · ${when}`, url: "/", tag: "date" },
     cancelled: { title: `${name} hat das Date abgesagt`, body: `${date.title} findet nicht statt. Die Runde ist wieder offen.`, url: "/", tag: "date" },
   };

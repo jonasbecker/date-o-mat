@@ -5,6 +5,7 @@ import { createServer } from "node:http";
 import { DateTime } from "luxon";
 import pg from "pg";
 import { chromium } from "playwright";
+import { tuesdayMorningOffset } from "./clock.mjs";
 import { events as googleEvents, startMock } from "./google-mock.mjs";
 
 const BASE = "http://localhost:3000";
@@ -40,7 +41,8 @@ async function makeUser(name, email, color, accessToken, createdAt) {
 }
 const jonas = await makeUser("Jonas", "jonas@example.com", "mandarine", "token-jonas", "2026-01-01");
 const sam = await makeUser("Sam", "partnerin@example.com", "himmel", "token-sam", "2026-01-02");
-await db.query("INSERT INTO couple_settings (couple_id, first_planner_id) VALUES ($1, $2)", [couple.id, jonas.id]);
+// Tuesday morning: on a weekend the first free slot can be today, and a surprise is revealed on its day.
+await db.query("INSERT INTO couple_settings (couple_id, first_planner_id, dev_clock_offset_minutes) VALUES ($1, $2, $3)", [couple.id, jonas.id, tuesdayMorningOffset()]);
 await db.query("INSERT INTO ideas (couple_id, title, size, location, cost_eur, created_by_id) VALUES ($1, 'Sushi-Abend', 'small', 'Belgisches Viertel', 50, $2)", [couple.id, jonas.id]);
 
 let failures = 0;
@@ -163,6 +165,15 @@ await s.waitForURL(`${BASE}/dates`, { timeout: 15000 });
 const { rows: [moved] } = await db.query("SELECT title, location, surprise, starts_at, organizer_id FROM date_plans WHERE id = $1", [date.id]);
 check(`moved, still the same secret (${moved.title})`, moved.title === "Sushi-Abend" && moved.location === "Belgisches Viertel" && moved.surprise === true && moved.starts_at.getTime() !== date.starts_at.getTime());
 
+// Sam on the wishlist: tapping an idea cannot touch Jonas' surprise – and does not give it away
+await s.goto(`${BASE}/ideas`);
+await s.getByRole("button", { name: "Sushi-Abend" }).click();
+const samMenu = s.locator("dialog[open]");
+await samMenu.getByText("das kann nur Jonas ändern", { exact: false }).waitFor({ timeout: 10000 });
+check("Sam: no swap for Jonas' surprise", (await samMenu.getByRole("button", { name: /Statt/ }).count()) === 0 && (await samMenu.getByRole("button", { name: "✏️ Bearbeiten" }).isVisible()));
+check("Sam: the surprise idea is not marked on the wishlist", (await s.getByText("📅 Nächstes Date").count()) === 0);
+await s.keyboard.press("Escape");
+
 // 5) The evening before: prep reminder only for Jonas (Sam must not know)
 const start = DateTime.fromJSDate(moved.starts_at).setZone(ZONE);
 await setClock(start.minus({ days: 1 }).set({ hour: 18, minute: 5 }));
@@ -185,7 +196,7 @@ const question = await s.locator("p[aria-live=polite]").innerText();
 await s.getByRole("button", { name: "Nächste Karte →" }).click();
 check(`conversation cards (${question})`, question.endsWith("?") && (await s.locator("p[aria-live=polite]").innerText()) !== question);
 await s.screenshot({ path: `${OUT}m21-04-revealed.png`, fullPage: true });
-await setClock(DateTime.now());
+await db.query("UPDATE couple_settings SET dev_clock_offset_minutes = $2 WHERE couple_id = $1", [couple.id, tuesdayMorningOffset()]);
 
 // 7) iPhone share key: create, use, reject wrong keys, delete
 await j.goto(`${BASE}/settings#unterwegs`);
@@ -204,6 +215,27 @@ await j.reload();
 await j.getByRole("button", { name: "Schlüssel löschen" }).click();
 await j.waitForTimeout(800);
 check("deleted key → 401", (await share(shareKey, { text: "https://www.tiktok.com/@a/video/1" })).status === 401);
+
+// 7b) Tapping an idea: do it instead of the next date – after a question; the time stays
+await j.goto(`${BASE}/ideas`);
+await j.getByRole("button", { name: "Kino: Dune" }).click();
+const menu = j.locator("dialog[open]");
+await menu.getByRole("button", { name: "🔄 Statt „Sushi-Abend“ machen" }).click();
+await menu.getByText("Willst du das ändern?", { exact: false }).waitFor({ timeout: 10000 });
+await j.screenshot({ path: `${OUT}m21-05-swap.png` });
+await menu.getByRole("button", { name: "Ja, ändern" }).click();
+await j.waitForURL(`${BASE}/dates`, { timeout: 15000 });
+const { rows: [swapped] } = await db.query("SELECT title, location, starts_at FROM date_plans WHERE id = $1", [date.id]);
+check(`idea swapped, same time (${swapped.title})`, swapped.title === "Kino: Dune" && swapped.starts_at.getTime() === moved.starts_at.getTime());
+// Back before the day, so it is Jonas' secret again: the Google event is updated but still hides it.
+const event3 = [...googleEvents["token-jonas"].values()].at(-1);
+check(`Google event updated, surprise kept (${event3?.summary})`, event3?.summary === "💞 Date: 🎁 Überraschung von Jonas" && !JSON.stringify(event3).includes("Sushi") && !JSON.stringify(event3).includes("Dune"));
+await j.getByRole("heading", { name: "Kino: Dune" }).waitFor({ timeout: 10000 });
+await j.goto(`${BASE}/ideas`);
+await j.getByRole("button", { name: "Kino: Dune" }).click();
+await menu.getByText("📅 Das ist euer nächstes Date", { exact: false }).waitFor({ timeout: 10000 });
+check("the date's own idea offers no swap", (await menu.getByRole("button", { name: /Statt/ }).count()) === 0);
+await j.keyboard.press("Escape");
 
 // 8) /fragen page
 await j.goto(`${BASE}/fragen`);

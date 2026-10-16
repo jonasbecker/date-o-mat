@@ -188,6 +188,7 @@ await j.keyboard.press("Escape");
 
 // 5) Editing an existing idea: no link import
 await j.getByRole("button", { name: "Kino: Dune", exact: true }).click();
+await sheet(j).getByRole("button", { name: "✏️ Bearbeiten" }).click();
 await sheet(j).getByLabel("Was wollt ihr machen?").waitFor();
 check("edit form has no link button", (await sheet(j).getByRole("button", { name: "🔗 Link einfügen" }).count()) === 0);
 await j.keyboard.press("Escape");
