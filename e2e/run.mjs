@@ -1,25 +1,82 @@
 // Runs the end-to-end suites against a production build with mocked Google,
 // Claude, weather and push services. Usage:
 //
-//   DATABASE_URL=postgres://… npm run build      # once (runs the migrations too)
-//   DATABASE_URL=postgres://… npm run e2e         # all suites
-//   DATABASE_URL=postgres://… npm run e2e -- m5 m9
+//   npm run e2e                  # all suites
+//   npm run e2e -- m5 m9         # some
+//   npm run e2e -- --no-build m5 # skip the freshness check
 //
+// The test database comes from E2E_DATABASE_URL (environment or .env.local),
+// else DATABASE_URL from the environment. The build is redone automatically when
+// src/ or drizzle/ changed since the last one (it runs the migrations too).
 // The suites wipe the database they run against – never point this at real data.
 import { execFileSync, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
+import pg from "pg";
 import { fileURLToPath } from "node:url";
 import webpush from "web-push";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const ALL = ["m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "m10", "m11", "m12", "m13", "m14", "m15", "m17", "m18", "m19", "m20", "m21"];
-const suites = process.argv.slice(2).length ? process.argv.slice(2) : ALL;
-
-if (!process.env.DATABASE_URL) {
-  console.error("DATABASE_URL is required (a throwaway test database – the suites wipe it).");
+const args = process.argv.slice(2);
+const skipBuild = args.includes("--no-build");
+const named = args.filter((a) => !a.startsWith("--"));
+const suites = named.length ? named : ALL;
+const unknown = suites.filter((s) => !ALL.includes(s));
+if (unknown.length) {
+  console.error(`Unknown suite(s): ${unknown.join(", ")} – known: ${ALL.join(" ")}`);
   process.exit(2);
+}
+
+// Only E2E_DATABASE_URL is read from .env.local – a DATABASE_URL there may be real data.
+function fromEnvFile(name) {
+  try {
+    const line = readFileSync(`${ROOT}.env.local`, "utf8").split("\n").find((l) => l.startsWith(`${name}=`));
+    return line?.slice(name.length + 1).trim().replace(/^["']|["']$/g, "") || undefined;
+  } catch {
+    return undefined;
+  }
+}
+const databaseUrl = process.env.E2E_DATABASE_URL ?? fromEnvFile("E2E_DATABASE_URL") ?? process.env.DATABASE_URL;
+if (!databaseUrl) {
+  console.error("Set E2E_DATABASE_URL (environment or .env.local) to a throwaway test database – the suites wipe it.");
+  process.exit(2);
+}
+process.env.DATABASE_URL = databaseUrl;
+// The cloud container has its own Chromium (Playwright's download is blocked there).
+if (!process.env.CHROMIUM_PATH && existsSync("/opt/pw-browsers/chromium")) process.env.CHROMIUM_PATH = "/opt/pw-browsers/chromium";
+
+const db = new pg.Client({ connectionString: databaseUrl });
+try {
+  await db.connect();
+  await db.end();
+} catch (error) {
+  console.error(`Test database not reachable (${error.message}). Is Postgres running? (e.g. sudo pg_ctlcluster 16 main start)`);
+  process.exit(2);
+}
+
+// A build older than the code would test yesterday's app.
+function newestMtime(dir) {
+  let newest = 0;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = `${dir}/${entry.name}`;
+    newest = Math.max(newest, entry.isDirectory() ? newestMtime(path) : statSync(path).mtimeMs);
+  }
+  return newest;
+}
+if (!skipBuild) {
+  const builtAt = existsSync(`${ROOT}.next/BUILD_ID`) ? statSync(`${ROOT}.next/BUILD_ID`).mtimeMs : 0;
+  const changedAt = Math.max(newestMtime(`${ROOT}src`), newestMtime(`${ROOT}drizzle`), newestMtime(`${ROOT}public`));
+  if (changedAt > builtAt) {
+    console.log(builtAt ? "Code changed since the last build – building …" : "No build yet – building …");
+    try {
+      execFileSync("npm", ["run", "build"], { cwd: ROOT, env: process.env, stdio: "pipe", maxBuffer: 64 * 1024 * 1024 });
+    } catch (error) {
+      console.error(`Build failed:\n${String(error.stdout ?? "").slice(-4000)}${String(error.stderr ?? "").slice(-4000)}`);
+      process.exit(1);
+    }
+  }
 }
 
 // Self-signed certificate for the fake push service (web-push only talks https).

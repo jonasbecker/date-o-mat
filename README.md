@@ -319,10 +319,13 @@ scripts/              Migration beim Build, Secret-Generator
   Test-Umgebung, erzeugt Zertifikat und Schlüssel und lässt die Suites nacheinander laufen.
   Die Suites **leeren die Datenbank** – nur gegen eine Wegwerf-DB laufen lassen:
   ```bash
-  DATABASE_URL=postgres://…/dateomat_test npm run build
-  DATABASE_URL=postgres://…/dateomat_test npm run e2e            # alle
-  DATABASE_URL=postgres://…/dateomat_test npm run e2e -- m5 m14  # einzelne
+  # einmal in .env.local: E2E_DATABASE_URL=postgres://…/dateomat_test
+  npm run e2e            # alle
+  npm run e2e -- m5 m14  # einzelne
   ```
+  Der Runner prüft, ob Postgres erreichbar ist, und baut neu, wenn sich seit dem letzten Build
+  etwas in `src/`, `drizzle/` oder `public/` geändert hat (`--no-build` überspringt das).
+  `npm run check` = Lint, Typecheck und Unit-Tests.
   Screenshots landen in `e2e/shots/`. Suites, die vom Wochentag abhängen (Frist, freie Zeiten
   diese Woche), stellen die Dev-Uhr auf Dienstag 10 Uhr der laufenden Woche (`e2e/clock.mjs`).
 - **CI** (`.github/workflows/ci.yml`): bei jedem Push und Pull Request Lint, Typecheck,

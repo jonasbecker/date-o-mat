@@ -26,4 +26,20 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 
 ## Checks before pushing
 
-`npm run lint && npm run typecheck && npm test && npm run build`
+`npm run check && npm run build` – and the affected e2e suites (`npm run e2e -- m12 m17`).
+
+## Working routine
+
+- **e2e:** `npm run e2e [-- m5 m9]` needs no env vars: it reads `E2E_DATABASE_URL` (environment or
+  `.env.local`), finds the container's Chromium, checks Postgres and rebuilds when `src/`,
+  `drizzle/` or `public/` changed. While iterating run only the suites that touch the change; run
+  the full suite once before the push.
+- **UI changes:** grep `e2e/*.mjs` for the labels/headings you rename or move before running –
+  every renamed button breaks a locator somewhere. Look at the screenshots in `e2e/shots/`
+  (light and dark) instead of trusting green checks alone.
+- **Weekday/date-sensitive tests:** the suites run on any day. Round logic → pin the dev clock with
+  `tuesdayMorningOffset()` (`e2e/clock.mjs`); slot lists late in the week → `/plan?later=1`;
+  decks/lists that a test empties → seed spare rows. A test that only fails on some days is a test bug.
+- **After every push:** check the CI run (GitHub MCP `actions_list` → `list_workflow_runs`) until
+  it is green; a red run is fixed before the next task, never left for later.
+- Never run prettier (the repo has no config; it rewrites whole files).

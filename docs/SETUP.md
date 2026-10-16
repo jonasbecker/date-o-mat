@@ -352,9 +352,10 @@ Nach dem Deploy dieser Version braucht es einen Cron-Lauf (≤ 5 Min.), bis „A
    npm run db:migrate   # Tabellen anlegen
    npm run dev          # http://localhost:3000
    ```
-4. Qualität prüfen: `npm test`, `npm run lint`, `npm run typecheck`.
+4. Qualität prüfen: `npm run check` (Lint, Typecheck, Unit-Tests).
 5. End-to-End-Tests (leeren die Datenbank – nur mit einer Wegwerf-DB, z. B. lokalem Postgres
-   oder einem eigenen Neon-Branch): `DATABASE_URL=… npm run build && DATABASE_URL=… npm run e2e`.
+   oder einem eigenen Neon-Branch): `E2E_DATABASE_URL=…` in `.env.local` eintragen, dann
+   `npm run e2e` – der Build passiert dabei von selbst.
    Braucht `openssl` und Chromium (`npx playwright install chromium`). Dieselben Tests laufen
    bei jedem Push in GitHub Actions (Reiter **Actions** im Repo).
 

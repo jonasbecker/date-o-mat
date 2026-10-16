@@ -14,6 +14,7 @@
     "db:migrate": "node scripts/migrate.mjs",
     "db:studio": "drizzle-kit studio",
     "gen:keys": "node scripts/generate-secrets.mjs",
+    "check": "npm run lint && npm run typecheck && npm test",
     "e2e": "node e2e/run.mjs"
   },
   "dependencies": {
