@@ -90,8 +90,8 @@ await j.getByText("⚡ Schnell planen").waitFor({ timeout: 20000 });
 check("quick plan suggests top slot + oldest short idea", await j.locator("form", { hasText: "⚡ Schnell planen" }).getByText("Picknick im Stadtwald").isVisible());
 await j.screenshot({ path: `${OUT}m13-03-plan-top.png` });
 check("no tab row for idea sources any more", (await j.getByRole("tab").count()) === 0);
-check("wishlist first, then Zufall / Was anderes", (await j.getByRole("button", { name: "🎲 Zufall" }).isVisible()) && (await j.getByRole("button", { name: "Was anderes …" }).isVisible()));
-await j.getByRole("button", { name: "Was anderes …" }).click();
+check("wishlist first, then Zufall / Was anderes", (await j.getByRole("button", { name: "Zufall" }).isVisible()) && (await j.getByRole("button", { name: "Was anderes" }).isVisible()));
+await j.getByRole("button", { name: "Was anderes" }).click();
 const row = j.locator("dialog[open] li", { hasText: "Sonnenuntergang am Rheinboulevard" });
 await row.getByRole("button", { name: "Nehmen" }).click();
 const chosen = (title) => j.locator("div", { hasText: "Ihr macht" }).getByText(title, { exact: true }).first();
@@ -177,14 +177,14 @@ check(`welcome slide readable in dark mode (heading ${welcomeContrast}:1, text $
 await jd.screenshot({ path: `${OUT}m13-10-welcome-dark.png` });
 // The date stands: the start shows it, "Lieber was anderes machen?" leads to the ideas (swap mode)
 await jd.goto(`${BASE}/plan`);
-const swapLink = jd.getByRole("link", { name: "🔄 Lieber was anderes machen?" });
+const swapLink = jd.getByRole("link", { name: "Lieber was anderes machen?" });
 await swapLink.waitFor({ timeout: 20000 });
 check("with a date: no new plan, but 'Lieber was anderes machen?'", (await jd.getByRole("heading", { name: "Was wollt ihr machen?" }).count()) === 0);
 await jd.screenshot({ path: `${OUT}m13-09-plan-dark.png`, fullPage: true });
 check("start with a confirmed date fits the screen", await fitsScreen(jd));
 await swapLink.click();
 await jd.getByText("Statt „Picknick im Stadtwald“", { exact: false }).waitFor({ timeout: 15000 });
-check("swap mode: tap an idea to do it instead", (await jd.locator("ol li button").count()) === 0 && (await jd.getByRole("link", { name: "💞 Swipen" }).isVisible()));
+check("swap mode: tap an idea to do it instead", (await jd.locator("ol li button").count()) === 0 && (await jd.getByRole("link", { name: "Swipen" }).isVisible()));
 await jd.getByRole("list", { name: "Eure Wunschliste" }).getByRole("button", { name: /^Sonnenuntergang/ }).click();
 await jd.locator("dialog[open]").getByText("Willst du das ändern?", { exact: false }).waitFor({ timeout: 10000 });
 await jd.screenshot({ path: `${OUT}m13-11-swap-dark.png` });

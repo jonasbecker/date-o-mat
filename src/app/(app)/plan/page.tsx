@@ -18,6 +18,7 @@ import { AppHeader } from "@/components/app-header";
 import { loadOverview, StartSection } from "../overview";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { buttonClass } from "@/components/button";
+import { SwapIcon } from "@/components/icons";
 import type { NextDateInfo } from "@/components/swap-confirm";
 
 export default function PlanPage({ searchParams }: PageProps<"/plan">) {
@@ -94,8 +95,8 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
     if (!swappable || !nextInfo) return top();
     if (params.pick !== "1") {
       return top(
-        <Link href="/plan?pick=1" className={buttonClass("secondary", "md", "-mt-2 w-full")}>
-          🔄 Lieber was anderes machen?
+        <Link href="/plan?pick=1" className={buttonClass("secondary", "md", "w-full")}>
+          <SwapIcon width={20} height={20} /> Lieber was anderes machen?
         </Link>,
       );
     }

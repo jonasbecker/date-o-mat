@@ -45,7 +45,7 @@ export function BudgetBar({ label, budget, spending, left, pot, level, href = "/
       )}
     </>
   );
-  const className = "sticker flex flex-col gap-1.5 rounded-[20px] bg-surface px-4 py-3 text-ink";
+  const className = "flat flex flex-col gap-1.5 rounded-[20px] bg-surface px-4 py-3 text-ink";
   return href ? (
     <Link href={href} className={cn("press", className)}>
       {content}

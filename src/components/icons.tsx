@@ -100,3 +100,104 @@ export const HeartIcon = (p: SVGProps<SVGSVGElement>) => (
   </Icon>
 );
 
+
+export const PinIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" />
+    <circle cx="12" cy="9.5" r="2.5" />
+  </Icon>
+);
+
+export const DiceIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <rect x="3.5" y="3.5" width="17" height="17" rx="4" />
+    <path d="M8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01" strokeWidth={3.4} />
+  </Icon>
+);
+
+export const SwapIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M4 9h13l-3.5-3.5M20 15H7l3.5 3.5" />
+  </Icon>
+);
+
+export const PencilIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M4 20l1-4L15.5 5.5a2.1 2.1 0 0 1 3 3L8 19z" />
+  </Icon>
+);
+
+export const SunIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" />
+  </Icon>
+);
+
+export const MoreIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth={3.6} />
+  </Icon>
+);
+
+export const CardsIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <rect x="7" y="3.5" width="12" height="16" rx="2.5" transform="rotate(8 13 11.5)" />
+    <path d="M5.5 7.5 4.6 18a2 2 0 0 0 1.8 2.2l6 .5" />
+  </Icon>
+);
+
+export const RepeatIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M17 2.5l3 3-3 3M4 11V9.5a4 4 0 0 1 4-4h12M7 21.5l-3-3 3-3M20 13v1.5a4 4 0 0 1-4 4H4" />
+  </Icon>
+);
+
+export const TicketIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z" />
+    <path d="M10 6v12" strokeDasharray="2 2.5" />
+  </Icon>
+);
+
+export const WalletIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3" />
+    <rect x="3.5" y="7.5" width="17" height="12" rx="2.5" />
+    <path d="M16 13.5h.01" strokeWidth={3.4} />
+  </Icon>
+);
+
+export const GiftIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <rect x="3.5" y="8" width="17" height="4" rx="1" />
+    <path d="M5 12v7.5a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5V12M12 8v13M12 8S10.5 3.5 8 4.2 8.3 8 12 8zM12 8s1.5-4.5 4-3.8S15.7 8 12 8z" />
+  </Icon>
+);
+
+export const BellIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" />
+  </Icon>
+);
+
+export const UserIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" />
+  </Icon>
+);
+
+export const CompassIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M15.5 8.5l-2 5-5 2 2-5z" />
+  </Icon>
+);
+
+export const AlertIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M12 3.5 2.8 19.5h18.4z" />
+    <path d="M12 10v4M12 17h.01" />
+  </Icon>
+);

@@ -17,9 +17,9 @@ export async function openTimes(page, base, query = "") {
   await page.locator("ol li button").first().waitFor({ timeout: 20000 });
 }
 
-/** Step 1 with your own idea: "Was anderes …" → type it → "Weiter →". */
+/** Step 1 with your own idea: "Was anderes" → type it → "Weiter →". */
 export async function customIdea(page, title, location) {
-  await page.getByRole("button", { name: "Was anderes …" }).click();
+  await page.getByRole("button", { name: "Was anderes" }).click();
   const sheet = page.locator("dialog[open]");
   await sheet.getByLabel("Eure eigene Idee").fill(title);
   if (location) await sheet.getByLabel("Ort (optional)").fill(location);

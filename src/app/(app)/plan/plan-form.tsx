@@ -11,6 +11,9 @@ import { FilteredEmpty, FilterButton, useIdeaFilter } from "@/components/idea-fi
 import { Sheet, type SheetHandle } from "@/components/sheet";
 import { SurpriseButton } from "@/components/surprise-button";
 import { SwapConfirm, type NextDateInfo } from "@/components/swap-confirm";
+import { StepDots } from "@/components/step-dots";
+import { Mascot } from "@/components/mascot";
+import { DiceIcon, HeartIcon, MoreIcon } from "@/components/icons";
 import { IdeaCard, ideaFacts, type IdeaCardView } from "@/components/idea-card";
 import { matchesIdeaFilter } from "@/core/filters";
 import type { EventView } from "../events/event-list";
@@ -199,16 +202,16 @@ export function PlanFlow({
 
   if (step === "idea") {
     return (
-      <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div key="idea" className="animate-slide-in flex min-h-0 flex-1 flex-col gap-3">
         {intro}
         {showQuick && (
-          <form action={formAction} className="flex items-center gap-3 rounded-[18px] border-2 border-line bg-zitrone-soft px-3 py-2 text-tinte">
+          <form action={formAction} className="flat flex items-center gap-3 rounded-[18px] bg-surface px-3 py-2">
             <input type="hidden" name="start" value={quickSlot.startIso} />
             <input type="hidden" name="end" value={quickSlot.endIso} />
             <input type="hidden" name="size" value="small" />
             <input type="hidden" name="ideaId" value={quickIdea.id} />
             <p className="min-w-0 flex-1 text-sm font-bold leading-snug">
-              <span className="block text-[11px] font-extrabold uppercase tracking-wide">⚡ Schnell planen</span>
+              <span className="block text-[12px] font-extrabold text-muted">⚡ Schnell planen</span>
               <span className="block truncate font-display text-base font-semibold">{quickIdea.title}</span>
               <span className="block truncate">
                 {quickSlot.dateLabel}, {quickSlot.timeLabel}
@@ -227,7 +230,7 @@ export function PlanFlow({
 
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[12px] font-extrabold uppercase tracking-wide text-muted">{mode.kind === "swap" ? "Lieber was anderes?" : "Schritt 1 von 2"}</p>
+            {mode.kind === "swap" ? <p className="text-[12px] font-extrabold text-muted">Lieber was anderes?</p> : <StepDots step={1} of={2} />}
             <h2 className="text-[22px] font-semibold leading-tight">Was wollt ihr machen?</h2>
           </div>
           <FilterButton />
@@ -256,12 +259,12 @@ export function PlanFlow({
         )}
 
         <div className="mt-auto grid grid-cols-3 gap-2">
-          <SurpriseButton size="sm" label="🎲 Zufall" ideaSize={filter.size} className="whitespace-nowrap px-1.5 text-[14px]" onChoose={(chosen) => chooseIdea(chosen)} />
-          <Button variant="secondary" size="sm" className="w-full whitespace-nowrap px-1.5 text-[14px]" onClick={() => moreSheet.current?.open()}>
-            Was anderes …
+          <SurpriseButton size="sm" label={<><DiceIcon width={17} height={17} /> Zufall</>} ideaSize={filter.size} className="gap-1.5 whitespace-nowrap px-1.5 text-[14px]" onChoose={(chosen) => chooseIdea(chosen)} />
+          <Button variant="secondary" size="sm" className="w-full gap-1.5 whitespace-nowrap px-1.5 text-[14px]" onClick={() => moreSheet.current?.open()}>
+            <MoreIcon width={17} height={17} /> Was anderes
           </Button>
-          <Link href="/ideas/entdecken" className={buttonClass("secondary", "sm", "w-full whitespace-nowrap px-1.5 text-[14px]")}>
-            💞 Swipen
+          <Link href="/ideas/entdecken" className={buttonClass("secondary", "sm", "w-full gap-1.5 whitespace-nowrap px-1.5 text-[14px]")}>
+            <HeartIcon width={17} height={17} /> Swipen
           </Link>
         </div>
 
@@ -340,7 +343,7 @@ export function PlanFlow({
   }
 
   return (
-    <form action={formAction} className="flex min-h-0 flex-1 flex-col gap-3">
+    <form key="time" action={formAction} className="animate-slide-in flex min-h-0 flex-1 flex-col gap-3">
       {slot && (
         <>
           <input type="hidden" name="start" value={slot.startIso} />
@@ -364,7 +367,7 @@ export function PlanFlow({
 
       {mode.kind === "reschedule" ? (
         <div>
-          <p className="text-[12px] font-extrabold uppercase tracking-wide text-muted">Termin ändern</p>
+          <p className="text-[12px] font-extrabold text-muted">Termin ändern</p>
           <h2 className="text-[22px] font-semibold leading-tight">Wann passt es besser?</h2>
           <p className="text-sm font-bold text-muted">
             {mode.date.keepSecret ? "🤫 Das ist eine Überraschung – du kannst nur die Zeit ändern, der Rest bleibt geheim." : `„${mode.date.title}“ bleibt, nur die Zeit ändert sich.`}
@@ -376,7 +379,7 @@ export function PlanFlow({
             ← Andere Idee
           </button>
           <div className="flex flex-col rounded-[18px] border-[2.5px] border-line bg-surface px-4 py-2.5">
-            <span className="text-[12px] font-extrabold uppercase tracking-wide text-muted">Ihr macht</span>
+            <span className="text-[12px] font-extrabold text-muted">Ihr macht</span>
             <span className="font-display text-lg font-semibold leading-snug">{title}</span>
             {facts && <span className="text-xs font-extrabold text-muted">{facts}</span>}
           </div>
@@ -385,7 +388,7 @@ export function PlanFlow({
 
       <div className="flex items-end justify-between gap-3">
         <div>
-          {mode.kind !== "reschedule" && <p className="text-[12px] font-extrabold uppercase tracking-wide text-muted">Schritt 2 von 2</p>}
+          {mode.kind !== "reschedule" && <StepDots step={2} of={2} />}
           <h2 className="text-[22px] font-semibold leading-tight">Wann?</h2>
         </div>
         <div role="group" aria-label="Wie lang soll das Date sein?" className="flex gap-1 rounded-full border-2 border-line bg-surface p-1">
@@ -397,7 +400,7 @@ export function PlanFlow({
               onClick={() => selectSize(option)}
               className={cn(
                 "rounded-full px-3 py-1 text-sm font-extrabold",
-                size === option ? cn("text-tinte", option === "small" ? "bg-zitrone" : "bg-lavendel") : "text-muted",
+                size === option ? "bg-ink text-bg" : "text-muted",
               )}
             >
               {SIZE_LABEL[option].emoji} {SIZE_LABEL[option].label}
@@ -407,10 +410,9 @@ export function PlanFlow({
       </div>
 
       {!times || (loadingTimes && !ok) ? (
-        <div className="flex animate-pulse flex-col gap-2" aria-busy="true" aria-label="Sucht freie Zeiten …">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-[66px] rounded-[18px] bg-track" />
-          ))}
+        <div className="flex flex-col items-center gap-2 py-6" aria-busy="true" aria-label="Sucht freie Zeiten …">
+          <Mascot id="times" size={72} busy />
+          <p className="text-sm font-extrabold text-muted">Der Date-O-Mat kurbelt … eure freien Zeiten kommen gleich.</p>
         </div>
       ) : times.result.status === "google_error" ? (
         <p role="alert" className="rounded-[18px] border-2 border-line bg-himbeere-soft px-4 py-3 font-bold text-tinte">
@@ -457,7 +459,7 @@ export function PlanFlow({
                     <span className="font-display text-lg font-semibold">{option.timeLabel}</span>
                     <span className="flex flex-wrap items-center gap-1.5 text-xs font-extrabold">
                       {index === 0 && (
-                        <span className="rounded-full border-[1.5px] border-line bg-zitrone px-2 py-px text-tinte">★ Top-Tipp</span>
+                        <span className="rounded-full border-[1.5px] border-line bg-bg px-2 py-px text-ink">★ Top-Tipp</span>
                       )}
                       <span className={selected ? "" : "text-muted"}>
                         {option.dateLabel} · {MOOD_LABEL[option.mood]}
@@ -553,9 +555,7 @@ export function PlanFlow({
 function NoSlots({ size }: { size: IdeaSize }) {
   return (
     <div className="flex flex-col items-center gap-2 rounded-[24px] border-[2.5px] border-dashed border-line px-6 py-8 text-center">
-      <span className="text-4xl" aria-hidden="true">
-        🫠
-      </span>
+      <Mascot id="no-slots" size={56} />
       <h3 className="text-xl font-bold">Keine gemeinsame Lücke gefunden</h3>
       <p className="font-semibold text-muted">
         {size === "large"

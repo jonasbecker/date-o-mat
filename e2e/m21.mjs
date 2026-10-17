@@ -172,7 +172,7 @@ await s.goto(`${BASE}/ideas`);
 await s.getByRole("button", { name: "Sushi-Abend" }).click();
 const samMenu = s.locator("dialog[open]");
 await samMenu.getByText("das kann nur Jonas ändern", { exact: false }).waitFor({ timeout: 10000 });
-check("Sam: no swap for Jonas' surprise", (await samMenu.getByRole("button", { name: /Statt/ }).count()) === 0 && (await samMenu.getByRole("button", { name: "✏️ Bearbeiten" }).isVisible()));
+check("Sam: no swap for Jonas' surprise", (await samMenu.getByRole("button", { name: /Statt/ }).count()) === 0 && (await samMenu.getByRole("button", { name: "Bearbeiten" }).isVisible()));
 check("Sam: the surprise idea is not marked on the wishlist", (await s.getByText("📅 Nächstes Date").count()) === 0);
 await s.keyboard.press("Escape");
 
@@ -193,7 +193,7 @@ check(`Google event now says what it is (${event2?.summary})`, event2?.summary =
 await s.goto(`${BASE}/`);
 await s.getByText("Euer nächstes Date", { exact: true }).waitFor({ timeout: 15000 });
 check("Sam sees the real date now", await s.getByRole("heading", { name: "Sushi-Abend" }).isVisible());
-check("on the day: conversation cards are one tap away", await s.getByRole("link", { name: "💬 Gesprächskarten" }).isVisible());
+check("on the day: conversation cards are one tap away", await s.getByRole("link", { name: "Gesprächskarten" }).isVisible());
 await s.getByRole("link", { name: "Mehr zum Date →" }).click();
 await s.getByRole("button", { name: "💬 Gesprächskarte ziehen" }).click();
 const question = await s.locator("p[aria-live=polite]").innerText();
@@ -224,7 +224,7 @@ check("deleted key → 401", (await share(shareKey, { text: "https://www.tiktok.
 await j.goto(`${BASE}/ideas`);
 await j.getByRole("button", { name: "Kino: Dune" }).click();
 const menu = j.locator("dialog[open]");
-await menu.getByRole("button", { name: "🔄 Statt „Sushi-Abend“ machen" }).click();
+await menu.getByRole("button", { name: "Statt „Sushi-Abend“ machen" }).click();
 await menu.getByText("Willst du das ändern?", { exact: false }).waitFor({ timeout: 10000 });
 await j.screenshot({ path: `${OUT}m21-05-swap.png` });
 await menu.getByRole("button", { name: "Ja, ändern" }).click();

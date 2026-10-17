@@ -22,10 +22,11 @@ export type CardTone = keyof typeof TONE;
 export function Card({
   tone = "surface",
   size = "md",
+  flat = false,
   className,
   ...props
-}: ComponentProps<"div"> & { tone?: CardTone; size?: keyof typeof SIZE }) {
-  return <div className={cn("sticker", TONE[tone], SIZE[size], className)} {...props} />;
+}: ComponentProps<"div"> & { tone?: CardTone; size?: keyof typeof SIZE; /** Outline only – for what you read, not what you tap. */ flat?: boolean }) {
+  return <div className={cn(flat ? "flat" : "sticker", TONE[tone], SIZE[size], className)} {...props} />;
 }
 
 export function Chip({ className, ...props }: ComponentProps<"span">) {

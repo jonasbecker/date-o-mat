@@ -21,6 +21,12 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - Design tokens are in `src/app/globals.css` (`sticker`, `press` utilities); bright fills use `text-tinte`.
   In dark mode the light fills (`bg-zitrone-soft`, `bg-himbeere` …) reset the color tokens to light values,
   so `text-ink`/`text-muted` on them stay readable – new light fills go into that list.
+- **Design (M29, direction A):** the sticker look (`sticker`, thick outline + hard shadow) is only for
+  what you tap next – primary buttons and the next date. Lists, infos and secondary buttons are `flat`
+  (outline only, `tap` feedback). Color roles: pink = action, the person colors = whose turn,
+  minze = it stands/confirmed, yellow = hints and warnings only, everything else neutral. Controls use
+  the icons in `components/icons.tsx`; emoji stay for content (ideas, confetti, match, choices).
+  Small labels are normal case, not uppercase. Empty and loading states show the `Mascot`.
 - Lists of ideas/events filter with the one shared filter (`useIdeaFilter()`, `matchesIdeaFilter()`),
   never with their own chips. New extras go behind `extraOn(settings, …)` and show up only when they fit.
 

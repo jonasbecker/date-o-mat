@@ -10,6 +10,8 @@ import { SwapConfirm, type NextDateInfo } from "@/components/swap-confirm";
 import { IdeaForm, type IdeaFormDefaults } from "@/components/idea-form";
 import { Sheet, type SheetHandle } from "@/components/sheet";
 import { IdeaCard } from "@/components/idea-card";
+import { CalendarIcon, PencilIcon, SwapIcon } from "@/components/icons";
+import { Mascot } from "@/components/mascot";
 import type { UserColor } from "@/lib/domain";
 import { archiveIdeaAction, updateIdeaAction } from "./actions";
 
@@ -129,16 +131,16 @@ function IdeaMenu({
       {next && !next.swappable && <p className="text-sm font-bold text-muted">Euer nächstes Date ist eine Überraschung von {partnerName} – das kann nur {partnerName} ändern.</p>}
       {swap && (
         <Button onClick={() => setConfirming(true)} className="w-full">
-          🔄 Statt „{next!.title}“ machen
+          <SwapIcon width={20} height={20} /> Statt „{next!.title}“ machen
         </Button>
       )}
       {canPlanNew && !isNext && (
         <Link href={`/plan?idea=${idea.id}`} onClick={onDone} className={buttonClass(swap ? "secondary" : "primary", "md", "w-full")}>
-          📅 {swap ? "Neues Date damit planen" : "Date damit planen"}
+          <CalendarIcon width={20} height={20} /> {swap ? "Neues Date damit planen" : "Date damit planen"}
         </Link>
       )}
       <Button variant="secondary" onClick={onEdit} className="w-full">
-        ✏️ Bearbeiten
+        <PencilIcon width={18} height={18} /> Bearbeiten
       </Button>
     </div>
   );
@@ -154,9 +156,7 @@ function footnote(idea: BoardIdea, people: Record<string, BoardPerson>): string 
 function EmptyState() {
   return (
     <div className="flex flex-col items-center gap-3 rounded-[24px] border-[2.5px] border-dashed border-line px-6 py-10 text-center">
-      <span className="text-5xl" aria-hidden="true">
-        💡
-      </span>
+      <Mascot id="no-ideas" size={64} />
       <h2 className="text-[22px] font-bold">Noch keine Ideen</h2>
       <p className="font-semibold text-muted">
         Tippt oben auf <strong className="text-ink">+ Idee</strong>, sobald euch etwas einfällt – Titel und Größe

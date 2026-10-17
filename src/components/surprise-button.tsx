@@ -18,7 +18,7 @@ export function SurpriseButton({
   onChoose,
   label = "🎲 Überrasch uns",
 }: {
-  label?: string;
+  label?: React.ReactNode;
   className?: string;
   variant?: "primary" | "secondary";
   size?: "sm" | "md";

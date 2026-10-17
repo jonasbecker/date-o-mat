@@ -119,7 +119,7 @@ export function EventCard({ event, onPlanned }: { event: EventView; onPlanned?: 
   const [planning, startPlan] = useTransition();
 
   return (
-    <article className="sticker flex flex-col gap-2 rounded-[20px] bg-surface p-3.5">
+    <article className="flat flex flex-col gap-2 rounded-[20px] bg-surface p-3.5">
       <div className="flex items-start gap-3">
         {event.time && (
           <span className="mt-0.5 shrink-0 rounded-full border-2 border-line bg-zitrone px-2 py-px text-[13px] font-extrabold text-tinte">{event.time}</span>

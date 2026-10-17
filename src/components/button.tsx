@@ -20,7 +20,9 @@ export type ButtonSize = keyof typeof SIZE;
 /** Class names for anything that should look like a button (also links). */
 export function buttonClass(variant: ButtonVariant = "primary", size: ButtonSize = "md", className?: string) {
   return cn(
-    "sticker press inline-flex items-center justify-center gap-2.5 font-display font-semibold",
+    // Only buttons that do the thing get the sticker shadow; secondary ones stay flat.
+    variant === "secondary" ? "flat tap" : "sticker press",
+    "inline-flex items-center justify-center gap-2 font-display font-semibold",
     "disabled:cursor-not-allowed disabled:opacity-60",
     VARIANT[variant],
     SIZE[size],

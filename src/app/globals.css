@@ -85,6 +85,20 @@
   box-shadow: 4px 4px 0 var(--line);
 }
 
+/* The quiet sibling: outline only. Lists, infos, secondary buttons – the shadow is
+   kept for what you should tap next (main button, the next date). */
+@utility flat {
+  border: 2px solid var(--line);
+}
+
+/* Flat things give way a little when tapped */
+@utility tap {
+  transition: transform 120ms ease-out;
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+}
+
 /* Buttons sink into their shadow when pressed */
 @utility press {
   transition:
@@ -167,6 +181,37 @@
 
 @utility animate-wiggle {
   animation: wiggle 1.6s ease-in-out infinite;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The next step of the flow comes in from the right */
+@utility animate-slide-in {
+  animation: slide-in 240ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(3deg);
+  }
+}
+
+/* The gumball machine while it "cranks" */
+@utility animate-bob {
+  animation: bob 1.4s ease-in-out infinite;
 }
 
 @utility animate-pop-in {

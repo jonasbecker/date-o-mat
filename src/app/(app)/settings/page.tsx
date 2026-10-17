@@ -113,23 +113,23 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
 
   const statusOk = overallLevel(status) === "ok";
   const problems = status.filter((row) => row.level === "warn").length;
-  const statusTile: TopicTile = { id: "status", emoji: statusOk ? "✅" : "⚠️", title: "Läuft alles?", hint: statusOk ? "Alles läuft" : `${problems === 1 ? "Eine Sache braucht" : `${problems} Dinge brauchen`} euch` };
+  const statusTile: TopicTile = { id: "status", icon: statusOk ? "status" : "warn", title: "Läuft alles?", hint: statusOk ? "Alles läuft" : `${problems === 1 ? "Eine Sache braucht" : `${problems} Dinge brauchen`} euch` };
   const shared: TopicTile[] = [
-    { id: "rhythmus", emoji: "🔁", title: "Rhythmus & Modus", hint: "Wie oft, wer plant" },
-    { id: "zeiten", emoji: "⏰", title: "Freie Zeiten finden", hint: "Zeitfenster, Puffer" },
-    { id: "events", emoji: "🎟️", title: "Event-Quellen", hint: sources.length ? `${sources.length} ${sources.length === 1 ? "Seite" : "Seiten"}` : "Für „Was läuft“" },
-    { id: "entdecken", emoji: "💞", title: "Swipen", hint: "Events im Stapel" },
-    { id: "budget", emoji: "💶", title: "Budget & Spartopf", hint: settings.monthlyBudgetEur ? `${settings.monthlyBudgetEur} € im Monat` : "Aus" },
-    { id: "besondere-tage", emoji: "🎂", title: "Besondere Tage", hint: specialDayViews.length ? `${specialDayViews.length} eingetragen` : "Geburtstage, Jahrestag" },
-    { id: "extras", emoji: "✨", title: "Extras", hint: "An- und ausschalten" },
+    { id: "rhythmus", icon: "repeat", title: "Rhythmus & Modus", hint: "Wie oft, wer plant" },
+    { id: "zeiten", icon: "clock", title: "Freie Zeiten finden", hint: "Zeitfenster, Puffer" },
+    { id: "events", icon: "ticket", title: "Event-Quellen", hint: sources.length ? `${sources.length} ${sources.length === 1 ? "Seite" : "Seiten"}` : "Für „Was läuft“" },
+    { id: "entdecken", icon: "heart", title: "Swipen", hint: "Events im Stapel" },
+    { id: "budget", icon: "wallet", title: "Budget & Spartopf", hint: settings.monthlyBudgetEur ? `${settings.monthlyBudgetEur} € im Monat` : "Aus" },
+    { id: "besondere-tage", icon: "gift", title: "Besondere Tage", hint: specialDayViews.length ? `${specialDayViews.length} eingetragen` : "Geburtstage, Jahrestag" },
+    { id: "extras", icon: "sparkle", title: "Extras", hint: "An- und ausschalten" },
   ];
   const personal: TopicTile[] = [
-    { id: "kalender", emoji: "📅", title: "Kalender", hint: me.state === "connected" ? "Verbunden" : "Noch nicht verbunden" },
-    { id: "push", emoji: "🔔", title: "Erinnerungen", hint: "Was aufs Handy kommt" },
-    { id: "unterwegs", emoji: "🧭", title: "Unterwegs & Teilen", hint: "Startort, iPhone-Kurzbefehl" },
-    { id: "konto", emoji: "👤", title: "Ihr zwei & Konto", hint: "Abmelden" },
+    { id: "kalender", icon: "calendar", title: "Kalender", hint: me.state === "connected" ? "Verbunden" : "Noch nicht verbunden" },
+    { id: "push", icon: "bell", title: "Erinnerungen", hint: "Was aufs Handy kommt" },
+    { id: "unterwegs", icon: "compass", title: "Unterwegs & Teilen", hint: "Startort, iPhone-Kurzbefehl" },
+    { id: "konto", icon: "user", title: "Ihr zwei & Konto", hint: "Abmelden" },
   ];
-  const extra: TopicTile[] = [{ id: "welcome", emoji: "👋", title: "Einführung", href: "/welcome" }];
+  const extra: TopicTile[] = [{ id: "welcome", icon: "intro", title: "Einführung", href: "/welcome" }];
 
 
   const topics: Record<string, React.ReactNode> = {
@@ -168,7 +168,7 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
       </Topic>
     ),
     zeiten: (
-      <Topic id="zeiten" title="⏰ Freie Zeiten finden" hint="Zeitfenster, Puffer und Vorlauf – für euch beide">
+      <Topic id="zeiten" title="Freie Zeiten finden" hint="Zeitfenster, Puffer und Vorlauf – für euch beide">
         <SlotSettingsForm
           values={{
             smallDurationMinutes: settings.smallDurationMinutes,
@@ -186,33 +186,33 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
       </Topic>
     ),
     events: (
-      <Topic id="events" title="🎟️ Event-Quellen" hint="Seiten für „Was läuft“">
+      <Topic id="events" title="Event-Quellen" hint="Seiten für „Was läuft“">
         <EventSources sources={sources.map((s) => sourceView(s, now, sourcePages))} aiReady={env().ai} />
       </Topic>
     ),
     entdecken: (
-      <Topic id="entdecken" title="💞 Swipen" hint="Wie viele Events in den Stapel kommen">
+      <Topic id="entdecken" title="Swipen" hint="Wie viele Events in den Stapel kommen">
         <EventMixPicker value={settings.deckEventMix} />
       </Topic>
     ),
     budget: (
-      <Topic id="budget" title="💶 Budget & Spartopf">
+      <Topic id="budget" title="Budget & Spartopf">
         <BudgetForm budget={settings.monthlyBudgetEur} />
       </Topic>
     ),
     "besondere-tage": (
-      <Topic id="besondere-tage" title="🎂 Besondere Tage" hint="Geburtstage, Jahrestag – mit Erinnerung">
+      <Topic id="besondere-tage" title="Besondere Tage" hint="Geburtstage, Jahrestag – mit Erinnerung">
         <SpecialDays days={specialDayViews} people={[user, partner].map((p) => ({ id: p.id, name: p.name }))} />
       </Topic>
     ),
     unterwegs: (
-      <Topic id="unterwegs" title="🧭 Unterwegs & Teilen">
+      <Topic id="unterwegs" title="Unterwegs & Teilen">
         <StartLocationForm value={user.startLocation} />
         <ShareShortcut hasKey={Boolean(user.shareTokenHash)} endpoint={`${env().appUrl}/api/share`} />
       </Topic>
     ),
     extras: (
-      <Topic id="extras" title="✨ Extras" hint="An- und ausschalten, was ihr nicht braucht">
+      <Topic id="extras" title="Extras" hint="An- und ausschalten, was ihr nicht braucht">
         <ExtrasForm hidden={settings.hiddenExtras} />
       </Topic>
     ),

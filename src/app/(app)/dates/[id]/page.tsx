@@ -84,7 +84,7 @@ async function DateDetail({ params }: { params: PageProps<"/dates/[id]">["params
             key: "mine",
             label: mine ? "💗 Deine Herzen" : "💗 Bewerten",
             content: (
-              <section aria-labelledby="review-heading" className="sticker flex flex-col gap-3 rounded-[24px] bg-surface p-4">
+              <section aria-labelledby="review-heading" className="flat flex flex-col gap-3 rounded-[24px] bg-surface p-4">
                 <h2 id="review-heading" className="text-[21px] font-bold">
                   {mine ? "Deine Herzen" : "Wie war's für dich?"}
                 </h2>

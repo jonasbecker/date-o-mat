@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ComponentType, SVGProps } from "react";
 import { cn } from "@/lib/cn";
 import { BulbIcon, HeartIcon, SlidersIcon } from "./icons";
-import { LogoLockup } from "./logo";
+import { LogoLockup, LogoMark } from "./logo";
 
 export type HeaderPlace = "plan" | "ideas" | "dates" | "settings";
 
@@ -26,23 +26,24 @@ function IconLink({ href, label, Icon, active }: { href: string; label: string; 
  */
 export function AppHeader({ current = "plan", action }: { current?: HeaderPlace; action?: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       <header className="flex items-center gap-2.5">
         <IconLink href="/ideas" label="Ideen" Icon={BulbIcon} active={current === "ideas"} />
-        <Link href="/plan" aria-label="Date-O-Mat – zum Start" className="min-w-0 flex-1">
-          <LogoLockup clipId="header-logo" />
-        </Link>
+        {current === "plan" ? (
+          <Link href="/plan" aria-label="Date-O-Mat – zum Start" className="min-w-0 flex-1">
+            <LogoLockup clipId="header-logo" />
+          </Link>
+        ) : (
+          // Elsewhere just the little machine – it leads back to the start.
+          <Link href="/plan" className="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-extrabold text-muted">
+            <LogoMark size={30} clipId="header-logo" />
+            <span className="underline">← Date planen</span>
+          </Link>
+        )}
         <IconLink href="/dates" label="Eure Dates" Icon={HeartIcon} active={current === "dates"} />
         <IconLink href="/settings" label="Einstellungen" Icon={SlidersIcon} active={current === "settings"} />
       </header>
-      {current !== "plan" && (
-        <div className="flex min-h-9 items-center justify-between gap-3">
-          <Link href="/plan" className="text-sm font-extrabold text-muted underline">
-            ← Date planen
-          </Link>
-          {action}
-        </div>
-      )}
+      {action && <div className="flex min-h-9 items-center justify-end">{action}</div>}
     </div>
   );
 }

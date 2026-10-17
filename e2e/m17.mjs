@@ -225,8 +225,8 @@ await matchedCard.waitFor({ timeout: 10000 });
 check("the wishlist marks the match", await matchedCard.getByText("💞 Match").isVisible());
 check("a single like is on the wishlist without the mark", (await s.locator("li").filter({ has: s.getByRole("button", { name: first }) }).getByText("💞 Match").count()) === 0);
 await s.getByRole("button", { name: first }).click();
-check("tapping an idea offers to plan it", await s.locator("dialog[open]").getByRole("link", { name: "📅 Date damit planen" }).isVisible());
-await s.locator("dialog[open]").getByRole("link", { name: "📅 Date damit planen" }).click();
+check("tapping an idea offers to plan it", await s.locator("dialog[open]").getByRole("link", { name: "Date damit planen" }).isVisible());
+await s.locator("dialog[open]").getByRole("link", { name: "Date damit planen" }).click();
 await s.waitForURL(/\/plan\?idea=/, { timeout: 10000 });
 
 // 7) The shared filter works on the deck; combo cards show their event

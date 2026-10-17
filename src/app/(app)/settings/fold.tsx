@@ -3,10 +3,28 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
+import { AlertIcon, BellIcon, BulbIcon, CalendarIcon, CheckIcon, ClockIcon, CompassIcon, GiftIcon, HeartIcon, RepeatIcon, SparkleIcon, TicketIcon, UserIcon, WalletIcon } from "@/components/icons";
 
 // Settings as screens: a menu of topics, each topic its own screen (/settings?t=budget).
 
-export type TopicTile = { id: string; emoji: string; title: string; hint?: string; href?: string };
+const ICONS = {
+  status: CheckIcon,
+  warn: AlertIcon,
+  repeat: RepeatIcon,
+  clock: ClockIcon,
+  ticket: TicketIcon,
+  heart: HeartIcon,
+  wallet: WalletIcon,
+  gift: GiftIcon,
+  sparkle: SparkleIcon,
+  calendar: CalendarIcon,
+  bell: BellIcon,
+  compass: CompassIcon,
+  user: UserIcon,
+  intro: BulbIcon,
+} as const;
+
+export type TopicTile = { id: string; icon: keyof typeof ICONS; title: string; hint?: string; href?: string };
 
 /** One settings topic. */
 export function Topic({ id, title, hint, children }: { id: string; title?: string; hint?: string; children: ReactNode }) {
@@ -29,15 +47,18 @@ export function TopicMenu({ shared, personal, status, extra }: { shared: TopicTi
       <TileGroup title="Nur für dich" tiles={personal} />
       <p className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm font-extrabold">
         {status.ok && (
-          <Link href={`/settings?t=${status.tile.id}`} className="underline">
-            ✅ Alles läuft
+          <Link href={`/settings?t=${status.tile.id}`} className="flex items-center gap-1 underline">
+            <CheckIcon width={15} height={15} /> Alles läuft
           </Link>
         )}
-        {extra.map((tile) => (
-          <Link key={tile.id} href={tile.href ?? `/settings?t=${tile.id}`} className="underline">
-            {tile.emoji} {tile.title}
-          </Link>
-        ))}
+        {extra.map((tile) => {
+          const Icon = ICONS[tile.icon];
+          return (
+            <Link key={tile.id} href={tile.href ?? `/settings?t=${tile.id}`} className="flex items-center gap-1 underline">
+              <Icon width={15} height={15} /> {tile.title}
+            </Link>
+          );
+        })}
       </p>
     </nav>
   );
@@ -46,7 +67,7 @@ export function TopicMenu({ shared, personal, status, extra }: { shared: TopicTi
 function TileGroup({ title, tiles }: { title: string; tiles: TopicTile[] }) {
   return (
     <section className="flex flex-col gap-1.5" aria-label={title}>
-      <h2 className="text-[12px] font-extrabold uppercase tracking-wide text-muted">{title}</h2>
+      <h2 className="text-[13px] font-extrabold text-muted">{title}</h2>
       <div className="grid grid-cols-2 gap-2">
         {tiles.map((tile) => (
           <Tile key={tile.id} tile={tile} />
@@ -57,15 +78,16 @@ function TileGroup({ title, tiles }: { title: string; tiles: TopicTile[] }) {
 }
 
 function Tile({ tile, warn = false }: { tile: TopicTile; warn?: boolean }) {
+  const Icon = ICONS[tile.icon];
   return (
     <Link
       href={tile.href ?? `/settings?t=${tile.id}`}
-      className={`press flex min-h-[58px] flex-col justify-center rounded-[18px] border-2 border-line px-3 py-2 ${warn ? "bg-zitrone-soft text-tinte" : "bg-surface"}`}
+      className={`flat tap flex min-h-[58px] flex-col justify-center rounded-[18px] px-3 py-2 ${warn ? "bg-zitrone-soft text-tinte" : "bg-surface"}`}
     >
-      <span className="font-display text-[15px] font-semibold leading-tight">
-        {tile.emoji} {tile.title}
+      <span className="flex items-center gap-1.5 font-display text-[15px] font-semibold leading-tight">
+        <Icon width={17} height={17} className="shrink-0" /> {tile.title}
       </span>
-      {tile.hint && <span className={`truncate text-xs font-bold ${warn ? "" : "text-muted"}`}>{tile.hint}</span>}
+      {tile.hint && <span className={`truncate pl-[23px] text-xs font-bold ${warn ? "" : "text-muted"}`}>{tile.hint}</span>}
     </Link>
   );
 }

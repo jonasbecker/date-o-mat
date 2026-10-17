@@ -98,7 +98,7 @@ const claude = createServer((req, res) => {
 });
 await new Promise((r) => claude.listen(4030, r));
 
-// 1) Plan → "Was anderes …" → "✨ 3 Ideen von der KI": follows the shared filter, knows slot, size and weather
+// 1) Plan → "Was anderes" → "✨ 3 Ideen von der KI": follows the shared filter, knows slot, size and weather
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/plan`);
 await j.getByRole("heading", { name: "Was wollt ihr machen?" }).waitFor({ timeout: 20000 });
@@ -107,7 +107,7 @@ await j.getByRole("button", { name: "Filter", exact: true }).click();
 await j.locator("dialog[open]").getByRole("button", { name: "🆓 Gratis" }).click();
 await j.locator("dialog[open]").getByRole("button", { name: "🌳 Draußen" }).click();
 await j.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
-await j.getByRole("button", { name: "Was anderes …" }).click();
+await j.getByRole("button", { name: "Was anderes" }).click();
 const sheet = j.locator("dialog[open]");
 await sheet.getByRole("button", { name: "✨ 3 Ideen von der KI" }).click();
 await sheet.getByText("Sternschnuppen am Rhein 1").waitFor({ timeout: 15000 });
@@ -135,7 +135,7 @@ const { rows: [usage] } = await db.query("SELECT count(*)::int AS c, sum(input_t
 check(`usage logged (${usage.c} requests, ${usage.t} input tokens)`, usage.c === 1 && usage.t === 800);
 await db.query(`INSERT INTO ai_requests (couple_id, kind, model) SELECT $1, 'ideas', 'claude-haiku-5-5' FROM generate_series(1, 19)`, [couple.id]);
 await j.getByRole("button", { name: "← Andere Idee" }).click();
-await j.getByRole("button", { name: "Was anderes …" }).click();
+await j.getByRole("button", { name: "Was anderes" }).click();
 await j.locator("dialog[open]").getByRole("button", { name: "✨ 3 Ideen von der KI" }).click();
 await j.getByText("Für heute sind die KI-Vorschläge aufgebraucht").waitFor({ timeout: 10000 });
 check("21st request today is refused without calling Claude", claudeCalls.length === 1);
@@ -143,7 +143,7 @@ check("21st request today is refused without calling Claude", claudeCalls.length
 // 3) Dark mode look
 const jd = await pageFor(jonas.token, "dark");
 await jd.goto(`${BASE}/plan`);
-await jd.getByRole("button", { name: "Was anderes …" }).click();
+await jd.getByRole("button", { name: "Was anderes" }).click();
 await jd.locator("dialog[open]").getByRole("button", { name: "✨ 3 Ideen von der KI" }).waitFor({ timeout: 15000 });
 await jd.screenshot({ path: `${OUT}m11-03-ideas-dark.png` });
 

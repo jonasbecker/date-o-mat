@@ -2,7 +2,8 @@
 // round. Below it runs the planning flow (idea → time → done).
 import Link from "next/link";
 import { DateTime } from "luxon";
-import { notHappenedAction } from "./actions";
+import { confirmDateAction, notHappenedAction } from "./actions";
+import { ConfettiActionButton } from "@/components/confetti";
 import { BudgetBar } from "@/components/budget-bar";
 import type { DateCardExtras } from "@/components/date-card";
 import { DateSummary } from "@/components/date-summary";
@@ -126,6 +127,7 @@ export function StartSection({
   const { user, partner } = ctx;
   const dateStep = Boolean(o.cycle && o.step && DATE_STEPS.includes(o.step.kind));
   // Cards stay small: the start page is one screen.
+  const confirmable = Boolean(o.shownDate && o.shownDate.status === "planned" && o.shownDate.proposedById !== user.id);
   // The flow below shows its own "connect your calendar" card.
   const roundStep = o.cycle && o.step && !dateStep && !["connect_calendar", "partner_calendar"].includes(o.step.kind);
   return (
@@ -138,7 +140,7 @@ export function StartSection({
       )}
 
       {o.storyYear !== null && (
-        <Link href={`/story?year=${o.storyYear}`} className="press sticker flex items-center gap-3 rounded-[18px] bg-himbeere px-4 py-2.5 text-tinte">
+        <Link href={`/story?year=${o.storyYear}`} className="flat tap flex items-center gap-3 rounded-[18px] bg-himbeere-soft px-4 py-2.5 text-tinte">
           <span className="text-2xl" aria-hidden="true">
             📖
           </span>
@@ -160,9 +162,7 @@ export function StartSection({
       )}
 
       {/* "Passt!" sits in the step card when there is one; the details are one tap away. */}
-      {o.shownDate && <DateSummary date={o.shownDate} me={user} showConfirm={!dateStep} hidden={o.dateExtras?.surprise === "hidden"} today={Boolean(o.dateExtras?.isToday)} />}
-
-      {afterDate}
+      {o.shownDate && <DateSummary date={o.shownDate} hidden={o.dateExtras?.surprise === "hidden"} today={Boolean(o.dateExtras?.isToday)} />}
 
       {o.roundDate?.status === "done" && (
         <form action={notHappenedAction.bind(null, o.roundDate.id)} className="-mt-2 self-center">
@@ -205,6 +205,18 @@ export function StartSection({
         partnerCalendar={o.calendars.find((p) => !p.isMe)?.state === "connected"}
         pushOn={o.pushDevices > 0}
       />
+
+      {/* What you tap sits at the bottom, where the thumb is. */}
+      {(confirmable || afterDate) && (
+        <div className="mt-auto flex flex-col gap-2 pt-1">
+          {confirmable && (
+            <ConfettiActionButton action={confirmDateAction.bind(null, o.shownDate!.id)} className="w-full">
+              Passt! 💚
+            </ConfettiActionButton>
+          )}
+          {afterDate}
+        </div>
+      )}
     </>
   );
 }

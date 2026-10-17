@@ -192,7 +192,7 @@ check("revoked calendar asks for reconnection", true);
 await db.query("UPDATE google_connections SET status = 'ok', access_token_enc = $2 WHERE user_id = $1", [sam.id, encrypt("token-broken")]);
 // The start page no longer asks Google – the free times (step 2) do.
 await s.goto(`${BASE}/plan`);
-await s.getByRole("button", { name: "Was anderes …" }).click({ timeout: 20000 });
+await s.getByRole("button", { name: "Was anderes" }).click({ timeout: 20000 });
 await s.locator("dialog[open]").getByLabel("Eure eigene Idee").fill("Spazieren gehen");
 await s.locator("dialog[open]").getByRole("button", { name: "Weiter →" }).click();
 await s.getByText(/Google Kalender antwortet gerade nicht|Ein Kalender ist nicht mehr verbunden|Bitte verbinde deinen Kalender neu|muss den Kalender neu verbinden/).first().waitFor({ timeout: 20000 });

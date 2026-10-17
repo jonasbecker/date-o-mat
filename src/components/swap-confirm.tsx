@@ -25,7 +25,7 @@ export function SwapConfirm({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1 rounded-[20px] border-2 border-line bg-zitrone-soft px-4 py-3 text-tinte">
-        <p className="text-[13px] font-extrabold uppercase tracking-wide">Euer nächstes Date</p>
+        <p className="text-[13px] font-extrabold">Euer nächstes Date</p>
         <p className="font-display text-lg font-semibold leading-snug">{next.title}</p>
         <p className="text-sm font-bold">{next.when}</p>
       </div>

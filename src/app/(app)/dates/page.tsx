@@ -2,6 +2,8 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { Mascot } from "@/components/mascot";
+import { CardsIcon, HeartIcon, SparkleIcon } from "@/components/icons";
 import { Avatar } from "@/components/avatar";
 import { CycleHistory } from "@/components/cycle";
 import { AppHeader, PageSkeleton } from "@/components/app-header";
@@ -9,7 +11,7 @@ import { dateForViewer, upcomingDate } from "@/server/dates";
 import { cycleHistory } from "@/server/cycles";
 import { Hearts } from "@/components/hearts";
 import { reviewStats, visibleRatings, visibleReviews } from "@/core/reviews";
-import { formatLongDate, formatShortDate } from "@/lib/format";
+import { formatShortDate } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
 import type { User } from "@/server/db/schema";
@@ -66,9 +68,7 @@ async function Dates({ searchParams }: { searchParams: PageProps<"/dates">["sear
 
       {dates.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-[24px] border-[2.5px] border-dashed border-line px-6 py-8 text-center">
-          <span className="text-5xl" aria-hidden="true">
-            📸
-          </span>
+          <Mascot id="no-dates" size={64} />
           <p className="font-display text-xl font-semibold">Hier sammeln sich eure Dates</p>
           <p className="font-semibold text-muted">Nach jedem Date könnt ihr Herzen vergeben und festhalten, was schön war.</p>
         </div>
@@ -81,23 +81,23 @@ async function Dates({ searchParams }: { searchParams: PageProps<"/dates">["sear
           </dl>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm font-extrabold">
             {extraOn(settings, "story") && dates.length >= STORY_MIN_DATES && (
-              <Link href="/story" aria-label="Eure Date-Story: Euer Jahr zum Durchtippen" className="underline">
-                📖 Date-Story
+              <Link href="/story" aria-label="Eure Date-Story: Euer Jahr zum Durchtippen" className="flex items-center gap-1 underline">
+                <SparkleIcon width={15} height={15} /> Date-Story
               </Link>
             )}
             {stats.favorite && (
-              <Link href={`/dates/${stats.favorite.id}`} aria-label={`Euer Lieblingsdate: ${stats.favorite.title}`} className="underline">
-                🏆 Lieblingsdate
+              <Link href={`/dates/${stats.favorite.id}`} aria-label={`Euer Lieblingsdate: ${stats.favorite.title}`} className="flex items-center gap-1 underline">
+                <HeartIcon width={15} height={15} /> Lieblingsdate
               </Link>
             )}
             {extraOn(settings, "cards") && (
-              <Link href="/fragen" className="underline">
-                💬 Gesprächskarten
+              <Link href="/fragen" className="flex items-center gap-1 underline">
+                <CardsIcon width={15} height={15} /> Gesprächskarten
               </Link>
             )}
           </div>
           <h2 className="-mb-1 text-[19px] font-semibold">Bisher</h2>
-          <ul className="flex flex-col gap-2">
+          <ul className="grid grid-cols-2 gap-2">
             {shown.map((date) => (
               <li key={date.id}>
                 <DateRow date={date} me={user} partner={partner} cover={covers.get(date.id)} />
@@ -140,32 +140,28 @@ function Stat({ label, value, tone }: { label: string; value: string; tone: stri
   );
 }
 
+/** A photo first – the history reads like an album, not like a list. */
 function DateRow({ date, me, partner, cover }: { date: PastDate; me: User; partner: User; cover?: string }) {
   const { mine, partner: theirs, partnerHidden } = visibleReviews(date.reviews, me.id);
   return (
-    <Link href={`/dates/${date.id}`} className="press flex items-center gap-3 rounded-[18px] border-[2.5px] border-line bg-surface p-2.5">
+    <Link href={`/dates/${date.id}`} className="flat tap relative flex h-full flex-col overflow-hidden rounded-[18px] bg-surface">
       {cover ? (
         // eslint-disable-next-line @next/next/no-img-element -- private photo route
-        <img src={`/api/photos/${cover}?size=thumb`} alt="" loading="lazy" className="size-14 shrink-0 rounded-[12px] border-2 border-line object-cover" />
+        <img src={`/api/photos/${cover}?size=thumb`} alt="" loading="lazy" className="aspect-[16/9] w-full border-b-2 border-line object-cover" />
       ) : (
-        <span aria-hidden="true" className="flex size-14 shrink-0 items-center justify-center rounded-[12px] border-2 border-line bg-bg text-2xl">
-          💞
+        <span className="flex aspect-[16/9] w-full items-center justify-center border-b-2 border-line bg-bg">
+          <Mascot id={`date-${date.id}`} size={40} />
         </span>
       )}
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="flex items-start justify-between gap-2">
-          <span className="truncate font-display text-base font-semibold leading-snug">{date.title}</span>
-          {!mine && <span className="shrink-0 rounded-full border-2 border-line bg-himbeere px-2 py-px text-[11px] font-extrabold text-tinte">Bewerten</span>}
-        </span>
-        <span className="truncate text-xs font-extrabold text-muted">
-          {formatLongDate(date.startsAt)}
-          {date.location && ` · 📍 ${date.location}`}
-        </span>
-        <span className="flex flex-wrap items-center gap-x-3">
+      {!mine && <span className="absolute right-1.5 top-1.5 rounded-full border-2 border-line bg-himbeere px-2 py-px text-[11px] font-extrabold text-tinte">Bewerten</span>}
+      <span className="flex min-w-0 flex-col gap-0.5 px-2.5 py-2">
+        <span className="truncate font-display text-[15px] font-semibold leading-snug">{date.title}</span>
+        <span className="truncate text-[11px] font-extrabold text-muted">{formatShortDate(date.startsAt)}</span>
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <PersonHearts person={me} rating={mine?.rating ?? null} />
           {partnerHidden ? (
-            <span className="flex items-center gap-1 text-xs font-extrabold text-muted">
-              <Avatar person={partner} size={18} /> hat bewertet 🔒
+            <span className="flex items-center gap-1 text-[11px] font-extrabold text-muted">
+              <Avatar person={partner} size={16} /> hat bewertet 🔒
             </span>
           ) : (
             <PersonHearts person={partner} rating={theirs?.rating ?? null} />
@@ -179,8 +175,8 @@ function DateRow({ date, me, partner, cover }: { date: PastDate; me: User; partn
 function PersonHearts({ person, rating }: { person: User; rating: number | null }) {
   return (
     <span className="flex items-center gap-1">
-      <Avatar person={person} size={18} />
-      {rating ? <Hearts rating={rating} size={13} /> : <span className="text-xs font-extrabold text-muted">noch offen</span>}
+      <Avatar person={person} size={16} />
+      {rating ? <Hearts rating={rating} size={11} /> : <span className="text-[11px] font-extrabold text-muted">offen</span>}
     </span>
   );
 }

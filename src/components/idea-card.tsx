@@ -1,6 +1,7 @@
 import type { IdeaSize, UserColor } from "@/lib/domain";
 import { displayHost, formatCost } from "@/lib/idea-input";
 import { Avatar } from "./avatar";
+import { PinIcon } from "./icons";
 import { SizeChip } from "./size-chip";
 
 /** What an idea card shows – the same card on the wishlist and in the planning flow. */
@@ -30,7 +31,7 @@ export function ideaFacts(idea: Pick<IdeaCardView, "costEur" | "location">): str
 export function IdeaCard({ idea, onOpen }: { idea: IdeaCardView; onOpen: () => void }) {
   const cost = formatCost(idea.costEur);
   return (
-    <div className="sticker relative flex flex-col gap-1.5 rounded-[18px] bg-surface px-3.5 py-3">
+    <div className="flat tap relative flex flex-col gap-1.5 rounded-[18px] bg-surface px-3.5 py-3">
       <div className="flex items-start justify-between gap-3">
         {/* Stretched button: the whole card reacts, the link stays clickable. */}
         <button
@@ -47,7 +48,11 @@ export function IdeaCard({ idea, onOpen }: { idea: IdeaCardView; onOpen: () => v
         {idea.matched && <span>💞 Match</span>}
         {idea.isNext && <span>📅 Nächstes Date</span>}
         {cost && <span>{cost}</span>}
-        {idea.location && <span>📍 {idea.location}</span>}
+        {idea.location && (
+          <span className="flex items-center gap-1">
+            <PinIcon width={13} height={13} strokeWidth={2.8} /> {idea.location}
+          </span>
+        )}
         {idea.overBudget && <span>⚠️ über Budget</span>}
         {idea.url && (
           <a href={idea.url} target="_blank" rel="noopener noreferrer" className="relative z-10 underline decoration-2 underline-offset-2">

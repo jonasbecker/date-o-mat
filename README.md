@@ -40,6 +40,7 @@ gemeinsame Ideen-Wunschliste.
 | M26 | Ein Ablauf statt Reitern: der Start zeigt, was ansteht, darunter Idee → Zeit → fertig; Ideen, Dates und Einstellungen als Icons oben | ✅ |
 | M27 | Ohne Scrollen: jeder Bildschirm passt, man klickt sich durch (Zeiten blättern, Einstellungs-Themen, Historie in Seiten, Reiter) | ✅ |
 | M28 | Feinschliff: schneller Start (Zeiten erst bei Bedarf), Zeiten nach Datum, kompakte Rundenkarte, eine Ideen-Karte, einfachere Begriffe, gruppierte Einstellungen | ✅ |
+| M29 | Design (Richtung A): Schatten nur für Aktionen, Farbrollen, Schritt-Punkte, Icons, Maskottchen, Fotoraster, ruhige Kopfzeile, Daumenzone | ✅ |
 
 ## Tech-Stack
 
@@ -192,6 +193,22 @@ scripts/              Migration beim Build, Secret-Generator
   Was man nimmt, landet auf der Wunschliste und ist sofort gewählt.
 - **Wörter:** Kurz/Lang statt Klein/Groß, „Diese Woche“ statt „Runde 3“, „Plan bis …“ statt
   „Deadline“. Einstellungen: „Das Wichtigste“ oben, der Rest eingeklappt (M22).
+
+### Design in Kürze (M29, Richtung A)
+
+- **Sticker nur für das, was man antippen soll:** Hauptknöpfe und das nächste Date haben Rand und
+  harten Schatten. Listen, Infos und Nebenknöpfe sind flach (`flat`, gibt beim Tippen leicht nach).
+- **Farben mit Aufgabe:** Pink = machen, eure Farben = wer dran ist, Minze = steht, Gelb = Hinweis
+  oder Warnung, sonst neutral. Die Kurz/Lang-Chips sind neutral mit Icon.
+- **Schritte als Punkte** (● ○) statt „Schritt 1 von 2“; der nächste Schritt schiebt sich von rechts
+  herein. Kleine Labels ohne Großbuchstaben.
+- **Icons statt Emoji** in der Bedienung (`components/icons.tsx`): Zufall, Was anderes, Swipen, Ort,
+  Datum, Einstellungs-Kacheln, Ideen-Menü. Emoji bleiben beim Inhalt.
+- **Maskottchen:** Die Kaugummi-Maschine kurbelt, während die Zeiten laden, und steht in leeren
+  Zuständen (Wunschliste, Dates, keine Lücke).
+- **Historie als Fotoraster** (2 × 2 pro Seite), ohne Foto mit der Maschine.
+- **Ruhige Kopfzeile auf Unterseiten:** nur die kleine Maschine mit „← Date planen“.
+- **Daumenzone:** „Passt! 💚“ und „Lieber was anderes machen?“ stehen unten auf dem Start.
 
 ### Feinschliff in Kürze (M28)
 

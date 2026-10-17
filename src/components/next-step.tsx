@@ -159,7 +159,7 @@ export function NextStepCard({
           </p>
         </>
       );
-      actions = (
+      actions = !onPlanPage && (
         <div className="flex flex-col items-center gap-2">
           <ConfettiActionButton action={confirmDateAction.bind(null, step.dateId)} className="w-full">
             Passt! 💚
@@ -232,6 +232,7 @@ export function NextStepCard({
       data-next-step={step.kind}
       tone={tone(step, me, partner)}
       size={onPlanPage ? "sm" : "lg"}
+      flat={onPlanPage}
       className={cn("animate-pop-in relative flex flex-col overflow-hidden", onPlanPage ? "gap-2 text-sm" : "gap-3.5")}
     >
       {onPlanPage ? (
