@@ -146,7 +146,14 @@ check("round 5 belongs to Jonas", rows[4].planner_id === jonas.id);
 
 // Suggestion mode – applies to the open round right away
 await j.goto(`${BASE}/settings?t=rhythmus`);
-await j.getByText("Vorschlag", { exact: true }).click();
+// CI once never showed the form here – say what was on screen, then load once more.
+const modeChoice = j.getByText("Vorschlag", { exact: true });
+if (!(await modeChoice.waitFor({ timeout: 15000 }).then(() => true, () => false))) {
+  console.log("DEBUG settings", j.url(), (await j.locator("main").innerText().catch(() => "")).slice(0, 600));
+  await j.screenshot({ path: `${SHOTS}m4-debug-settings.png` });
+  await j.reload();
+}
+await modeChoice.click();
 await j.locator("form").filter({ has: j.getByLabel("Rhythmus", { exact: true }) }).getByRole("button", { name: "Speichern" }).click();
 await j.locator("form").filter({ has: j.getByLabel("Rhythmus", { exact: true }) }).getByText("Gespeichert ✓").waitFor({ timeout: 10000 });
 rows = await cyclesInDb();
