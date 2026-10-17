@@ -100,6 +100,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M29 | Design A: diszipliniertes Sticker-Design, Farbrollen, Icons, Maskottchen, Fotoraster, Daumenzone | ✅ |
 | M30 | Ideen-Aufbau: eine Wunschliste, Swipen auf dem Start wenn nichts zu planen ist, „Nächstes Mal?“, „Was läuft“ im Planen | ✅ |
 | M31 | Start = Kasten + Swipe-Karte; „Date planen“ im Kasten öffnet die Wunschliste als eigenen Schritt; 💡 ohne Reiter | ✅ |
+| M32 | Icons rechts, Seiten klappen von oben herunter; kompakte Swipe-Karte (nur ✕ ↩️ 💚, „Vielleicht“ und Super-Like entfallen) | ✅ |
 
 Abweichungen in V2:
 

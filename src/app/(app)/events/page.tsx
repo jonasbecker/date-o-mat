@@ -17,7 +17,7 @@ export const maxDuration = 60;
 export default function EventsPage({ searchParams }: PageProps<"/events">) {
   return (
     <div className="flex flex-col gap-4">
-      <AppHeader current="ideas" />
+      <AppHeader />
       <h1 className="text-[26px] font-bold leading-tight">Was läuft</h1>
       <Suspense fallback={<PageSkeleton />}>
         <Events searchParams={searchParams} />

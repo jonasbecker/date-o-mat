@@ -6,6 +6,7 @@ import { Mascot } from "@/components/mascot";
 import { CardsIcon, HeartIcon, SparkleIcon } from "@/components/icons";
 import { Avatar } from "@/components/avatar";
 import { CycleHistory } from "@/components/cycle";
+import { Panel } from "@/components/panel";
 import { AppHeader, PageSkeleton } from "@/components/app-header";
 import { dateForViewer, upcomingDate } from "@/server/dates";
 import { cycleHistory } from "@/server/cycles";
@@ -53,6 +54,7 @@ async function Dates({ searchParams }: { searchParams: PageProps<"/dates">["sear
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <AutoRefresh />
       <AppHeader current="dates" />
+      <Panel>
       <h1 className="-mt-1 text-[26px] font-bold leading-tight">Eure Dates</h1>
       {/* What is coming up lives on the start page; here: what you had. */}
       {next && (
@@ -127,6 +129,7 @@ async function Dates({ searchParams }: { searchParams: PageProps<"/dates">["sear
           )}
         </>
       )}
+      </Panel>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-// M19: special days (anniversary, birthday) with reminders, "Vielleicht" cards, old wishlist ideas resurfacing.
+// M19: special days (anniversary, birthday) with reminders, old wishlist ideas resurfacing.
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { createServer } from "node:http";
@@ -170,51 +170,6 @@ check(`next day: the next old idea (${await topTitle(j)})`, (await topTitle(j)) 
 await j.getByRole("button", { name: "Gefällt mir" }).click();
 await j.getByText("Bleibt auf eurer Wunschliste 💚").waitFor({ timeout: 10000 });
 check("kept: card leaves the deck for both", (await db.query("SELECT status FROM deck_cards WHERE idea_id = $1", [zoo])).rows[0].status === "matched");
-
-// 6) "Vielleicht": an idea for another season comes back when that season starts
-// (a few spare cards, so the deck never runs empty while we look for the seasonal one)
-for (let i = 1; i <= 6; i++) {
-  await db.query(
-    "INSERT INTO deck_cards (couple_id, kind, title, size, dedupe_key, batch) VALUES ($1, 'idea', $2, 'small', $3, 99) ON CONFLICT DO NOTHING",
-    [couple.id, `Ersatzkarte ${i}`, `ersatzkarte ${i}`],
-  );
-}
-const target = [6, 7, 8].includes(appNow.month) ? { title: "Eislaufen Abend", month: 12 } : { title: "Freibad Abend", month: 6 };
-let title = await topTitle(j);
-for (let n = 0; n < 15 && title !== target.title; n++) {
-  await j.getByRole("button", { name: "Gefällt mir" }).click();
-  for (let i = 0; i < 30 && (await topTitle(j)) === title; i++) await j.waitForTimeout(100);
-  title = await topTitle(j);
-}
-await j.getByRole("button", { name: "Vielleicht später" }).click();
-await j.getByText("Kommt später wieder 🤔").waitFor({ timeout: 10000 });
-const { rows: [maybe] } = await db.query("SELECT s.verdict, s.revisit_at FROM deck_swipes s JOIN deck_cards c ON c.id = s.card_id WHERE c.title = $1 AND s.user_id = $2", [target.title, jonas.id]);
-const comesBack = DateTime.fromJSDate(maybe.revisit_at).setZone(ZONE);
-check(`${target.title} comes back at the start of its season (${comesBack.toISODate()})`, maybe.verdict === "maybe" && comesBack.month === target.month && comesBack.day === 1);
-// Swipe down = maybe too
-for (let i = 0; i < 30 && (await topTitle(j)) === target.title; i++) await j.waitForTimeout(100);
-await j.waitForTimeout(300);
-const box = await topCard(j).boundingBox();
-const downTitle = await topTitle(j);
-await j.mouse.move(box.x + box.width / 2, box.y + 150);
-await j.mouse.down();
-await j.mouse.move(box.x + box.width / 2, box.y + 220, { steps: 4 });
-await j.mouse.move(box.x + box.width / 2, box.y + 330, { steps: 4 });
-await j.mouse.up();
-await j.waitForTimeout(800);
-check("swipe down = maybe", (await db.query("SELECT s.verdict FROM deck_swipes s JOIN deck_cards c ON c.id = s.card_id WHERE c.title = $1 AND s.user_id = $2", [downTitle, jonas.id])).rows[0]?.verdict === "maybe");
-await j.reload();
-await j.getByRole("button", { name: /2 auf „Vielleicht“/ }).click();
-await j.waitForTimeout(1500);
-const titles = [];
-for (let i = 0; i < 12; i++) {
-  titles.push(await topTitle(j));
-  if (titles.at(-1) === target.title) break;
-  await j.getByRole("button", { name: "Gefällt mir" }).click();
-  await j.waitForTimeout(400);
-}
-check("maybes are back in the deck", titles.includes(target.title));
-check("Sam still had the maybe card all along", (await db.query("SELECT count(*)::int AS n FROM deck_swipes s JOIN deck_cards c ON c.id = s.card_id WHERE c.title = $1 AND s.user_id = $2", [target.title, sam.id])).rows[0].n === 0);
 
 console.log(failures ? `\n${failures} check(s) failed` : "\nAll checks passed");
 await browser.close();

@@ -25,6 +25,10 @@ export const GLOSSARY = {
     title: "Ihr seid beide frei",
     text: "Eure Kalender zeigen zu der Zeit nichts – mit etwas Puffer davor und danach. Der Date-O-Mat sieht dabei nur „frei“ oder „belegt“, nie eure Termine.",
   },
+  swipen: {
+    title: "Swipen",
+    text: "💚 legt die Idee auf eure Wunschliste. Findet ihr beide dieselbe Idee gut, ist es ein Match 💞. ✕ blendet sie für dich aus, ↩️ nimmt es zurück.",
+  },
   passt: {
     title: "„Passt!“",
     text: "Wer das Date nicht geplant hat, bestätigt es mit „Passt!“. Danach steht es – ändern oder absagen geht trotzdem noch.",

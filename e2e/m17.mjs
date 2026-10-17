@@ -1,4 +1,4 @@
-// M17: "Entdecken" – swipe deck made by (fake) Claude, matches, undo, super-like, combos, nudges.
+// M17: "Entdecken" – swipe deck made by (fake) Claude, matches, undo, combos, nudges.
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { createServer } from "node:http";
@@ -143,9 +143,8 @@ await j.getByRole("button", { name: "Gefällt mir" }).click();
 const second = await nextTop(j, first);
 await j.keyboard.press("ArrowLeft");
 const third = await nextTop(j, second);
-await j.getByRole("button", { name: "Super-Like" }).click();
+await j.getByRole("button", { name: "Gefällt mir" }).click();
 const fourth = await nextTop(j, third);
-check(`super-like used up for today`, await j.getByRole("button", { name: "Super-Like" }).isDisabled());
 const box = await topCard(j).boundingBox();
 await j.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
 await j.mouse.down();
@@ -156,14 +155,14 @@ const fifth = await nextTop(j, fourth);
 await j.waitForTimeout(500);
 const swipes = async (userId) => (await db.query("SELECT c.title, s.verdict FROM deck_swipes s JOIN deck_cards c ON c.id = s.card_id WHERE s.user_id = $1 ORDER BY s.created_at", [userId])).rows;
 let js = await swipes(jonas.id);
-check(`swipes stored (${js.map((s) => s.verdict).join(",")})`, js.map((s) => `${s.title}:${s.verdict}`).join("|") === `${first}:like|${second}:nope|${third}:super|${fourth}:like`);
+check(`swipes stored (${js.map((s) => s.verdict).join(",")})`, js.map((s) => `${s.title}:${s.verdict}`).join("|") === `${first}:like|${second}:nope|${third}:like|${fourth}:like`);
 check("nope passes the card for both", (await db.query("SELECT status FROM deck_cards WHERE title = $1", [second])).rows[0].status === "passed");
 const deckIdeas = async () => (await db.query("SELECT title FROM ideas WHERE source = 'deck' AND archived_at IS NULL ORDER BY title")).rows.map((r) => r.title);
 let saved = await deckIdeas();
 check(`a like alone puts the card on the wishlist (${saved.join(", ")})`, saved.join("|") === [first, third, fourth].sort().join("|"));
 check("…and the card stays open for Sam", (await db.query("SELECT status FROM deck_cards WHERE title = $1", [first])).rows[0].status === "open");
 
-// 3) Undo – twice: the drag-like and the super-like come back, the super-like is free again
+// 3) Undo – twice: the drag-like and the like before it come back
 await j.getByRole("button", { name: "Rückgängig" }).click();
 check(`undo brings back the last card (${await nextTop(j, fifth)})`, (await topTitle(j)) === fourth);
 await j.getByRole("button", { name: "Rückgängig" }).click();
@@ -175,8 +174,7 @@ check(`undoing a like takes it off the wishlist (${saved.join(", ")})`, saved.jo
 await j.reload();
 await topCard(j).waitFor({ timeout: 15000 });
 await j.waitForTimeout(800);
-check("super-like is available again", await j.getByRole("button", { name: "Super-Like" }).isEnabled());
-await j.getByRole("button", { name: "Super-Like" }).click();
+await j.getByRole("button", { name: "Gefällt mir" }).click();
 await j.waitForTimeout(600);
 for (let i = 0; i < 3; i++) {
   const before = await topTitle(j);
@@ -185,47 +183,49 @@ for (let i = 0; i < 3; i++) {
 }
 await j.waitForTimeout(500);
 
-// 4) Sam: Jonas' super-like first (with a star), then his likes – the passed card never shows
+// 4) Sam: Jonas' likes first (oldest card on top), the passed card never shows
 const s = await pageFor(sam.token);
 await s.goto(`${BASE}/ideas/entdecken`);
 await topCard(s).waitFor({ timeout: 15000 });
 await s.waitForTimeout(800);
-check(`Sam sees the super-like first (${await topTitle(s)})`, (await topTitle(s)) === third && (await topCard(s).getByText("⭐ Jonas findet das super").isVisible()));
+const liked = await topTitle(s);
+check(`Sam sees one of Jonas' likes on top (${liked})`, (await deckIdeas()).includes(liked));
 const samTitles = await s.locator('[aria-roledescription="Karte"]').getAttribute("aria-label");
 check("the passed card is gone for Sam", samTitles !== second);
 await s.screenshot({ path: `${OUT}m17-02-super.png` });
 
-// 5) Match: Sam likes Jonas' super-like → match overlay, wishlist idea
+// 5) Match: Sam likes Jonas' like → match overlay, wishlist idea
 await s.getByRole("button", { name: "Gefällt mir" }).click();
 await s.getByRole("dialog").getByText("Match!").waitFor({ timeout: 10000 });
-check("match dialog names the idea", await s.getByRole("dialog").getByText(third).isVisible());
+check("match dialog names the idea", await s.getByRole("dialog").getByText(liked).isVisible());
 await s.screenshot({ path: `${OUT}m17-03-match.png` });
-let { rows: matched } = await db.query("SELECT i.id, i.title, i.source, c.status FROM deck_cards c JOIN ideas i ON i.id = c.idea_id WHERE c.title = $1", [third]);
+let { rows: matched } = await db.query("SELECT i.id, i.title, i.source, c.status FROM deck_cards c JOIN ideas i ON i.id = c.idea_id WHERE c.title = $1", [liked]);
 check(`wishlist idea from the match (${JSON.stringify(matched[0])})`, matched[0]?.source === "deck" && matched[0].status === "matched");
 const planHref = await s.getByRole("link", { name: "📅 Jetzt planen" }).getAttribute("href");
 check(`"Jetzt planen" opens the plan page with the idea (${planHref})`, planHref === `/plan?idea=${matched[0]?.id}`);
 
-check("the match reuses Jonas' wishlist idea", (await db.query("SELECT 1 FROM ideas WHERE title = $1", [third])).rowCount === 1);
+check("the match reuses Jonas' wishlist idea", (await db.query("SELECT 1 FROM ideas WHERE title = $1", [liked])).rowCount === 1);
 
 // 6) Undo a match: the match is gone, Jonas' like keeps the idea on the wishlist
 await s.getByRole("button", { name: "Weiter swipen" }).click();
 await s.getByRole("button", { name: "Rückgängig" }).click();
 await s.waitForTimeout(800);
-const { rows: [undone] } = await db.query("SELECT c.status, c.idea_id FROM deck_cards c WHERE c.title = $1", [third]);
+const { rows: [undone] } = await db.query("SELECT c.status, c.idea_id FROM deck_cards c WHERE c.title = $1", [liked]);
 check(`undo of a match keeps Jonas' idea (${undone.status})`, undone.status === "open" && undone.idea_id === matched[0].id);
-check("…and the card is back on top", (await topTitle(s)) === third);
+check("…and the card is back on top", (await topTitle(s)) === liked);
 await s.getByRole("button", { name: "Gefällt mir" }).click();
 await s.getByRole("dialog").getByText("Match!").waitFor({ timeout: 10000 });
-check("matched again – still one idea", (await db.query("SELECT 1 FROM ideas WHERE title = $1", [third])).rowCount === 1);
+check("matched again – still one idea", (await db.query("SELECT 1 FROM ideas WHERE title = $1", [liked])).rowCount === 1);
 await s.getByRole("link", { name: "📅 Jetzt planen" }).click();
 await s.waitForURL(/\/plan\?idea=/, { timeout: 10000 });
 check("plan page opened from the match", new URL(s.url()).pathname === "/plan");
 await s.goto(`${BASE}/ideas`);
-const matchedCard = s.locator("li").filter({ has: s.getByRole("button", { name: third }) });
+const other = (await deckIdeas()).find((t) => t !== liked);
+const matchedCard = s.locator("li").filter({ has: s.getByRole("button", { name: liked }) });
 await matchedCard.waitFor({ timeout: 10000 });
 check("the wishlist marks the match", await matchedCard.getByText("💞 Match").isVisible());
-check("a single like is on the wishlist without the mark", (await s.locator("li").filter({ has: s.getByRole("button", { name: first }) }).getByText("💞 Match").count()) === 0);
-await s.getByRole("button", { name: first }).click();
+check("a single like is on the wishlist without the mark", (await s.locator("li").filter({ has: s.getByRole("button", { name: other }) }).getByText("💞 Match").count()) === 0);
+await s.getByRole("button", { name: other }).click();
 check("tapping an idea offers to plan it", await s.locator("dialog[open]").getByRole("link", { name: "Date damit planen" }).isVisible());
 await s.locator("dialog[open]").getByRole("link", { name: "Date damit planen" }).click();
 await s.waitForURL(/\/plan\?idea=/, { timeout: 10000 });

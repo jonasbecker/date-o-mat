@@ -170,6 +170,20 @@ await j.getByRole("button", { name: "Weiter" }).click();
 await j.waitForTimeout(600);
 await j.screenshot({ path: `${OUT}m13-07-welcome.png` });
 
+// 6b) The header icons drop their page down; the same icon folds it up again
+await j.goto(`${BASE}/plan`);
+await j.locator("[data-next-step]").filter({ visible: true }).first().waitFor({ timeout: 15000 });
+await j.getByRole("link", { name: "Eure Dates", exact: true }).click();
+await j.waitForURL(`${BASE}/dates`, { timeout: 10000 });
+await j.getByRole("heading", { name: "Eure Dates" }).waitFor({ timeout: 10000 });
+check("history icon opens the history", (await j.locator("[data-panel]").filter({ visible: true }).count()) === 1);
+await j.screenshot({ path: `${OUT}m13-13-panel.png` });
+await j.getByRole("link", { name: "Eure Dates", exact: true }).click();
+await j.waitForURL(`${BASE}/plan`, { timeout: 10000 });
+await j.locator("[data-next-step]").filter({ visible: true }).first().waitFor({ timeout: 10000 });
+check("the same icon folds it up: the start again", true);
+check("icons sit on the right: wishlist, history, settings", (await j.locator("header:visible a").evaluateAll((a) => a.map((x) => x.getAttribute("aria-label")))).join("|") === "Date-O-Mat – zum Start|Ideen|Eure Dates|Einstellungen");
+
 // 7) Dark mode + nav label
 const jd = await pageFor(jonas.token, "dark");
 await jd.goto(`${BASE}/`);

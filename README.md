@@ -43,6 +43,7 @@ gemeinsame Ideen-Wunschliste.
 | M29 | Design (Richtung A): Schatten nur für Aktionen, Farbrollen, Schritt-Punkte, Icons, Maskottchen, Fotoraster, ruhige Kopfzeile, Daumenzone | ✅ |
 | M30 | Eine Wunschliste, wo sie passt: Schritt 1 = Wunschliste, „Solange swipen?“ auf dem Start, „Nächstes Mal?“ nach dem Bewerten, 💡 mit zwei Reitern | ✅ |
 | M31 | Start = ein Kasten + Swipen: im Kasten „Date planen“, „Passt!“, der Vorschlag oder das Date; darunter die Swipe-Karte; „Date planen“ führt zur Wunschliste | ✅ |
+| M32 | Kopfzeile mit 💡 ♥ ⚙️ rechts, die Seiten klappen von oben herunter (gleiches Icon = wieder hoch); Swipe-Karte mit Knöpfen auf der Karte, ohne Vielleicht/Super-Like | ✅ |
 
 ## Tech-Stack
 

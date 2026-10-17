@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { after, connection } from "next/server";
 import { Suspense } from "react";
+import { Panel } from "@/components/panel";
 import { PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { IdeasTop } from "@/components/ideas-top";
@@ -19,9 +20,11 @@ export default function DiscoverPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <IdeasTop title="Ideen swipen" />
-      <Suspense fallback={<PageSkeleton />}>
-        <Discover />
-      </Suspense>
+      <Panel>
+        <Suspense fallback={<PageSkeleton />}>
+          <Discover />
+        </Suspense>
+      </Panel>
     </div>
   );
 }
