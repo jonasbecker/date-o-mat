@@ -2,7 +2,7 @@
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import pg from "pg";
 import { chromium } from "playwright";
-import { backAtStart, openTimes, pickIdea } from "./flow.mjs";
+import { backAtStart, fitsScreen, openTimes, pickIdea } from "./flow.mjs";
 import { BUSY, events, failures, requests, startMock } from "./google-mock.mjs";
 import { tuesdayMorningOffset } from "./clock.mjs";
 
@@ -81,9 +81,11 @@ check(`step 1 lists the oldest idea first (${firstIdea})`, firstIdea.startsWith(
 check("no times before an idea is chosen", (await j.locator("ol li button").count()) === 0);
 await j.waitForTimeout(300);
 await j.screenshot({ path: `${SHOTS}m5-00-step1.png`, fullPage: true });
+check("step 1 fits the screen (only the wishlist scrolls)", await fitsScreen(j));
 await pickIdea(j, "Picknick im Stadtwald");
 check("Top-Tipp slot is preselected", (await j.locator('ol li button[aria-pressed="true"]').count()) === 1);
 check("step 2 shows the chosen idea", await j.getByText("Ihr macht", { exact: true }).isVisible());
+check("step 2 fits the screen", await fitsScreen(j));
 await j.waitForTimeout(300);
 await j.screenshot({ path: `${SHOTS}m5-01-plan.png` });
 const t0 = Date.now();
@@ -102,6 +104,7 @@ await j.getByText("Wartet auf Sams „Passt!“").waitFor({ timeout: 10000 });
 check("Jonas waits for Sam's confirmation", true);
 await j.waitForTimeout(300);
 await j.screenshot({ path: `${SHOTS}m5-02-home-planned.png` });
+check("the start with a date fits the screen", await fitsScreen(j));
 
 // 2) Sam confirms with confetti
 await s.goto(`${BASE}/`);
@@ -163,6 +166,7 @@ check("event now has the latest time", events["token-jonas"].get(date.google_eve
 
 // 6) Cancel → Google event deleted (guest notified), round reopens
 await j.goto(`${BASE}/`);
+await j.getByRole("link", { name: "Details, Vorbereitung & Route →" }).click();
 await j.getByRole("button", { name: "Absagen" }).click();
 await j.getByRole("button", { name: "Ja, absagen" }).click();
 await j.getByRole("heading", { name: "Du bist dran!" }).waitFor({ timeout: 10000 });

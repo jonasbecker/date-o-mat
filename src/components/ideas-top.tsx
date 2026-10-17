@@ -8,11 +8,7 @@ type Current = Parameters<typeof IdeasTabs>[0]["current"];
 export function IdeasTop({ current }: { current: Current }) {
   return (
     <>
-      <AppHeader current="ideas" />
-      <div className="flex items-center justify-between gap-3">
-        <p className="font-bold text-muted">Sammelt, was ihr machen wollt.</p>
-        <QuickAdd />
-      </div>
+      <AppHeader current="ideas" action={<QuickAdd />} />
       <IdeasTabs current={current} />
     </>
   );

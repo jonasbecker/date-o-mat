@@ -6,6 +6,7 @@ import { createServer } from "node:https";
 import { createRequire } from "node:module";
 import { DateTime } from "luxon";
 import pg from "pg";
+import { fitsScreen } from "./flow.mjs";
 import { chromium } from "playwright";
 import { startMock } from "./google-mock.mjs";
 
@@ -163,20 +164,24 @@ await j.goto(`${BASE}/dates`);
 await j.getByRole("heading", { name: "Eure Dates" }).waitFor({ timeout: 15000 });
 check("list: Sam's review is locked", await j.getByText("hat bewertet 🔒").isVisible());
 const hiddenStats = await j.locator("dl").innerText();
-check(`stats do not reveal Sam's hidden hearts (${hiddenStats.replace(/\n/g, " ")})`, !hiddenStats.includes("4") && !(await j.getByText("Euer Lieblingsdate").isVisible()));
+check(`stats do not reveal Sam's hidden hearts (${hiddenStats.replace(/\n/g, " ")})`, !hiddenStats.includes("4") && (await j.getByRole("link", { name: /Euer Lieblingsdate/ }).count()) === 0);
 await j.getByRole("link", { name: /Picknick im Stadtwald/ }).last().click();
 await j.getByText("Sam hat schon bewertet").waitFor({ timeout: 10000 });
 check("detail: note not visible yet", !(await j.getByText("Das Eis am Weiher!").isVisible()));
 await j.getByLabel("5 Herzen").check({ force: true });
 await j.getByRole("button", { name: "Bewertung abschicken" }).click();
+await j.getByText("Deine Herzen", { exact: true }).waitFor({ timeout: 10000 });
+await j.getByRole("tab", { name: "Sam" }).click();
 await j.getByText("Das Eis am Weiher!").waitFor({ timeout: 10000 });
 check("after reviewing, Sam's note is visible", true);
 await j.screenshot({ path: `${OUT}m8-03-detail.png`, fullPage: true });
+check("date page (review) fits the screen", await fitsScreen(j));
 await new Promise((r) => setTimeout(r, 800));
 check(`Sam is told both are in (${titles("sam-phone")})`, titles("sam-phone").some((t) => t.includes("bewertet 💞")));
 
 // 4) Change the review: no new push
 const before = inbox.length;
+await j.getByRole("tab", { name: /Deine Herzen/ }).click();
 await j.getByText("Meine Bewertung ändern").click();
 await j.locator("label", { has: j.locator('input[value="3"]') }).click();
 await j.getByRole("button", { name: "Speichern" }).click();
@@ -186,18 +191,20 @@ check("editing works and does not push again", inbox.length === before);
 
 // 5) Stats + nav
 await j.goto(`${BASE}/dates`);
-await j.getByText("Euer Lieblingsdate").waitFor({ timeout: 10000 });
+await j.getByRole("link", { name: /Euer Lieblingsdate/ }).waitFor({ timeout: 10000 });
 const statText = await j.locator("dl").innerText();
 check(`stats: 1 date, Ø 3,5 (${statText.replace(/\n/g, " ")})`, /Dates\s*1/.test(statText) && statText.includes("3,5"));
 await j.screenshot({ path: `${OUT}m8-04-list.png`, fullPage: true });
+check("dates history fits the screen", await fitsScreen(j));
 const jd = await pageFor(jonas.token, { colorScheme: "dark" });
 await jd.goto(`${BASE}/dates`);
-await jd.getByText("Euer Lieblingsdate").waitFor({ timeout: 10000 });
+await jd.getByRole("link", { name: /Euer Lieblingsdate/ }).waitFor({ timeout: 10000 });
 await jd.screenshot({ path: `${OUT}m8-05-list-dark.png`, fullPage: true });
 await j.goto(`${BASE}/`);
 await j.getByRole("link", { name: "Einstellungen" }).click();
 await j.getByRole("heading", { name: "Einstellungen" }).waitFor({ timeout: 10000 });
 check("settings reachable from the header", true);
+await j.getByRole("link", { name: /Erinnerungen/ }).click();
 await j.getByText("Welche Erinnerungen?").click();
 await j.getByText("Wie war's? (am Tag nach dem Date)").waitFor({ timeout: 10000 }).catch(() => {});
 check("review reminder can be switched off", await j.getByText("Wie war's? (am Tag nach dem Date)").isVisible());

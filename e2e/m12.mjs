@@ -159,8 +159,8 @@ await j.getByText("Folgt euren Lieblings-Seiten").waitFor({ timeout: 15000 });
 check("events page: empty state points to settings", true);
 
 // 2) Add four sources in settings
-await j.goto(`${BASE}/settings#events`);
-await j.locator("details#events[open]").waitFor({ timeout: 15000 });
+await j.goto(`${BASE}/settings?t=events`);
+await j.locator("section#events").waitFor({ timeout: 15000 });
 for (const [path, kind] of [["/jsonld", "calendar"], ["/html", "calendar"], ["/tips", "tips"], ["/spa", "calendar"]]) {
   await j.getByRole("textbox", { name: "Weitere Seite" }).fill(`http://localhost:4040${path}`);
   await j.locator("#events select[name=\"kind\"]").selectOption(kind);
@@ -293,13 +293,13 @@ await sleep(2500);
 const { rows: [same] } = await db.query("SELECT last_count, last_fetched_at > now() - interval '1 minute' AS fresh, content_hash FROM event_sources WHERE url = 'http://localhost:4040/html'");
 if (hour >= 5) check(`unchanged page: no Claude call, entries kept (${claudeCalls.length - beforeSame} calls, ${same.last_count} entries)`, claudeCalls.length === beforeSame && same.fresh && same.last_count >= 2 && /^[0-9a-f]{64}$/.test(same.content_hash));
 await db.query("UPDATE event_sources SET last_fetched_at = now() - interval '1 hour' WHERE url = 'http://localhost:4040/html'");
-await j.goto(`${BASE}/settings#events`);
+await j.goto(`${BASE}/settings?t=events`);
 await j.locator("li", { has: j.locator('a[href="http://localhost:4040/html"]') }).getByRole("button", { name: "Jetzt lesen" }).click();
 await sleep(2500);
 check(`"Jetzt lesen" asks Claude even when unchanged (${claudeCalls.length - beforeSame})`, claudeCalls.length === beforeSame + 1);
 
 // 8) Remove a source → its events go too
-await j.goto(`${BASE}/settings#events`);
+await j.goto(`${BASE}/settings?t=events`);
 await j.locator("li", { hasText: "localhost" }).first().waitFor({ timeout: 10000 });
 const removeCount = await db.query("SELECT count(*)::int AS c FROM event_sources");
 await j.locator("li", { has: j.locator('a[href="http://localhost:4040/tips"]') }).getByRole("button", { name: "Entfernen" }).click();

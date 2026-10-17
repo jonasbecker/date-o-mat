@@ -12,6 +12,7 @@ const TONE = {
 } as const;
 
 const SIZE = {
+  sm: "rounded-[22px] px-4 py-3.5",
   md: "rounded-[24px] p-5",
   lg: "rounded-[28px] p-6",
 } as const;

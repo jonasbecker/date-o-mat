@@ -50,7 +50,7 @@ function calendarRow(calendar: StatusFacts["calendars"][number]): StatusRow {
   if (calendar.status === "ok") return { key, label, level: "ok", detail: "Verbunden" };
   const what = calendar.status === "needs_reauth" ? "Verbindung verloren" : "Nicht verbunden";
   return calendar.me
-    ? { key, label, level: "warn", detail: `${what} – bitte neu verbinden.`, href: "/settings#kalender" }
+    ? { key, label, level: "warn", detail: `${what} – bitte neu verbinden.`, href: "/settings?t=kalender" }
     : { key, label, level: "warn", detail: `${what} – ${calendar.name} muss ihn in den Einstellungen neu verbinden.` };
 }
 

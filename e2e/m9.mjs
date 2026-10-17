@@ -62,6 +62,7 @@ async function pageFor(token, scheme = "light") {
 // 1) Upload two big photos
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/dates/${d1.id}`);
+await j.getByRole("tab", { name: /Fotos/ }).click({ timeout: 15000 });
 await j.getByRole("button", { name: "📷 Fotos hinzufügen" }).waitFor({ timeout: 15000 });
 await j.screenshot({ path: `${OUT}m9-01-empty.png`, fullPage: true });
 await j.locator("#photo-input").setInputFiles([`${FIX}strand.jpg`, `${FIX}eis.jpg`]);
@@ -93,6 +94,7 @@ check("a non-image is refused with a message", (await db.query("SELECT count(*):
 
 // 4) Lightbox, next, delete
 await j.reload();
+await j.getByRole("tab", { name: /Fotos/ }).click({ timeout: 15000 });
 await j.locator('img[alt="Foto 1"]').click();
 await j.getByRole("dialog").locator('img[alt="Foto 1 von 2"]').waitFor({ timeout: 10000 });
 await j.waitForFunction(() => document.querySelector('dialog img')?.naturalWidth > 0);

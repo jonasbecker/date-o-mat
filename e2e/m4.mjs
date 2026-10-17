@@ -103,7 +103,7 @@ check(`cron tick runs with the secret (${JSON.stringify(body)})`, r2.status === 
 
 // Dev clock: one week later → round 2, Sam's turn, round 1 skipped
 const offsetBefore = (await db.query("SELECT dev_clock_offset_minutes AS o FROM couple_settings WHERE couple_id = $1", [couple.id])).rows[0].o;
-await j.goto(`${BASE}/settings`);
+await j.goto(`${BASE}/settings?t=konto`);
 await j.getByRole("button", { name: "+1 Woche" }).click();
 await j.getByText(`verstellt um ${Math.round((offsetBefore + 7 * 24 * 60) / 60)} Std`).waitFor({ timeout: 10000 });
 await j.goto(`${BASE}/`);
@@ -128,7 +128,7 @@ check("turns alternate J, S, J, S", rows.map((r) => (r.planner_id === jonas.id ?
 check("rounds are seamless (end = next start)", rows.slice(1).every((r, i) => r.starts_at.getTime() === rows[i].ends_at.getTime()));
 
 // Rhythm → every 2 weeks: current round unchanged, next one 2 weeks
-await j.goto(`${BASE}/settings`);
+await j.goto(`${BASE}/settings?t=rhythmus`);
 await j.getByLabel("Rhythmus", { exact: true }).selectOption("biweekly");
 check("deadline suggestion follows the rhythm (5 days)", (await j.getByLabel("Plan bis … (Frist)").inputValue()) === "5");
 await j.locator("form").filter({ has: j.getByLabel("Rhythmus", { exact: true }) }).getByRole("button", { name: "Speichern" }).click();
@@ -143,7 +143,7 @@ check(`next round is two weeks long (${Math.round((rows[4].ends_at - rows[4].sta
 check("round 5 belongs to Jonas", rows[4].planner_id === jonas.id);
 
 // Suggestion mode – applies to the open round right away
-await j.goto(`${BASE}/settings`);
+await j.goto(`${BASE}/settings?t=rhythmus`);
 await j.getByText("Vorschlag", { exact: true }).click();
 await j.locator("form").filter({ has: j.getByLabel("Rhythmus", { exact: true }) }).getByRole("button", { name: "Speichern" }).click();
 await j.locator("form").filter({ has: j.getByLabel("Rhythmus", { exact: true }) }).getByText("Gespeichert ✓").waitFor({ timeout: 10000 });
@@ -166,17 +166,18 @@ const after = (await db.query("SELECT starts_at, idea_id FROM suggestions WHERE 
 check("'Anderer Vorschlag' brings a different slot", after && after.starts_at.getTime() !== before.starts_at.getTime());
 check("…and a different idea", after && after.idea_id !== before.idea_id);
 
-// Plan page is limited to the round
+// Plan page is limited to the round ("Lieber selbst aussuchen" next to the proposal)
 await j.goto(`${BASE}/plan`);
+await j.getByRole("link", { name: "Lieber selbst aussuchen →" }).click();
 await j.getByText(/^Diese[r]? .+ · Vorschlag-Modus$/).waitFor({ timeout: 15000 });
 check("plan page shows the round", true);
-await openTimes(j, BASE);
+await openTimes(j, BASE, "?self=1");
 check("plan page offers searching after the round", (await j.getByRole("link", { name: "Auch nach dem Rundenende suchen" }).count()) === 1);
 
 // Dark mode home
 const dark = await pageFor(sam.token, "dark");
 await db.query("UPDATE couple_settings SET mode = 'alternating' WHERE couple_id = $1", [couple.id]);
-await dark.goto(`${BASE}/settings`);
+await dark.goto(`${BASE}/settings?t=konto`);
 await dark.getByRole("button", { name: "Zurücksetzen" }).click();
 await dark.waitForTimeout(1500);
 await dark.goto(`${BASE}/`);

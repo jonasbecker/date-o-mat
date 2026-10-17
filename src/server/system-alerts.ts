@@ -16,7 +16,7 @@ export async function notifyCalendarLost(userId: string): Promise<void> {
       {
         title: "Kalender getrennt 🔌",
         body: "Google hat die Verbindung zu deinem Kalender beendet. Tippe hier und verbinde ihn neu – sonst findet der Date-O-Mat keine freien Zeiten.",
-        url: "/settings#kalender",
+        url: "/settings?t=kalender",
         tag: "calendar-lost",
       },
       "system",
@@ -30,7 +30,7 @@ export async function notifyCalendarLost(userId: string): Promise<void> {
       {
         title: `${genitive(owner.name)} Kalender ist getrennt 🔌`,
         body: `Solange gibt's keine gemeinsamen freien Zeiten. Sag ${owner.name} Bescheid: einmal in den Einstellungen neu verbinden, dann läuft wieder alles.`,
-        url: "/settings#status",
+        url: "/settings?t=status",
         tag: "calendar-lost",
       },
       "system",

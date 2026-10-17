@@ -18,15 +18,18 @@ import { coverPhotos } from "@/server/photos";
 import { extraOn, getCoupleSettings } from "@/server/settings";
 import { STORY_MIN_DATES } from "@/core/story";
 
-export default function DatesPage() {
+/** Dates per page – the history is paged instead of scrolled. */
+const PAGE_SIZE = 4;
+
+export default function DatesPage({ searchParams }: PageProps<"/dates">) {
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <Dates />
+      <Dates searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function Dates() {
+async function Dates({ searchParams }: { searchParams: PageProps<"/dates">["searchParams"] }) {
   const ctx = await requireCouple();
   const { user, partner, coupleId } = ctx;
   await connection();
@@ -35,32 +38,34 @@ async function Dates() {
   const [dates, history, upcoming] = await Promise.all([pastDates(coupleId), cycleHistory(coupleId), upcomingDate(coupleId, now)]);
   const next = upcoming && dateForViewer(upcoming, user.id, [user, partner], now);
   const covers = await coverPhotos(coupleId, dates.map((d) => d.id));
+  const pages = Math.max(1, Math.ceil(dates.length / PAGE_SIZE));
+  const { page: pageParam } = await searchParams;
+  const page = Math.min(pages, Math.max(1, Number(typeof pageParam === "string" ? pageParam : 1) || 1));
+  const shown = dates.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const stats = reviewStats(
     dates.map((d) => ({ id: d.id, title: d.title, startsAt: d.startsAt, ratings: visibleRatings(d.reviews, user.id) })),
     now,
   );
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <AutoRefresh />
       <AppHeader current="dates" />
-      <h1 className="-mt-2 text-[30px] font-bold">Eure Dates</h1>
+      <h1 className="-mt-1 text-[26px] font-bold leading-tight">Eure Dates</h1>
       {/* What is coming up lives on the start page; here: what you had. */}
       {next && (
-        <Link href="/plan" className="press flex items-center gap-3 rounded-[20px] border-2 border-line bg-surface px-4 py-3">
-          <span className="text-2xl" aria-hidden="true">
-            📅
+        <Link href="/plan" className="press flex items-center gap-2.5 rounded-[18px] border-2 border-line bg-surface px-3.5 py-2 text-sm font-bold">
+          <span aria-hidden="true">📅</span>
+          <span className="min-w-0 flex-1 truncate">
+            Als Nächstes: {next.title} · {formatShortDate(next.startsAt)}
           </span>
-          <span className="font-bold">
-            Als Nächstes: {next.title} · {formatShortDate(next.startsAt)} <span className="underline">ansehen</span>
-          </span>
+          <span className="underline">ansehen</span>
         </Link>
       )}
-      <h2 className="-mb-2 mt-1 text-[21px] font-semibold">Bisher</h2>
       {history.length > 0 && <CycleHistory history={history} currentId={history.at(-1)!.id} />}
 
       {dates.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-[24px] border-[2.5px] border-dashed border-line px-6 py-10 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-[24px] border-[2.5px] border-dashed border-line px-6 py-8 text-center">
           <span className="text-5xl" aria-hidden="true">
             📸
           </span>
@@ -69,48 +74,57 @@ async function Dates() {
         </div>
       ) : (
         <>
-          <dl className="grid grid-cols-3 gap-2.5">
+          <dl className="grid grid-cols-3 gap-2">
             <Stat label="Dates" value={String(stats.count)} tone="bg-minze" />
             <Stat label="Ø Herzen" value={stats.averageRating?.toLocaleString("de-DE") ?? "–"} tone="bg-himbeere-soft" />
             <Stat label="dieses Jahr" value={String(stats.thisYear)} tone="bg-zitrone-soft" />
           </dl>
-          {extraOn(settings, "story") && dates.length >= STORY_MIN_DATES && (
-          <Link href="/story" className="press sticker flex items-center gap-3 rounded-[22px] bg-himbeere px-4 py-3.5 text-tinte">
-            <span className="text-3xl" aria-hidden="true">
-              📖
-            </span>
-            <span className="flex flex-col">
-              <span className="font-display text-lg font-semibold leading-snug">Eure Date-Story</span>
-              <span className="text-sm font-bold">Euer Jahr zum Durchtippen – Lieblingsdate, Herzen, Fotos …</span>
-            </span>
-          </Link>
-          )}
-          {extraOn(settings, "cards") && (
-            <Link href="/fragen" className="self-start text-sm font-extrabold underline">
-              💬 Gesprächskarten für euer nächstes Date
-            </Link>
-          )}
-          {stats.favorite && (
-            <Link
-              href={`/dates/${stats.favorite.id}`}
-              className="press sticker flex items-center gap-3 rounded-[22px] bg-lavendel px-4 py-3.5 text-tinte"
-            >
-              <span className="text-3xl" aria-hidden="true">
-                🏆
-              </span>
-              <span className="flex flex-col">
-                <span className="text-[13px] font-extrabold uppercase tracking-wide">Euer Lieblingsdate</span>
-                <span className="font-display text-lg font-semibold leading-snug">{stats.favorite.title}</span>
-              </span>
-            </Link>
-          )}
-          <ul className="flex flex-col gap-3.5">
-            {dates.map((date) => (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm font-extrabold">
+            {extraOn(settings, "story") && dates.length >= STORY_MIN_DATES && (
+              <Link href="/story" aria-label="Eure Date-Story: Euer Jahr zum Durchtippen" className="underline">
+                📖 Date-Story
+              </Link>
+            )}
+            {stats.favorite && (
+              <Link href={`/dates/${stats.favorite.id}`} aria-label={`Euer Lieblingsdate: ${stats.favorite.title}`} className="underline">
+                🏆 Lieblingsdate
+              </Link>
+            )}
+            {extraOn(settings, "cards") && (
+              <Link href="/fragen" className="underline">
+                💬 Gesprächskarten
+              </Link>
+            )}
+          </div>
+          <h2 className="-mb-1 text-[19px] font-semibold">Bisher</h2>
+          <ul className="flex flex-col gap-2">
+            {shown.map((date) => (
               <li key={date.id}>
                 <DateRow date={date} me={user} partner={partner} cover={covers.get(date.id)} />
               </li>
             ))}
           </ul>
+          {pages > 1 && (
+            <nav aria-label="Seiten" className="mt-auto flex items-center justify-between text-sm font-extrabold">
+              {page > 1 ? (
+                <Link href={page === 2 ? "/dates" : `/dates?page=${page - 1}`} className="underline">
+                  ← Neuere
+                </Link>
+              ) : (
+                <span />
+              )}
+              <span className="text-muted">
+                Seite {page} von {pages}
+              </span>
+              {page < pages ? (
+                <Link href={`/dates?page=${page + 1}`} className="underline">
+                  Ältere →
+                </Link>
+              ) : (
+                <span />
+              )}
+            </nav>
+          )}
         </>
       )}
     </div>
@@ -119,9 +133,9 @@ async function Dates() {
 
 function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
-    <div className={`sticker flex flex-col items-center rounded-[20px] px-2 py-3 text-tinte ${tone}`}>
-      <dt className="order-2 text-xs font-extrabold">{label}</dt>
-      <dd className="font-display text-[28px] font-bold leading-none">{value}</dd>
+    <div className={`flex flex-col items-center rounded-[16px] border-2 border-line px-2 py-1.5 text-tinte ${tone}`}>
+      <dt className="order-2 text-[11px] font-extrabold">{label}</dt>
+      <dd className="font-display text-[22px] font-bold leading-none">{value}</dd>
     </div>
   );
 }
@@ -129,28 +143,34 @@ function Stat({ label, value, tone }: { label: string; value: string; tone: stri
 function DateRow({ date, me, partner, cover }: { date: PastDate; me: User; partner: User; cover?: string }) {
   const { mine, partner: theirs, partnerHidden } = visibleReviews(date.reviews, me.id);
   return (
-    <Link href={`/dates/${date.id}`} className="press sticker flex flex-col gap-2 overflow-hidden rounded-[20px] bg-surface p-3.5">
-      {cover && (
+    <Link href={`/dates/${date.id}`} className="press flex items-center gap-3 rounded-[18px] border-[2.5px] border-line bg-surface p-2.5">
+      {cover ? (
         // eslint-disable-next-line @next/next/no-img-element -- private photo route
-        <img src={`/api/photos/${cover}?size=thumb`} alt="" loading="lazy" className="-mx-3.5 -mt-3.5 mb-1 h-36 w-[calc(100%+1.75rem)] max-w-none border-b-2 border-line object-cover" />
+        <img src={`/api/photos/${cover}?size=thumb`} alt="" loading="lazy" className="size-14 shrink-0 rounded-[12px] border-2 border-line object-cover" />
+      ) : (
+        <span aria-hidden="true" className="flex size-14 shrink-0 items-center justify-center rounded-[12px] border-2 border-line bg-bg text-2xl">
+          💞
+        </span>
       )}
-      <span className="flex items-start justify-between gap-3">
-        <span className="font-display text-lg font-semibold leading-snug">{date.title}</span>
-        {!mine && <span className="shrink-0 rounded-full border-2 border-line bg-himbeere px-2.5 py-0.5 text-xs font-extrabold text-tinte">Bewerten</span>}
-      </span>
-      <span className="text-[13px] font-extrabold text-muted">
-        {formatLongDate(date.startsAt)}
-        {date.location && ` · 📍 ${date.location}`}
-      </span>
-      <span className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-        <PersonHearts person={me} rating={mine?.rating ?? null} />
-        {partnerHidden ? (
-          <span className="flex items-center gap-1.5 text-[13px] font-extrabold text-muted">
-            <Avatar person={partner} size={22} /> hat bewertet 🔒
-          </span>
-        ) : (
-          <PersonHearts person={partner} rating={theirs?.rating ?? null} />
-        )}
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="flex items-start justify-between gap-2">
+          <span className="truncate font-display text-base font-semibold leading-snug">{date.title}</span>
+          {!mine && <span className="shrink-0 rounded-full border-2 border-line bg-himbeere px-2 py-px text-[11px] font-extrabold text-tinte">Bewerten</span>}
+        </span>
+        <span className="truncate text-xs font-extrabold text-muted">
+          {formatLongDate(date.startsAt)}
+          {date.location && ` · 📍 ${date.location}`}
+        </span>
+        <span className="flex flex-wrap items-center gap-x-3">
+          <PersonHearts person={me} rating={mine?.rating ?? null} />
+          {partnerHidden ? (
+            <span className="flex items-center gap-1 text-xs font-extrabold text-muted">
+              <Avatar person={partner} size={18} /> hat bewertet 🔒
+            </span>
+          ) : (
+            <PersonHearts person={partner} rating={theirs?.rating ?? null} />
+          )}
+        </span>
       </span>
     </Link>
   );
@@ -158,9 +178,9 @@ function DateRow({ date, me, partner, cover }: { date: PastDate; me: User; partn
 
 function PersonHearts({ person, rating }: { person: User; rating: number | null }) {
   return (
-    <span className="flex items-center gap-1.5">
-      <Avatar person={person} size={22} />
-      {rating ? <Hearts rating={rating} size={16} /> : <span className="text-[13px] font-extrabold text-muted">noch offen</span>}
+    <span className="flex items-center gap-1">
+      <Avatar person={person} size={18} />
+      {rating ? <Hearts rating={rating} size={13} /> : <span className="text-xs font-extrabold text-muted">noch offen</span>}
     </span>
   );
 }

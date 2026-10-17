@@ -4,7 +4,7 @@ import { mkdirSync } from "node:fs";
 import { DateTime } from "luxon";
 import pg from "pg";
 import { chromium } from "playwright";
-import { backAtStart, openTimes, pickIdea } from "./flow.mjs";
+import { backAtStart, fitsScreen, openTimes, pickIdea } from "./flow.mjs";
 import { startMock } from "./google-mock.mjs";
 
 const BASE = "http://localhost:3000";
@@ -86,7 +86,7 @@ await j.locator("h1").filter({ visible: true }).first().waitFor({ timeout: 15000
 check("no budget → no bar", (await j.getByRole("meter").count()) === 0);
 
 // 2) Set 80 € in the settings
-await j.goto(`${BASE}/settings#budget`);
+await j.goto(`${BASE}/settings?t=budget`);
 await j.getByLabel("Monatsbudget für Dates").waitFor({ timeout: 15000 }).catch(async () => console.log("DEBUG", (await j.locator("main").innerText()).slice(0, 3000)));
 await j.getByLabel("Monatsbudget für Dates").fill("80 €");
 await j.locator("form", { has: j.getByLabel("Monatsbudget für Dates") }).getByRole("button", { name: "Speichern" }).click();
@@ -127,6 +127,7 @@ check("budget page: 65 von 80 €", await j.getByText(`${monthName}: 65 von 80 �
 check("budget page lists Kino 45 € and Bowling 20 €", await j.getByRole("listitem").filter({ hasText: "Kino" }).getByText("45 €").isVisible() && await j.getByRole("listitem").filter({ hasText: "Bowling" }).getByText("20 €").isVisible());
 check("cancelled date is not listed", (await j.getByText("Abgesagt").count()) === 0);
 await j.screenshot({ path: `${OUT}m18-02-budget.png`, fullPage: true });
+check("budget page fits the screen", await fitsScreen(j));
 
 // 6) Next month: the tick closes the month – 15 € into the pot, recap for both
 await db.query("UPDATE couple_settings SET dev_clock_offset_minutes = $2 WHERE couple_id = $1", [couple.id, offsetTo(month.plus({ months: 1 }).set({ day: 2, hour: 10 }))]);
@@ -162,6 +163,7 @@ check("month budget untouched, pot used up", (await j.locator("main").innerText(
 const s = await pageFor(sam.token);
 await s.goto(`${BASE}/budget`);
 await s.getByText("🎁 aus dem Spartopf").waitFor({ timeout: 15000 });
+await s.getByRole("tab", { name: "Frühere Monate" }).click();
 check("Sam sees the pot date and the history", await s.getByText(`${monthName} · 2 Dates`).isVisible());
 
 console.log(failures ? `\n${failures} check(s) failed` : "\nAll checks passed");

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { DateTime } from "luxon";
 import { notHappenedAction } from "./actions";
 import { BudgetBar } from "@/components/budget-bar";
-import { DateCard, type DateCardExtras } from "@/components/date-card";
+import type { DateCardExtras } from "@/components/date-card";
+import { DateSummary } from "@/components/date-summary";
 import { NextStepCard } from "@/components/next-step";
 import { SetupChecklist } from "@/components/setup-checklist";
 import { SuggestionCard } from "@/components/suggestion-card";
@@ -21,7 +22,7 @@ import { budgetState } from "@/server/budget";
 import { activeDateOf, cycleHistory, ensureCurrentCycle } from "@/server/cycles";
 import { listTasks } from "@/server/date-tasks";
 import { dateForViewer, upcomingDate } from "@/server/dates";
-import type { CoupleSettings } from "@/server/db/schema";
+import type { CoupleSettings, DatePlan } from "@/server/db/schema";
 import { env } from "@/server/env";
 import { countSubscriptions } from "@/server/push";
 import { dateToReview } from "@/server/reviews";
@@ -29,6 +30,20 @@ import { extraOn } from "@/server/settings";
 import { upcomingForHome } from "@/server/special-days";
 import { currentSuggestion } from "@/server/suggestions";
 import { lastTick } from "@/server/system-status";
+
+/** Checklist, conversation cards and surprise notes for an upcoming date. */
+export async function dateExtrasFor(ctx: CoupleContext, settings: CoupleSettings, date: DatePlan, now: Date): Promise<DateCardExtras> {
+  const { user, partner } = ctx;
+  const hiddenForMe = isSurpriseHidden(date, user.id, now);
+  const tasks = !hiddenForMe && extraOn(settings, "checklist") ? await listTasks(date.id) : null;
+  return {
+    tasks: tasks?.map((t) => ({ id: t.id, title: t.title, done: t.doneAt !== null })) ?? null,
+    suggestions: tasks ? suggestTasks(date, tasks.map((t) => t.title)) : [],
+    // "isToday" brings the conversation cards.
+    isToday: extraOn(settings, "cards") && DateTime.fromJSDate(date.startsAt, { zone: APP_TIMEZONE }).hasSame(DateTime.fromJSDate(now, { zone: APP_TIMEZONE }), "day"),
+    surprise: hiddenForMe ? "hidden" : date.surprise && date.organizerId === user.id && isSurpriseHidden(date, partner.id, now) ? "organizer" : null,
+  };
+}
 
 export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings, now: Date) {
   const { user, partner, coupleId } = ctx;
@@ -45,15 +60,7 @@ export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings,
   ]);
   // A surprise stays one: the partner sees time and hint only.
   const shownDate = nextDate ? dateForViewer(nextDate, user.id, [user, partner], now) : undefined;
-  const hiddenForMe = nextDate ? isSurpriseHidden(nextDate, user.id, now) : false;
-  const tasks = nextDate && !hiddenForMe && extraOn(settings, "checklist") ? await listTasks(nextDate.id) : null;
-  const dateExtras: DateCardExtras | undefined = nextDate && {
-    tasks: tasks?.map((t) => ({ id: t.id, title: t.title, done: t.doneAt !== null })) ?? null,
-    suggestions: tasks ? suggestTasks(nextDate, tasks.map((t) => t.title)) : [],
-    // "isToday" brings the conversation cards.
-    isToday: extraOn(settings, "cards") && DateTime.fromJSDate(nextDate.startsAt, { zone: APP_TIMEZONE }).hasSame(DateTime.fromJSDate(now, { zone: APP_TIMEZONE }), "day"),
-    surprise: hiddenForMe ? "hidden" : nextDate.surprise && nextDate.organizerId === user.id && isSurpriseHidden(nextDate, partner.id, now) ? "organizer" : null,
-  };
+  const dateExtras = nextDate ? await dateExtrasFor(ctx, settings, nextDate, now) : undefined;
   const realNow = new Date();
   // The cron runs in real time (not the dev clock). Only warn once it has worked before –
   // "never ran" is a setup step, shown under Einstellungen → Läuft alles?
@@ -101,34 +108,48 @@ const DATE_STEPS: string[] = ["confirm", "wait_confirm", "date_ahead", "review"]
  * Top of the start page ("Date planen"): what needs you right now – the next
  * date with "Passt!", what to rate, the state of the round – above the planning flow.
  */
-export function StartSection({ o, ctx, now, afterDate }: { o: Overview; ctx: CoupleContext; now: Date; afterDate?: React.ReactNode }) {
+export function StartSection({
+  o,
+  ctx,
+  now,
+  afterDate,
+  hideSuggestion = false,
+}: {
+  o: Overview;
+  ctx: CoupleContext;
+  now: Date;
+  /** Right below the next date (e.g. "Lieber was anderes machen?"). */
+  afterDate?: React.ReactNode;
+  /** "Lieber selbst aussuchen": the flow takes the place of the proposal. */
+  hideSuggestion?: boolean;
+}) {
   const { user, partner } = ctx;
   const dateStep = Boolean(o.cycle && o.step && DATE_STEPS.includes(o.step.kind));
+  // Cards stay small: the start page is one screen.
   // The flow below shows its own "connect your calendar" card.
   const roundStep = o.cycle && o.step && !dateStep && !["connect_calendar", "partner_calendar"].includes(o.step.kind);
   return (
     <>
       {o.cronStale && o.tick && (
-        <Link href="/settings#status" role="alert" className="sticker block rounded-[20px] bg-zitrone px-4 py-3 font-bold text-tinte">
+        <Link href="/settings?t=status" role="alert" className="sticker block rounded-[20px] bg-zitrone px-4 py-3 font-bold text-tinte">
           ⚠️ Die Automatik ist zuletzt {agoLabel(o.realNow, o.tick.at)} gelaufen – Erinnerungen kommen gerade nicht.{" "}
           <span className="underline">Läuft alles?</span>
         </Link>
       )}
 
       {o.storyYear !== null && (
-        <Link href={`/story?year=${o.storyYear}`} className="press sticker flex items-center gap-3 rounded-[20px] bg-himbeere px-4 py-3 text-tinte">
-          <span className="text-3xl" aria-hidden="true">
+        <Link href={`/story?year=${o.storyYear}`} className="press sticker flex items-center gap-3 rounded-[18px] bg-himbeere px-4 py-2.5 text-tinte">
+          <span className="text-2xl" aria-hidden="true">
             📖
           </span>
-          <span className="font-display text-lg font-semibold leading-tight">Eure Date-Story {o.storyYear} ist da – tipp rein!</span>
+          <span className="font-display text-base font-semibold leading-tight">Eure Date-Story {o.storyYear} ist da – tipp rein!</span>
         </Link>
       )}
 
-      {dateStep && <NextStepCard step={o.step!} cycle={o.cycle!} me={user} partner={partner} now={now} date={o.shownDate} />}
-      {roundStep && <NextStepCard step={o.step!} cycle={o.cycle!} me={user} partner={partner} now={now} date={o.shownDate} onPlanPage />}
+      {(dateStep || roundStep) && <NextStepCard step={o.step!} cycle={o.cycle!} me={user} partner={partner} now={now} date={o.shownDate} onPlanPage />}
 
       {o.toReview && o.step?.kind !== "review" && (
-        <Link href={`/dates/${o.toReview.id}`} className="press sticker flex items-center gap-3 rounded-[20px] bg-lavendel px-4 py-3 text-tinte">
+        <Link href={`/dates/${o.toReview.id}`} className="press sticker flex items-center gap-3 rounded-[18px] bg-lavendel px-4 py-2.5 text-tinte">
           <span className="text-2xl" aria-hidden="true">
             💭
           </span>
@@ -138,8 +159,8 @@ export function StartSection({ o, ctx, now, afterDate }: { o: Overview; ctx: Cou
         </Link>
       )}
 
-      {/* "Passt!" sits in the step card when there is one. */}
-      {o.shownDate && <DateCard date={o.shownDate} me={user} partner={partner} showConfirm={!dateStep} extras={o.dateExtras} />}
+      {/* "Passt!" sits in the step card when there is one; the details are one tap away. */}
+      {o.shownDate && <DateSummary date={o.shownDate} me={user} showConfirm={!dateStep} hidden={o.dateExtras?.surprise === "hidden"} today={Boolean(o.dateExtras?.isToday)} />}
 
       {afterDate}
 
@@ -151,7 +172,7 @@ export function StartSection({ o, ctx, now, afterDate }: { o: Overview; ctx: Cou
         </form>
       )}
 
-      {o.suggestion?.status === "ok" && <SuggestionCard suggestion={o.suggestion.suggestion} idea={o.suggestion.idea} />}
+      {!hideSuggestion && o.suggestion?.status === "ok" && <SuggestionCard suggestion={o.suggestion.suggestion} idea={o.suggestion.idea} />}
       {o.suggestion?.status === "no_slots" && (
         <p className="rounded-[20px] border-2 border-dashed border-line px-4 py-3 font-bold">
           Diese Runde findet der Date-O-Mat keine gemeinsame Lücke mehr. Sucht unten auch nach dem Rundenende.
@@ -160,30 +181,19 @@ export function StartSection({ o, ctx, now, afterDate }: { o: Overview; ctx: Cou
 
       {!o.shownDate &&
         o.specialDays.slice(0, 2).map((day) => (
-          <div key={day.id} className="sticker flex flex-col gap-2 rounded-[20px] bg-himbeere-soft px-4 py-3.5 text-tinte">
-            <p className="font-display text-lg font-semibold">
+          <Link key={day.id} href="/plan?size=large" className="press flex items-center gap-2.5 rounded-[18px] border-2 border-line bg-himbeere-soft px-3.5 py-2 text-sm font-bold text-tinte">
+            <span className="min-w-0 flex-1">
               {day.emoji} {day.label} {inDaysLabel(day.days)}
-            </p>
-            <p className="text-sm font-bold">
-              {day.kind === "birthday" ? "Zeit für eine Überraschung." : "Wie wär's mit einem großen Date?"}
-              {o.budget && o.budget.pot > 0 ? ` Im Spartopf: ${o.budget.pot} € 🎁` : ""}
-            </p>
-            <Link href="/plan?size=large" className="self-start text-sm font-extrabold underline">
-              {day.kind === "birthday" ? "Überraschung planen →" : "Großes Date planen →"}
-            </Link>
-          </div>
+              {o.budget && o.budget.pot > 0 ? ` · Spartopf ${o.budget.pot} € 🎁` : ""}
+            </span>
+            <span className="shrink-0 underline">{day.kind === "birthday" ? "Überraschung planen →" : "Großes Date planen →"}</span>
+          </Link>
         ))}
 
       {o.cycle?.status === "open" && o.previous?.status === "skipped" && (
-        <div className="flex items-start gap-3 rounded-[20px] border-2 border-line bg-zitrone-soft px-4 py-3.5 text-tinte">
-          <span className="text-2xl leading-none" aria-hidden="true">
-            🌦️
-          </span>
-          <p>
-            <strong className="block font-extrabold">Letzte Runde ist ausgefallen – passiert!</strong>
-            <span className="font-semibold">Kein Stress. Diese Runde holt ihr&apos;s nach.</span>
-          </p>
-        </div>
+        <p className="rounded-[18px] border-2 border-line bg-zitrone-soft px-3.5 py-2 text-sm font-bold text-tinte">
+          🌦️ <strong className="font-extrabold">Letzte Runde ist ausgefallen – passiert!</strong> Diese Runde holt ihr&apos;s nach.
+        </p>
       )}
 
       {/* The budget only speaks up when it gets tight; otherwise it lives under /budget. */}

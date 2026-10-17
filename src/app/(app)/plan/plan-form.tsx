@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useRef, useState, type ReactNode } from "react";
 import { Button, buttonClass } from "@/components/button";
-import { Info } from "@/components/info";
 import { useCelebrate } from "@/components/celebration";
 import { SIZE_LABEL, SizeChip } from "@/components/size-chip";
 import type { SlotMood } from "@/core/slots";
@@ -46,6 +45,8 @@ export type FlowMode = { kind: "new" } | { kind: "swap"; next: NextDateInfo & { 
 /** `title`/`size` are known right away for ideas that were just put on the wishlist (before the page refreshed). */
 type IdeaPick = { kind: "idea"; id: string; title?: string; size?: IdeaSize } | { kind: "custom" };
 
+const SLOTS_PER_PAGE = 3;
+
 const inputClass =
   "h-12 w-full rounded-2xl border-[2.5px] border-line bg-surface px-4 font-bold text-ink placeholder:font-semibold placeholder:text-muted/70 focus:shadow-[0_0_0_4px_var(--color-himbeere-soft)] focus:outline-none";
 
@@ -63,7 +64,8 @@ export function PlanFlow({
   surpriseEnabled = false,
   events = null,
   budget = null,
-  budgetBar,
+  budgetLine,
+  intro,
 }: {
   mode: FlowMode;
   small: SlotView[];
@@ -72,7 +74,7 @@ export function PlanFlow({
   untilLabel: string;
   partnerName: string;
   /** "Auch nach dem Rundenende suchen" – rendered by the server page. */
-  searchScopeLink?: React.ReactNode;
+  searchScopeLink?: ReactNode;
   /** From "Date damit planen" / a match: start at the time with this idea. */
   preselectIdeaId?: string;
   /** "Großes Date planen" (special days): long ideas and dates. */
@@ -85,8 +87,10 @@ export function PlanFlow({
   events?: EventView[] | null;
   /** Month budget left and savings pot (null = no budget set). */
   budget?: { left: number; pot: number } | null;
-  /** The month's budget bar – shown next to the times, not on the start. */
-  budgetBar?: React.ReactNode;
+  /** "Oktober: 50 von 80 € · noch 30 €" – next to "Date festlegen". */
+  budgetLine?: ReactNode;
+  /** What sits above step 1 (the state of the round) – the times get the whole screen. */
+  intro?: ReactNode;
 }) {
   const router = useRouter();
   const preselected = mode.kind === "new" && preselectIdeaId ? ideas.find((i) => i.id === preselectIdeaId) : undefined;
@@ -95,15 +99,9 @@ export function PlanFlow({
   const [size, setSize] = useState<IdeaSize>(mode.kind === "reschedule" ? mode.date.size : (preselected?.size ?? preselectSize ?? "small"));
   const slots = size === "small" ? small : large;
   const [slotKey, setSlotKey] = useState<string | null>(slots[0]?.key ?? null);
+  // Three times at a time – "Weitere Zeiten" turns the page instead of scrolling.
+  const [slotPage, setSlotPage] = useState(0);
   const moreSheet = useRef<SheetHandle>(null);
-  // The flow sits below the state of the round: each step scrolls itself into view.
-  const anchor = useRef<HTMLSpanElement>(null);
-  const firstStep = useRef(step);
-  useEffect(() => {
-    if (step === firstStep.current && step === "idea") return;
-    firstStep.current = "idea";
-    anchor.current?.scrollIntoView({ block: "start" });
-  }, [step]);
   const swapSheet = useRef<SheetHandle>(null);
   const [swapping, setSwapping] = useState<{ id: string; title: string; size?: IdeaSize } | null>(null);
   const [filter] = useIdeaFilter();
@@ -127,6 +125,7 @@ export function PlanFlow({
   function selectSize(next: IdeaSize) {
     setSize(next);
     setSlotKey((next === "small" ? small : large)[0]?.key ?? null);
+    setSlotPage(0);
   }
 
   /** Step 1 → 2 (or, with a date planned, the question whether to swap). */
@@ -139,6 +138,7 @@ export function PlanFlow({
     }
     setPick({ kind: "idea", ...chosen });
     setCustomTitle("");
+    setCustomLocation("");
     selectSize(chosen.size ?? known?.size ?? filter.size ?? size);
     setStep("time");
   }
@@ -157,6 +157,8 @@ export function PlanFlow({
   const budgetWarning = budget ? budgetHint(pickedCost, budget.left) : null;
   // Swapping: the date's own idea is not an alternative to itself.
   const wishlist = ideas.filter((i) => matchesIdeaFilter({ size: i.size, costEur: i.costEur }, filter) && !(mode.kind === "swap" && i.id === mode.next.ideaId));
+  const pageCount = Math.max(1, Math.ceil(slots.length / SLOTS_PER_PAGE));
+  const shownSlots = slots.slice(slotPage * SLOTS_PER_PAGE, (slotPage + 1) * SLOTS_PER_PAGE);
 
   // The AI plans for your next free time (weather, length) – the Top-Tipp of the filtered length.
   const aiSlot = (filter.size === "large" ? large : small)[0];
@@ -168,44 +170,46 @@ export function PlanFlow({
 
   if (step === "idea") {
     return (
-      <div className="flex flex-col gap-4">
-        <span ref={anchor} className="-mb-4 block scroll-mt-4" />
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        {intro}
         {showQuick && (
-          <form action={formAction} className="sticker flex flex-col gap-2.5 rounded-[22px] bg-zitrone-soft p-4 text-tinte">
+          <form action={formAction} className="flex items-center gap-3 rounded-[18px] border-2 border-line bg-zitrone-soft px-3 py-2 text-tinte">
             <input type="hidden" name="start" value={quickSlot.startIso} />
             <input type="hidden" name="end" value={quickSlot.endIso} />
             <input type="hidden" name="size" value="small" />
             <input type="hidden" name="ideaId" value={quickIdea.id} />
-            <p className="text-[13px] font-extrabold uppercase tracking-wide">⚡ Schnell planen</p>
-            <p className="font-bold">
-              <span className="font-display text-lg font-semibold">{quickIdea.title}</span>
-              <br />
-              {quickSlot.dateLabel}, {quickSlot.timeLabel}
+            <p className="min-w-0 flex-1 text-sm font-bold leading-snug">
+              <span className="block text-[11px] font-extrabold uppercase tracking-wide">⚡ Schnell planen</span>
+              <span className="block truncate font-display text-base font-semibold">{quickIdea.title}</span>
+              <span className="block truncate">
+                {quickSlot.dateLabel}, {quickSlot.timeLabel}
+              </span>
+              {state.status === "error" && (
+                <span role="alert" className="block">
+                  {state.message}
+                </span>
+              )}
             </p>
-            <Button type="submit" size="sm" className="self-start" disabled={pending || leaving}>
+            <Button type="submit" size="sm" className="shrink-0" disabled={pending || leaving}>
               So festlegen 🎉
             </Button>
-            {state.status === "error" && (
-              <p role="alert" className="text-sm font-bold">
-                {state.message}
-              </p>
-            )}
           </form>
         )}
 
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[13px] font-extrabold uppercase tracking-wide text-muted">{mode.kind === "swap" ? "Lieber was anderes?" : "Schritt 1 von 2"}</p>
-            <h2 className="text-[24px] font-semibold leading-tight">Was wollt ihr machen?</h2>
+            <p className="text-[12px] font-extrabold uppercase tracking-wide text-muted">{mode.kind === "swap" ? "Lieber was anderes?" : "Schritt 1 von 2"}</p>
+            <h2 className="text-[22px] font-semibold leading-tight">Was wollt ihr machen?</h2>
           </div>
           <FilterButton />
         </div>
         {mode.kind === "swap" && (
-          <p className="-mt-2 font-bold text-muted">
+          <p className="-mt-1 text-sm font-bold text-muted">
             Statt „{mode.next.title}“ ({mode.next.when}) – tipp an, was ihr lieber machen wollt. Der Termin bleibt.
           </p>
         )}
 
+        {/* The wishlist is the one part that scrolls. */}
         {ideas.length === 0 ? (
           <p className="rounded-[20px] border-2 border-dashed border-line px-4 py-4 font-bold text-muted">
             Eure Wunschliste ist noch leer. Holt euch unten etwas Neues – oder schreibt eure eigene Idee auf.
@@ -213,16 +217,16 @@ export function PlanFlow({
         ) : wishlist.length === 0 ? (
           <FilteredEmpty what="Ideen" />
         ) : (
-          <ul className="flex flex-col gap-2.5" aria-label="Eure Wunschliste">
+          <ul data-scroll className="-mx-1 flex min-h-[7.5rem] flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-1 pb-1" aria-label="Eure Wunschliste">
             {wishlist.map((option) => (
               <li key={option.id}>
                 <button
                   type="button"
                   onClick={() => chooseIdea({ id: option.id })}
-                  className="press flex w-full items-center gap-3 rounded-[20px] border-[2.5px] border-line bg-surface p-3 text-left"
+                  className="press flex w-full items-center gap-3 rounded-[18px] border-[2.5px] border-line bg-surface px-3 py-2.5 text-left"
                 >
-                  <span className="flex min-w-0 flex-1 flex-col gap-1">
-                    <span className="font-display text-lg font-semibold leading-snug">{option.title}</span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="font-display text-[17px] font-semibold leading-snug">{option.title}</span>
                     <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-extrabold text-muted">
                       <SizeChip size={option.size} />
                       {option.meta}
@@ -237,28 +241,30 @@ export function PlanFlow({
           </ul>
         )}
 
-        <div className="grid grid-cols-2 gap-2.5">
-          <SurpriseButton size="sm" label="🎲 Zufall" ideaSize={filter.size} onChoose={(chosen) => chooseIdea(chosen)} />
-          <Button variant="secondary" size="sm" className="w-full" onClick={() => moreSheet.current?.open()}>
+        <div className="mt-auto grid grid-cols-3 gap-2">
+          <SurpriseButton size="sm" label="🎲 Zufall" ideaSize={filter.size} className="whitespace-nowrap px-1.5 text-[14px]" onChoose={(chosen) => chooseIdea(chosen)} />
+          <Button variant="secondary" size="sm" className="w-full whitespace-nowrap px-1.5 text-[14px]" onClick={() => moreSheet.current?.open()}>
             Was anderes …
           </Button>
+          <Link href="/ideas/entdecken" className={buttonClass("secondary", "sm", "w-full whitespace-nowrap px-1.5 text-[14px]")}>
+            💞 Swipen
+          </Link>
         </div>
-        <Link href="/ideas/entdecken" className={buttonClass("secondary", "sm", "w-full")}>
-          💞 Neue Ideen swipen
-        </Link>
 
-        {mode.kind === "new" && (
-          <form
-            className="flex flex-col gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (customTitle.trim()) chooseCustom();
-            }}
-          >
-            <label htmlFor="custom-title" className="text-[13px] font-extrabold text-muted">
-              Oder eure eigene Idee
-            </label>
-            <div className="flex gap-2">
+        <Sheet ref={moreSheet} title="Was anderes?">
+          {mode.kind === "new" && (
+            <form
+              className="flex flex-col gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!customTitle.trim()) return;
+                moreSheet.current?.close();
+                chooseCustom();
+              }}
+            >
+              <label htmlFor="custom-title" className="text-[13px] font-extrabold text-muted">
+                Eure eigene Idee
+              </label>
               <input
                 id="custom-title"
                 value={customTitle}
@@ -267,14 +273,26 @@ export function PlanFlow({
                 placeholder="z. B. Eis essen und Rhein gucken"
                 className={inputClass}
               />
-              <Button type="submit" size="sm" variant="secondary" className="h-12 shrink-0" disabled={!customTitle.trim()}>
+              {customTitle.trim() !== "" && (
+                <>
+                  <label htmlFor="custom-location" className="text-[13px] font-extrabold text-muted">
+                    Ort (optional)
+                  </label>
+                  <input
+                    id="custom-location"
+                    value={customLocation}
+                    onChange={(e) => setCustomLocation(e.target.value)}
+                    maxLength={120}
+                    placeholder="z. B. Rheinufer"
+                    className={inputClass}
+                  />
+                </>
+              )}
+              <Button type="submit" size="sm" variant="secondary" disabled={!customTitle.trim()}>
                 Weiter →
               </Button>
-            </div>
-          </form>
-        )}
-
-        <Sheet ref={moreSheet} title="Was anderes?">
+            </form>
+          )}
           <MoreIdeas
             events={mode.kind === "new" ? events : null}
             aiEnabled={aiEnabled}
@@ -308,8 +326,7 @@ export function PlanFlow({
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-4 pb-48">
-      <span ref={anchor} className="-mb-4 block scroll-mt-4" />
+    <form action={formAction} className="flex min-h-0 flex-1 flex-col gap-3">
       {slot && (
         <>
           <input type="hidden" name="start" value={slot.startIso} />
@@ -318,7 +335,12 @@ export function PlanFlow({
       )}
       <input type="hidden" name="size" value={size} />
       <input type="hidden" name="ideaId" value={idea?.id ?? ""} />
-      {pick?.kind === "custom" && <input type="hidden" name="customTitle" value={customTitle} />}
+      {pick?.kind === "custom" && (
+        <>
+          <input type="hidden" name="customTitle" value={customTitle} />
+          <input type="hidden" name="customLocation" value={customLocation} />
+        </>
+      )}
       {mode.kind === "reschedule" && (
         <>
           <input type="hidden" name="dateId" value={mode.date.dateId} />
@@ -328,9 +350,9 @@ export function PlanFlow({
 
       {mode.kind === "reschedule" ? (
         <div>
-          <p className="text-[13px] font-extrabold uppercase tracking-wide text-muted">Termin ändern</p>
-          <h2 className="text-[24px] font-semibold leading-tight">Wann passt es besser?</h2>
-          <p className="mt-1 font-bold text-muted">
+          <p className="text-[12px] font-extrabold uppercase tracking-wide text-muted">Termin ändern</p>
+          <h2 className="text-[22px] font-semibold leading-tight">Wann passt es besser?</h2>
+          <p className="text-sm font-bold text-muted">
             {mode.date.keepSecret ? "🤫 Das ist eine Überraschung – du kannst nur die Zeit ändern, der Rest bleibt geheim." : `„${mode.date.title}“ bleibt, nur die Zeit ändert sich.`}
           </p>
         </div>
@@ -339,71 +361,43 @@ export function PlanFlow({
           <button type="button" onClick={() => setStep("idea")} className="self-start text-sm font-extrabold text-muted underline">
             ← Andere Idee
           </button>
-          <div className="flex flex-col gap-1 rounded-[20px] border-[2.5px] border-line bg-surface px-4 py-3">
-            <span className="text-[13px] font-extrabold uppercase tracking-wide text-muted">Ihr macht</span>
-            <span className="font-display text-xl font-semibold leading-snug">{title}</span>
-            {idea?.meta && <span className="text-xs font-extrabold text-muted">{idea.meta}</span>}
-          </div>
-          {pick?.kind === "custom" && (
-            <div className="flex flex-col gap-2">
-              <label htmlFor="custom-location" className="text-[13px] font-extrabold text-muted">
-                Ort (optional)
-              </label>
-              <input
-                id="custom-location"
-                name="customLocation"
-                value={customLocation}
-                onChange={(e) => setCustomLocation(e.target.value)}
-                maxLength={120}
-                placeholder="z. B. Rheinufer"
-                className={inputClass}
-              />
-            </div>
-          )}
-          <div>
-            <p className="text-[13px] font-extrabold uppercase tracking-wide text-muted">Schritt 2 von 2</p>
-            <h2 className="text-[24px] font-semibold leading-tight">Wann?</h2>
+          <div className="flex flex-col rounded-[18px] border-[2.5px] border-line bg-surface px-4 py-2.5">
+            <span className="text-[12px] font-extrabold uppercase tracking-wide text-muted">Ihr macht</span>
+            <span className="font-display text-lg font-semibold leading-snug">{title}</span>
+            {(idea?.meta || customLocation) && <span className="text-xs font-extrabold text-muted">{idea?.meta ?? `📍 ${customLocation}`}</span>}
           </div>
         </>
       )}
 
-      {budgetBar}
-      <div className="-mb-2 flex items-center gap-2">
-        <h3 className="text-[17px] font-semibold">Wie lang?</h3>
-        <Info term="dauer" />
-      </div>
-      <div role="group" aria-label="Wie lang soll das Date sein?" className="grid grid-cols-2 gap-1.5 rounded-[22px] border-[2.5px] border-line bg-surface p-1.5">
-        {IDEA_SIZES.map((option) => (
-          <button
-            key={option}
-            type="button"
-            aria-pressed={size === option}
-            onClick={() => selectSize(option)}
-            className={cn(
-              "flex flex-col items-center rounded-2xl border-2 py-2",
-              size === option ? cn("border-line text-tinte", option === "small" ? "bg-zitrone" : "bg-lavendel") : "border-transparent text-muted",
-            )}
-          >
-            <span className={cn("font-display text-lg font-semibold", size !== option && "text-ink")}>
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          {mode.kind !== "reschedule" && <p className="text-[12px] font-extrabold uppercase tracking-wide text-muted">Schritt 2 von 2</p>}
+          <h2 className="text-[22px] font-semibold leading-tight">Wann?</h2>
+        </div>
+        <div role="group" aria-label="Wie lang soll das Date sein?" className="flex gap-1 rounded-full border-2 border-line bg-surface p-1">
+          {IDEA_SIZES.map((option) => (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={size === option}
+              onClick={() => selectSize(option)}
+              className={cn(
+                "rounded-full px-3 py-1 text-sm font-extrabold",
+                size === option ? cn("text-tinte", option === "small" ? "bg-zitrone" : "bg-lavendel") : "text-muted",
+              )}
+            >
               {SIZE_LABEL[option].emoji} {SIZE_LABEL[option].label}
-            </span>
-            <span className="text-xs font-extrabold">{SIZE_LABEL[option].hint}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="flex items-baseline justify-between">
-        <h3 className="text-[17px] font-semibold">Freie Zeiten</h3>
-        <span className="flex items-center gap-1.5 text-[13px] font-bold text-muted">
-          ihr seid beide frei <Info term="frei" />
-        </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {slots.length === 0 ? (
         <NoSlots size={size} />
       ) : (
-        <ol className="flex flex-col gap-2.5">
-          {slots.map((option, index) => {
+        <ol className="flex flex-col gap-2">
+          {shownSlots.map((option, i) => {
+            const index = slotPage * SLOTS_PER_PAGE + i;
             const selected = option.key === slotKey;
             return (
               <li key={option.key} className="animate-pop-in">
@@ -412,13 +406,13 @@ export function PlanFlow({
                   aria-pressed={selected}
                   onClick={() => setSlotKey(option.key)}
                   className={cn(
-                    "flex w-full items-center gap-3.5 rounded-[20px] border-[2.5px] border-line p-2.5 pr-3.5 text-left transition-shadow",
+                    "flex w-full items-center gap-3 rounded-[18px] border-[2.5px] border-line p-2 pr-3 text-left transition-shadow",
                     selected ? "bg-himbeere-soft text-tinte shadow-[4px_4px_0_var(--line)]" : "bg-surface",
                   )}
                 >
                   <span
                     className={cn(
-                      "flex size-[52px] shrink-0 flex-col items-center justify-center rounded-[14px] border-2 border-line leading-none",
+                      "flex size-[48px] shrink-0 flex-col items-center justify-center rounded-[13px] border-2 border-line leading-none",
                       selected ? "bg-himbeere" : "bg-bg",
                     )}
                   >
@@ -452,60 +446,65 @@ export function PlanFlow({
           })}
         </ol>
       )}
-      <p className="text-center text-[13px] font-bold text-muted">Gesucht bis {untilLabel}</p>
+      <div className="flex items-center justify-between gap-2 text-[13px] font-extrabold">
+        <button type="button" disabled={slotPage === 0} onClick={() => setSlotPage((p) => p - 1)} className={cn("underline", slotPage === 0 && "invisible")}>
+          ← Frühere
+        </button>
+        <span className="text-muted">Gesucht bis {untilLabel}</span>
+        <button type="button" disabled={slotPage >= pageCount - 1} onClick={() => setSlotPage((p) => p + 1)} className={cn("underline", slotPage >= pageCount - 1 && "invisible")}>
+          Weitere Zeiten →
+        </button>
+      </div>
       {searchScopeLink}
 
       {mode.kind === "new" && surpriseEnabled && (
-        <div className="flex flex-col gap-2 rounded-[20px] border-2 border-dashed border-line p-3">
-          <label className="flex items-center gap-2.5 font-extrabold">
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center gap-2.5 text-sm font-extrabold">
             <input type="checkbox" name="surprise" value="1" checked={surprise} onChange={(e) => setSurprise(e.target.checked)} className="size-5 accent-himbeere" />
             🎁 Als Überraschung planen
+            {surprise && <span className="font-semibold text-muted">({partnerName} sieht nur die Zeit)</span>}
           </label>
           {surprise && (
             <>
-              <p className="text-sm font-semibold text-muted">
-                {partnerName} sieht bis zum Tag selbst nur die Zeit (auch im Google-Kalender) – und deinen Hinweis.
-              </p>
-              <label htmlFor="surprise-hint" className="text-[13px] font-extrabold text-muted">
+              <label htmlFor="surprise-hint" className="sr-only">
                 Hinweis für {partnerName} (optional)
               </label>
-              <input id="surprise-hint" name="surpriseHint" maxLength={120} placeholder="z. B. Bequeme Schuhe, nichts vorher essen" className={inputClass} />
+              <input id="surprise-hint" name="surpriseHint" maxLength={120} placeholder={`Hinweis für ${partnerName}, z. B. Bequeme Schuhe`} className={cn(inputClass, "h-10")} />
             </>
           )}
         </div>
       )}
 
       {slots.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-10 border-t-[2.5px] border-line bg-surface px-5 pb-[max(env(safe-area-inset-bottom),14px)] pt-3">
-          <div className="mx-auto flex max-w-md flex-col gap-2.5">
-            {state.status === "error" && (
-              <p role="alert" className="rounded-xl bg-himbeere-soft px-3 py-2 text-sm font-bold text-tinte">
-                {state.message}
-              </p>
-            )}
-            <p className="truncate text-sm font-bold">
-              {slot ? `${slot.dateLabel} · ${slot.timeLabel}` : "Wähl eine Zeit"} {title && `· ${title}`}
+        <div className="-mx-5 mt-auto flex flex-col gap-2 border-t-[2.5px] border-line bg-surface px-5 pb-1 pt-3">
+          {state.status === "error" && (
+            <p role="alert" className="rounded-xl bg-himbeere-soft px-3 py-2 text-sm font-bold text-tinte">
+              {state.message}
             </p>
-            {mode.kind === "new" && budget && (budgetWarning || budget.pot > 0) && (
-              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm font-bold">
-                {budgetWarning && <span className="rounded-full bg-zitrone px-2.5 py-0.5 text-tinte">⚠️ {budgetWarning}</span>}
-                {budget.pot > 0 && (
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" name="fromPot" value="1" className="size-5 accent-himbeere" />
-                    🎁 Aus dem Spartopf ({budget.pot} €)
-                  </label>
-                )}
-              </div>
-            )}
-            <Button type="submit" disabled={!ready || pending || leaving} className="h-14 w-full text-xl">
-              {pending ? "Wird eingetragen …" : mode.kind === "reschedule" ? "Termin ändern" : "Date festlegen 🎉"}
-            </Button>
-            <p className="text-center text-xs font-bold text-muted">
-              {mode.kind === "reschedule"
-                ? `${partnerName} bekommt die Änderung über Google Kalender.`
-                : `Du wirst Organisator:in, ${partnerName} bekommt die Kalender-Einladung.`}
-            </p>
-          </div>
+          )}
+          <p className="truncate text-sm font-bold">
+            {slot ? `${slot.dateLabel} · ${slot.timeLabel}` : "Wähl eine Zeit"} {title && `· ${title}`}
+          </p>
+          {mode.kind === "new" && (budgetLine || budgetWarning || (budget && budget.pot > 0)) && (
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm font-bold">
+              {budgetLine}
+              {budgetWarning && <span className="rounded-full bg-zitrone px-2.5 py-0.5 text-tinte">⚠️ {budgetWarning}</span>}
+              {budget && budget.pot > 0 && (
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" name="fromPot" value="1" className="size-5 accent-himbeere" />
+                  🎁 Aus dem Spartopf ({budget.pot} €)
+                </label>
+              )}
+            </div>
+          )}
+          <Button type="submit" disabled={!ready || pending || leaving} className="h-14 w-full text-xl">
+            {pending ? "Wird eingetragen …" : mode.kind === "reschedule" ? "Termin ändern" : "Date festlegen 🎉"}
+          </Button>
+          <p className="text-center text-xs font-bold text-muted">
+            {mode.kind === "reschedule"
+              ? `${partnerName} bekommt die Änderung über Google Kalender.`
+              : `Du wirst Organisator:in, ${partnerName} bekommt die Kalender-Einladung.`}
+          </p>
         </div>
       )}
     </form>

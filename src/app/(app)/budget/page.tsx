@@ -5,6 +5,7 @@ import { PageSkeleton } from "@/components/app-header";
 import { BudgetBar } from "@/components/budget-bar";
 import { buttonClass } from "@/components/button";
 import { Card } from "@/components/card";
+import { Tabs } from "@/components/tabs";
 import { dateCost } from "@/core/budget";
 import { formatShortDate } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
@@ -15,7 +16,7 @@ import { getCoupleSettings } from "@/server/settings";
 
 export default function BudgetPage() {
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex flex-col gap-1">
         <Link href="/" className="self-start text-sm font-extrabold text-muted underline">
           ← Zurück
@@ -38,7 +39,7 @@ async function Budget() {
     return (
       <Card className="flex flex-col items-start gap-3">
         <p className="font-bold">Ihr habt noch kein Monatsbudget. Mit Budget seht ihr, was eure Dates kosten, und was übrig bleibt, wandert in den 🎁 Spartopf.</p>
-        <Link href="/settings#budget" className={buttonClass("primary", "md")}>
+        <Link href="/settings?t=budget" className={buttonClass("primary", "md")}>
           Budget festlegen
         </Link>
       </Card>
@@ -48,18 +49,26 @@ async function Budget() {
   return (
     <>
       <BudgetBar {...budget} href={null} />
-      <Card tone="zitrone" className="flex items-center gap-3">
-        <span className="text-4xl" aria-hidden="true">
+      <Card tone="zitrone" size="sm" className="flex items-center gap-3">
+        <span className="text-3xl" aria-hidden="true">
           🎁
         </span>
         <p>
-          <strong className="block font-display text-xl">Spartopf: {budget.pot} €</strong>
-          <span className="text-sm font-bold">Übriges Budget sammelt sich hier. Beim Planen könnt ihr ein Date „aus dem Spartopf“ bezahlen.</span>
+          <strong className="block font-display text-lg">Spartopf: {budget.pot} €</strong>
+          <span className="text-xs font-bold">Übriges Budget sammelt sich hier – beim Planen „aus dem Spartopf“ bezahlen.</span>
         </p>
       </Card>
 
+      {/* This month and the months before as tabs – one screen each. */}
+      <Tabs
+        label="Monate"
+        tabs={[
+          {
+            key: "month",
+            label: budget.label,
+            content: (
       <section className="flex flex-col gap-2" aria-labelledby="month-heading">
-        <h2 id="month-heading" className="text-[21px] font-semibold">
+        <h2 id="month-heading" className="text-[19px] font-semibold">
           {budget.label}
         </h2>
         {dates.length === 0 && <p className="font-semibold text-muted">Noch keine Dates in diesem Monat.</p>}
@@ -92,12 +101,17 @@ async function Budget() {
           })}
         </ul>
       </section>
-
-      {history.length > 0 && (
+            ),
+          },
+          {
+            key: "history",
+            label: "Frühere Monate",
+            content: (
         <section className="flex flex-col gap-2" aria-labelledby="history-heading">
-          <h2 id="history-heading" className="text-[21px] font-semibold">
+          <h2 id="history-heading" className="text-[19px] font-semibold">
             Frühere Monate
           </h2>
+          {history.length === 0 && <p className="font-semibold text-muted">Noch kein Monat abgeschlossen.</p>}
           <ul className="flex flex-col gap-1.5">
             {history.map((m) => (
               <li key={m.month} className="flex items-center justify-between gap-3 text-sm font-bold">
@@ -111,8 +125,11 @@ async function Budget() {
             ))}
           </ul>
         </section>
-      )}
-      <Link href="/settings#budget" className="self-center text-sm font-extrabold text-muted underline">
+            ),
+          },
+        ]}
+      />
+      <Link href="/settings?t=budget" className="self-center text-sm font-extrabold text-muted underline">
         Budget ändern
       </Link>
     </>

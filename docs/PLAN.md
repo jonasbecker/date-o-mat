@@ -95,6 +95,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M24 | Navigation Ideen · Date planen · Dates, Startseite aufgeteilt, `/` leitet passend weiter | ✅ |
 | M25 | Idee antippen: planen oder das nächste Date tauschen (Termin bleibt); ein 💚 beim Swipen speichert sofort | ✅ |
 | M26 | Ein Ablauf: Start mit dem, was ansteht, darunter Idee → Zeit → fertig; keine Leiste unten, Icons oben | ✅ |
+| M27 | Ohne Scrollen: Bildschirme passen, Durchklicken statt Scrollen; nur Wunschliste und Events scrollen | ✅ |
 
 Abweichungen in V2:
 
@@ -125,6 +126,9 @@ Abweichungen in V2:
     neuer Termin geht weiter über „Termin ändern“.
 13. Seit M26 gibt es keine Reiter mehr (M24 hatte drei): Planen ist der Start, erst die Idee, dann
     die Zeit. Beim Termin-Ändern bleibt die Idee fest – tauschen geht über „Lieber was anderes?“.
+14. Seit M27 scrollt nur, was eine Liste ist (Wunschliste, Events, Sheets, lange Einstellungen).
+    Passt ein Bildschirm auf einem sehr kleinen Handy nicht, scrollt er ausnahmsweise doch, statt
+    Inhalt abzuschneiden.
 
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 

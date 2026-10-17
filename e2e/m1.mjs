@@ -89,7 +89,7 @@ await b.getByRole("button", { name: "Los geht's 🎉" }).click();
 await b.waitForURL(`${BASE}/plan`, { timeout: 10000 }).catch(() => {});
 await b.getByRole("heading", { name: "Verbinde deinen Google Kalender" }).waitFor({ timeout: 10000 }).catch(() => {});
 check("after the intro: Date planen asks to connect the calendar", b.url() === `${BASE}/plan` && (await b.getByRole("heading", { name: "Verbinde deinen Google Kalender" }).count()) === 1);
-check("setup checklist shows what is missing", await b.getByText(/Startklar\? \d von \d/).isVisible());
+check("setup checklist shows what is missing", await b.getByText(/^Startklar \d\/\d$/).isVisible());
 await b.waitForTimeout(400);
 await b.screenshot({ path: `${SHOTS}05-home.png`, fullPage: true });
 
@@ -127,6 +127,10 @@ await dark.screenshot({ path: `${SHOTS}06-home-dark.png` });
 
 // Settings + logout
 await a.goto(`${BASE}/settings`);
+await a.getByRole("navigation", { name: "Themen" }).waitFor();
+check("settings start as a list of topics", (await a.getByRole("navigation", { name: "Themen" }).getByRole("link").count()) >= 10);
+await a.screenshot({ path: `${SHOTS}07-settings-menu.png` });
+await a.getByRole("link", { name: /Ihr zwei & Konto/ }).click();
 await a.getByRole("button", { name: "Abmelden" }).waitFor();
 await a.screenshot({ path: `${SHOTS}07-settings.png` });
 await a.getByRole("button", { name: "Abmelden" }).click();

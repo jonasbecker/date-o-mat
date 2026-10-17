@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/cn";
 import { genitive } from "@/lib/format";
 import { connectCalendarHref } from "./connect-calendar";
 import { detectPushSupport } from "./service-worker";
 
 const DISMISS_KEY = "dom-setup-dismissed";
 
-type Item = { key: string; done: boolean; label: string; hint?: React.ReactNode };
+type Item = { key: string; done: boolean; label: string; todo: string; hint?: React.ReactNode };
 
 /**
  * "Startklar?" – what is still missing for the app to work well on this phone.
@@ -26,6 +25,7 @@ export function SetupChecklist({
   partnerCalendar: boolean;
   pushOn: boolean;
 }) {
+  const [shown, setShown] = useState(0);
   const [env, setEnv] = useState<{ phone: boolean; installed: boolean; ios: boolean; dismissed: boolean } | null>(null);
 
   useEffect(() => {
@@ -52,19 +52,21 @@ export function SetupChecklist({
       key: "calendar",
       done: calendar,
       label: "Dein Kalender ist verbunden",
+      todo: "Verbinde deinen Kalender",
       hint: (
         <a href={connectCalendarHref("/")} className="underline">
           Jetzt verbinden
         </a>
       ),
     },
-    { key: "partner", done: partnerCalendar, label: `${genitive(partnerName)} Kalender ist verbunden`, hint: `${partnerName} verbindet ihn in der App unter „Date planen“.` },
+    { key: "partner", done: partnerCalendar, label: `${genitive(partnerName)} Kalender ist verbunden`, todo: `${genitive(partnerName)} Kalender fehlt noch`, hint: `${partnerName} verbindet ihn in der App unter „Date planen“.` },
   ];
   if (env.phone) {
     items.push({
       key: "install",
       done: env.installed,
       label: "Date-O-Mat liegt auf dem Home-Bildschirm",
+      todo: "Leg den Date-O-Mat auf den Home-Bildschirm",
       hint: env.ios ? "Safari: Teilen-Symbol → „Zum Home-Bildschirm“ → Hinzufügen. Danach die App über das Icon öffnen." : "Browser-Menü (⋮) → „App installieren“ oder „Zum Startbildschirm hinzufügen“.",
     });
   }
@@ -72,11 +74,12 @@ export function SetupChecklist({
     key: "push",
     done: pushOn,
     label: "Erinnerungen sind an",
+    todo: "Schalte die Erinnerungen an",
     hint:
       env.ios && !env.installed ? (
         "Auf dem iPhone geht das erst, wenn die App auf dem Home-Bildschirm liegt."
       ) : (
-        <Link href="/settings#push" className="underline">
+        <Link href="/settings?t=push" className="underline">
           In den Einstellungen aktivieren
         </Link>
       ),
@@ -94,35 +97,25 @@ export function SetupChecklist({
     }
   }
 
+  // One line: the next thing that is missing – "›" shows the one after (the start page is one screen).
+  const next = open[shown % open.length];
   return (
-    <section aria-labelledby="setup-heading" className="flex flex-col gap-3 rounded-[22px] border-[2.5px] border-dashed border-line px-4 py-3.5">
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 id="setup-heading" className="text-[17px] font-semibold">
-          Startklar? {items.length - open.length} von {items.length}
-        </h2>
-        <button type="button" onClick={dismiss} className="text-[13px] font-extrabold text-muted underline">
-          Ausblenden
+    <section aria-label={`Startklar? ${items.length - open.length} von ${items.length}`} className="flex items-start gap-2.5 rounded-[18px] border-2 border-dashed border-line px-3.5 py-2 text-sm">
+      <span className="shrink-0 font-extrabold">
+        Startklar {items.length - open.length}/{items.length}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-bold">{next.todo}</span>
+        {next.hint && <span className="block font-semibold text-muted">{next.hint}</span>}
+      </span>
+      {open.length > 1 && (
+        <button type="button" onClick={() => setShown((i) => i + 1)} aria-label="Nächster Punkt" className="shrink-0 text-base font-extrabold">
+          ›
         </button>
-      </div>
-      <ul className="flex flex-col gap-2.5">
-        {items.map((item) => (
-          <li key={item.key} className="flex items-start gap-2.5">
-            <span
-              aria-hidden="true"
-              className={cn(
-                "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-line text-xs font-extrabold",
-                item.done ? "bg-minze text-tinte" : "bg-surface",
-              )}
-            >
-              {item.done ? "✓" : ""}
-            </span>
-            <span className="flex flex-col">
-              <span className={cn("font-bold", item.done && "text-muted line-through decoration-2")}>{item.label}</span>
-              {!item.done && item.hint && <span className="text-sm font-semibold text-muted">{item.hint}</span>}
-            </span>
-          </li>
-        ))}
-      </ul>
+      )}
+      <button type="button" onClick={dismiss} aria-label="Ausblenden" className="shrink-0 text-base font-extrabold text-muted">
+        ×
+      </button>
     </section>
   );
 }

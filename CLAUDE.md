@@ -40,6 +40,9 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - **Weekday/date-sensitive tests:** the suites run on any day. Round logic → pin the dev clock with
   `tuesdayMorningOffset()` (`e2e/clock.mjs`); slot lists late in the week → `/plan?later=1`;
   decks/lists that a test empties → seed spare rows. A test that only fails on some days is a test bug.
+- **No scrolling (M27):** every screen fits 390×844 – only lists scroll (wishlist, events, sheets,
+  long settings topics). Long content becomes steps, pages or tabs (`Tabs`, `?t=` topics, paging);
+  check new screens with `fitsScreen(page)` from `e2e/flow.mjs`. Settings links are `/settings?t=<topic>`.
 - **Planning in e2e:** `/plan` is a two-step flow – use `e2e/flow.mjs` (`pickIdea`, `openTimes`,
   `customIdea`, `backAtStart`) instead of expecting the times (`ol li button`) right away.
 - **Hidden pages in e2e:** Next keeps the last visited pages mounted but hidden, so `getByText` can match

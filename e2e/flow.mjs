@@ -17,11 +17,31 @@ export async function openTimes(page, base, query = "") {
   await page.locator("ol li button").first().waitFor({ timeout: 20000 });
 }
 
-/** Step 1 with your own idea: type it, "Weiter →". */
-export async function customIdea(page, title) {
-  await page.getByLabel("Oder eure eigene Idee").fill(title);
-  await page.getByRole("button", { name: "Weiter →" }).click();
+/** Step 1 with your own idea: "Was anderes …" → type it → "Weiter →". */
+export async function customIdea(page, title, location) {
+  await page.getByRole("button", { name: "Was anderes …" }).click();
+  const sheet = page.locator("dialog[open]");
+  await sheet.getByLabel("Eure eigene Idee").fill(title);
+  if (location) await sheet.getByLabel("Ort (optional)").fill(location);
+  await sheet.getByRole("button", { name: "Weiter →" }).click();
   await page.locator("ol li button").first().waitFor({ timeout: 15000 });
+}
+
+/** All free times of step 2 – three per page, "Weitere Zeiten →" turns the page. */
+export async function allSlotItems(page) {
+  const items = [];
+  for (let i = 0; i < 10; i++) {
+    items.push(...(await page.locator("ol li").evaluateAll((lis) => lis.map((li) => li.outerHTML))));
+    const more = page.getByRole("button", { name: "Weitere Zeiten →" });
+    if (!(await more.isVisible())) break;
+    await more.click();
+  }
+  return items;
+}
+
+/** The screen fits: the page itself does not scroll (only lists inside may). */
+export async function fitsScreen(page) {
+  return page.locator("main[data-screen]").evaluate((main) => main.scrollHeight <= main.clientHeight + 1);
 }
 
 /** After "Date festlegen" / "Termin ändern": back on the start page, which shows the date. */

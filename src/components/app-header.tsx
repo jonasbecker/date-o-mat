@@ -24,7 +24,7 @@ function IconLink({ href, label, Icon, active }: { href: string; label: string; 
  * small icons – 💡 ideas on the left, 💞 past dates and ⚙️ settings on the right.
  * The logo leads back to the start; other pages also get a "← Date planen" link.
  */
-export function AppHeader({ current = "plan" }: { current?: HeaderPlace }) {
+export function AppHeader({ current = "plan", action }: { current?: HeaderPlace; action?: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-3">
       <header className="flex items-center gap-2.5">
@@ -36,9 +36,12 @@ export function AppHeader({ current = "plan" }: { current?: HeaderPlace }) {
         <IconLink href="/settings" label="Einstellungen" Icon={SlidersIcon} active={current === "settings"} />
       </header>
       {current !== "plan" && (
-        <Link href="/plan" className="self-start text-sm font-extrabold text-muted underline">
-          ← Date planen
-        </Link>
+        <div className="flex min-h-9 items-center justify-between gap-3">
+          <Link href="/plan" className="text-sm font-extrabold text-muted underline">
+            ← Date planen
+          </Link>
+          {action}
+        </div>
       )}
     </div>
   );

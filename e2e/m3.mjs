@@ -60,19 +60,29 @@ function check(label, ok) {
 }
 const ZONE = "Europe/Berlin";
 
-/** Reads the slot list from the page as {weekday, day, from, to}. */
+/** Reads all free times (three per page) as {weekday, day, time, text}. */
 async function readSlots(page) {
   // The free times are step 2 – without a wishlist, your own idea leads there.
-  await page.locator("ol li, #custom-title").first().waitFor({ timeout: 15000 });
-  if (await page.locator("#custom-title").isVisible()) await customIdea(page, "Spazieren gehen");
+  const stepOne = page.getByRole("heading", { name: "Was wollt ihr machen?" });
+  await page.locator("ol li").or(stepOne).first().waitFor({ timeout: 15000 });
+  if (await stepOne.isVisible()) await customIdea(page, "Spazieren gehen");
   await page.locator("ol li").first().waitFor({ timeout: 10000 });
-  return page.locator("ol li").evaluateAll((items) =>
-    items.map((li) => {
-      const spans = li.querySelectorAll("span span");
-      const time = li.querySelector(".font-display.text-lg")?.textContent ?? "";
-      return { weekday: spans[0]?.textContent, day: spans[1]?.textContent, time, text: li.textContent };
-    }),
-  );
+  const slots = [];
+  for (let i = 0; i < 10; i++) {
+    slots.push(
+      ...(await page.locator("ol li").evaluateAll((items) =>
+        items.map((li) => {
+          const spans = li.querySelectorAll("span span");
+          const time = li.querySelector(".font-display.text-lg")?.textContent ?? "";
+          return { weekday: spans[0]?.textContent, day: spans[1]?.textContent, time, text: li.textContent };
+        }),
+      )),
+    );
+    const more = page.getByRole("button", { name: "Weitere Zeiten →" });
+    if (!(await more.isVisible())) break;
+    await more.click();
+  }
+  return slots;
 }
 
 const j = await pageFor(jonas.token);
@@ -129,7 +139,7 @@ await j.waitForTimeout(300);
 await j.screenshot({ path: `${SHOTS}m3-03-large.png` });
 
 // 4) Settings: calendar list + selection
-await j.goto(`${BASE}/settings`);
+await j.goto(`${BASE}/settings?t=kalender`);
 const uni = j.getByRole("checkbox", { name: /Uni-Stundenplan/ });
 await uni.waitFor({ timeout: 10000 });
 check("subscribed calendar is listed and selected", await uni.isChecked());
@@ -143,9 +153,11 @@ await j.getByText("Auswahl gespeichert.").waitFor({ timeout: 10000 });
 const { rows: [conn] } = await db.query("SELECT busy_calendar_ids FROM google_connections WHERE user_id = $1", [jonas.id]);
 check("calendar selection saved (only primary)", JSON.stringify(conn.busy_calendar_ids) === '["primary"]');
 
-// 5) Slot settings (folded away by default)
-check("advanced slot settings are folded away", !(await j.getByLabel("Suchen für").isVisible()));
-await j.getByText("⏰ Freie Zeiten finden").click();
+// 5) Slot settings (a topic of their own)
+await j.goto(`${BASE}/settings`);
+await j.getByRole("navigation", { name: "Themen" }).waitFor({ timeout: 10000 });
+check("advanced slot settings are a screen of their own", !(await j.getByLabel("Suchen für").isVisible()));
+await j.getByRole("link", { name: /Freie Zeiten finden/ }).click();
 const form = j.locator("form").filter({ has: j.getByLabel("Suchen für") });
 await form.getByLabel("Suchen für").selectOption("7");
 await form.getByLabel("Puffer um Termine").selectOption("0");
@@ -183,7 +195,7 @@ await s.getByText(/Google Kalender antwortet gerade nicht|Bitte verbinde deinen 
 check("rejected token leads to a friendly message, not a crash", true);
 
 // 8) Disconnect
-await j.goto(`${BASE}/settings`);
+await j.goto(`${BASE}/settings?t=kalender`);
 await j.getByRole("button", { name: "Verbindung trennen" }).click();
 await j.getByText("Kalender getrennt.").waitFor({ timeout: 15000 });
 const { rows: left } = await db.query("SELECT count(*)::int AS n FROM google_connections WHERE user_id = $1", [jonas.id]);

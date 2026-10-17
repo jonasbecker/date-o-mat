@@ -89,7 +89,7 @@ const status = (p) => p.locator("section#status");
 
 // 1) Cron never ran: settings say so, home stays quiet
 const j = await pageFor(jonas.token);
-await j.goto(`${BASE}/settings`);
+await j.goto(`${BASE}/settings?t=status`);
 await status(j).getByText(/Dinge? brauchen? euch|Eine Sache braucht euch/).waitFor({ timeout: 15000 });
 check("never ran → shown in settings", await status(j).getByText("Noch nie gelaufen").isVisible());
 check("push devices listed", await status(j).getByText("Jonas: 1 Gerät · Sam: 1 Gerät").isVisible());
@@ -103,10 +103,8 @@ check("no cron banner before the first run", (await j.getByText(/Die Automatik i
 const tick = await fetch(`${BASE}/api/cron/tick`, CRON).then((r) => r.json());
 const { rows: [stored] } = await db.query("SELECT value FROM app_status WHERE key = 'tick'");
 check(`tick is recorded (${JSON.stringify(stored?.value)})`, stored?.value?.couples === 1 && tick.ok);
-await j.goto(`${BASE}/settings`);
+await j.goto(`${BASE}/settings?t=status`);
 await status(j).getByText("✅ Alles läuft").waitFor({ timeout: 15000 });
-check("all fine → folded", !(await status(j).locator("details").getAttribute("open").then((v) => v !== null)));
-await status(j).getByText("✅ Alles läuft").click();
 check("tick row: just now", await status(j).getByText("Läuft – zuletzt gerade eben").isVisible());
 await j.screenshot({ path: `${OUT}m15-01-all-fine.png`, fullPage: true });
 
@@ -119,7 +117,7 @@ check(`connection flagged (${conn.status})`, conn.status === "needs_reauth");
 for (let i = 0; i < 20 && inbox.length < 2; i++) await new Promise((r) => setTimeout(r, 250));
 const toJonas = inbox.find((m) => m.device === "jonas");
 const toSam = inbox.find((m) => m.device === "sam");
-check(`Jonas gets "${toJonas?.title}" → ${toJonas?.url}`, toJonas?.title === "Kalender getrennt 🔌" && toJonas.url === "/settings#kalender");
+check(`Jonas gets "${toJonas?.title}" → ${toJonas?.url}`, toJonas?.title === "Kalender getrennt 🔌" && toJonas.url === "/settings?t=kalender");
 check(`Sam gets "${toSam?.title}"`, toSam?.title === "Jonas' Kalender ist getrennt 🔌" && toSam.body.includes("Sag Jonas Bescheid"));
 const refreshCalls = googleRequests.filter((r) => r.url === "/token").length;
 await j.goto(`${BASE}/plan`);
@@ -129,12 +127,12 @@ check(`no second push (${inbox.length} total), no new refresh attempt (${refresh
 
 // 4) Sam's settings: the problem is named, with who has to act
 const s = await pageFor(sam.token);
-await s.goto(`${BASE}/settings`);
+await s.goto(`${BASE}/settings?t=status`);
 await status(s).getByText("⚠️ Eine Sache braucht euch").waitFor({ timeout: 15000 });
 check("Sam sees Jonas' calendar problem", await status(s).getByText("Verbindung verloren – Jonas muss ihn in den Einstellungen neu verbinden.").isVisible());
 await s.screenshot({ path: `${OUT}m15-02-partner-calendar.png`, fullPage: true });
-await j.goto(`${BASE}/settings`);
-check("Jonas gets a link to reconnect", (await status(j).getByRole("link", { name: "Verbindung verloren – bitte neu verbinden." }).getAttribute("href")) === "/settings#kalender");
+await j.goto(`${BASE}/settings?t=status`);
+check("Jonas gets a link to reconnect", (await status(j).getByRole("link", { name: "Verbindung verloren – bitte neu verbinden." }).getAttribute("href")) === "/settings?t=kalender");
 
 // 5) Push preference "Wichtiges" off → no alert for that person
 await db.query("UPDATE google_connections SET status = 'ok' WHERE user_id = $1", [jonas.id]);
@@ -152,9 +150,9 @@ await j.waitForURL(/\/(plan|dates)$/, { timeout: 15000 });
 await j.locator("h1").filter({ visible: true }).first().waitFor({ timeout: 15000 });
 const banner = j.getByRole("alert").filter({ hasText: "Die Automatik ist zuletzt" });
 check(`home banner (${await banner.innerText().catch(() => "–")})`, (await banner.count()) === 1 && (await banner.innerText()).includes("vor 3 Std."));
-check("banner links to the status", (await banner.getAttribute("href")) === "/settings#status");
+check("banner links to the status", (await banner.getAttribute("href")) === "/settings?t=status");
 await j.screenshot({ path: `${OUT}m15-03-cron-banner.png` });
-await j.goto(`${BASE}/settings`);
+await j.goto(`${BASE}/settings?t=status`);
 const lateRow = status(j).getByText(/Zuletzt vor 3 Std\. – sollte alle 5 Min\. laufen/);
 await lateRow.waitFor({ timeout: 10000 }).catch(async () => console.log("DEBUG", await status(j).innerText().catch(() => "-")));
 check("settings: tick is late", await lateRow.isVisible());

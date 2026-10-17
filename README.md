@@ -38,6 +38,7 @@ gemeinsame Ideen-Wunschliste.
 | M24 | Navigation in der Reihenfolge eines Dates: Ideen · Date planen (Mitte) · Dates – die Startseite ist darin aufgegangen | ✅ |
 | M25 | Idee antippen → „Date damit planen“ oder „Statt … machen“ (nach Rückfrage, Termin bleibt); ein 💚 beim Swipen landet gleich auf der Wunschliste | ✅ |
 | M26 | Ein Ablauf statt Reitern: der Start zeigt, was ansteht, darunter Idee → Zeit → fertig; Ideen, Dates und Einstellungen als Icons oben | ✅ |
+| M27 | Ohne Scrollen: jeder Bildschirm passt, man klickt sich durch (Zeiten blättern, Einstellungs-Themen, Historie in Seiten, Reiter) | ✅ |
 
 ## Tech-Stack
 
@@ -190,6 +191,23 @@ scripts/              Migration beim Build, Secret-Generator
   Was man nimmt, landet auf der Wunschliste und ist sofort gewählt.
 - **Wörter:** Kurz/Lang statt Klein/Groß, „Diese Woche“ statt „Runde 3“, „Plan bis …“ statt
   „Deadline“. Einstellungen: „Das Wichtigste“ oben, der Rest eingeklappt (M22).
+
+### Ohne Scrollen in Kürze (M27)
+
+- **Jeder Bildschirm passt auf einen Bildschirm** (`main[data-screen]` ist so hoch wie das Display).
+  Gescrollt wird nur in Listen: Wunschliste, „Was läuft“, Listen in Sheets und lange
+  Einstellungs-Themen (Event-Quellen, Freie Zeiten). Passt es auf einem kleinen Handy doch nicht,
+  scrollt die Seite als Notlösung; die e2e-Tests prüfen das mit `fitsScreen()` (390×844).
+- **Start:** der Stand in kurz und das nächste Date als Zusammenfassung mit „Passt!“. Checkliste,
+  Route, Gesprächskarten, Ändern und Absagen liegen auf der Seite des Dates (`/dates/[id]`).
+  „Startklar“ ist eine Zeile, „›“ zeigt den nächsten Punkt.
+- **Schritt 1:** Nur die Wunschliste scrollt. Unten stehen 🎲 Zufall · Was anderes … · 💞 Swipen;
+  die eigene Idee (mit Ort) steht in „Was anderes …“.
+- **Schritt 2:** drei Zeiten, „Weitere Zeiten →“ blättert; Länge als kleiner Schalter.
+- **Einstellungen:** eine Übersicht mit Kacheln, jedes Thema eine eigene Seite (`/settings?t=budget`,
+  alte `#budget`-Links werden umgeleitet).
+- **Eure Dates:** 4 pro Seite mit „← Neuere / Ältere →“. Ein vergangenes Date hat Reiter
+  (Bewerten · Fotos · Partner:in), das Budget Reiter für diesen und frühere Monate.
 
 ### Ein Ablauf in Kürze (M26, löst die Navigation von M24 ab)
 

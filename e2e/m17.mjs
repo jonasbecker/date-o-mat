@@ -4,6 +4,7 @@ import { mkdirSync } from "node:fs";
 import { createServer } from "node:http";
 import { DateTime } from "luxon";
 import pg from "pg";
+import { fitsScreen } from "./flow.mjs";
 import { chromium } from "playwright";
 import { tuesdayMorningOffset } from "./clock.mjs";
 import { startMock } from "./google-mock.mjs";
@@ -132,6 +133,7 @@ check(`model + schema (${call?.model})`, call?.model === "claude-haiku-5-5" && c
 check("prompt: season, events, exclude list, wildcards", /\((spring|summer|autumn|winter)\)/.test(prompt) && prompt.includes("0: Konzert: Annenmaykantereit") && prompt.includes("Exclude list (already seen or on their list): Picknick im Stadtwald") && prompt.includes("wildcards"));
 check("prompt: no names or e-mails", !/Jonas|Sam|example\.com/.test(prompt + call.system));
 await j.screenshot({ path: `${OUT}m17-01-deck.png` });
+check("swipe deck fits the screen", await fitsScreen(j));
 
 // 2) Swipe with buttons, keyboard and a drag
 await j.waitForTimeout(800); // hydration
@@ -256,7 +258,7 @@ const { rows: nudges } = await db.query("SELECT user_id FROM notification_log WH
 check(`nudge for Sam, once (${nudges.length})`, nudges.length === 1 && nudges[0].user_id === sam.id);
 
 // 9) Settings: event combos "Viele"
-await j.goto(`${BASE}/settings#entdecken`);
+await j.goto(`${BASE}/settings?t=entdecken`);
 await j.getByRole("radio", { name: "Viele" }).click();
 await j.waitForTimeout(800);
 check("event mix saved", (await db.query("SELECT deck_event_mix FROM couple_settings WHERE couple_id = $1", [couple.id])).rows[0].deck_event_mix === "lots");

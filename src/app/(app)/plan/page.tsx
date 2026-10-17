@@ -17,7 +17,6 @@ import { searchUntil } from "@/server/suggestions";
 import { formatCost } from "@/lib/idea-input";
 import { budgetState } from "@/server/budget";
 import { budgetHint } from "@/core/budget";
-import { BudgetBar } from "@/components/budget-bar";
 import { countDoneDates, dateForViewer, getDate } from "@/server/dates";
 import { ideaCandidates } from "@/server/idea-sources";
 import { PlanFlow, type IdeaOption, type RescheduleInfo } from "./plan-form";
@@ -29,7 +28,7 @@ import type { NextDateInfo } from "@/components/swap-confirm";
 
 export default function PlanPage({ searchParams }: PageProps<"/plan">) {
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <AppHeader />
       <Suspense fallback={<SlotsSkeleton />}>
         <Plan searchParams={searchParams} />
@@ -50,10 +49,12 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
   const now = coupleNow(settings);
   const cycle = await ensureCurrentCycle(ctx.coupleId, now);
   const [params, overview] = await Promise.all([searchParams, loadOverview(ctx, settings, now)]);
+  // "Lieber selbst aussuchen" in suggestion mode: the flow instead of the proposal.
+  const self = params.self === "1";
   const top = (afterDate?: React.ReactNode) => (
     <>
       <AutoRefresh />
-      <StartSection o={overview} ctx={ctx} now={now} afterDate={afterDate} />
+      <StartSection o={overview} ctx={ctx} now={now} afterDate={afterDate} hideSuggestion={self} />
     </>
   );
   const later = params.later === "1";
@@ -103,36 +104,42 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
       );
     }
     return (
-      <>
-        {top()}
-        <Link href="/plan" className="self-start text-sm font-extrabold text-muted underline">
-          ← Doch nicht
-        </Link>
-        <PlanFlow mode={{ kind: "swap", next: { ...nextInfo, ideaId: roundDate.ideaId } }} small={[]} large={[]} ideas={ideas} untilLabel="" partnerName={ctx.partner.name} aiEnabled={env().ai} />
-      </>
+      <PlanFlow
+        mode={{ kind: "swap", next: { ...nextInfo, ideaId: roundDate.ideaId } }}
+        small={[]}
+        large={[]}
+        ideas={ideas}
+        untilLabel=""
+        partnerName={ctx.partner.name}
+        aiEnabled={env().ai}
+        intro={
+          <Link href="/plan" className="self-start text-sm font-extrabold text-muted underline">
+            ← Doch nicht
+          </Link>
+        }
+      />
     );
   }
 
-  const heading = !reschedule && (
-    <div>
-      <h1 className="text-[30px] font-bold leading-tight">Date planen</h1>
-      <p className="font-bold text-muted">Idee aussuchen, Zeit wählen – fertig.</p>
-    </div>
-  );
+  // The step card above says whose turn it is – the page title is for screen readers.
+  const heading = !reschedule && <h1 className="sr-only">Date planen</h1>;
+
+  // Suggestion mode: the proposal is the start; planning yourself is one tap away.
+  if (!reschedule && !self && overview.suggestion?.status === "ok") {
+    return top(
+      <Link href="/plan?self=1" className="self-center text-sm font-extrabold underline">
+        Lieber selbst aussuchen →
+      </Link>,
+    );
+  }
   // Normally only within the current round; "later" searches the whole horizon.
   const until = cycle && !later ? searchUntil(cycle, now, settings.horizonDays) : undefined;
   const search = await searchSlots(ctx, now, until);
-  const roundInfo = cycle && (
-    <p className="-mt-3 text-sm font-extrabold text-muted">
-      {periodLabel(cycle.startsAt, cycle.endsAt)}
-      {cycle.mode === "alternating" &&
-        (cycle.plannerId === ctx.user.id ? " · du bist dran" : ` · ${ctx.partner.name} ist dran`)}
-      {cycle.mode === "suggestion" && " · Vorschlag-Modus"}
-    </p>
-  );
+  // Whose turn it is stands in the step card; only the suggestion mode says so here.
+  const roundInfo = cycle && cycle.mode === "suggestion" && <p className="text-sm font-extrabold text-muted">{periodLabel(cycle.startsAt, cycle.endsAt)} · Vorschlag-Modus</p>;
   const scopeLink = cycle && (
     <Link
-      href={`/plan?${new URLSearchParams({ ...(later ? {} : { later: "1" }), ...(reschedule ? { reschedule: reschedule.dateId } : {}), ...(typeof params.idea === "string" ? { idea: params.idea } : {}) })}`}
+      href={`/plan?${new URLSearchParams({ ...(later ? {} : { later: "1" }), ...(reschedule ? { reschedule: reschedule.dateId } : {}), ...(typeof params.idea === "string" ? { idea: params.idea } : {}), ...(self ? { self: "1" } : {}) })}`}
       className="self-center text-sm font-extrabold underline"
     >
       {later ? "Nur in dieser Runde suchen" : "Auch nach dem Rundenende suchen"}
@@ -170,39 +177,47 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
     );
   }
 
+  const budgetLine = budget && !reschedule && budget.level === "ok" && (
+    <Link href="/budget" className="underline">
+      {budget.label}: {budget.spending.spent + budget.spending.planned} von {budget.budget} € · noch {budget.left} €
+    </Link>
+  );
   return (
-    <>
-      {top()}
-      {reschedule && (
-        <Link href="/plan" className="self-start text-sm font-extrabold text-muted underline">
-          ← Doch nicht
-        </Link>
-      )}
-      {heading}
-      {!reschedule && roundInfo}
-      {search.failedCalendars > 0 && (
-        <p className="rounded-[20px] border-2 border-line bg-zitrone-soft px-4 py-3 text-sm font-bold text-tinte">
-          {search.failedCalendars === 1 ? "Ein Kalender konnte" : `${search.failedCalendars} Kalender konnten`} nicht gelesen
-          werden und zählen gerade nicht mit. Prüft die Auswahl in den Einstellungen.
-        </p>
-      )}
-      <PlanFlow
-        mode={reschedule ? { kind: "reschedule", date: reschedule } : { kind: "new" }}
-        budget={budget && !reschedule ? { left: budget.left, pot: budget.pot } : null}
-        budgetBar={budget && !reschedule && budget.level === "ok" ? <BudgetBar {...budget} compact /> : undefined}
-        small={search.small.map(slotView)}
-        large={search.large.map(slotView)}
-        ideas={ideas}
-        untilLabel={formatShortDate(search.until)}
-        partnerName={ctx.partner.name}
-        searchScopeLink={scopeLink}
-        preselectIdeaId={typeof params.idea === "string" ? params.idea : undefined}
-        preselectSize={params.size === "large" ? "large" : undefined}
-        aiEnabled={env().ai}
-        surpriseEnabled={extraOn(settings, "surprise") && doneDates > 0}
-        events={events}
-      />
-    </>
+    <PlanFlow
+      mode={reschedule ? { kind: "reschedule", date: reschedule } : { kind: "new" }}
+      intro={
+        reschedule ? (
+          <Link href="/plan" className="self-start text-sm font-extrabold text-muted underline">
+            ← Doch nicht
+          </Link>
+        ) : (
+          <>
+            {top()}
+            {heading}
+            {roundInfo}
+            {search.failedCalendars > 0 && (
+              <p className="rounded-[18px] border-2 border-line bg-zitrone-soft px-3.5 py-2 text-sm font-bold text-tinte">
+                {search.failedCalendars === 1 ? "Ein Kalender konnte" : `${search.failedCalendars} Kalender konnten`} nicht gelesen werden – prüft die Auswahl in
+                den Einstellungen.
+              </p>
+            )}
+          </>
+        )
+      }
+      budget={budget && !reschedule ? { left: budget.left, pot: budget.pot } : null}
+      budgetLine={budgetLine || undefined}
+      small={search.small.map(slotView)}
+      large={search.large.map(slotView)}
+      ideas={ideas}
+      untilLabel={formatShortDate(search.until)}
+      partnerName={ctx.partner.name}
+      searchScopeLink={scopeLink}
+      preselectIdeaId={typeof params.idea === "string" ? params.idea : undefined}
+      preselectSize={params.size === "large" ? "large" : undefined}
+      aiEnabled={env().ai}
+      surpriseEnabled={extraOn(settings, "surprise") && doneDates > 0}
+      events={events}
+    />
   );
 }
 

@@ -17,7 +17,7 @@ export const maxDuration = 90;
 
 export default function DiscoverPage() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <IdeasTop current="entdecken" />
       <Suspense fallback={<PageSkeleton />}>
         <Discover />

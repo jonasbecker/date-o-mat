@@ -55,7 +55,7 @@ describe("statusRows", () => {
         { name: "Sam", me: false, status: "missing" },
       ],
     });
-    expect(row(f, "calendar-me")).toMatchObject({ level: "warn", href: "/settings#kalender", detail: "Verbindung verloren – bitte neu verbinden." });
+    expect(row(f, "calendar-me")).toMatchObject({ level: "warn", href: "/settings?t=kalender", detail: "Verbindung verloren – bitte neu verbinden." });
     expect(row(f, "calendar-partner")).toMatchObject({ label: "Kalender von Sam", detail: "Nicht verbunden – Sam muss ihn in den Einstellungen neu verbinden." });
   });
 

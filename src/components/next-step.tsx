@@ -5,6 +5,7 @@ import { periodLabel, type NextStep } from "@/core/next-step";
 import type { UserColor } from "@/lib/domain";
 import { daysUntilLabel, formatCycleRange, formatDeadline, formatShortDate, formatTimeRange, genitive, timeLeftLabel } from "@/lib/format";
 import type { Cycle, DatePlan, User } from "@/server/db/schema";
+import { cn } from "@/lib/cn";
 import { buttonClass } from "./button";
 import { Card, Chip, type CardTone } from "./card";
 import { ConfettiActionButton } from "./confetti";
@@ -82,7 +83,7 @@ export function NextStepCard({
   now: Date;
   /** The upcoming date (for confirm / wait / date ahead). */
   date?: DatePlan;
-  /** On "Date planen" itself: no button that leads there, a bit smaller. */
+  /** On the start page (the planning flow): compact – the date itself sits in a summary below. */
   onPlanPage?: boolean;
 }) {
   let title: string;
@@ -115,9 +116,11 @@ export function NextStepCard({
       body = (
         <>
           <Deadline cycle={cycle} now={now} />
-          <p className="flex items-center gap-2 text-sm font-bold">
-            Du suchst Termin und Idee aus, {partner.name} sagt „Passt!“. <Info term="abwechselnd" />
-          </p>
+          {!onPlanPage && (
+            <p className="flex items-center gap-2 text-sm font-bold">
+              Du suchst Termin und Idee aus, {partner.name} sagt „Passt!“. <Info term="abwechselnd" />
+            </p>
+          )}
         </>
       );
       actions = (
@@ -150,7 +153,7 @@ export function NextStepCard({
       title = `${partner.name} hat ein Date geplant 🎉`;
       body = date && (
         <>
-          <DateLine date={date} now={now} />
+          {!onPlanPage && <DateLine date={date} now={now} />}
           <p className="flex items-center gap-2 font-bold">
             Passt dir das? <Info term="passt" />
           </p>
@@ -161,9 +164,11 @@ export function NextStepCard({
           <ConfettiActionButton action={confirmDateAction.bind(null, step.dateId)} className="w-full">
             Passt! 💚
           </ConfettiActionButton>
-          <Link href={`/plan?reschedule=${step.dateId}`} className="text-sm font-extrabold underline">
-            Anderen Termin vorschlagen
-          </Link>
+          {!onPlanPage && (
+            <Link href={`/plan?reschedule=${step.dateId}`} className="text-sm font-extrabold underline">
+              Anderen Termin vorschlagen
+            </Link>
+          )}
         </div>
       );
       break;
@@ -171,14 +176,14 @@ export function NextStepCard({
       title = `Wartet auf ${genitive(partner.name)} „Passt!“`;
       body = date && (
         <>
-          <DateLine date={date} now={now} />
+          {!onPlanPage && <DateLine date={date} now={now} />}
           <p className="font-bold">{partner.name} hat Bescheid bekommen und bestätigt in der App oder über die Google-Einladung.</p>
         </>
       );
       break;
     case "date_ahead":
       title = "Date steht! 🎉";
-      body = date && <DateLine date={date} now={now} />;
+      body = date && !onPlanPage && <DateLine date={date} now={now} />;
       break;
     case "review":
       title = "Wie war's?";
@@ -193,7 +198,7 @@ export function NextStepCard({
       title = `${partner.name} ist dran`;
       body = (
         <p className="flex flex-wrap items-center gap-2 font-bold">
-          {partner.name} plant diese Runde (bis {formatDeadline(cycle.deadlineAt)}). Du kannst schon Ideen sammeln – oder einspringen.
+          {partner.name} plant diese Runde (bis {formatDeadline(cycle.deadlineAt)}).{onPlanPage ? " Du kannst auch einspringen." : " Du kannst schon Ideen sammeln – oder einspringen."}
           <Info term="abwechselnd" />
         </p>
       );
@@ -223,15 +228,22 @@ export function NextStepCard({
   }
 
   return (
-    <Card data-next-step={step.kind} tone={tone(step, me, partner)} size="lg" className="animate-pop-in relative flex flex-col gap-3.5 overflow-hidden">
+    <Card
+      data-next-step={step.kind}
+      tone={tone(step, me, partner)}
+      size={onPlanPage ? "sm" : "lg"}
+      className={cn("animate-pop-in relative flex flex-col overflow-hidden", onPlanPage ? "gap-2 text-sm" : "gap-3.5")}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <Chip className="bg-bg">{periodLabel(cycle.startsAt, cycle.endsAt)}</Chip>
         <Chip className="bg-bg">{formatCycleRange(cycle.startsAt, cycle.endsAt)}</Chip>
       </div>
-      <p className="-mb-2 text-[13px] font-extrabold uppercase tracking-wide opacity-80">
-        {ACTIONABLE.has(step.kind) ? "Dein nächster Schritt" : "Stand der Dinge"}
-      </p>
-      <h2 className={onPlanPage ? "text-[28px] font-bold leading-[1.1]" : "text-[38px] font-bold leading-[1.05]"}>{title}</h2>
+      {!onPlanPage && (
+        <p className="-mb-2 text-[13px] font-extrabold uppercase tracking-wide opacity-80">
+          {ACTIONABLE.has(step.kind) ? "Dein nächster Schritt" : "Stand der Dinge"}
+        </p>
+      )}
+      <h2 className={onPlanPage ? "text-[24px] font-bold leading-[1.1]" : "text-[38px] font-bold leading-[1.05]"}>{title}</h2>
       {body}
       {actions}
       {!onPlanPage && <CycleStepper status={cycle.status === "skipped" ? "open" : cycle.status} />}

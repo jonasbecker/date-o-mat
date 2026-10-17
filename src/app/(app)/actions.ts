@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -73,7 +74,11 @@ export async function cancelDateAction(dateId: string): Promise<ActionResult> {
   const id = dateIdSchema.safeParse(dateId);
   const now = coupleNow(await getCoupleSettings(ctx.coupleId));
   const ok = id.success && (await cancelDate(ctx, id.data, now));
-  if (ok) await tellPartner(ctx, "cancelled", id.data);
+  if (ok) {
+    await tellPartner(ctx, "cancelled", id.data);
+    // "Absagen" sits on the date's own page – which is gone now: back to the start.
+    redirect("/plan");
+  }
   refresh();
   return { ok };
 }

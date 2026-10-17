@@ -49,7 +49,7 @@ async function Events({ searchParams }: { searchParams: PageProps<"/events">["se
         <p className="font-semibold text-muted">
           Der Date-O-Mat liest jeden Morgen eure Veranstaltungsseiten und zeigt hier, was läuft – und wann ihr beide Zeit habt.
         </p>
-        <Link href="/settings#events" className="font-extrabold underline">
+        <Link href="/settings?t=events" className="font-extrabold underline">
           Event-Quellen einrichten
         </Link>
       </div>
@@ -82,7 +82,7 @@ async function Events({ searchParams }: { searchParams: PageProps<"/events">["se
       />
       <p className="text-center text-[13px] font-bold text-muted">
         {lastFetch ? `Zuletzt aktualisiert ${agoLabel(now, lastFetch)} · ` : ""}
-        <Link href="/settings#events" className="underline">
+        <Link href="/settings?t=events" className="underline">
           Quellen verwalten
         </Link>
       </p>

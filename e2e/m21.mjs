@@ -5,7 +5,7 @@ import { createServer } from "node:http";
 import { DateTime } from "luxon";
 import pg from "pg";
 import { chromium } from "playwright";
-import { backAtStart, openTimes } from "./flow.mjs";
+import { backAtStart, fitsScreen, openTimes } from "./flow.mjs";
 import { tuesdayMorningOffset } from "./clock.mjs";
 import { events as googleEvents, startMock } from "./google-mock.mjs";
 
@@ -90,7 +90,7 @@ const tick = () => fetch(`${BASE}/api/cron/tick`, CRON);
 
 // 1) Jonas sets his start point
 const j = await pageFor(jonas.token);
-await j.goto(`${BASE}/settings#unterwegs`);
+await j.goto(`${BASE}/settings?t=unterwegs`);
 await j.getByLabel("Dein Startpunkt").waitFor({ timeout: 15000 });
 await j.waitForTimeout(800);
 await j.getByLabel("Dein Startpunkt").fill("Ehrenfeld");
@@ -124,9 +124,11 @@ check(`surprise saved (${date.title}, ${date.surprise_hint})`, date.surprise ===
 const event = [...googleEvents["token-jonas"].values()].at(-1);
 check(`Google event keeps the secret (${event?.summary})`, event?.summary === "💞 Date: 🎁 Überraschung von Jonas" && !event.location && !JSON.stringify(event).includes("Sushi"));
 
-// 3) Jonas sees everything, plus the checklist with a suggestion and the route
+// 3) Jonas sees everything, plus the checklist with a suggestion and the route (one tap from the start)
 await j.reload();
 await j.getByText("Euer nächstes Date", { exact: true }).waitFor({ timeout: 15000 });
+await j.getByRole("link", { name: "Details, Vorbereitung & Route →" }).click();
+await j.getByRole("link", { name: "← Zum Start" }).waitFor({ timeout: 15000 });
 check("Jonas sees the real title and the surprise note", (await j.getByRole("heading", { name: "Sushi-Abend" }).isVisible()) && (await j.getByText(/🎁 Überraschung: Sam sieht bis zum Tag selbst nur Zeit und deinen Hinweis/).isVisible()));
 const route = await j.getByRole("link", { name: "🗺️ Route (ÖPNV)" }).getAttribute("href");
 check(`route link with his start point (${route})`, new URL(route).searchParams.get("origin") === "Ehrenfeld, Köln" && new URL(route).searchParams.get("destination") === "Belgisches Viertel, Köln");
@@ -141,6 +143,7 @@ await j.waitForTimeout(800);
 const { rows: tasks } = await db.query("SELECT title, done_at IS NOT NULL AS done FROM date_tasks ORDER BY created_at");
 check(`checklist stored (${JSON.stringify(tasks)})`, tasks.length === 2 && tasks[0].title === "Tisch reservieren" && !tasks[0].done && tasks[1].done);
 await j.screenshot({ path: `${OUT}m21-02-jonas.png`, fullPage: true });
+check("date details (with checklist) fit the screen", await fitsScreen(j));
 
 // 4) Sam sees only time and hint – no title, place, checklist; budget page keeps the secret too
 const s = await pageFor(sam.token);
@@ -190,6 +193,8 @@ check(`Google event now says what it is (${event2?.summary})`, event2?.summary =
 await s.goto(`${BASE}/`);
 await s.getByText("Euer nächstes Date", { exact: true }).waitFor({ timeout: 15000 });
 check("Sam sees the real date now", await s.getByRole("heading", { name: "Sushi-Abend" }).isVisible());
+check("on the day: conversation cards are one tap away", await s.getByRole("link", { name: "💬 Gesprächskarten" }).isVisible());
+await s.getByRole("link", { name: "Details, Vorbereitung & Route →" }).click();
 await s.getByRole("button", { name: "💬 Gesprächskarte ziehen" }).click();
 const question = await s.locator("p[aria-live=polite]").innerText();
 await s.getByRole("button", { name: "Nächste Karte →" }).click();
@@ -198,7 +203,7 @@ await s.screenshot({ path: `${OUT}m21-04-revealed.png`, fullPage: true });
 await db.query("UPDATE couple_settings SET dev_clock_offset_minutes = $2 WHERE couple_id = $1", [couple.id, tuesdayMorningOffset()]);
 
 // 7) iPhone share key: create, use, reject wrong keys, delete
-await j.goto(`${BASE}/settings#unterwegs`);
+await j.goto(`${BASE}/settings?t=unterwegs`);
 await j.getByRole("button", { name: "Schlüssel erstellen" }).click();
 const shareKey = (await j.locator("code").innerText()).trim();
 check(`key shown once (${shareKey.slice(0, 8)}…)`, /^dom_[A-Za-z0-9_-]{40,}$/.test(shareKey));

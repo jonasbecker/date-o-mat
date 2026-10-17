@@ -157,7 +157,7 @@ check("'in 2 hours' is sent with high urgency", soon?.headers.urgency === "high"
 
 // 6) Preferences: Sam turns partner news off → no push when Jonas cancels
 await at(start.minus({ hours: 5 }));
-await s.goto(`${BASE}/settings`);
+await s.goto(`${BASE}/settings?t=push`);
 await s.getByText("Welche Erinnerungen?").click();
 const toggle = s.getByRole("switch", { name: /Jonas plant, bestätigt oder sagt ab/ });
 await toggle.waitFor({ timeout: 10000 });
@@ -169,6 +169,7 @@ check("switch is stored", pref?.enabled === false);
 await s.screenshot({ path: `${SHOTS}m6-01-settings.png` });
 const before = titles("sam-phone").length;
 await j.goto(`${BASE}/`);
+await j.getByRole("link", { name: "Details, Vorbereitung & Route →" }).click();
 await j.getByRole("button", { name: "Absagen" }).click();
 await j.getByRole("button", { name: "Ja, absagen" }).click();
 await j.getByRole("heading", { name: "Was wollt ihr machen?" }).waitFor({ timeout: 10000 });
@@ -185,17 +186,17 @@ check("service worker gets registered", swReady);
 
 // 8) iPhone in Safari (not installed) → install guide instead of a push button
 const iphone = await pageFor(sam.token, { ...devices["iPhone 13"], locale: "de-DE", deviceScaleFactor: 2 });
-await iphone.goto(`${BASE}/settings#push`);
+await iphone.goto(`${BASE}/settings?t=push`);
 await iphone.getByText("Erst auf den Home-Bildschirm").waitFor({ timeout: 10000 });
 check("iOS browser: install guide in settings", (await iphone.getByRole("button", { name: /Push aktivieren/ }).count()) === 0);
 await iphone.screenshot({ path: `${SHOTS}m6-02-ios-guide.png` });
 await db.query("DELETE FROM push_subscriptions WHERE user_id = $1", [sam.id]);
 await iphone.goto(`${BASE}/`);
-await iphone.getByText("Date-O-Mat liegt auf dem Home-Bildschirm").waitFor({ timeout: 10000 });
+await iphone.getByText("Leg den Date-O-Mat auf den Home-Bildschirm").waitFor({ timeout: 10000 });
 check("iOS browser: checklist explains installing first", await iphone.getByText(/Teilen-Symbol → „Zum Home-Bildschirm“/).isVisible());
-check("iOS browser: reminders wait for the install", await iphone.getByText("Auf dem iPhone geht das erst, wenn die App auf dem Home-Bildschirm liegt.").isVisible());
-await iphone.getByText("Date-O-Mat liegt auf dem Home-Bildschirm").scrollIntoViewIfNeeded();
 await iphone.screenshot({ path: `${SHOTS}m6-03-ios-home.png` });
+await iphone.getByRole("button", { name: "Nächster Punkt" }).click();
+check("iOS browser: reminders wait for the install", await iphone.getByText("Auf dem iPhone geht das erst, wenn die App auf dem Home-Bildschirm liegt.").isVisible());
 
 await browser.close();
 await db.end();

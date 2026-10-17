@@ -272,12 +272,13 @@ export function SwipeDeck({
   const hint = drag ? (drag.x > 40 ? "like" : drag.x < -40 ? "nope" : drag.y < -50 ? "super" : drag.y > 50 ? "maybe" : null) : (flying?.verdict ?? null);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex justify-end">
         <FilterButton />
       </div>
 
-      <div className="relative h-[460px]">
+      {/* The card takes what the screen has left – no scrolling. */}
+      <div className="relative min-h-[300px] flex-1">
         {next && (
           <div aria-hidden="true" className="absolute inset-0 scale-[0.96] opacity-70">
             <Card card={next} partnerName={partnerName} />
@@ -377,7 +378,7 @@ export function SwipeDeck({
       </div>
 
       <p role="status" className="min-h-5 text-center text-sm font-bold text-muted">
-        {message ?? (top ? `${cards.length} ${cards.length === 1 ? "Karte" : "Karten"} · nur wenn ihr beide 💚 gebt, gibt's ein Match` : "")}
+        {message ?? (top ? `${cards.length} ${cards.length === 1 ? "Karte" : "Karten"} · 💚 kommt auf die Wunschliste, beide 💚 = Match` : "")}
       </p>
 
       {top && ai && cards.length < 8 && !generating && (
