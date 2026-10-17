@@ -204,38 +204,10 @@ export function PlanFlow({
   // The AI plans for your next free time (weather, length) – the Top-Tipp of the filtered length.
   const aiSlot = (filter.size === "large" ? large : small)[0];
 
-  // "⚡ Schnell planen": top short slot + the short idea that has waited longest.
-  const quickSlot = small[0];
-  const quickIdea = ideas.find((i) => i.size === "small");
-  const showQuick = mode.kind === "new" && quickSlot && quickIdea;
-
   if (step === "idea") {
     return (
       <div key="idea" className="animate-slide-in flex min-h-0 flex-1 flex-col gap-3">
         {intro}
-        {showQuick && (
-          <form action={formAction} className="flat flex items-center gap-3 rounded-[18px] bg-surface px-3 py-2">
-            <input type="hidden" name="start" value={quickSlot.startIso} />
-            <input type="hidden" name="end" value={quickSlot.endIso} />
-            <input type="hidden" name="size" value="small" />
-            <input type="hidden" name="ideaId" value={quickIdea.id} />
-            <p className="min-w-0 flex-1 text-sm font-bold leading-snug">
-              <span className="block text-[12px] font-extrabold text-muted">⚡ Schnell planen</span>
-              <span className="block truncate font-display text-base font-semibold">{quickIdea.title}</span>
-              <span className="block truncate">
-                {quickSlot.dateLabel}, {quickSlot.timeLabel}
-              </span>
-              {state.status === "error" && (
-                <span role="alert" className="block">
-                  {state.message}
-                </span>
-              )}
-            </p>
-            <Button type="submit" size="sm" className="shrink-0" disabled={pending || leaving}>
-              So festlegen 🎉
-            </Button>
-          </form>
-        )}
 
         {/* The wishlist itself: add, edit and choose all happen here. */}
         <div className="flex flex-col gap-1">

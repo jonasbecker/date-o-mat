@@ -77,6 +77,7 @@ export function NextStepCard({
   now,
   date,
   onPlanPage = false,
+  note,
 }: {
   step: NextStep;
   cycle: Cycle;
@@ -87,6 +88,8 @@ export function NextStepCard({
   date?: DatePlan;
   /** On the start page (the planning flow): compact – the date itself sits in a summary below. */
   onPlanPage?: boolean;
+  /** A short extra line that belongs to this round (e.g. last time was skipped) – same box, no extra card. */
+  note?: React.ReactNode;
 }) {
   let title: string;
   let body: React.ReactNode = null;
@@ -262,6 +265,7 @@ export function NextStepCard({
         <h2 className="text-[38px] font-bold leading-[1.05]">{title}</h2>
       )}
       {body}
+      {note && <p className="font-bold">{note}</p>}
       {actions}
       {!onPlanPage && <CycleStepper status={cycle.status === "skipped" ? "open" : cycle.status} />}
     </Card>

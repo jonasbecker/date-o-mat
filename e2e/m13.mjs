@@ -1,4 +1,4 @@
-// M13: next step, intro, info hints, plan tabs, quick plan, settings groups.
+// M13: next step, intro, info hints, plan tabs, settings groups.
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import pg from "pg";
@@ -90,10 +90,10 @@ check("…and planning anyway", (await s.getByRole("link", { name: "Lieber selbs
 await s.screenshot({ path: `${OUT}m13-12-partner-swipe.png` });
 check("partner's start fits the screen", await fitsScreen(s));
 
-// 4) Plan page: quick plan + tabs
+// 4) Plan page: the wishlist first, no quick plan
 await j.goto(`${BASE}/plan`);
-await j.getByText("⚡ Schnell planen").waitFor({ timeout: 20000 });
-check("quick plan suggests top slot + oldest short idea", await j.locator("form", { hasText: "⚡ Schnell planen" }).getByText("Picknick im Stadtwald").isVisible());
+await j.getByRole("list", { name: "Eure Wunschliste" }).waitFor({ timeout: 20000 });
+check("no quick plan any more", (await j.getByText("Schnell planen").count()) === 0);
 await j.screenshot({ path: `${OUT}m13-03-plan-top.png` });
 check("no tab row for idea sources any more", (await j.getByRole("tab").count()) === 0);
 check("wishlist first, then Zufall / Was anderes", (await j.getByRole("button", { name: "Zufall" }).isVisible()) && (await j.getByRole("button", { name: "Was anderes" }).isVisible()));
@@ -114,9 +114,8 @@ await pickIdea(j, "Picknick im Stadtwald");
 check("picking a wishlist idea replaces the own idea", await chosen("Picknick im Stadtwald").isVisible());
 check("no surprise option before the first date", (await j.getByText("🎁 Als Überraschung planen").count()) === 0);
 
-// 5) Quick plan in one tap → Sam's next step is "Passt!"
-await j.getByRole("button", { name: "← Andere Idee" }).click();
-await j.locator("form", { hasText: "⚡ Schnell planen" }).getByRole("button", { name: "So festlegen 🎉" }).click();
+// 5) Planned → Sam's next step is "Passt!"
+await j.getByRole("button", { name: "Date festlegen 🎉" }).click();
 await backAtStart(j, BASE);
 check(`Jonas waits: "${await heading(j)}"`, (await heading(j)) === "Wartet auf Sams „Passt!“");
 await s.goto(`${BASE}/`);

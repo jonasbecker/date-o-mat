@@ -133,6 +133,12 @@ export function StartSection({
   const dateStep = Boolean(o.cycle && o.step && DATE_STEPS.includes(o.step.kind));
   // Cards stay small: the start page is one screen.
   const confirmable = Boolean(o.shownDate && o.shownDate.status === "planned" && o.shownDate.proposedById !== user.id);
+  // Last round fell through: said in the step card's own box, not in a card of its own.
+  const skippedNote = o.cycle?.status === "open" && o.previous?.status === "skipped" && (
+    <>
+      🌦️ <strong className="font-extrabold">Letztes Mal ist ausgefallen – passiert!</strong> Diesmal holt ihr&apos;s nach.
+    </>
+  );
   // The flow below shows its own "connect your calendar" card.
   const roundStep = o.cycle && o.step && !dateStep && !["connect_calendar", "partner_calendar"].includes(o.step.kind);
   return (
@@ -153,7 +159,7 @@ export function StartSection({
         </Link>
       )}
 
-      {(dateStep || roundStep) && <NextStepCard step={o.step!} cycle={o.cycle!} me={user} partner={partner} now={now} date={o.shownDate} onPlanPage />}
+      {(dateStep || roundStep) && <NextStepCard step={o.step!} cycle={o.cycle!} me={user} partner={partner} now={now} date={o.shownDate} onPlanPage note={skippedNote} />}
 
       {o.toReview && o.step?.kind !== "review" && (
         <Link href={`/dates/${o.toReview.id}`} className="press sticker flex items-center gap-3 rounded-[18px] bg-lavendel px-4 py-2.5 text-tinte">
@@ -198,10 +204,8 @@ export function StartSection({
           </Link>
         ))}
 
-      {o.cycle?.status === "open" && o.previous?.status === "skipped" && (
-        <p className="rounded-[18px] border-2 border-line bg-zitrone-soft px-3.5 py-2 text-sm font-bold text-tinte">
-          🌦️ <strong className="font-extrabold">Letztes Mal ist ausgefallen – passiert!</strong> Diesmal holt ihr&apos;s nach.
-        </p>
+      {skippedNote && !(dateStep || roundStep) && (
+        <p className="rounded-[18px] border-2 border-line bg-zitrone-soft px-3.5 py-2 text-sm font-bold text-tinte">{skippedNote}</p>
       )}
 
       {/* The budget only speaks up when it gets tight; otherwise it lives under /budget. */}

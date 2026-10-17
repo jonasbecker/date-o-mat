@@ -205,6 +205,8 @@ scripts/              Migration beim Build, Secret-Generator
 - **Nach dem Bewerten:** „Nächstes Mal?“ mit den drei Ideen, die am längsten warten – ein Tipp plant.
 - **💡 hat zwei Reiter** (Wunschliste, Swipen). „Was läuft“ steckt in „Was anderes …“ beim Planen
   (Events, bei denen ihr beide Zeit habt, plus „Alles, was in Köln läuft →“) und im Swipe-Stapel.
+- **Ruhiger Start:** „Schnell planen“ ist weg – Schritt 1 beginnt direkt mit der Wunschliste. Ist die
+  letzte Runde ausgefallen, steht das in derselben Farbbox wie „Du bist dran!“ (`NextStepCard note`).
 
 ### Design in Kürze (M29, Richtung A)
 
