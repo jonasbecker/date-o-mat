@@ -171,3 +171,12 @@ export function findSlots(input: FindSlotsInput): Slot[] {
 
   return best.sort((a, b) => b.score - a.score || a.start.getTime() - b.start.getTime()).slice(0, limit);
 }
+
+/**
+ * How the free times are listed: the Top-Tipp (best ranked) first, the others in
+ * the order of the calendar – a ranked list jumps between days and reads like a mistake.
+ */
+export function orderSlots<T extends { startIso: string }>(ranked: T[]): T[] {
+  const [top, ...rest] = ranked;
+  return top ? [top, ...[...rest].sort((a, b) => a.startIso.localeCompare(b.startIso))] : [];
+}

@@ -16,7 +16,7 @@ function reminderText(reminder: Reminder, cycle: Cycle | undefined, date: DatePl
   switch (reminder.type) {
     case "turn_started":
       return cycle?.mode === "suggestion"
-        ? { title: "Neue Runde, neuer Vorschlag ✨", body: "Der Date-O-Mat hat eine Idee für euch – schau mal rein.", url: "/", tag: "turn" }
+        ? { title: "Neuer Vorschlag ✨", body: "Der Date-O-Mat hat eine Idee für euch – schau mal rein.", url: "/plan", tag: "turn" }
         : {
             title: "Du bist dran! 🎯",
             body: `Plan bis ${cycle ? formatDeadline(cycle.deadlineAt) : "Ende der Runde"} euer nächstes Date.`,
@@ -34,14 +34,14 @@ function reminderText(reminder: Reminder, cycle: Cycle | undefined, date: DatePl
       return {
         title: "Morgen ist Date-Tag 💞",
         body: date ? `${date.title} · ${formatTimeRange(date.startsAt, date.endsAt)} Uhr` : "Freut euch!",
-        url: "/",
+        url: date ? `/dates/${date.id}` : "/plan",
         tag: "date",
       };
     case "date_soon":
       return {
         title: `In 2 Stunden: ${date?.title ?? "euer Date"} 💞`,
         body: date ? `${formatTimeRange(date.startsAt, date.endsAt)} Uhr${date.location ? ` · ${date.location}` : ""}` : "",
-        url: "/",
+        url: date ? `/dates/${date.id}` : "/plan",
         tag: "date",
       };
     case "review_due":
@@ -52,7 +52,7 @@ function reminderText(reminder: Reminder, cycle: Cycle | undefined, date: DatePl
         tag: "review",
       };
     default:
-      return { title: "Date-O-Mat", body: "", url: "/" };
+      return { title: "Date-O-Mat", body: "", url: "/plan" };
   }
 }
 
@@ -101,11 +101,11 @@ export async function notifyPartner(ctx: CoupleContext, event: PartnerEvent, ful
   const date = dateForViewer(fullDate, ctx.partner.id, [ctx.user, ctx.partner], coupleNow(await getCoupleSettings(ctx.coupleId)));
   const when = `${formatShortDate(date.startsAt)}, ${formatTimeRange(date.startsAt, date.endsAt)}`;
   const payloads: Record<PartnerEvent, PushPayload> = {
-    planned: { title: `${name} hat ein Date geplant 🎉`, body: `${date.title} · ${when} – passt dir das?`, url: "/", tag: "date" },
-    rescheduled: { title: `${name} schlägt eine neue Zeit vor`, body: `${date.title} · ${when} – passt dir das?`, url: "/", tag: "date" },
-    changed: { title: `${name} hat euer Date geändert`, body: `Jetzt: ${date.title} · ${when}`, url: "/", tag: "date" },
-    confirmed: { title: `${name} sagt: Passt! 💚`, body: `${date.title} · ${when}`, url: "/", tag: "date" },
-    cancelled: { title: `${name} hat das Date abgesagt`, body: `${date.title} findet nicht statt. Die Runde ist wieder offen.`, url: "/", tag: "date" },
+    planned: { title: `${name} hat ein Date geplant 🎉`, body: `${date.title} · ${when} – passt dir das?`, url: "/plan", tag: "date" },
+    rescheduled: { title: `${name} schlägt eine neue Zeit vor`, body: `${date.title} · ${when} – passt dir das?`, url: "/plan", tag: "date" },
+    changed: { title: `${name} hat euer Date geändert`, body: `Jetzt: ${date.title} · ${when}`, url: "/plan", tag: "date" },
+    confirmed: { title: `${name} sagt: Passt! 💚`, body: `${date.title} · ${when}`, url: "/plan", tag: "date" },
+    cancelled: { title: `${name} hat das Date abgesagt`, body: `${date.title} findet nicht statt. Ihr könnt neu planen.`, url: "/plan", tag: "date" },
   };
   try {
     await sendToUser(ctx.partner.id, payloads[event], "partner_activity");

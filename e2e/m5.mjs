@@ -166,7 +166,7 @@ check("event now has the latest time", events["token-jonas"].get(date.google_eve
 
 // 6) Cancel → Google event deleted (guest notified), round reopens
 await j.goto(`${BASE}/`);
-await j.getByRole("link", { name: "Details, Vorbereitung & Route →" }).click();
+await j.getByRole("link", { name: "Mehr zum Date →" }).click();
 await j.getByRole("button", { name: "Absagen" }).click();
 await j.getByRole("button", { name: "Ja, absagen" }).click();
 await j.getByRole("heading", { name: "Du bist dran!" }).waitFor({ timeout: 10000 });

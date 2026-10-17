@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useRef, useState, type ReactNode } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { Button, buttonClass } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
-import { SIZE_LABEL, SizeChip } from "@/components/size-chip";
-import type { SlotMood } from "@/core/slots";
+import { SIZE_LABEL } from "@/components/size-chip";
+import { orderSlots, type SlotMood } from "@/core/slots";
 import { FilteredEmpty, FilterButton, useIdeaFilter } from "@/components/idea-filter";
 import { Sheet, type SheetHandle } from "@/components/sheet";
 import { SurpriseButton } from "@/components/surprise-button";
 import { SwapConfirm, type NextDateInfo } from "@/components/swap-confirm";
+import { IdeaCard, ideaFacts, type IdeaCardView } from "@/components/idea-card";
 import { matchesIdeaFilter } from "@/core/filters";
 import type { EventView } from "../events/event-list";
 import { MoreIdeas } from "./more-ideas";
@@ -18,7 +19,7 @@ import { cn } from "@/lib/cn";
 import { IDEA_SIZES, type IdeaSize } from "@/lib/domain";
 import { budgetHint } from "@/core/budget";
 import type { SlotView } from "@/lib/format";
-import { saveDateAction, type SaveDateState } from "./actions";
+import { freeTimesAction, saveDateAction, type FreeTimes, type SaveDateState } from "./actions";
 
 const MOOD_LABEL: Record<SlotMood, string> = {
   friday_evening: "Freitagabend",
@@ -30,7 +31,7 @@ const MOOD_LABEL: Record<SlotMood, string> = {
   daytime: "Tagsüber",
 };
 
-export type IdeaOption = { id: string; title: string; size: IdeaSize; meta: string | null; costEur?: number | null };
+export type IdeaOption = IdeaCardView;
 
 /** `keepSecret`: someone else's surprise – the partner sees only the time. */
 export type RescheduleInfo = { dateId: string; size: IdeaSize; title: string; keepSecret?: boolean };
@@ -46,32 +47,37 @@ export type FlowMode = { kind: "new" } | { kind: "swap"; next: NextDateInfo & { 
 type IdeaPick = { kind: "idea"; id: string; title?: string; size?: IdeaSize } | { kind: "custom" };
 
 const SLOTS_PER_PAGE = 3;
+const NO_SLOTS: SlotView[] = [];
 
 const inputClass =
   "h-12 w-full rounded-2xl border-[2.5px] border-line bg-surface px-4 font-bold text-ink placeholder:font-semibold placeholder:text-muted/70 focus:shadow-[0_0_0_4px_var(--color-himbeere-soft)] focus:outline-none";
 
+/** Free times older than this are fetched again when step 2 opens. */
+const TIMES_FRESH_MS = 60_000;
+
+function isStale(loadedAt: number): boolean {
+  return Date.now() - loadedAt > TIMES_FRESH_MS;
+}
+
 export function PlanFlow({
   mode,
-  small,
-  large,
+  later = false,
   ideas,
-  untilLabel,
   partnerName,
   searchScopeLink,
   preselectIdeaId,
   preselectSize,
   aiEnabled = false,
   surpriseEnabled = false,
-  events = null,
+  withEvents = false,
   budget = null,
   budgetLine,
   intro,
 }: {
   mode: FlowMode;
-  small: SlotView[];
-  large: SlotView[];
+  /** "Auch nach dem Rundenende suchen": the whole horizon instead of the round. */
+  later?: boolean;
   ideas: IdeaOption[];
-  untilLabel: string;
   partnerName: string;
   /** "Auch nach dem Rundenende suchen" – rendered by the server page. */
   searchScopeLink?: ReactNode;
@@ -83,8 +89,8 @@ export function PlanFlow({
   aiEnabled?: boolean;
   /** "🎁 Als Überraschung planen" – an extra that shows up after the first date. */
   surpriseEnabled?: boolean;
-  /** Events where both are free; null when no event sources are set up. */
-  events?: EventView[] | null;
+  /** Also load the events where both are free (for "Was anderes …"). */
+  withEvents?: boolean;
   /** Month budget left and savings pot (null = no budget set). */
   budget?: { left: number; pot: number } | null;
   /** "Oktober: 50 von 80 € · noch 30 €" – next to "Date festlegen". */
@@ -97,8 +103,25 @@ export function PlanFlow({
   const [step, setStep] = useState<"idea" | "time">(mode.kind === "reschedule" || preselected ? "time" : "idea");
   const [pick, setPick] = useState<IdeaPick | null>(preselected ? { kind: "idea", id: preselected.id } : null);
   const [size, setSize] = useState<IdeaSize>(mode.kind === "reschedule" ? mode.date.size : (preselected?.size ?? preselectSize ?? "small"));
+  // The free times are loaded here, not by the page: the start page itself never waits for Google.
+  const [times, setTimes] = useState<{ result: FreeTimes; at: number } | null>(null);
+  const [loadingTimes, startLoadingTimes] = useTransition();
+  const loadTimes = useCallback(() => {
+    if (mode.kind === "swap") return;
+    startLoadingTimes(async () => {
+      const result = await freeTimesAction({ later, events: withEvents }).catch((): FreeTimes => ({ status: "google_error" }));
+      setTimes({ result, at: Date.now() });
+    });
+  }, [mode.kind, later, withEvents]);
+  useEffect(() => loadTimes(), [loadTimes]);
+  const ok = times?.result.status === "ok" ? times.result : null;
+  const small = ok ? orderSlots(ok.small) : NO_SLOTS;
+  const large = ok ? orderSlots(ok.large) : NO_SLOTS;
+  const events: EventView[] | null = ok?.events ?? null;
   const slots = size === "small" ? small : large;
-  const [slotKey, setSlotKey] = useState<string | null>(slots[0]?.key ?? null);
+  const [chosenSlot, setSlotKey] = useState<string | null>(null);
+  // Until one is tapped: the Top-Tipp.
+  const slotKey = chosenSlot && slots.some((s) => s.key === chosenSlot) ? chosenSlot : (slots[0]?.key ?? null);
   // Three times at a time – "Weitere Zeiten" turns the page instead of scrolling.
   const [slotPage, setSlotPage] = useState(0);
   const moreSheet = useRef<SheetHandle>(null);
@@ -124,8 +147,13 @@ export function PlanFlow({
 
   function selectSize(next: IdeaSize) {
     setSize(next);
-    setSlotKey((next === "small" ? small : large)[0]?.key ?? null);
+    setSlotKey(null);
     setSlotPage(0);
+  }
+
+  function toTimes() {
+    setStep("time");
+    if (!loadingTimes && (!times || isStale(times.at))) loadTimes();
   }
 
   /** Step 1 → 2 (or, with a date planned, the question whether to swap). */
@@ -140,20 +168,21 @@ export function PlanFlow({
     setCustomTitle("");
     setCustomLocation("");
     selectSize(chosen.size ?? known?.size ?? filter.size ?? size);
-    setStep("time");
+    toTimes();
   }
 
   function chooseCustom() {
     setPick({ kind: "custom" });
     selectSize(filter.size ?? "small");
-    setStep("time");
+    toTimes();
   }
 
   const slot = slots.find((s) => s.key === slotKey);
-  const idea = pick?.kind === "idea" ? (ideas.find((i) => i.id === pick.id) ?? (pick.title ? { id: pick.id, title: pick.title, meta: null, costEur: null } : undefined)) : undefined;
+  const idea = pick?.kind === "idea" ? (ideas.find((i) => i.id === pick.id) ?? (pick.title ? { id: pick.id, title: pick.title, size, costEur: null, location: null } : undefined)) : undefined;
   const title = mode.kind === "reschedule" ? mode.date.title : pick?.kind === "custom" ? customTitle.trim() : (idea?.title ?? "");
   const ready = Boolean(slot && title);
-  const pickedCost = idea && "costEur" in idea ? (idea.costEur ?? null) : null;
+  const pickedCost = idea?.costEur ?? null;
+  const facts = idea ? ideaFacts(idea) : customLocation && `📍 ${customLocation}`;
   const budgetWarning = budget ? budgetHint(pickedCost, budget.left) : null;
   // Swapping: the date's own idea is not an alternative to itself.
   const wishlist = ideas.filter((i) => matchesIdeaFilter({ size: i.size, costEur: i.costEur }, filter) && !(mode.kind === "swap" && i.id === mode.next.ideaId));
@@ -220,22 +249,7 @@ export function PlanFlow({
           <ul data-scroll className="-mx-1 flex min-h-[7.5rem] flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-1 pb-1" aria-label="Eure Wunschliste">
             {wishlist.map((option) => (
               <li key={option.id}>
-                <button
-                  type="button"
-                  onClick={() => chooseIdea({ id: option.id })}
-                  className="press flex w-full items-center gap-3 rounded-[18px] border-[2.5px] border-line bg-surface px-3 py-2.5 text-left"
-                >
-                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="font-display text-[17px] font-semibold leading-snug">{option.title}</span>
-                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-extrabold text-muted">
-                      <SizeChip size={option.size} />
-                      {option.meta}
-                    </span>
-                  </span>
-                  <span aria-hidden="true" className="text-xl font-bold">
-                    →
-                  </span>
-                </button>
+                <IdeaCard idea={option} onOpen={() => chooseIdea({ id: option.id })} />
               </li>
             ))}
           </ul>
@@ -364,7 +378,7 @@ export function PlanFlow({
           <div className="flex flex-col rounded-[18px] border-[2.5px] border-line bg-surface px-4 py-2.5">
             <span className="text-[12px] font-extrabold uppercase tracking-wide text-muted">Ihr macht</span>
             <span className="font-display text-lg font-semibold leading-snug">{title}</span>
-            {(idea?.meta || customLocation) && <span className="text-xs font-extrabold text-muted">{idea?.meta ?? `📍 ${customLocation}`}</span>}
+            {facts && <span className="text-xs font-extrabold text-muted">{facts}</span>}
           </div>
         </>
       )}
@@ -392,7 +406,27 @@ export function PlanFlow({
         </div>
       </div>
 
-      {slots.length === 0 ? (
+      {!times || (loadingTimes && !ok) ? (
+        <div className="flex animate-pulse flex-col gap-2" aria-busy="true" aria-label="Sucht freie Zeiten …">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-[66px] rounded-[18px] bg-track" />
+          ))}
+        </div>
+      ) : times.result.status === "google_error" ? (
+        <p role="alert" className="rounded-[18px] border-2 border-line bg-himbeere-soft px-4 py-3 font-bold text-tinte">
+          Google Kalender antwortet gerade nicht.{" "}
+          <button type="button" onClick={loadTimes} className="underline">
+            Nochmal versuchen
+          </button>
+        </p>
+      ) : times.result.status === "not_connected" ? (
+        <p role="alert" className="rounded-[18px] border-2 border-line bg-zitrone-soft px-4 py-3 font-bold text-tinte">
+          Ein Kalender ist nicht mehr verbunden.{" "}
+          <Link href="/settings?t=kalender" className="underline">
+            In den Einstellungen verbinden
+          </Link>
+        </p>
+      ) : slots.length === 0 ? (
         <NoSlots size={size} />
       ) : (
         <ol className="flex flex-col gap-2">
@@ -450,12 +484,17 @@ export function PlanFlow({
         <button type="button" disabled={slotPage === 0} onClick={() => setSlotPage((p) => p - 1)} className={cn("underline", slotPage === 0 && "invisible")}>
           ← Frühere
         </button>
-        <span className="text-muted">Gesucht bis {untilLabel}</span>
+        <span className="text-muted">{ok && `Gesucht bis ${ok.untilLabel}`}</span>
         <button type="button" disabled={slotPage >= pageCount - 1} onClick={() => setSlotPage((p) => p + 1)} className={cn("underline", slotPage >= pageCount - 1 && "invisible")}>
           Weitere Zeiten →
         </button>
       </div>
       {searchScopeLink}
+      {ok && ok.failedCalendars > 0 && (
+        <p className="text-center text-xs font-bold text-muted">
+          {ok.failedCalendars === 1 ? "Ein Kalender konnte" : `${ok.failedCalendars} Kalender konnten`} nicht gelesen werden – prüft die Auswahl in den Einstellungen.
+        </p>
+      )}
 
       {mode.kind === "new" && surpriseEnabled && (
         <div className="flex flex-col gap-2">
@@ -522,7 +561,7 @@ function NoSlots({ size }: { size: IdeaSize }) {
         {size === "large"
           ? "Für ein langes Date braucht ihr einen halben Tag am Stück. Vielleicht passt ein kurzes Date?"
           : "Eure Kalender sind gerade richtig voll."}{" "}
-        Sucht auch nach dem Rundenende, oder passt in den Einstellungen Zeitraum, Puffer und Zeitfenster an.
+        Sucht auch danach, oder passt in den Einstellungen Zeitraum, Puffer und Zeitfenster an.
       </p>
     </div>
   );

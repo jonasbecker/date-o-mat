@@ -127,7 +127,7 @@ check(`Google event keeps the secret (${event?.summary})`, event?.summary === "�
 // 3) Jonas sees everything, plus the checklist with a suggestion and the route (one tap from the start)
 await j.reload();
 await j.getByText("Euer nächstes Date", { exact: true }).waitFor({ timeout: 15000 });
-await j.getByRole("link", { name: "Details, Vorbereitung & Route →" }).click();
+await j.getByRole("link", { name: "Mehr zum Date →" }).click();
 await j.getByRole("link", { name: "← Zum Start" }).waitFor({ timeout: 15000 });
 check("Jonas sees the real title and the surprise note", (await j.getByRole("heading", { name: "Sushi-Abend" }).isVisible()) && (await j.getByText(/🎁 Überraschung: Sam sieht bis zum Tag selbst nur Zeit und deinen Hinweis/).isVisible()));
 const route = await j.getByRole("link", { name: "🗺️ Route (ÖPNV)" }).getAttribute("href");
@@ -194,7 +194,7 @@ await s.goto(`${BASE}/`);
 await s.getByText("Euer nächstes Date", { exact: true }).waitFor({ timeout: 15000 });
 check("Sam sees the real date now", await s.getByRole("heading", { name: "Sushi-Abend" }).isVisible());
 check("on the day: conversation cards are one tap away", await s.getByRole("link", { name: "💬 Gesprächskarten" }).isVisible());
-await s.getByRole("link", { name: "Details, Vorbereitung & Route →" }).click();
+await s.getByRole("link", { name: "Mehr zum Date →" }).click();
 await s.getByRole("button", { name: "💬 Gesprächskarte ziehen" }).click();
 const question = await s.locator("p[aria-live=polite]").innerText();
 await s.getByRole("button", { name: "Nächste Karte →" }).click();

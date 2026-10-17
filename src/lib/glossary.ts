@@ -3,18 +3,18 @@
 export const GLOSSARY = {
   runde: {
     title: "Runde",
-    text: "Der Zeitraum, in dem ihr ein Date habt – je nach Rhythmus eine Woche, zwei Wochen, eine Monatshälfte oder ein Monat. Danach startet automatisch die nächste.",
+    text: "Eine Runde ist der Zeitraum für ein Date – je nach Rhythmus eine Woche, zwei Wochen, eine Monatshälfte oder ein Monat. Danach startet automatisch die nächste.",
   },
   frist: {
     title: "Plan bis …",
-    text: "Bis dahin sollte euer Date feststehen, damit genug Vorlauf bleibt. Verpasst? Kein Drama – planen geht trotzdem bis zum Ende der Runde.",
+    text: "Bis dahin sollte euer Date feststehen, damit genug Vorlauf bleibt. Verpasst? Kein Drama – planen geht trotzdem bis zum Ende der Woche (bzw. des Zeitraums).",
   },
   abwechselnd: {
     title: "Ihr wechselt euch ab",
-    text: "In jeder Runde ist eine Person dran: Sie sucht Termin und Idee aus, die andere sagt „Passt!“. Nächste Runde ist es umgekehrt. Abgeben oder übernehmen geht jederzeit.",
+    text: "Jedes Mal ist eine Person dran: Sie sucht Idee und Termin aus, die andere sagt „Passt!“. Beim nächsten Mal ist es umgekehrt. Abgeben oder übernehmen geht jederzeit.",
   },
   vorschlag: {
-    title: "Vorschlag-Modus",
+    title: "Der Date-O-Mat schlägt vor",
     text: "Der Date-O-Mat sucht selbst eine freie Zeit und eine Idee von eurer Wunschliste aus. Wer zuerst auf „Übernehmen“ tippt, plant das Date.",
   },
   dauer: {

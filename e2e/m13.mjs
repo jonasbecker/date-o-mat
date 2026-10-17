@@ -65,7 +65,7 @@ const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/`);
 await heading(j);
 check(`next step: "${await heading(j)}"`, (await heading(j)) === "Du bist dran!");
-check("period instead of round number", await j.getByText("Diese Woche", { exact: true }).isVisible());
+check("period instead of round number", await j.locator("[data-next-step]").getByText(/^Diese Woche · Plan bis/).isVisible());
 check("home is focused: no separate surprise / push cards", (await j.getByRole("button", { name: /Überrasch uns/ }).count()) === 0);
 await j.screenshot({ path: `${OUT}m13-01-home-plan.png`, fullPage: true });
 

@@ -2,23 +2,17 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { ConnectCalendarCard } from "@/components/connect-calendar";
-import { formatShortDate, formatTimeRange, slotView } from "@/lib/format";
+import { formatShortDate, formatTimeRange } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
-import { searchSlots } from "@/server/availability";
 import { coupleNow } from "@/server/clock";
 import { ensureCurrentCycle } from "@/server/cycles";
 import { extraOn, getCoupleSettings } from "@/server/settings";
 import { env } from "@/server/env";
 import { periodLabel } from "@/core/next-step";
-import { freeForEvents, listSources, savedRefs, upcomingEvents } from "@/server/events";
-import type { EventView } from "../events/event-list";
-import { eventView } from "../events/event-view";
-import { searchUntil } from "@/server/suggestions";
-import { formatCost } from "@/lib/idea-input";
 import { budgetState } from "@/server/budget";
 import { budgetHint } from "@/core/budget";
 import { countDoneDates, dateForViewer, getDate } from "@/server/dates";
-import { ideaCandidates } from "@/server/idea-sources";
+import { listIdeas, matchedIdeaIds } from "@/server/ideas";
 import { PlanFlow, type IdeaOption, type RescheduleInfo } from "./plan-form";
 import { AppHeader } from "@/components/app-header";
 import { loadOverview, StartSection } from "../overview";
@@ -80,18 +74,20 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
   const swappable = roundDate && overview.shownDate === roundDate;
 
   const [budget, doneDates] = await Promise.all([budgetState(ctx.coupleId, now), countDoneDates(ctx.coupleId)]);
-  // Longest waiting first – the same order the suggestion mode uses.
-  const ideas: IdeaOption[] = (await ideaCandidates({ coupleId: ctx.coupleId }))
-    .filter((c) => c.ideaId)
-    .sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime())
-    .map((c) => ({
-      id: c.ideaId!,
-      title: c.title,
-      size: c.size,
-      costEur: c.costEur,
-      meta:
-        [formatCost(c.costEur), c.location && `📍 ${c.location}`, budget && budgetHint(c.costEur, budget.left) && "⚠️ über Budget"].filter(Boolean).join(" · ") ||
-        null,
+  // The same cards as on the wishlist; longest waiting first – the order the suggestion mode uses.
+  const [wishlist, matched] = await Promise.all([listIdeas(ctx.coupleId), matchedIdeaIds(ctx.coupleId)]);
+  const people = Object.fromEntries([ctx.user, ctx.partner].map((p) => [p.id, { name: p.name, color: p.color }]));
+  const ideas: IdeaOption[] = wishlist
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    .map((idea) => ({
+      id: idea.id,
+      title: idea.title,
+      size: idea.size,
+      costEur: idea.costEur,
+      location: idea.location,
+      matched: matched.has(idea.id),
+      overBudget: Boolean(budget && budgetHint(idea.costEur, budget.left)),
+      creator: idea.createdById ? (people[idea.createdById] ?? null) : null,
     }));
 
   if (roundDate) {
@@ -106,10 +102,7 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
     return (
       <PlanFlow
         mode={{ kind: "swap", next: { ...nextInfo, ideaId: roundDate.ideaId } }}
-        small={[]}
-        large={[]}
         ideas={ideas}
-        untilLabel=""
         partnerName={ctx.partner.name}
         aiEnabled={env().ai}
         intro={
@@ -132,47 +125,24 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
       </Link>,
     );
   }
-  // Normally only within the current round; "later" searches the whole horizon.
-  const until = cycle && !later ? searchUntil(cycle, now, settings.horizonDays) : undefined;
-  const search = await searchSlots(ctx, now, until);
   // Whose turn it is stands in the step card; only the suggestion mode says so here.
-  const roundInfo = cycle && cycle.mode === "suggestion" && <p className="text-sm font-extrabold text-muted">{periodLabel(cycle.startsAt, cycle.endsAt)} · Vorschlag-Modus</p>;
+  const roundInfo = cycle && cycle.mode === "suggestion" && <p className="text-sm font-extrabold text-muted">{periodLabel(cycle.startsAt, cycle.endsAt)} · der Date-O-Mat schlägt vor</p>;
   const scopeLink = cycle && (
     <Link
       href={`/plan?${new URLSearchParams({ ...(later ? {} : { later: "1" }), ...(reschedule ? { reschedule: reschedule.dateId } : {}), ...(typeof params.idea === "string" ? { idea: params.idea } : {}), ...(self ? { self: "1" } : {}) })}`}
       className="self-center text-sm font-extrabold underline"
     >
-      {later ? "Nur in dieser Runde suchen" : "Auch nach dem Rundenende suchen"}
+      {later ? `Nur ${periodLabel(cycle.startsAt, cycle.endsAt).toLowerCase()} suchen` : "Auch danach suchen"}
     </Link>
   );
 
-  // Events in the next weeks where both are free (null = no sources yet).
-  let events: EventView[] | null = null;
-  if (search.status === "ok" && !reschedule && (await listSources(ctx.coupleId)).length > 0) {
-    const [list, saved] = await Promise.all([upcomingEvents(ctx.coupleId, now, settings.horizonDays), savedRefs(ctx.coupleId)]);
-    const earliest = now.getTime() + 2 * 3_600_000; // same lead time as saving a date
-    const plannable = list.filter((e) => e.startsAt && !e.allDay && e.startsAt.getTime() > earliest);
-    const free = await freeForEvents(ctx, plannable);
-    events = plannable.filter((e) => free?.get(e.id) === true).map((e) => eventView(e, { free: true, saved: saved.has(e.dedupeKey), now }));
-  }
-
-  if (search.status === "not_connected") {
+  // Both calendars are needed for free times (a stored state – no call to Google here).
+  if (overview.calendars.some((p) => p.state !== "connected")) {
     return (
       <>
         {top()}
         {heading}
-        <ConnectCalendarCard people={search.people} next="/plan" />
-      </>
-    );
-  }
-  if (search.status === "google_error") {
-    return (
-      <>
-        {top()}
-        {heading}
-        <p role="alert" className="rounded-[20px] border-2 border-line bg-himbeere-soft px-4 py-3 font-bold text-tinte">
-          Google Kalender antwortet gerade nicht. Versuch es in einer Minute nochmal.
-        </p>
+        <ConnectCalendarCard people={overview.calendars} next="/plan" />
       </>
     );
   }
@@ -195,28 +165,20 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
             {top()}
             {heading}
             {roundInfo}
-            {search.failedCalendars > 0 && (
-              <p className="rounded-[18px] border-2 border-line bg-zitrone-soft px-3.5 py-2 text-sm font-bold text-tinte">
-                {search.failedCalendars === 1 ? "Ein Kalender konnte" : `${search.failedCalendars} Kalender konnten`} nicht gelesen werden – prüft die Auswahl in
-                den Einstellungen.
-              </p>
-            )}
           </>
         )
       }
       budget={budget && !reschedule ? { left: budget.left, pot: budget.pot } : null}
       budgetLine={budgetLine || undefined}
-      small={search.small.map(slotView)}
-      large={search.large.map(slotView)}
+      later={later}
       ideas={ideas}
-      untilLabel={formatShortDate(search.until)}
       partnerName={ctx.partner.name}
       searchScopeLink={scopeLink}
       preselectIdeaId={typeof params.idea === "string" ? params.idea : undefined}
       preselectSize={params.size === "large" ? "large" : undefined}
       aiEnabled={env().ai}
       surpriseEnabled={extraOn(settings, "surprise") && doneDates > 0}
-      events={events}
+      withEvents={!reschedule}
     />
   );
 }

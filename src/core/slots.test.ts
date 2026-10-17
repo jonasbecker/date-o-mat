@@ -1,7 +1,7 @@
 import { DateTime } from "luxon";
 import { describe, expect, it } from "vitest";
 import { mergeRanges, subtractRanges } from "./ranges";
-import { findSlots, type SlotRules } from "./slots";
+import { findSlots, orderSlots, type SlotRules } from "./slots";
 
 const ZONE = "Europe/Berlin";
 
@@ -217,5 +217,13 @@ describe("findSlots – daylight saving time", () => {
     const busy = [range("2026-10-25T01:00", "2026-10-25T03:00")];
     const slots = findSlots({ now: at("2026-10-24T08:00"), until: at("2026-10-26T00:00"), busy, rules: RULES, size: "small", limit: 10 });
     expect(slots.some((s) => local(s.start).toISODate() === "2026-10-25")).toBe(true);
+  });
+});
+
+describe("orderSlots", () => {
+  it("keeps the Top-Tipp first and sorts the rest by date", () => {
+    const at = (iso: string) => ({ startIso: iso });
+    expect(orderSlots([at("2026-10-16T16:00:00Z"), at("2026-10-14T16:00:00Z"), at("2026-10-18T09:00:00Z"), at("2026-10-15T16:00:00Z")]).map((s) => s.startIso.slice(8, 10))).toEqual(["16", "14", "15", "18"]);
+    expect(orderSlots([])).toEqual([]);
   });
 });

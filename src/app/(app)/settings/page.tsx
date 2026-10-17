@@ -24,7 +24,7 @@ import { EventSources, type SourcePageView, type SourceView } from "./event-sour
 import { listSourcePages, listSources } from "@/server/events";
 import type { EventSource, EventSourcePage } from "@/server/db/schema";
 import { agoLabel } from "@/lib/format";
-import { Info } from "@/components/info";
+import { GLOSSARY } from "@/lib/glossary";
 import { systemStatus } from "@/server/system-status";
 import { SystemStatusCard } from "./system-status-card";
 import { EventMixPicker } from "./event-mix-picker";
@@ -113,21 +113,24 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
 
   const statusOk = overallLevel(status) === "ok";
   const problems = status.filter((row) => row.level === "warn").length;
-  const tiles: TopicTile[] = [
-    { id: "status", emoji: statusOk ? "✅" : "⚠️", title: "Läuft alles?", hint: statusOk ? "Alles läuft" : `${problems === 1 ? "Eine Sache braucht" : `${problems} Dinge brauchen`} euch` },
-    { id: "kalender", emoji: "📅", title: "Kalender", hint: me.state === "connected" ? "Verbunden" : "Noch nicht verbunden" },
-    { id: "rhythmus", emoji: "🔁", title: "Rhythmus & Modus", hint: "Für euch beide" },
-    { id: "push", emoji: "🔔", title: "Erinnerungen", hint: "Für dich allein" },
+  const statusTile: TopicTile = { id: "status", emoji: statusOk ? "✅" : "⚠️", title: "Läuft alles?", hint: statusOk ? "Alles läuft" : `${problems === 1 ? "Eine Sache braucht" : `${problems} Dinge brauchen`} euch` };
+  const shared: TopicTile[] = [
+    { id: "rhythmus", emoji: "🔁", title: "Rhythmus & Modus", hint: "Wie oft, wer plant" },
     { id: "zeiten", emoji: "⏰", title: "Freie Zeiten finden", hint: "Zeitfenster, Puffer" },
     { id: "events", emoji: "🎟️", title: "Event-Quellen", hint: sources.length ? `${sources.length} ${sources.length === 1 ? "Seite" : "Seiten"}` : "Für „Was läuft“" },
     { id: "entdecken", emoji: "💞", title: "Swipen", hint: "Events im Stapel" },
     { id: "budget", emoji: "💶", title: "Budget & Spartopf", hint: settings.monthlyBudgetEur ? `${settings.monthlyBudgetEur} € im Monat` : "Aus" },
     { id: "besondere-tage", emoji: "🎂", title: "Besondere Tage", hint: specialDayViews.length ? `${specialDayViews.length} eingetragen` : "Geburtstage, Jahrestag" },
-    { id: "unterwegs", emoji: "🧭", title: "Unterwegs & Teilen", hint: "Startort, iPhone-Kurzbefehl" },
     { id: "extras", emoji: "✨", title: "Extras", hint: "An- und ausschalten" },
-    { id: "konto", emoji: "👤", title: "Ihr zwei & Konto", hint: "Abmelden" },
-    { id: "welcome", emoji: "👋", title: "Einführung", hint: "Nochmal ansehen", href: "/welcome" },
   ];
+  const personal: TopicTile[] = [
+    { id: "kalender", emoji: "📅", title: "Kalender", hint: me.state === "connected" ? "Verbunden" : "Noch nicht verbunden" },
+    { id: "push", emoji: "🔔", title: "Erinnerungen", hint: "Was aufs Handy kommt" },
+    { id: "unterwegs", emoji: "🧭", title: "Unterwegs & Teilen", hint: "Startort, iPhone-Kurzbefehl" },
+    { id: "konto", emoji: "👤", title: "Ihr zwei & Konto", hint: "Abmelden" },
+  ];
+  const extra: TopicTile[] = [{ id: "welcome", emoji: "👋", title: "Einführung", href: "/welcome" }];
+
 
   const topics: Record<string, React.ReactNode> = {
     status: (
@@ -154,9 +157,7 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
             values={{ rhythm: settings.rhythm, mode: settings.mode, deadlineDaysBeforeEnd: settings.deadlineDaysBeforeEnd }}
           />
         </Card>
-        <p className="flex items-center gap-2 text-sm font-semibold text-muted">
-          Was ist eine Runde? <Info term="runde" />
-        </p>
+        <p className="text-sm font-semibold text-muted">{GLOSSARY.runde.text}</p>
       </Topic>
     ),
     push: (
@@ -282,5 +283,5 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
       </>
     );
   }
-  return <TopicMenu tiles={tiles} />;
+  return <TopicMenu shared={shared} personal={personal} status={{ ok: statusOk, tile: statusTile }} extra={extra} />;
 }

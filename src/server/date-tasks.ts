@@ -71,7 +71,7 @@ export async function sendPrepReminders(coupleId: string, now: Date): Promise<vo
     const list = open.map((t) => t.title);
     await sendToUser(
       member.id,
-      { title: "Noch offen fürs Date morgen 📝", body: list.length > 3 ? `${list.slice(0, 3).join(", ")} und ${list.length - 3} mehr` : list.join(", "), url: "/", tag: "prep" },
+      { title: "Noch offen fürs Date morgen 📝", body: list.length > 3 ? `${list.slice(0, 3).join(", ")} und ${list.length - 3} mehr` : list.join(", "), url: `/dates/${date.id}`, tag: "prep" },
       "prep",
     ).catch(() => 0);
   }

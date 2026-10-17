@@ -7,7 +7,6 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { Avatar } from "@/components/avatar";
 import { Card } from "@/components/card";
 import { Hearts } from "@/components/hearts";
-import { Info } from "@/components/info";
 import { SizeChip } from "@/components/size-chip";
 import { visibleReviews, type ReviewView } from "@/core/reviews";
 import { formatLongDate, formatTimeRange, genitive } from "@/lib/format";
@@ -120,7 +119,7 @@ async function DateDetail({ params }: { params: PageProps<"/dates/[id]">["params
                   <ReviewBlock person={partner} review={theirs} />
                 ) : partnerHidden ? (
                   <p className="flex flex-wrap items-center gap-2 font-bold">
-                    🔒 Verdeckt, bis du selbst bewertet hast – dann siehst du {genitive(partner.name)} Herzen. <Info term="verdeckt" />
+                    🔒 Verdeckt, bis du selbst bewertet hast – dann siehst du {genitive(partner.name)} Herzen.
                   </p>
                 ) : (
                   <p className="font-bold text-muted">{partner.name} hat noch nicht bewertet.</p>

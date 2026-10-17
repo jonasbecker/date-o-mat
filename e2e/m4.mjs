@@ -68,9 +68,9 @@ const s = await pageFor(sam.token);
 // Round 1 – Jonas starts
 await j.goto(`${BASE}/`);
 await heading(j);
-check("round 1 is created on first visit", (await j.getByText("Diese Woche", { exact: true }).count()) === 1);
+check("round 1 is created on first visit", (await j.locator("[data-next-step]").getByText(/^Diese Woche · /).count()) === 1);
 check(`Jonas sees "Du bist dran!" (${await heading(j)})`, (await heading(j)) === "Du bist dran!");
-check("deadline with time left is shown", await j.getByText(/^Plan bis \w/).waitFor({ timeout: 10000 }).then(() => true, () => false));
+check("deadline with time left in one line", await j.getByText(/^Diese Woche · Plan bis \w+ \d+(:\d\d)? Uhr · noch \d/).waitFor({ timeout: 10000 }).then(() => true, () => false));
 check("/ lands on Date planen", j.url() === `${BASE}/plan`);
 check("no second 'Date planen' button inside the card", (await j.locator("[data-next-step]").getByRole("link", { name: "Date planen" }).count()) === 0);
 await j.waitForTimeout(300);
@@ -85,12 +85,12 @@ await s.waitForTimeout(300);
 await s.screenshot({ path: `${SHOTS}m4-02-partner-turn.png` });
 
 // Swap
-await s.getByRole("button", { name: "Ich übernehme diese Runde" }).click();
+await s.getByRole("button", { name: "Ich übernehme diesmal" }).click();
 await s.getByRole("heading", { name: "Du bist dran!" }).waitFor({ timeout: 10000 });
 check("Sam can take over the round", true);
 await j.reload();
 check("…and Jonas now sees Sam's turn", (await heading(j)) === "Sam ist dran");
-await j.getByRole("button", { name: "Ich übernehme diese Runde" }).click();
+await j.getByRole("button", { name: "Ich übernehme diesmal" }).click();
 await j.getByRole("heading", { name: "Du bist dran!" }).waitFor({ timeout: 10000 });
 
 // Cron endpoint
@@ -108,7 +108,7 @@ await j.getByRole("button", { name: "+1 Woche" }).click();
 await j.getByText(`verstellt um ${Math.round((offsetBefore + 7 * 24 * 60) / 60)} Std`).waitFor({ timeout: 10000 });
 await j.goto(`${BASE}/`);
 check(`round 2 is Sam's (${await heading(j)})`, (await heading(j)) === "Sam ist dran");
-check("friendly note about the missed round", (await j.getByText("Letzte Runde ist ausgefallen – passiert!").count()) === 1);
+check("friendly note about the missed round", (await j.getByText("Letztes Mal ist ausgefallen – passiert!").count()) === 1);
 await j.goto(`${BASE}/dates`);
 await j.getByLabel("Runde 2: läuft").waitFor({ timeout: 10000 }).catch(() => {});
 if ((await j.getByLabel("Runde 2: läuft").count()) !== 1) console.log("DEBUG", (await j.locator("main").innerText()).slice(0, 400));
@@ -169,10 +169,10 @@ check("…and a different idea", after && after.idea_id !== before.idea_id);
 // Plan page is limited to the round ("Lieber selbst aussuchen" next to the proposal)
 await j.goto(`${BASE}/plan`);
 await j.getByRole("link", { name: "Lieber selbst aussuchen →" }).click();
-await j.getByText(/^Diese[r]? .+ · Vorschlag-Modus$/).waitFor({ timeout: 15000 });
+await j.getByText(/^Diese[r]? .+ · der Date-O-Mat schlägt vor$/).waitFor({ timeout: 15000 });
 check("plan page shows the round", true);
 await openTimes(j, BASE, "?self=1");
-check("plan page offers searching after the round", (await j.getByRole("link", { name: "Auch nach dem Rundenende suchen" }).count()) === 1);
+check("plan page offers searching after the round", (await j.getByRole("link", { name: "Auch danach suchen" }).count()) === 1);
 
 // Dark mode home
 const dark = await pageFor(sam.token, "dark");

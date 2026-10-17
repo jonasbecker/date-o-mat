@@ -175,7 +175,7 @@ export function StartSection({
       {!hideSuggestion && o.suggestion?.status === "ok" && <SuggestionCard suggestion={o.suggestion.suggestion} idea={o.suggestion.idea} />}
       {o.suggestion?.status === "no_slots" && (
         <p className="rounded-[20px] border-2 border-dashed border-line px-4 py-3 font-bold">
-          Diese Runde findet der Date-O-Mat keine gemeinsame Lücke mehr. Sucht unten auch nach dem Rundenende.
+          Bis zum Ende findet der Date-O-Mat keine gemeinsame Lücke mehr – sucht beim Planen auch danach.
         </p>
       )}
 
@@ -192,7 +192,7 @@ export function StartSection({
 
       {o.cycle?.status === "open" && o.previous?.status === "skipped" && (
         <p className="rounded-[18px] border-2 border-line bg-zitrone-soft px-3.5 py-2 text-sm font-bold text-tinte">
-          🌦️ <strong className="font-extrabold">Letzte Runde ist ausgefallen – passiert!</strong> Diese Runde holt ihr&apos;s nach.
+          🌦️ <strong className="font-extrabold">Letztes Mal ist ausgefallen – passiert!</strong> Diesmal holt ihr&apos;s nach.
         </p>
       )}
 

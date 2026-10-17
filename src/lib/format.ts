@@ -66,6 +66,12 @@ export function formatDeadline(date: Date): string {
   return inZone(date).toFormat("ccc, d. LLL · HH:mm");
 }
 
+/** "Do 20 Uhr" – a deadline within the week, short enough for one line. */
+export function shortDeadline(date: Date): string {
+  const d = inZone(date);
+  return `${d.toFormat("ccc").replace(".", "")} ${d.minute === 0 ? d.toFormat("H") : d.toFormat("H:mm")} Uhr`;
+}
+
 /** "noch 2 Tage", "noch 5 Std.", "noch < 1 Std.", "vorbei" */
 export function timeLeftLabel(now: Date, until: Date): string {
   const hours = (until.getTime() - now.getTime()) / 3_600_000;

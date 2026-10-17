@@ -409,7 +409,7 @@ export async function revealSurprises(coupleId: string, now: Date): Promise<void
     if (!organizer || !partner) continue;
     await sendToUser(
       partner.id,
-      { title: "🎁 Heute ist es soweit!", body: `${organizer.name} hat für heute geplant: ${date.title} · ${formatTimeRange(date.startsAt, date.endsAt)} Uhr`, url: "/", tag: "date" },
+      { title: "🎁 Heute ist es soweit!", body: `${organizer.name} hat für heute geplant: ${date.title} · ${formatTimeRange(date.startsAt, date.endsAt)} Uhr`, url: `/dates/${date.id}`, tag: "date" },
       "partner_activity",
     ).catch(() => 0);
   }

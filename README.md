@@ -39,6 +39,7 @@ gemeinsame Ideen-Wunschliste.
 | M25 | Idee antippen → „Date damit planen“ oder „Statt … machen“ (nach Rückfrage, Termin bleibt); ein 💚 beim Swipen landet gleich auf der Wunschliste | ✅ |
 | M26 | Ein Ablauf statt Reitern: der Start zeigt, was ansteht, darunter Idee → Zeit → fertig; Ideen, Dates und Einstellungen als Icons oben | ✅ |
 | M27 | Ohne Scrollen: jeder Bildschirm passt, man klickt sich durch (Zeiten blättern, Einstellungs-Themen, Historie in Seiten, Reiter) | ✅ |
+| M28 | Feinschliff: schneller Start (Zeiten erst bei Bedarf), Zeiten nach Datum, kompakte Rundenkarte, eine Ideen-Karte, einfachere Begriffe, gruppierte Einstellungen | ✅ |
 
 ## Tech-Stack
 
@@ -191,6 +192,21 @@ scripts/              Migration beim Build, Secret-Generator
   Was man nimmt, landet auf der Wunschliste und ist sofort gewählt.
 - **Wörter:** Kurz/Lang statt Klein/Groß, „Diese Woche“ statt „Runde 3“, „Plan bis …“ statt
   „Deadline“. Einstellungen: „Das Wichtigste“ oben, der Rest eingeklappt (M22).
+
+### Feinschliff in Kürze (M28)
+
+- **Schneller Start:** Der Start fragt Google nicht mehr. Die freien Zeiten lädt der Ablauf selbst
+  (`freeTimesAction` in `plan/actions.ts`), und zwar im Hintergrund, frisch beim Öffnen von
+  Schritt 2, wenn sie älter als eine Minute sind. Das Neuladen alle 15 Sekunden kostet keine
+  Google-Abfrage mehr.
+- **Zeiten:** zuerst der Top-Tipp, danach nach Datum (`orderSlots()` in `src/core/slots.ts`).
+- **Rundenkarte:** eine Zeile „Diese Woche · Plan bis Do 20 Uhr · noch 2 Tage“, ein einziges ⓘ.
+- **Eine Ideen-Karte** (`components/idea-card.tsx`) für Wunschliste und Planen, mit 💞 Match,
+  wer sie eingetragen hat und ⚠️ über Budget.
+- **Begriffe:** im Alltag „diesmal“ und „Plan bis“, „Runde“ nur noch in Einstellungen und Historie.
+- **Einstellungen:** „Für euch beide“ und „Nur für dich“. „Läuft alles?“ steht nur oben, wenn
+  etwas nicht stimmt, sonst ist es ein Link unten.
+- **Pushes** führen direkt zum Ziel (`/plan`, `/dates/…`), ohne Umleitung.
 
 ### Ohne Scrollen in Kürze (M27)
 

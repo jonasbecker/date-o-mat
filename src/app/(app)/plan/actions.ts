@@ -10,6 +10,13 @@ import { DATE_ERROR_MESSAGES } from "@/lib/date-errors";
 import { getDate, saveDate } from "@/server/dates";
 import { notifyPartner } from "@/server/notifications";
 import { getCoupleSettings } from "@/server/settings";
+import { formatShortDate, slotView, type SlotView } from "@/lib/format";
+import { searchSlots } from "@/server/availability";
+import { ensureCurrentCycle } from "@/server/cycles";
+import { freeForEvents, listSources, savedRefs, upcomingEvents } from "@/server/events";
+import { searchUntil } from "@/server/suggestions";
+import type { EventView } from "../events/event-list";
+import { eventView } from "../events/event-view";
 
 export type SaveDateState = { status: "idle" | "saved" | "error"; message?: string; savedAt?: number };
 
@@ -61,4 +68,40 @@ export async function saveDateAction(_prev: SaveDateState, formData: FormData): 
   if (saved) after(() => notifyPartner(ctx, data.dateId ? "rescheduled" : "planned", saved));
   refresh();
   return { status: "saved", savedAt: Date.now() };
+}
+
+export type FreeTimes =
+  | { status: "ok"; small: SlotView[]; large: SlotView[]; untilLabel: string; failedCalendars: number; events: EventView[] | null }
+  | { status: "not_connected" | "google_error" };
+
+/**
+ * The free times of both – loaded by the flow when it needs them (not on every
+ * view and refresh of the start page). With `events`: events where both are free.
+ */
+export async function freeTimesAction(input: { later?: boolean; events?: boolean }): Promise<FreeTimes> {
+  const ctx = await requireCouple();
+  const settings = await getCoupleSettings(ctx.coupleId);
+  const now = coupleNow(settings);
+  const cycle = await ensureCurrentCycle(ctx.coupleId, now);
+  // Normally only within the current round; "later" searches the whole horizon.
+  const until = cycle && !input.later ? searchUntil(cycle, now, settings.horizonDays) : undefined;
+  const search = await searchSlots(ctx, now, until);
+  if (search.status !== "ok") return { status: search.status };
+
+  let events: EventView[] | null = null;
+  if (input.events && (await listSources(ctx.coupleId)).length > 0) {
+    const [list, saved] = await Promise.all([upcomingEvents(ctx.coupleId, now, settings.horizonDays), savedRefs(ctx.coupleId)]);
+    const earliest = now.getTime() + 2 * 3_600_000; // same lead time as saving a date
+    const plannable = list.filter((e) => e.startsAt && !e.allDay && e.startsAt.getTime() > earliest);
+    const free = await freeForEvents(ctx, plannable);
+    events = plannable.filter((e) => free?.get(e.id) === true).map((e) => eventView(e, { free: true, saved: saved.has(e.dedupeKey), now }));
+  }
+  return {
+    status: "ok",
+    small: search.small.map(slotView),
+    large: search.large.map(slotView),
+    untilLabel: formatShortDate(search.until),
+    failedCalendars: search.failedCalendars,
+    events,
+  };
 }

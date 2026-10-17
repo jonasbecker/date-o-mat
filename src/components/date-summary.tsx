@@ -37,7 +37,7 @@ export function DateSummary({ date, me, showConfirm, hidden, today }: { date: Da
       )}
       <div className="mt-0.5 flex flex-wrap items-center justify-between gap-2">
         <Link href={`/dates/${date.id}`} className="text-sm font-extrabold underline">
-          {hidden ? "Details →" : "Details, Vorbereitung & Route →"}
+          Mehr zum Date →
         </Link>
         {today && (
           <Link href="/fragen" className="text-sm font-extrabold underline">

@@ -19,20 +19,54 @@ export function Topic({ id, title, hint, children }: { id: string; title?: strin
   );
 }
 
-/** The menu of topics. */
-export function TopicMenu({ tiles }: { tiles: TopicTile[] }) {
+/** The menu: what you set for both, what only for yourself; "Läuft alles?" only stands out when something is wrong. */
+export function TopicMenu({ shared, personal, status, extra }: { shared: TopicTile[]; personal: TopicTile[]; status: { ok: boolean; tile: TopicTile }; extra: TopicTile[] }) {
   return (
-    <nav aria-label="Themen" className="grid grid-cols-2 gap-2">
+    <nav aria-label="Themen" className="flex flex-col gap-3">
       <HashToTopic />
-      {tiles.map((tile) => (
-        <Link key={tile.id} href={tile.href ?? `/settings?t=${tile.id}`} className="press flex min-h-[64px] flex-col justify-center rounded-[18px] border-2 border-line bg-surface px-3 py-2">
-          <span className="font-display text-[15px] font-semibold leading-tight">
+      {!status.ok && <Tile tile={status.tile} warn />}
+      <TileGroup title="Für euch beide" tiles={shared} />
+      <TileGroup title="Nur für dich" tiles={personal} />
+      <p className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm font-extrabold">
+        {status.ok && (
+          <Link href={`/settings?t=${status.tile.id}`} className="underline">
+            ✅ Alles läuft
+          </Link>
+        )}
+        {extra.map((tile) => (
+          <Link key={tile.id} href={tile.href ?? `/settings?t=${tile.id}`} className="underline">
             {tile.emoji} {tile.title}
-          </span>
-          {tile.hint && <span className="truncate text-xs font-bold text-muted">{tile.hint}</span>}
-        </Link>
-      ))}
+          </Link>
+        ))}
+      </p>
     </nav>
+  );
+}
+
+function TileGroup({ title, tiles }: { title: string; tiles: TopicTile[] }) {
+  return (
+    <section className="flex flex-col gap-1.5" aria-label={title}>
+      <h2 className="text-[12px] font-extrabold uppercase tracking-wide text-muted">{title}</h2>
+      <div className="grid grid-cols-2 gap-2">
+        {tiles.map((tile) => (
+          <Tile key={tile.id} tile={tile} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Tile({ tile, warn = false }: { tile: TopicTile; warn?: boolean }) {
+  return (
+    <Link
+      href={tile.href ?? `/settings?t=${tile.id}`}
+      className={`press flex min-h-[58px] flex-col justify-center rounded-[18px] border-2 border-line px-3 py-2 ${warn ? "bg-zitrone-soft text-tinte" : "bg-surface"}`}
+    >
+      <span className="font-display text-[15px] font-semibold leading-tight">
+        {tile.emoji} {tile.title}
+      </span>
+      {tile.hint && <span className={`truncate text-xs font-bold ${warn ? "" : "text-muted"}`}>{tile.hint}</span>}
+    </Link>
   );
 }
 

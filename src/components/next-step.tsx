@@ -3,7 +3,7 @@ import Link from "next/link";
 import { confirmDateAction, swapTurnAction } from "@/app/(app)/actions";
 import { periodLabel, type NextStep } from "@/core/next-step";
 import type { UserColor } from "@/lib/domain";
-import { daysUntilLabel, formatCycleRange, formatDeadline, formatShortDate, formatTimeRange, genitive, timeLeftLabel } from "@/lib/format";
+import { daysUntilLabel, formatCycleRange, formatDeadline, formatShortDate, formatTimeRange, genitive, shortDeadline, timeLeftLabel } from "@/lib/format";
 import type { Cycle, DatePlan, User } from "@/server/db/schema";
 import { cn } from "@/lib/cn";
 import { buttonClass } from "./button";
@@ -15,6 +15,8 @@ import { CalendarIcon, ClockIcon, SparkleIcon } from "./icons";
 
 /** Steps that ask for an action – the others just tell you where things stand. */
 const ACTIONABLE = new Set<NextStep["kind"]>(["connect_calendar", "plan", "suggestion", "confirm", "review"]);
+/** Steps that still wait for a plan – the compact card names the deadline. */
+const WITH_DEADLINE = new Set<NextStep["kind"]>(["plan", "suggestion", "partner_turn"]);
 import { Info } from "./info";
 
 const PERSON_TONE: Record<UserColor, CardTone> = { mandarine: "mandarine", himmel: "himmel" };
@@ -52,7 +54,7 @@ function DateLine({ date, now }: { date: DatePlan; now: Date }) {
 function Deadline({ cycle, now }: { cycle: Cycle; now: Date }) {
   if (cycle.deadlineAt <= now) {
     return (
-      <p className="font-bold">Die Frist ist vorbei – bis {formatShortDate(new Date(cycle.endsAt.getTime() - 1))} geht aber noch was!</p>
+      <p className="font-bold">„Plan bis“ ist vorbei – bis {formatShortDate(new Date(cycle.endsAt.getTime() - 1))} geht aber noch was!</p>
     );
   }
   return (
@@ -113,14 +115,12 @@ export function NextStepCard({
       break;
     case "plan":
       title = "Du bist dran!";
-      body = (
+      body = !onPlanPage && (
         <>
           <Deadline cycle={cycle} now={now} />
-          {!onPlanPage && (
-            <p className="flex items-center gap-2 text-sm font-bold">
-              Du suchst Termin und Idee aus, {partner.name} sagt „Passt!“. <Info term="abwechselnd" />
-            </p>
-          )}
+          <p className="flex items-center gap-2 text-sm font-bold">
+            Du suchst Termin und Idee aus, {partner.name} sagt „Passt!“. <Info term="abwechselnd" />
+          </p>
         </>
       );
       actions = (
@@ -132,7 +132,7 @@ export function NextStepCard({
           )}
           <form action={swapTurnAction}>
             <button type="submit" className="text-sm font-extrabold underline">
-              Diese Runde an {partner.name} abgeben
+              Diesmal an {partner.name} abgeben
             </button>
           </form>
         </div>
@@ -142,9 +142,9 @@ export function NextStepCard({
       title = "Zeit für ein Date!";
       body = (
         <>
-          <Deadline cycle={cycle} now={now} />
+          {!onPlanPage && <Deadline cycle={cycle} now={now} />}
           <p className="flex items-center gap-2 font-bold">
-            Der Date-O-Mat hat einen Vorschlag für euch – gleich hier drunter. <Info term="vorschlag" />
+            Der Date-O-Mat hat einen Vorschlag für euch – gleich hier drunter. {!onPlanPage && <Info term="vorschlag" />}
           </p>
         </>
       );
@@ -155,7 +155,7 @@ export function NextStepCard({
         <>
           {!onPlanPage && <DateLine date={date} now={now} />}
           <p className="flex items-center gap-2 font-bold">
-            Passt dir das? <Info term="passt" />
+            Passt dir das? {!onPlanPage && <Info term="passt" />}
           </p>
         </>
       );
@@ -198,8 +198,8 @@ export function NextStepCard({
       title = `${partner.name} ist dran`;
       body = (
         <p className="flex flex-wrap items-center gap-2 font-bold">
-          {partner.name} plant diese Runde (bis {formatDeadline(cycle.deadlineAt)}).{onPlanPage ? " Du kannst auch einspringen." : " Du kannst schon Ideen sammeln – oder einspringen."}
-          <Info term="abwechselnd" />
+          {onPlanPage ? `${partner.name} plant diesmal – du kannst auch einspringen.` : `${partner.name} plant diesmal (bis ${formatDeadline(cycle.deadlineAt)}). Du kannst schon Ideen sammeln – oder einspringen.`}
+          {!onPlanPage && <Info term="abwechselnd" />}
         </p>
       );
       actions = (
@@ -211,17 +211,17 @@ export function NextStepCard({
           )}
           <form action={swapTurnAction}>
             <button type="submit" className={buttonClass("secondary", "sm")}>
-              Ich übernehme diese Runde
+              Ich übernehme diesmal
             </button>
           </form>
         </div>
       );
       break;
     case "round_done":
-      title = step.skipped ? "Diese Runde ist vorbei" : "Runde geschafft 💚";
+      title = step.skipped ? `${periodLabel(cycle.startsAt, cycle.endsAt)} ist vorbei` : "Geschafft 💚";
       body = (
         <p className="font-bold">
-          {step.skipped ? "Kein Date diesmal – passiert. " : ""}Die nächste Runde startet {formatShortDate(cycle.endsAt)}.
+          {step.skipped ? "Kein Date diesmal – passiert. " : ""}Weiter geht&apos;s am {formatShortDate(cycle.endsAt)}.
         </p>
       );
       break;
@@ -234,16 +234,32 @@ export function NextStepCard({
       size={onPlanPage ? "sm" : "lg"}
       className={cn("animate-pop-in relative flex flex-col overflow-hidden", onPlanPage ? "gap-2 text-sm" : "gap-3.5")}
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <Chip className="bg-bg">{periodLabel(cycle.startsAt, cycle.endsAt)}</Chip>
-        <Chip className="bg-bg">{formatCycleRange(cycle.startsAt, cycle.endsAt)}</Chip>
-      </div>
+      {onPlanPage ? (
+        // One line instead of chips, deadline and countdown – the start page has little room.
+        <p className="text-[13px] font-extrabold opacity-80">
+          {periodLabel(cycle.startsAt, cycle.endsAt)}
+          {WITH_DEADLINE.has(step.kind) && (cycle.deadlineAt > now ? ` · Plan bis ${shortDeadline(cycle.deadlineAt)} · ${timeLeftLabel(now, cycle.deadlineAt)}` : ` · Geht noch bis ${formatShortDate(new Date(cycle.endsAt.getTime() - 1))}`)}
+        </p>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          <Chip className="bg-bg">{periodLabel(cycle.startsAt, cycle.endsAt)}</Chip>
+          <Chip className="bg-bg">{formatCycleRange(cycle.startsAt, cycle.endsAt)}</Chip>
+        </div>
+      )}
       {!onPlanPage && (
         <p className="-mb-2 text-[13px] font-extrabold uppercase tracking-wide opacity-80">
           {ACTIONABLE.has(step.kind) ? "Dein nächster Schritt" : "Stand der Dinge"}
         </p>
       )}
-      <h2 className={onPlanPage ? "text-[24px] font-bold leading-[1.1]" : "text-[38px] font-bold leading-[1.05]"}>{title}</h2>
+      {onPlanPage ? (
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-[24px] font-bold leading-[1.1]">{title}</h2>
+          {/* The one ⓘ on the start page: what "Plan bis" means. */}
+          {WITH_DEADLINE.has(step.kind) && <Info term="frist" />}
+        </div>
+      ) : (
+        <h2 className="text-[38px] font-bold leading-[1.05]">{title}</h2>
+      )}
       {body}
       {actions}
       {!onPlanPage && <CycleStepper status={cycle.status === "skipped" ? "open" : cycle.status} />}

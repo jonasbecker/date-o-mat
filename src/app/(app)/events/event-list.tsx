@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
 import { FilterButton, useIdeaFilter } from "@/components/idea-filter";
-import { Info } from "@/components/info";
 import { matchesIdeaFilter } from "@/core/filters";
 import { cn } from "@/lib/cn";
 import { planEventAction, saveEventIdeaAction } from "./actions";
@@ -141,7 +140,7 @@ export function EventCard({ event, onPlanned }: { event: EventView; onPlanned?: 
       {event.summary && <p className="line-clamp-2 text-sm font-semibold text-muted">{event.summary}</p>}
       {event.free === true && (
         <p className="flex items-center gap-2 self-start rounded-full bg-minze-soft py-0.5 pl-2.5 pr-1 text-[13px] font-extrabold text-tinte">
-          ✓ Ihr habt beide Zeit <Info term="frei" className="size-[18px] text-[11px]" />
+          ✓ Ihr habt beide Zeit
         </p>
       )}
       {event.free === false && <p className="text-[13px] font-bold text-muted">Da ist mindestens einer von euch schon verplant.</p>}

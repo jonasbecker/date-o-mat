@@ -5,14 +5,12 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { FilteredEmpty, FilterButton, useIdeaFilter } from "@/components/idea-filter";
 import { matchesIdeaFilter } from "@/core/filters";
-import { Avatar } from "@/components/avatar";
 import { Button, buttonClass } from "@/components/button";
 import { SwapConfirm, type NextDateInfo } from "@/components/swap-confirm";
 import { IdeaForm, type IdeaFormDefaults } from "@/components/idea-form";
 import { Sheet, type SheetHandle } from "@/components/sheet";
-import { SizeChip } from "@/components/size-chip";
+import { IdeaCard } from "@/components/idea-card";
 import type { UserColor } from "@/lib/domain";
-import { displayHost, formatCost } from "@/lib/idea-input";
 import { archiveIdeaAction, updateIdeaAction } from "./actions";
 
 export type BoardPerson = { name: string; color: UserColor | null };
@@ -62,7 +60,7 @@ export function IdeaBoard({
         <ul className="flex flex-col gap-3.5">
           {visible.map((idea) => (
             <li key={idea.id} className="animate-pop-in">
-              <IdeaCard idea={idea} creator={idea.createdById ? people[idea.createdById] : undefined} isNext={next?.ideaId === idea.id} onOpen={() => show(idea)} />
+              <IdeaCard idea={{ ...idea, creator: idea.createdById ? people[idea.createdById] : null, isNext: next?.ideaId === idea.id }} onOpen={() => show(idea)} />
             </li>
           ))}
         </ul>
@@ -151,43 +149,6 @@ function footnote(idea: BoardIdea, people: Record<string, BoardPerson>): string 
   const editor = idea.updatedById ? people[idea.updatedById]?.name : undefined;
   if (!creator) return undefined;
   return editor && editor !== creator ? `Eingetragen von ${creator} · zuletzt geändert von ${editor}` : `Eingetragen von ${creator}`;
-}
-
-function IdeaCard({ idea, creator, isNext, onOpen }: { idea: BoardIdea; creator?: BoardPerson; isNext: boolean; onOpen: () => void }) {
-  const cost = formatCost(idea.costEur);
-  return (
-    <div className="sticker relative flex flex-col gap-2 rounded-[20px] bg-surface p-3.5">
-      <div className="flex items-start justify-between gap-3">
-        {/* Stretched button: the whole card opens the menu, the link stays clickable. */}
-        <button
-          type="button"
-          onClick={onOpen}
-          className="text-left font-display text-lg font-semibold leading-snug after:absolute after:inset-0 after:rounded-[20px] after:content-['']"
-        >
-          {idea.title}
-        </button>
-        {creator && <Avatar person={creator} size={28} className="mt-0.5" />}
-      </div>
-      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] font-extrabold text-muted">
-        <SizeChip size={idea.size} />
-        {idea.matched && <span>💞 Match</span>}
-        {isNext && <span>📅 Nächstes Date</span>}
-        {cost && <span>{cost}</span>}
-        {idea.location && <span>📍 {idea.location}</span>}
-        {idea.url && (
-          <a
-            href={idea.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="relative z-10 underline decoration-2 underline-offset-2"
-          >
-            🔗 {displayHost(idea.url)}
-          </a>
-        )}
-      </div>
-      {idea.note && <p className="line-clamp-2 text-sm font-semibold text-muted">{idea.note}</p>}
-    </div>
-  );
 }
 
 function EmptyState() {

@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { describe, expect, it } from "vitest";
-import { agoLabel, daysUntilLabel, genitive, dayHeading, formatClock, formatCycleRange, formatDeadline, timeLeftLabel } from "./format";
+import { agoLabel, daysUntilLabel, genitive, dayHeading, formatClock, formatCycleRange, formatDeadline, shortDeadline, timeLeftLabel } from "./format";
 
 const at = (local: string) => DateTime.fromISO(local, { zone: "Europe/Berlin" }).toJSDate();
 
@@ -53,4 +53,11 @@ describe("daysUntilLabel", () => {
 
 describe("genitive", () => {
   it.each([["Sam", "Sams"], ["Jonas", "Jonas'"], ["Max", "Max'"], ["Fritz", "Fritz'"], ["Lea", "Leas"]])("%s → %s", (name, g) => expect(genitive(name)).toBe(g));
+});
+
+describe("shortDeadline", () => {
+  it("weekday and hour, minutes only when needed", () => {
+    expect(shortDeadline(new Date("2026-10-15T18:00:00Z"))).toBe("Do 20 Uhr");
+    expect(shortDeadline(new Date("2026-10-15T18:30:00Z"))).toBe("Do 20:30 Uhr");
+  });
 });

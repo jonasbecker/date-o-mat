@@ -169,7 +169,7 @@ check("switch is stored", pref?.enabled === false);
 await s.screenshot({ path: `${SHOTS}m6-01-settings.png` });
 const before = titles("sam-phone").length;
 await j.goto(`${BASE}/`);
-await j.getByRole("link", { name: "Details, Vorbereitung & Route →" }).click();
+await j.getByRole("link", { name: "Mehr zum Date →" }).click();
 await j.getByRole("button", { name: "Absagen" }).click();
 await j.getByRole("button", { name: "Ja, absagen" }).click();
 await j.getByRole("heading", { name: "Was wollt ihr machen?" }).waitFor({ timeout: 10000 });

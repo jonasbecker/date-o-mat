@@ -96,6 +96,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M25 | Idee antippen: planen oder das nächste Date tauschen (Termin bleibt); ein 💚 beim Swipen speichert sofort | ✅ |
 | M26 | Ein Ablauf: Start mit dem, was ansteht, darunter Idee → Zeit → fertig; keine Leiste unten, Icons oben | ✅ |
 | M27 | Ohne Scrollen: Bildschirme passen, Durchklicken statt Scrollen; nur Wunschliste und Events scrollen | ✅ |
+| M28 | Feinschliff: Zeiten erst bei Bedarf laden, Reihenfolge, Rundenkarte, eine Ideen-Karte, Begriffe, Einstellungs-Gruppen, Push-Ziele | ✅ |
 
 Abweichungen in V2:
 
