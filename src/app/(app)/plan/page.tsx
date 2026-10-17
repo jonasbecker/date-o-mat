@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { connection } from "next/server";
+import { after, connection } from "next/server";
 import { Suspense } from "react";
 import { ConnectCalendarCard } from "@/components/connect-calendar";
 import { formatShortDate, formatTimeRange } from "@/lib/format";
@@ -17,10 +17,13 @@ import { PlanFlow, type IdeaOption, type RescheduleInfo } from "./plan-form";
 import { AppHeader } from "@/components/app-header";
 import { loadOverview, StartSection } from "../overview";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { buttonClass } from "@/components/button";
-import { SwapIcon } from "@/components/icons";
-import { SwipeTeaser } from "@/components/swipe-teaser";
+import { SwipeDeck } from "../ideas/entdecken/swipe-deck";
+import { DECK_REFILL_BELOW } from "@/core/deck";
+import { refillDeck } from "@/server/deck";
 import type { NextDateInfo } from "@/components/swap-confirm";
+
+// "Neue Ideen holen" in the swipe deck waits for Claude (about half a minute).
+export const maxDuration = 90;
 
 export default function PlanPage({ searchParams }: PageProps<"/plan">) {
   return (
@@ -36,9 +39,10 @@ export default function PlanPage({ searchParams }: PageProps<"/plan">) {
 }
 
 /**
- * The start page and the one flow of the app: on top what needs you (the next
- * date, "Passt!", what to rate); below it "Was wollt ihr machen?" → "Wann?" → done.
- * With the round's date planned, "Lieber was anderes?" swaps its idea instead.
+ * The start page and the one flow of the app. The start: the step card (what's
+ * up, the one thing to do) and the swipe deck. "Date planen" (?pick=1) opens the
+ * flow: "Was wollt ihr machen?" → "Wann?" → done. With the round's date planned,
+ * "Lieber was anderes?" swaps its idea instead.
  */
 async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["searchParams"] }) {
   const ctx = await requireCouple();
@@ -47,14 +51,8 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
   const now = coupleNow(settings);
   const cycle = await ensureCurrentCycle(ctx.coupleId, now);
   const [params, overview] = await Promise.all([searchParams, loadOverview(ctx, settings, now)]);
-  // "Lieber selbst aussuchen" in suggestion mode: the flow instead of the proposal.
+  // "Selbst aussuchen" in suggestion mode is the flow too.
   const self = params.self === "1";
-  const top = (afterDate?: React.ReactNode, teaser?: React.ReactNode) => (
-    <>
-      <AutoRefresh />
-      <StartSection o={overview} ctx={ctx} now={now} afterDate={afterDate} teaser={teaser} hideSuggestion={self} />
-    </>
-  );
   const later = params.later === "1";
   const rescheduleId = typeof params.reschedule === "string" && /^[0-9a-f-]{36}$/.test(params.reschedule) ? params.reschedule : undefined;
   const existing = rescheduleId ? await getDate(ctx.coupleId, rescheduleId) : undefined;
@@ -75,7 +73,27 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
     size: roundDate.size,
   };
   // Someone else's surprise is theirs to change.
-  const swappable = roundDate && overview.shownDate === roundDate;
+  const swappable = Boolean(roundDate && overview.shownDate === roundDate);
+
+  // "Date planen", a match, a special day, "Auch danach suchen": the flow. Otherwise the start.
+  const flow = Boolean(reschedule) || params.pick === "1" || self || later || typeof params.idea === "string" || params.size === "large";
+  if (!flow || (roundDate && !swappable)) {
+    const deck = overview.deck;
+    // Running low: the next batch is made in the background, AutoRefresh brings it in.
+    if (!deck.generating && deck.cards.length < DECK_REFILL_BELOW) after(() => refillDeck(ctx.coupleId, now));
+    return (
+      <>
+        <AutoRefresh intervalMs={deck.generating ? 6_000 : undefined} />
+        <StartSection o={overview} ctx={ctx} now={now} swappable={swappable} />
+        <SwipeDeck {...deck} partnerName={ctx.partner.name} compact />
+      </>
+    );
+  }
+  const back = (
+    <Link href="/plan" className="self-start text-sm font-extrabold text-muted underline">
+      {reschedule || roundDate ? "← Doch nicht" : "← Zurück"}
+    </Link>
+  );
 
   const [budget, doneDates] = await Promise.all([budgetState(ctx.coupleId, now), countDoneDates(ctx.coupleId)]);
   // The same cards as on the wishlist; longest waiting first – the order the suggestion mode uses.
@@ -96,50 +114,8 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
       creator: idea.createdById ? (people[idea.createdById] ?? null) : null,
     }));
 
-  if (roundDate) {
-    if (!swappable || !nextInfo) return top();
-    if (params.pick !== "1") {
-      return top(
-        <Link href="/plan?pick=1" className={buttonClass("secondary", "md", "w-full")}>
-          <SwapIcon width={20} height={20} /> Lieber was anderes machen?
-        </Link>,
-        // The date stands – collecting ideas for the next one is what is left to do.
-        <SwipeTeaser deck={overview.deck} />,
-      );
-    }
-    return (
-      <PlanFlow
-        mode={{ kind: "swap", next: { ...nextInfo, ideaId: roundDate.ideaId } }}
-        ideas={ideas}
-        partnerName={ctx.partner.name}
-        aiEnabled={env().ai}
-        intro={
-          <Link href="/plan" className="self-start text-sm font-extrabold text-muted underline">
-            ← Doch nicht
-          </Link>
-        }
-      />
-    );
-  }
-
-
-  // The other one plans this time: swiping is the useful thing to do; planning yourself is one tap away.
-  if (!reschedule && !self && overview.step?.kind === "partner_turn") {
-    return top(
-      <Link href="/plan?self=1" className="self-center text-sm font-extrabold underline">
-        Lieber selbst planen →
-      </Link>,
-      <SwipeTeaser deck={overview.deck} big />,
-    );
-  }
-
-  // Suggestion mode: the proposal is the start; planning yourself is one tap away.
-  if (!reschedule && !self && overview.suggestion?.status === "ok") {
-    return top(
-      <Link href="/plan?self=1" className="self-center text-sm font-extrabold underline">
-        Lieber selbst aussuchen →
-      </Link>,
-    );
+  if (roundDate && nextInfo) {
+    return <PlanFlow mode={{ kind: "swap", next: { ...nextInfo, ideaId: roundDate.ideaId } }} ideas={ideas} partnerName={ctx.partner.name} aiEnabled={env().ai} intro={back} />;
   }
   // Whose turn it is stands in the step card; only the suggestion mode says so here.
   const roundInfo = cycle && cycle.mode === "suggestion" && <p className="text-sm font-extrabold text-muted">{periodLabel(cycle.startsAt, cycle.endsAt)} · der Date-O-Mat schlägt vor</p>;
@@ -156,7 +132,7 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
   if (overview.calendars.some((p) => p.state !== "connected")) {
     return (
       <>
-        {top()}
+        {back}
         <ConnectCalendarCard people={overview.calendars} next="/plan" />
       </>
     );
@@ -171,16 +147,10 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
     <PlanFlow
       mode={reschedule ? { kind: "reschedule", date: reschedule } : { kind: "new" }}
       intro={
-        reschedule ? (
-          <Link href="/plan" className="self-start text-sm font-extrabold text-muted underline">
-            ← Doch nicht
-          </Link>
-        ) : (
-          <>
-            {top()}
-            {roundInfo}
-          </>
-        )
+        <>
+          {back}
+          {!reschedule && roundInfo}
+        </>
       }
       budget={budget && !reschedule ? { left: budget.left, pot: budget.pot } : null}
       budgetLine={budgetLine || undefined}

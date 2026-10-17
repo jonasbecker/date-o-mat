@@ -31,7 +31,7 @@ import {
   type DeckCardView,
   type SwipeOutcome,
 } from "@/core/deck";
-import { APP_TIMEZONE, type IdeaSize, type SwipeVerdict } from "@/lib/domain";
+import { APP_TIMEZONE, type SwipeVerdict } from "@/lib/domain";
 import type { CoupleContext } from "@/server/auth/dal";
 import { aiRequestsToday, anthropic, recordAiUsage, reserveAiRequest } from "@/server/anthropic";
 import { budgetState } from "@/server/budget";
@@ -132,13 +132,6 @@ async function openCardsFor(ctx: CoupleContext, now: Date): Promise<{ cards: Dec
     : [];
   const partner = new Map(partnerRows.map((r) => [r.cardId, r.verdict]));
   return { cards: orderDeck(cards, partner), partner };
-}
-
-/** For the start page: how many cards wait for this person, and the one on top. */
-export async function deckTeaser(ctx: CoupleContext, now: Date): Promise<{ count: number; top: { title: string; emoji: string | null; size: IdeaSize } | null }> {
-  const { cards } = await openCardsFor(ctx, now);
-  const top = cards[0];
-  return { count: cards.length, top: top ? { title: top.title, emoji: top.emoji, size: top.size } : null };
 }
 
 export type DeckState = {
@@ -346,7 +339,7 @@ export async function notifySuperLike(ctx: CoupleContext, title: string): Promis
   try {
     await sendToUser(
       ctx.partner.id,
-      { title: `⭐ ${ctx.user.name} findet etwas super`, body: `„${title}“ – wischst du auch nach rechts?`, url: "/ideas/entdecken", tag: "deck" },
+      { title: `⭐ ${ctx.user.name} findet etwas super`, body: `„${title}“ – wischst du auch nach rechts?`, url: "/plan", tag: "deck" },
       "deck_nudge",
     );
   } catch (error) {
@@ -376,7 +369,7 @@ export async function sendDeckNudges(coupleId: string, now: Date): Promise<void>
     if (!claimed) continue;
     await sendToUser(
       me.id,
-      { title: `${partner.name} hat ${waiting} Ideen geliked 👀`, body: "Wisch mal durch – vielleicht habt ihr ein Match.", url: "/ideas/entdecken", tag: "deck" },
+      { title: `${partner.name} hat ${waiting} Ideen geliked 👀`, body: "Wisch mal durch – vielleicht habt ihr ein Match.", url: "/plan", tag: "deck" },
       "deck_nudge",
     );
   }

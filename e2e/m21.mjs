@@ -125,8 +125,12 @@ check(`surprise saved (${date.title}, ${date.surprise_hint})`, date.surprise ===
 const event = [...googleEvents["token-jonas"].values()].at(-1);
 check(`Google event keeps the secret (${event?.summary})`, event?.summary === "💞 Date: 🎁 Überraschung von Jonas" && !event.location && !JSON.stringify(event).includes("Sushi"));
 
-// 3) Jonas sees everything right on the start: the checklist with a suggestion and the route
+// 3) The start shows the date in the step card; "Details ›" has the checklist with a suggestion and the route
 await j.reload();
+const jonasBox = j.locator("[data-next-step] [data-date-card]").filter({ visible: true });
+await jonasBox.waitFor({ timeout: 15000 });
+check("start: Jonas sees the real title in the box", (await jonasBox.innerText()).includes("Sushi-Abend"));
+await j.getByRole("link", { name: "Details ›" }).click();
 await j.getByText("Euer nächstes Date", { exact: true }).waitFor({ timeout: 15000 });
 check("Jonas sees the real title and the surprise note", (await j.getByRole("heading", { name: "Sushi-Abend" }).isVisible()) && (await j.getByText(/🎁 Überraschung: Sam sieht bis zum Tag selbst nur Zeit und deinen Hinweis/).isVisible()));
 const route = await j.getByRole("link", { name: "Route (ÖPNV)" }).getAttribute("href");
@@ -142,11 +146,16 @@ await j.waitForTimeout(800);
 const { rows: tasks } = await db.query("SELECT title, done_at IS NOT NULL AS done FROM date_tasks ORDER BY created_at");
 check(`checklist stored (${JSON.stringify(tasks)})`, tasks.length === 2 && tasks[0].title === "Tisch reservieren" && !tasks[0].done && tasks[1].done);
 await j.screenshot({ path: `${OUT}m21-02-jonas.png`, fullPage: true });
-check("the date with its checklist fits the start screen", await fitsScreen(j));
+check("the date with its checklist fits the screen", await fitsScreen(j));
 
 // 4) Sam sees only time and hint – no title, place, checklist; budget page keeps the secret too
 const s = await pageFor(sam.token);
 await s.goto(`${BASE}/`);
+const samBox = s.locator("[data-next-step] [data-date-card]").filter({ visible: true });
+await samBox.waitFor({ timeout: 15000 });
+const samStart = await samBox.innerText();
+check("Sam's start: surprise + hint, nothing given away", samStart.includes("Überraschung von Jonas") && samStart.includes("Hinweis: Hunger mitbringen!") && !/Sushi|Belgisches|Route/.test(samStart));
+await s.getByRole("link", { name: "Details ›" }).click();
 await s.getByText("Euer nächstes Date", { exact: true }).waitFor({ timeout: 15000 });
 const samText = await s.locator("main").innerText();
 check("Sam: surprise title + hint", samText.includes("🎁 Überraschung von Jonas") && samText.includes("Hinweis: Hunger mitbringen!") && samText.includes("erfährst du am Tag selbst"));
@@ -190,9 +199,12 @@ check("revealed in the database", revealed.surprise_revealed_at !== null);
 const event2 = [...googleEvents["token-jonas"].values()].at(-1);
 check(`Google event now says what it is (${event2?.summary})`, event2?.summary === "💞 Date: Sushi-Abend" && event2.location === "Belgisches Viertel");
 await s.goto(`${BASE}/`);
+await s.locator("[data-next-step] [data-date-card]").filter({ visible: true }).getByText("„Sushi-Abend“").waitFor({ timeout: 15000 });
+check("on the day: the start links the conversation cards", (await s.getByRole("link", { name: "💬 Gesprächskarten" }).getAttribute("href")) === "/fragen");
+await s.getByRole("link", { name: "Details ›" }).click();
 await s.getByText("Euer nächstes Date", { exact: true }).waitFor({ timeout: 15000 });
 check("Sam sees the real date now", await s.getByRole("heading", { name: "Sushi-Abend" }).isVisible());
-check("on the day: conversation cards right on the start", await s.getByRole("button", { name: "💬 Gesprächskarte ziehen" }).isVisible());
+check("on the day: conversation cards with the date", await s.getByRole("button", { name: "💬 Gesprächskarte ziehen" }).isVisible());
 await s.getByRole("button", { name: "💬 Gesprächskarte ziehen" }).click();
 const question = await s.locator("p[aria-live=polite]").innerText();
 await s.getByRole("button", { name: "Nächste Karte →" }).click();
@@ -232,7 +244,7 @@ check(`idea swapped, same time (${swapped.title})`, swapped.title === "Kino: Dun
 // Back before the day, so it is Jonas' secret again: the Google event is updated but still hides it.
 const event3 = [...googleEvents["token-jonas"].values()].at(-1);
 check(`Google event updated, surprise kept (${event3?.summary})`, event3?.summary === "💞 Date: 🎁 Überraschung von Jonas" && !JSON.stringify(event3).includes("Sushi") && !JSON.stringify(event3).includes("Dune"));
-await j.getByRole("heading", { name: "Kino: Dune" }).waitFor({ timeout: 10000 });
+await j.locator("[data-next-step] [data-date-card]").filter({ visible: true }).getByText("„Kino: Dune“").waitFor({ timeout: 10000 });
 await j.goto(`${BASE}/ideas`);
 await j.getByRole("button", { name: "Kino: Dune" }).click();
 await menu.getByText("📅 Das ist euer nächstes Date", { exact: false }).waitFor({ timeout: 10000 });

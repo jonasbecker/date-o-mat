@@ -99,6 +99,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M28 | Feinschliff: Zeiten erst bei Bedarf laden, Reihenfolge, Rundenkarte, eine Ideen-Karte, Begriffe, Einstellungs-Gruppen, Push-Ziele | ✅ |
 | M29 | Design A: diszipliniertes Sticker-Design, Farbrollen, Icons, Maskottchen, Fotoraster, Daumenzone | ✅ |
 | M30 | Ideen-Aufbau: eine Wunschliste, Swipen auf dem Start wenn nichts zu planen ist, „Nächstes Mal?“, „Was läuft“ im Planen | ✅ |
+| M31 | Start = Kasten + Swipe-Karte; „Date planen“ im Kasten öffnet die Wunschliste als eigenen Schritt; 💡 ohne Reiter | ✅ |
 
 Abweichungen in V2:
 
@@ -132,6 +133,9 @@ Abweichungen in V2:
 14. Seit M27 scrollt nur, was eine Liste ist (Wunschliste, Events, Sheets, lange Einstellungen).
     Passt ein Bildschirm auf einem sehr kleinen Handy nicht, scrollt er ausnahmsweise doch, statt
     Inhalt abzuschneiden.
+15. Seit M31 ist der Start nicht mehr Schritt 1 des Planens: Er zeigt einen Kasten und die
+    Swipe-Karte, „Date planen“ öffnet die Wunschliste. Checkliste, Zeit ändern und Absagen liegen
+    unter „Details“ (die Seite des Dates), die Gesprächskarten am Tag als Link im Kasten.
 
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 

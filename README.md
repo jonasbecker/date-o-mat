@@ -42,6 +42,7 @@ gemeinsame Ideen-Wunschliste.
 | M28 | Feinschliff: schneller Start (Zeiten erst bei Bedarf), Zeiten nach Datum, kompakte Rundenkarte, eine Ideen-Karte, einfachere Begriffe, gruppierte Einstellungen | ✅ |
 | M29 | Design (Richtung A): Schatten nur für Aktionen, Farbrollen, Schritt-Punkte, Icons, Maskottchen, Fotoraster, ruhige Kopfzeile, Daumenzone | ✅ |
 | M30 | Eine Wunschliste, wo sie passt: Schritt 1 = Wunschliste, „Solange swipen?“ auf dem Start, „Nächstes Mal?“ nach dem Bewerten, 💡 mit zwei Reitern | ✅ |
+| M31 | Start = ein Kasten + Swipen: im Kasten „Date planen“, „Passt!“, der Vorschlag oder das Date; darunter die Swipe-Karte; „Date planen“ führt zur Wunschliste | ✅ |
 
 ## Tech-Stack
 
@@ -194,6 +195,18 @@ scripts/              Migration beim Build, Secret-Generator
   Was man nimmt, landet auf der Wunschliste und ist sofort gewählt.
 - **Wörter:** Kurz/Lang statt Klein/Groß, „Diese Woche“ statt „Runde 3“, „Plan bis …“ statt
   „Deadline“. Einstellungen: „Das Wichtigste“ oben, der Rest eingeklappt (M22).
+
+### Start in Kürze (M31)
+
+- **Ein Kasten oben:** Er sagt, wer dran ist, und hat genau das drin, was zu tun ist – „Date planen“,
+  „Passt! 💚“, „Jetzt bewerten“, den Vorschlag (Vorschlag-Modus) oder das nächste Date mit Ort,
+  Route, „Details ›“ (Checkliste, Zeit ändern, Absagen) und „Lieber was anderes?“.
+- **Darunter swipen:** Die Swipe-Karte liegt direkt auf dem Start (`SwipeDeck compact`) – 💚 legt
+  die Idee auf die Wunschliste, beide 💚 = Match. „x Karten ›“ öffnet den ganzen Stapel mit Filter
+  und „Vielleicht“. Werden die Karten knapp, mischt der Start im Hintergrund neue.
+- **Durchklicken:** „Date planen“ (`/plan?pick=1`) zeigt die Wunschliste als eigenen Schritt mit
+  „← Zurück“, danach die Zeit. Unten nur noch „Zufall“ und „Was anderes“.
+- **💡** ist die Wunschliste zum Sammeln und Bearbeiten, ohne Reiter.
 
 ### Ideen in Kürze (M30)
 

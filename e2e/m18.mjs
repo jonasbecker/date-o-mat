@@ -102,7 +102,7 @@ check("invalid budget is rejected", await j.getByRole("alert").filter({ hasText:
 //    The start page stays quiet while the budget is fine; the bar shows next to the times.
 await j.goto(`${BASE}/`);
 await j.waitForURL(`${BASE}/plan`, { timeout: 15000 });
-await j.getByRole("heading", { name: "Was wollt ihr machen?" }).waitFor({ timeout: 15000 });
+await j.locator("[data-next-step]").filter({ visible: true }).first().waitFor({ timeout: 15000 });
 check("start: no budget bar while it is fine", (await j.getByRole("link", { name: new RegExp(`${monthName}: \\d+ von 80 €`) }).count()) === 0);
 await openTimes(j, BASE);
 const bar = j.getByRole("link", { name: new RegExp(`${monthName}: 50 von 80 €`) });
@@ -145,7 +145,7 @@ check("new month starts at 0, pot shows 15 €", (await j.locator("main").innerT
 // 7) Planning: an idea over budget is marked; pay from the pot
 await db.query("UPDATE couple_settings SET monthly_budget_eur = 30 WHERE couple_id = $1", [couple.id]);
 // A new month, a new round – Sam's turn: Jonas plans anyway ("Lieber selbst planen").
-await j.goto(`${BASE}/plan?self=1`);
+await j.goto(`${BASE}/plan?pick=1`);
 await j.getByRole("list", { name: "Eure Wunschliste" }).waitFor({ timeout: 20000 });
 await j.waitForTimeout(800);
 check("idea over budget is marked", await j.getByText("⚠️ über Budget").first().isVisible());

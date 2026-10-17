@@ -111,7 +111,7 @@ await j.screenshot({ path: `${OUT}m15-01-all-fine.png`, fullPage: true });
 
 // 3) Google revokes Jonas' grant: the next calendar access notices it → push to both, once
 await db.query("UPDATE google_connections SET access_token_expires_at = now() - interval '1 hour' WHERE user_id = $1", [jonas.id]);
-await j.goto(`${BASE}/plan`);
+await j.goto(`${BASE}/plan?pick=1`); // the free times (step 1 loads them) ask Google
 await j.waitForTimeout(1500);
 const { rows: [conn] } = await db.query("SELECT status FROM google_connections WHERE user_id = $1", [jonas.id]);
 check(`connection flagged (${conn.status})`, conn.status === "needs_reauth");
@@ -121,7 +121,7 @@ const toSam = inbox.find((m) => m.device === "sam");
 check(`Jonas gets "${toJonas?.title}" → ${toJonas?.url}`, toJonas?.title === "Kalender getrennt 🔌" && toJonas.url === "/settings?t=kalender");
 check(`Sam gets "${toSam?.title}"`, toSam?.title === "Jonas' Kalender ist getrennt 🔌" && toSam.body.includes("Sag Jonas Bescheid"));
 const refreshCalls = googleRequests.filter((r) => r.url === "/token").length;
-await j.goto(`${BASE}/plan`);
+await j.goto(`${BASE}/plan?pick=1`); // the free times (step 1 loads them) ask Google
 await fetch(`${BASE}/api/cron/tick`, CRON);
 await j.waitForTimeout(800);
 check(`no second push (${inbox.length} total), no new refresh attempt (${refreshCalls} → ${googleRequests.filter((r) => r.url === "/token").length})`, inbox.length === 2 && googleRequests.filter((r) => r.url === "/token").length === refreshCalls);
@@ -138,7 +138,7 @@ check("Jonas gets a link to reconnect", (await status(j).getByRole("link", { nam
 // 5) Push preference "Wichtiges" off → no alert for that person
 await db.query("UPDATE google_connections SET status = 'ok' WHERE user_id = $1", [jonas.id]);
 await db.query("INSERT INTO notification_prefs (user_id, type, enabled) VALUES ($1, 'system', false)", [sam.id]);
-await j.goto(`${BASE}/plan`);
+await j.goto(`${BASE}/plan?pick=1`); // the free times (step 1 loads them) ask Google
 for (let i = 0; i < 12 && inbox.length < 3; i++) await new Promise((r) => setTimeout(r, 250));
 await new Promise((r) => setTimeout(r, 500));
 check(`after reconnect + new revoke: only Jonas is told (${inbox.map((m) => m.device).join(",")})`, inbox.length === 3 && inbox[2].device === "jonas");

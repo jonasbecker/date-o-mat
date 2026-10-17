@@ -3,7 +3,7 @@ import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import pg from "pg";
 import { chromium } from "playwright";
-import { backAtStart, customIdea, fitsScreen, pickIdea } from "./flow.mjs";
+import { backAtStart, customIdea, fitsScreen, openFlow, pickIdea } from "./flow.mjs";
 import { startMock } from "./google-mock.mjs";
 import { tuesdayMorningOffset } from "./clock.mjs";
 import { resetDb } from "./db.mjs";
@@ -40,6 +40,10 @@ async function makeUser(name, email, color, accessToken, createdAt) {
 const jonas = await makeUser("Jonas", "jonas@example.com", "mandarine", "token-jonas", "2026-01-01");
 const sam = await makeUser("Sam", "partnerin@example.com", "himmel", "token-sam", "2026-01-02");
 await db.query("INSERT INTO couple_settings (couple_id, first_planner_id, dev_clock_offset_minutes) VALUES ($1, $2, $3)", [couple.id, jonas.id, tuesdayMorningOffset()]);
+// A few cards for the swipe deck on the start page.
+for (const title of ["Minigolf im Rheinpark", "Kino unter Sternen", "Brettspiel-Café"]) {
+  await db.query("INSERT INTO deck_cards (couple_id, kind, title, size, dedupe_key, batch) VALUES ($1, 'idea', $2, 'small', $2, 1)", [couple.id, title]);
+}
 for (const [title, size, loc] of [["Picknick im Stadtwald", "small", "Stadtwald"], ["Tagesausflug nach Bonn", "large", "Bonn"], ["Kochabend: Ramen selbst machen", "small", null], ["Kletterhalle ausprobieren", "small", "Ehrenfeld"]]) {
   await db.query("INSERT INTO ideas (couple_id, title, size, location, created_by_id) VALUES ($1, $2, $3, $4, $5)", [couple.id, title, size, loc, jonas.id]);
 }
@@ -68,7 +72,18 @@ await heading(j);
 check(`next step: "${await heading(j)}"`, (await heading(j)) === "Du bist dran!");
 check("period instead of round number", await j.locator("[data-next-step]").getByText(/^Diese Woche · Plan bis/).isVisible());
 check("home is focused: no separate surprise / push cards", (await j.getByRole("button", { name: /Überrasch uns/ }).count()) === 0);
+check("'Date planen' sits in the step card", await j.locator("[data-next-step]").filter({ visible: true }).getByRole("link", { name: "Date planen", exact: true }).isVisible());
+const startDeck = j.locator('[data-swipe-deck="start"]');
+await startDeck.locator('[aria-roledescription="Karte"]').waitFor({ timeout: 15000 });
+check("the swipe deck sits right below it", (await startDeck.getByRole("button", { name: "Gefällt mir" }).isVisible()) && (await startDeck.getByRole("heading", { name: "Minigolf im Rheinpark" }).isVisible()));
 await j.screenshot({ path: `${OUT}m13-01-home-plan.png`, fullPage: true });
+check("start with the deck fits the screen", await fitsScreen(j));
+// A like on the start puts the card on the wishlist, the next card comes up.
+await startDeck.getByRole("button", { name: "Gefällt mir" }).click();
+await startDeck.getByRole("heading", { name: "Kino unter Sternen" }).waitFor({ timeout: 10000 });
+await j.waitForTimeout(800);
+const { rows: [liked] } = await db.query("SELECT count(*)::int AS c FROM ideas WHERE couple_id = $1 AND title = 'Minigolf im Rheinpark'", [couple.id]);
+check("a like on the start saves it to the wishlist", liked.c === 1);
 
 // 2) ⓘ explains "Plan bis"
 await j.getByRole("button", { name: "Was heißt „Plan bis …“?" }).click();
@@ -84,14 +99,16 @@ const s = await pageFor(sam.token);
 await s.goto(`${BASE}/`);
 await heading(s);
 check(`Sam: "${await heading(s)}"`, (await heading(s)) === "Jonas ist dran");
-// Not Sam's turn: the start offers swiping, planning anyway is one tap away
-check("partner's turn: 'Solange swipen?' with the card stack", await s.getByRole("link", { name: /^Solange swipen\?/ }).isVisible());
-check("…and planning anyway", (await s.getByRole("link", { name: "Lieber selbst planen →" }).getAttribute("href")) === "/plan?self=1");
+// Not Sam's turn: the same box (with "Ich übernehme diesmal") and the deck below
+await s.locator('[data-swipe-deck="start"] [aria-roledescription="Karte"]').waitFor({ timeout: 15000 });
+check("partner's turn: box + swipe deck", (await s.getByRole("button", { name: "Ich übernehme diesmal" }).isVisible()) && (await s.getByRole("link", { name: "Date planen", exact: true }).count()) === 0);
 await s.screenshot({ path: `${OUT}m13-12-partner-swipe.png` });
 check("partner's start fits the screen", await fitsScreen(s));
 
-// 4) Plan page: the wishlist first, no quick plan
+// 4) "Date planen" in the step card opens the wishlist (no quick plan)
 await j.goto(`${BASE}/plan`);
+await openFlow(j);
+check("'Date planen' opens /plan?pick=1", j.url().endsWith("/plan?pick=1"));
 await j.getByRole("list", { name: "Eure Wunschliste" }).waitFor({ timeout: 20000 });
 check("no quick plan any more", (await j.getByText("Schnell planen").count()) === 0);
 await j.screenshot({ path: `${OUT}m13-03-plan-top.png` });
@@ -180,24 +197,24 @@ const welcomeContrast = await contrastOf(jd, jd.getByRole("heading", { name: "Wi
 const textContrast = await contrastOf(jd, jd.locator("p", { hasText: "regelmäßig Dates" }));
 check(`welcome slide readable in dark mode (heading ${welcomeContrast}:1, text ${textContrast}:1)`, welcomeContrast >= 7 && textContrast >= 7);
 await jd.screenshot({ path: `${OUT}m13-10-welcome-dark.png` });
-// The date stands: the start shows it, "Lieber was anderes machen?" leads to the ideas (swap mode)
+// The date stands: it sits in the box, "Lieber was anderes?" leads to the ideas (swap mode)
 await jd.goto(`${BASE}/plan`);
-const swapLink = jd.getByRole("link", { name: "Lieber was anderes machen?" });
+const swapLink = jd.getByRole("link", { name: "Lieber was anderes?" });
 await swapLink.waitFor({ timeout: 20000 });
-check("with a date: 'Solange swipen?' for the next ideas", await jd.getByRole("link", { name: /Solange swipen\?/ }).isVisible());
-check("with a date: no new plan, but 'Lieber was anderes machen?'", (await jd.getByRole("heading", { name: "Was wollt ihr machen?" }).count()) === 0);
+check("with a date: the date in the box, the deck below", (await jd.locator("[data-next-step] [data-date-card]").filter({ visible: true }).count()) === 1 && (await jd.locator('[data-swipe-deck="start"]').isVisible()));
+check("with a date: details one tap away", (await jd.getByRole("link", { name: "Details ›" }).getAttribute("href"))?.startsWith("/dates/"));
 await jd.screenshot({ path: `${OUT}m13-09-plan-dark.png`, fullPage: true });
 check("start with a confirmed date fits the screen", await fitsScreen(jd));
 await swapLink.click();
 await jd.getByText("Statt „Picknick im Stadtwald“", { exact: false }).waitFor({ timeout: 15000 });
-check("swap mode: tap an idea to do it instead", (await jd.locator("ol li button").count()) === 0 && (await jd.getByRole("link", { name: "Swipen" }).isVisible()));
+check("swap mode: tap an idea to do it instead", (await jd.locator("ol li button").count()) === 0 && (await jd.getByRole("button", { name: "Zufall" }).isVisible()));
 await jd.getByRole("list", { name: "Eure Wunschliste" }).getByRole("button", { name: "Sonnenuntergang am Rheinboulevard", exact: true }).click();
 await jd.locator("dialog[open]").getByText("Willst du das ändern?", { exact: false }).waitFor({ timeout: 10000 });
 await jd.screenshot({ path: `${OUT}m13-11-swap-dark.png` });
 check("swap mode fits the screen", await fitsScreen(jd));
 await jd.locator("dialog[open]").getByRole("button", { name: "Ja, ändern" }).click();
 await jd.waitForURL(`${BASE}/plan`, { timeout: 15000 });
-await jd.getByRole("heading", { name: "Sonnenuntergang am Rheinboulevard" }).first().waitFor({ timeout: 15000 });
+await jd.locator("[data-next-step]").filter({ visible: true }).getByText("„Sonnenuntergang am Rheinboulevard“").waitFor({ timeout: 15000 });
 const { rows: [swappedDate] } = await db.query("SELECT title, status FROM date_plans WHERE couple_id = $1 AND status <> 'cancelled' ORDER BY created_at DESC LIMIT 1", [couple.id]);
 check(`swapped on the start page, "Passt!" kept (${swappedDate.title}, ${swappedDate.status})`, swappedDate.title === "Sonnenuntergang am Rheinboulevard" && swappedDate.status === "confirmed");
 

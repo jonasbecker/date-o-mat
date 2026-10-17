@@ -170,9 +170,12 @@ check("switch is stored", pref?.enabled === false);
 await s.screenshot({ path: `${SHOTS}m6-01-settings.png` });
 const before = titles("sam-phone").length;
 await j.goto(`${BASE}/`);
+// Changing and cancelling sit under "Details" (the date's own page).
+await j.getByRole("link", { name: "Details ›" }).click();
 await j.getByRole("button", { name: "Absagen" }).click();
 await j.getByRole("button", { name: "Ja, absagen" }).click();
-await j.getByRole("heading", { name: "Was wollt ihr machen?" }).waitFor({ timeout: 10000 });
+await j.waitForURL(`${BASE}/plan`, { timeout: 10000 });
+await j.locator("[data-next-step]").filter({ visible: true }).first().waitFor({ timeout: 10000 });
 await new Promise((r) => setTimeout(r, 1500));
 check("Sam gets no 'abgesagt' push after turning it off", titles("sam-phone").length === before);
 

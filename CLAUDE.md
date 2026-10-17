@@ -49,8 +49,11 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - **No scrolling (M27):** every screen fits 390×844 – only lists scroll (wishlist, events, sheets,
   long settings topics). Long content becomes steps, pages or tabs (`Tabs`, `?t=` topics, paging);
   check new screens with `fitsScreen(page)` from `e2e/flow.mjs`. Settings links are `/settings?t=<topic>`.
-- **Planning in e2e:** `/plan` is a two-step flow – use `e2e/flow.mjs` (`pickIdea`, `openTimes`,
-  `customIdea`, `backAtStart`) instead of expecting the times (`ol li button`) right away.
+- **Planning in e2e:** `/plan` is the start (step card + swipe deck); "Date planen" opens the
+  two-step flow at `/plan?pick=1`. Use `e2e/flow.mjs` (`openFlow`, `pickIdea`, `openTimes`,
+  `customIdea`, `backAtStart`) instead of expecting the wishlist or the times (`ol li button`) right away.
+  The next date sits in the step card (`[data-next-step] [data-date-card]`); its checklist,
+  "Zeit ändern" and "Absagen" are on `/dates/<id>` ("Details ›").
 - **Hidden pages in e2e:** Next keeps the last visited pages mounted but hidden, so `getByText` can match
   twice – prefer `getByRole` (ignores hidden elements) or `{ exact: true }` / `.filter({ visible: true })`.
 - **Timing in e2e:** CI is slower than the container. Wait for the UI that proves a state (e.g. the

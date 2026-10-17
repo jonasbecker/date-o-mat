@@ -2,7 +2,7 @@
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import pg from "pg";
 import { chromium } from "playwright";
-import { backAtStart, fitsScreen, openTimes, pickIdea } from "./flow.mjs";
+import { backAtStart, fitsScreen, openFlow, openTimes, pickIdea } from "./flow.mjs";
 import { BUSY, events, failures, requests, startMock } from "./google-mock.mjs";
 import { tuesdayMorningOffset } from "./clock.mjs";
 import { resetDb } from "./db.mjs";
@@ -77,6 +77,7 @@ const s = await pageFor(sam.token);
 
 // 1) Jonas plans: the idea first (oldest on top), then the Top-Tipp time is preselected
 await j.goto(`${BASE}/plan`);
+await openFlow(j);
 const firstIdea = await j.getByRole("list", { name: "Eure Wunschliste" }).getByRole("button").first().textContent({ timeout: 20000 });
 check(`step 1 lists the oldest idea first (${firstIdea})`, firstIdea.startsWith("Picknick im Stadtwald"));
 check("no times before an idea is chosen", (await j.locator("ol li button").count()) === 0);
@@ -171,6 +172,8 @@ check("event now has the latest time", events["token-jonas"].get(date.google_eve
 
 // 6) Cancel → Google event deleted (guest notified), round reopens
 await j.goto(`${BASE}/`);
+// Changing and cancelling sit under "Details" (the date's own page).
+await j.getByRole("link", { name: "Details ›" }).click();
 await j.getByRole("button", { name: "Absagen" }).click();
 await j.getByRole("button", { name: "Ja, absagen" }).click();
 await j.getByRole("heading", { name: "Du bist dran!" }).waitFor({ timeout: 10000 });

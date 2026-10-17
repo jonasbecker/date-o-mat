@@ -64,9 +64,11 @@ const ZONE = "Europe/Berlin";
 /** Reads all free times (three per page) as {weekday, day, time, text}. */
 async function readSlots(page) {
   // The free times are step 2 – without a wishlist, your own idea leads there.
+  // On the start page "Date planen" opens step 1.
   const stepOne = page.getByRole("heading", { name: "Was wollt ihr machen?" });
-  await page.locator("ol li").or(stepOne).first().waitFor({ timeout: 15000 });
-  if (await stepOne.isVisible()) await customIdea(page, "Spazieren gehen");
+  const start = page.getByRole("link", { name: "Date planen", exact: true });
+  await page.locator("ol li").or(stepOne).or(start).first().waitFor({ timeout: 15000 });
+  if (!(await page.locator("ol li").first().isVisible())) await customIdea(page, "Spazieren gehen");
   await page.locator("ol li").first().waitFor({ timeout: 10000 });
   const slots = [];
   for (let i = 0; i < 10; i++) {
@@ -192,7 +194,7 @@ check("revoked calendar asks for reconnection", true);
 // 7) Invalid access token (Google answers 401) → app tries a refresh, then shows a friendly error
 await db.query("UPDATE google_connections SET status = 'ok', access_token_enc = $2 WHERE user_id = $1", [sam.id, encrypt("token-broken")]);
 // The start page no longer asks Google – the free times (step 2) do. (Jonas plans: Sam opts in.)
-await s.goto(`${BASE}/plan?self=1`);
+await s.goto(`${BASE}/plan?pick=1`);
 await s.getByRole("button", { name: "Was anderes" }).click({ timeout: 20000 });
 await s.locator("dialog[open]").getByLabel("Eure eigene Idee").fill("Spazieren gehen");
 await s.locator("dialog[open]").getByRole("button", { name: "Weiter →" }).click();
@@ -209,7 +211,7 @@ check("disconnect deletes the stored tokens", left[0].n === 0);
 const dark = await pageFor(sam.token, "dark");
 await db.query("UPDATE google_connections SET access_token_enc = $2 WHERE user_id = $1", [sam.id, encrypt("token-sam")]);
 await connect(jonas, "token-jonas", ["primary"]);
-await dark.goto(`${BASE}/plan?self=1`); // Jonas' turn – Sam plans anyway
+await dark.goto(`${BASE}/plan?pick=1`); // Jonas' turn – Sam plans anyway
 await readSlots(dark);
 await dark.waitForTimeout(300);
 await dark.screenshot({ path: `${SHOTS}m3-06-small-dark.png` });

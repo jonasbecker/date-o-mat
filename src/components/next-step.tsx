@@ -78,6 +78,7 @@ export function NextStepCard({
   date,
   onPlanPage = false,
   note,
+  children,
 }: {
   step: NextStep;
   cycle: Cycle;
@@ -90,6 +91,8 @@ export function NextStepCard({
   onPlanPage?: boolean;
   /** A short extra line that belongs to this round (e.g. last time was skipped) – same box, no extra card. */
   note?: React.ReactNode;
+  /** On the start page: what belongs into this box (the date, the proposal). */
+  children?: React.ReactNode;
 }) {
   let title: string;
   let body: React.ReactNode = null;
@@ -127,12 +130,11 @@ export function NextStepCard({
         </>
       );
       actions = (
-        <div className={onPlanPage ? "flex" : "flex flex-col items-center gap-2"}>
-          {!onPlanPage && (
-            <Link href="/plan" className={buttonClass("primary", "lg", "w-full")}>
-              <SparkleIcon /> Date planen
-            </Link>
-          )}
+        <div className="flex flex-col items-center gap-2">
+          {/* The flow starts here: the wishlist, then the time. */}
+          <Link href="/plan?pick=1" className={buttonClass("primary", onPlanPage ? "md" : "lg", "w-full")}>
+            <SparkleIcon /> Date planen
+          </Link>
           <form action={swapTurnAction}>
             <button type="submit" className="text-sm font-extrabold underline">
               Diesmal an {partner.name} abgeben
@@ -143,11 +145,12 @@ export function NextStepCard({
       break;
     case "suggestion":
       title = "Zeit für ein Date!";
-      body = (
+      // On the start page the proposal itself sits in this box.
+      body = !onPlanPage && (
         <>
-          {!onPlanPage && <Deadline cycle={cycle} now={now} />}
+          <Deadline cycle={cycle} now={now} />
           <p className="flex items-center gap-2 font-bold">
-            Der Date-O-Mat hat einen Vorschlag für euch – gleich hier drunter. {!onPlanPage && <Info term="vorschlag" />}
+            Der Date-O-Mat hat einen Vorschlag für euch – gleich hier drunter. <Info term="vorschlag" />
           </p>
         </>
       );
@@ -157,9 +160,11 @@ export function NextStepCard({
       body = date && (
         <>
           {!onPlanPage && <DateLine date={date} now={now} />}
-          <p className="flex items-center gap-2 font-bold">
-            Passt dir das? {!onPlanPage && <Info term="passt" />}
-          </p>
+          {!onPlanPage && (
+            <p className="flex items-center gap-2 font-bold">
+              Passt dir das? <Info term="passt" />
+            </p>
+          )}
         </>
       );
       actions = !onPlanPage && (
@@ -180,7 +185,7 @@ export function NextStepCard({
       body = date && (
         <>
           {!onPlanPage && <DateLine date={date} now={now} />}
-          <p className="font-bold">{partner.name} hat Bescheid bekommen und bestätigt in der App oder über die Google-Einladung.</p>
+          {!onPlanPage && <p className="font-bold">{partner.name} hat Bescheid bekommen und bestätigt in der App oder über die Google-Einladung.</p>}
         </>
       );
       break;
@@ -192,7 +197,7 @@ export function NextStepCard({
       title = "Wie war's?";
       body = <p className="font-bold">„{step.title}“ – vergib ein paar Herzen und halt fest, was schön war.</p>;
       actions = (
-        <Link href={`/dates/${step.dateId}`} className={buttonClass("primary", "lg", "w-full")}>
+        <Link href={`/dates/${step.dateId}`} className={buttonClass("primary", onPlanPage ? "md" : "lg", "w-full")}>
           💭 Jetzt bewerten
         </Link>
       );
@@ -265,6 +270,7 @@ export function NextStepCard({
         <h2 className="text-[38px] font-bold leading-[1.05]">{title}</h2>
       )}
       {body}
+      {children}
       {note && <p className="font-bold">{note}</p>}
       {actions}
       {!onPlanPage && <CycleStepper status={cycle.status === "skipped" ? "open" : cycle.status} />}

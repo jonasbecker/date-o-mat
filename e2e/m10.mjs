@@ -57,7 +57,7 @@ const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/ideas/koeln`);
 await j.waitForURL(/\/ideas\/entdecken/, { timeout: 15000 });
 check("/ideas/koeln redirects to the swipe deck", true);
-check("two tabs: Wunschliste, Swipen", (await j.getByRole("navigation", { name: "Ideen" }).getByRole("link").allInnerTexts()).join("|") === "💡 Wunschliste|💞 Swipen");
+check("no tabs on the ideas pages any more", (await j.getByRole("navigation", { name: "Ideen" }).count()) === 0 && (await j.getByRole("heading", { name: "Ideen swipen" }).isVisible()));
 let koelnCards = 0;
 for (let i = 0; i < 20 && koelnCards === 0; i++) {
   await j.waitForTimeout(500);
@@ -69,7 +69,7 @@ await j.locator('[aria-roledescription="Karte"]').first().waitFor({ timeout: 150
 await j.screenshot({ path: `${OUT}m10-01-koeln.png`, fullPage: false });
 
 // 2) Plan → "Was anderes": Köln ideas with search and the shared filter
-await j.goto(`${BASE}/plan`);
+await j.goto(`${BASE}/plan?pick=1`);
 await j.getByRole("button", { name: "Was anderes" }).click();
 const more = j.locator("dialog[open]");
 await more.getByRole("heading", { name: "📍 Ideen für Köln" }).waitFor({ timeout: 10000 });
@@ -99,7 +99,7 @@ const { rows: saved } = await db.query("SELECT title, source, external_ref FROM 
 check(`"Nehmen" saves it (curated) and selects it (${JSON.stringify(saved[0])})`, saved.length === 1 && saved[0].external_ref === "rheinpark-picknick");
 
 // 3) Plan → "Zufall": draws without repeats, Köln tips too, "Nehmen" selects
-await j.goto(`${BASE}/plan`);
+await j.goto(`${BASE}/plan?pick=1`);
 await j.getByRole("button", { name: "Zufall" }).click();
 await j.getByText("Kurbel dreht sich").waitFor({ timeout: 5000 }).then(() => check("draw animation", true), () => check("draw animation", false));
 await j.locator("dialog[open]").getByRole("button", { name: "Nehmen" }).waitFor({ timeout: 10000 });
@@ -123,7 +123,7 @@ await j.locator("dialog[open]").getByRole("button", { name: "Nehmen" }).click();
 const chosen = j.locator("div", { hasText: "Ihr macht" }).getByText(drawn, { exact: true }).first();
 await chosen.waitFor({ timeout: 10000 }).catch(() => {});
 await j.screenshot({ path: `${OUT}m10-06-plan-zufall.png` });
-check(`Zufall picks "${drawn}" and goes on to the times`, (await chosen.isVisible()) && j.url().endsWith("/plan"));
+check(`Zufall picks "${drawn}" and goes on to the times`, (await chosen.isVisible()) && /\/plan(\?pick=1)?$/.test(j.url()));
 const { rows: [onList] } = await db.query("SELECT count(*)::int AS c FROM ideas WHERE title = $1", [drawn]);
 check("it was put on the wishlist first", onList.c === 1);
 
@@ -133,7 +133,7 @@ await j.getByRole("heading", { name: "Eure Dates" }).waitFor({ timeout: 15000 })
 check("Dates stays focused: no Zufall button", (await j.getByRole("button", { name: /Überrasch uns|Zufall/ }).count()) === 0);
 await j.screenshot({ path: `${OUT}m10-05-home.png` });
 const jd = await pageFor(jonas.token, "dark");
-await jd.goto(`${BASE}/plan`);
+await jd.goto(`${BASE}/plan?pick=1`);
 await jd.getByRole("button", { name: "Was anderes" }).click();
 await jd.locator("dialog[open]").getByRole("heading", { name: "📍 Ideen für Köln" }).waitFor({ timeout: 15000 });
 await jd.waitForTimeout(400);

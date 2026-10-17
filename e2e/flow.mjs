@@ -1,16 +1,29 @@
-// The planning flow on /plan: step 1 "Was wollt ihr machen?" (tap an idea),
-// step 2 "Wann?" (the free times, an <ol> of buttons).
+// The planning flow: the start page (/plan) has "Date planen" in the step card,
+// which opens step 1 "Was wollt ihr machen?" (tap an idea), then step 2 "Wann?"
+// (the free times, an <ol> of buttons).
+
+/** On the start page: "Date planen" opens step 1 (the wishlist). Does nothing when it is open already. */
+export async function openFlow(page, { timeout = 20000 } = {}) {
+  const step1 = page.getByRole("heading", { name: "Was wollt ihr machen?" });
+  const button = page.getByRole("link", { name: "Date planen", exact: true });
+  await step1.or(button).first().waitFor({ timeout });
+  if (!(await step1.isVisible())) await button.click();
+  await step1.waitFor({ timeout });
+}
 
 /** Taps an idea on the wishlist of step 1 and waits for the free times. */
 export async function pickIdea(page, title, { timeout = 15000 } = {}) {
+  await openFlow(page);
   // exact: each card also has an "… bearbeiten" button (⋯).
   await page.getByRole("list", { name: "Eure Wunschliste" }).getByRole("button", { name: title, exact: true }).click({ timeout });
   await page.locator("ol li button").first().waitFor({ timeout });
 }
 
-/** Opens /plan and goes on with the first (longest waiting) idea of the list. */
+/** Opens the flow (/plan?pick=1) and goes on with the first (longest waiting) idea of the list. */
 export async function openTimes(page, base, query = "") {
-  await page.goto(`${base}/plan${query}`);
+  const params = new URLSearchParams(query.replace(/^\?/, ""));
+  params.set("pick", "1");
+  await page.goto(`${base}/plan?${params}`);
   const first = page.getByRole("list", { name: "Eure Wunschliste" }).getByRole("button", { name: /^(?!.* bearbeiten$)/ }).first();
   await first.click({ timeout: 20000 });
   await page.locator("ol li button").first().waitFor({ timeout: 20000 });
@@ -18,6 +31,7 @@ export async function openTimes(page, base, query = "") {
 
 /** Step 1 with your own idea: "Was anderes" → type it → "Weiter →". */
 export async function customIdea(page, title, location) {
+  await openFlow(page);
   await page.getByRole("button", { name: "Was anderes" }).click();
   const sheet = page.locator("dialog[open]");
   await sheet.getByLabel("Eure eigene Idee").fill(title);

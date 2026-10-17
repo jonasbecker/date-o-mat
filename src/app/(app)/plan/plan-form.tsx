@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
-import { Button, buttonClass } from "@/components/button";
+import { Button } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
 import { SIZE_LABEL } from "@/components/size-chip";
 import { orderSlots, type SlotMood } from "@/core/slots";
@@ -16,7 +16,7 @@ import { QuickAdd } from "@/components/quick-add";
 import { IdeaForm } from "@/components/idea-form";
 import { archiveIdeaAction, updateIdeaAction } from "../ideas/actions";
 import { Mascot } from "@/components/mascot";
-import { DiceIcon, HeartIcon, MoreIcon } from "@/components/icons";
+import { DiceIcon, MoreIcon } from "@/components/icons";
 import { IdeaCard, ideaFacts, type IdeaCardView } from "@/components/idea-card";
 import { matchesIdeaFilter } from "@/core/filters";
 import type { EventView } from "../events/event-list";
@@ -243,14 +243,11 @@ export function PlanFlow({
           </ul>
         )}
 
-        <div className="mt-auto grid grid-cols-3 gap-2">
+        <div className="mt-auto grid grid-cols-2 gap-2">
           <SurpriseButton size="sm" label={<><DiceIcon width={17} height={17} /> Zufall</>} ideaSize={filter.size} className="gap-1.5 whitespace-nowrap px-1.5 text-[14px]" onChoose={(chosen) => chooseIdea(chosen)} />
           <Button variant="secondary" size="sm" className="w-full gap-1.5 whitespace-nowrap px-1.5 text-[14px]" onClick={() => moreSheet.current?.open()}>
             <MoreIcon width={17} height={17} /> Was anderes
           </Button>
-          <Link href="/ideas/entdecken" className={buttonClass("secondary", "sm", "w-full gap-1.5 whitespace-nowrap px-1.5 text-[14px]")}>
-            <HeartIcon width={17} height={17} /> Swipen
-          </Link>
         </div>
 
         <Sheet ref={moreSheet} title="Was anderes?">

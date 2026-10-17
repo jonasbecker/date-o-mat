@@ -15,7 +15,7 @@ import { IdeaBoard, type BoardIdea, type BoardNextDate, type BoardPerson } from 
 export default function IdeasPage() {
   return (
     <div className="flex flex-col gap-4">
-      <IdeasTop current="wishlist" />
+      <IdeasTop />
       <Suspense fallback={<PageSkeleton />}>
         <Ideas />
       </Suspense>
