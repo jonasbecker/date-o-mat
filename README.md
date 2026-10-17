@@ -209,6 +209,9 @@ scripts/              Migration beim Build, Secret-Generator
 - **Historie als Fotoraster** (2 × 2 pro Seite), ohne Foto mit der Maschine.
 - **Ruhige Kopfzeile auf Unterseiten:** nur die kleine Maschine mit „← Date planen“.
 - **Daumenzone:** „Passt! 💚“ und „Lieber was anderes machen?“ stehen unten auf dem Start.
+- **Das Date steht ganz auf dem Start** (kompakte `DateCard`): Ort mit Route, Notiz, Vorbereitung
+  (zugeklappt), am Tag die Gesprächskarten, „Zeit ändern“ und „Absagen“ – ohne Umweg über eine
+  eigene Seite. `/dates/[id]` zeigt kommende Dates weiterhin (für Push-Links).
 
 ### Feinschliff in Kürze (M28)
 

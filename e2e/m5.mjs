@@ -5,6 +5,7 @@ import { chromium } from "playwright";
 import { backAtStart, fitsScreen, openTimes, pickIdea } from "./flow.mjs";
 import { BUSY, events, failures, requests, startMock } from "./google-mock.mjs";
 import { tuesdayMorningOffset } from "./clock.mjs";
+import { resetDb } from "./db.mjs";
 
 const BASE = "http://localhost:3000";
 const SHOTS = new URL("./shots/", import.meta.url).pathname;
@@ -20,7 +21,7 @@ const encrypt = (text) => {
 const mock = await startMock(4010);
 const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await db.connect();
-await db.query("TRUNCATE users, couples, sessions, ideas CASCADE");
+await resetDb(db, "users, couples, sessions, ideas");
 const { rows: [couple] } = await db.query("INSERT INTO couples DEFAULT VALUES RETURNING id");
 async function makeUser(name, email, color, accessToken, createdAt) {
   const { rows } = await db.query(
@@ -166,7 +167,6 @@ check("event now has the latest time", events["token-jonas"].get(date.google_eve
 
 // 6) Cancel → Google event deleted (guest notified), round reopens
 await j.goto(`${BASE}/`);
-await j.getByRole("link", { name: "Mehr zum Date →" }).click();
 await j.getByRole("button", { name: "Absagen" }).click();
 await j.getByRole("button", { name: "Ja, absagen" }).click();
 await j.getByRole("heading", { name: "Du bist dran!" }).waitFor({ timeout: 10000 });

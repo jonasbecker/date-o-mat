@@ -5,8 +5,7 @@ import { DateTime } from "luxon";
 import { confirmDateAction, notHappenedAction } from "./actions";
 import { ConfettiActionButton } from "@/components/confetti";
 import { BudgetBar } from "@/components/budget-bar";
-import type { DateCardExtras } from "@/components/date-card";
-import { DateSummary } from "@/components/date-summary";
+import { DateCard, type DateCardExtras } from "@/components/date-card";
 import { NextStepCard } from "@/components/next-step";
 import { SetupChecklist } from "@/components/setup-checklist";
 import { SuggestionCard } from "@/components/suggestion-card";
@@ -162,7 +161,8 @@ export function StartSection({
       )}
 
       {/* "Passt!" sits in the step card when there is one; the details are one tap away. */}
-      {o.shownDate && <DateSummary date={o.shownDate} hidden={o.dateExtras?.surprise === "hidden"} today={Boolean(o.dateExtras?.isToday)} />}
+      {/* The whole date right here – the start page has the room. "Passt!" sits at the bottom. */}
+      {o.shownDate && <DateCard date={o.shownDate} me={user} partner={partner} showConfirm={false} extras={o.dateExtras} compact />}
 
       {o.roundDate?.status === "done" && (
         <form action={notHappenedAction.bind(null, o.roundDate.id)} className="-mt-2 self-center">

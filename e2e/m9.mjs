@@ -4,6 +4,7 @@ import { existsSync, readFileSync, mkdirSync } from "node:fs";
 import { DateTime } from "luxon";
 import pg from "pg";
 import { chromium } from "playwright";
+import { resetDb } from "./db.mjs";
 
 const BASE = "http://localhost:3000";
 const ZONE = "Europe/Berlin";
@@ -14,7 +15,7 @@ mkdirSync(OUT, { recursive: true });
 
 const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await db.connect();
-await db.query("TRUNCATE users, couples, sessions, ideas CASCADE");
+await resetDb(db, "users, couples, sessions, ideas");
 async function makeCouple() {
   const { rows: [c] } = await db.query("INSERT INTO couples DEFAULT VALUES RETURNING id");
   return c.id;

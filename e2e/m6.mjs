@@ -9,6 +9,7 @@ import pg from "pg";
 import { chromium, devices } from "playwright";
 import { backAtStart, openTimes } from "./flow.mjs";
 import { startMock } from "./google-mock.mjs";
+import { resetDb } from "./db.mjs";
 
 const require = createRequire(new URL("../package.json", import.meta.url));
 const ece = require("http_ece");
@@ -58,7 +59,7 @@ const google = await startMock(4010);
 // --- data ------------------------------------------------------------------------------
 const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await db.connect();
-await db.query("TRUNCATE users, couples, sessions, ideas CASCADE");
+await resetDb(db, "users, couples, sessions, ideas");
 const { rows: [couple] } = await db.query("INSERT INTO couples DEFAULT VALUES RETURNING id");
 async function makeUser(name, email, color, accessToken, createdAt) {
   const { rows } = await db.query(
@@ -169,7 +170,6 @@ check("switch is stored", pref?.enabled === false);
 await s.screenshot({ path: `${SHOTS}m6-01-settings.png` });
 const before = titles("sam-phone").length;
 await j.goto(`${BASE}/`);
-await j.getByRole("link", { name: "Mehr zum Date →" }).click();
 await j.getByRole("button", { name: "Absagen" }).click();
 await j.getByRole("button", { name: "Ja, absagen" }).click();
 await j.getByRole("heading", { name: "Was wollt ihr machen?" }).waitFor({ timeout: 10000 });

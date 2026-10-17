@@ -2,12 +2,13 @@
 import { createHash, randomBytes } from "node:crypto";
 import pg from "pg";
 import { chromium } from "playwright";
+import { resetDb } from "./db.mjs";
 
 const BASE = "http://localhost:3000";
 const SHOTS = new URL("./shots/", import.meta.url).pathname;
 const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await db.connect();
-await db.query("TRUNCATE users, couples, sessions CASCADE");
+await resetDb(db, "users, couples, sessions");
 
 async function makeUser(name, email) {
   const { rows } = await db.query(

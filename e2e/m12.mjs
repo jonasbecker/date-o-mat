@@ -6,6 +6,7 @@ import { DateTime } from "luxon";
 import pg from "pg";
 import { chromium } from "playwright";
 import { DAYS, events as googleEvents, startMock } from "./google-mock.mjs";
+import { resetDb } from "./db.mjs";
 
 const BASE = "http://localhost:3000";
 const ZONE = "Europe/Berlin";
@@ -112,7 +113,7 @@ const google = await startMock(4010);
 // --- data ----------------------------------------------------------------------------------
 const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await db.connect();
-await db.query("TRUNCATE users, couples, sessions, ideas CASCADE");
+await resetDb(db, "users, couples, sessions, ideas");
 const { rows: [couple] } = await db.query("INSERT INTO couples DEFAULT VALUES RETURNING id");
 async function makeUser(name, email, color, accessToken, createdAt) {
   const { rows } = await db.query(

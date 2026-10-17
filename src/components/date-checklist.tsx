@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 export type TaskView = { id: string; title: string; done: boolean };
 
 /** "Vorbereitung": a small shared to-do list for the next date, with suggestions. */
-export function DateChecklist({ dateId, tasks, suggestions }: { dateId: string; tasks: TaskView[]; suggestions: string[] }) {
+export function DateChecklist({ dateId, tasks, suggestions, collapsed = false }: { dateId: string; tasks: TaskView[]; suggestions: string[]; /** Closed at first (start page). */ collapsed?: boolean }) {
   const [shown, setShown] = useOptimistic(tasks, (state, change: { id: string; done: boolean }) =>
     state.map((t) => (t.id === change.id ? { ...t, done: change.done } : t)),
   );
@@ -24,7 +24,7 @@ export function DateChecklist({ dateId, tasks, suggestions }: { dateId: string; 
   }
 
   return (
-    <details open={shown.length > 0 && open > 0} className="group rounded-2xl border-2 border-dashed border-track px-4 py-2">
+    <details open={!collapsed && shown.length > 0 && open > 0} className="group rounded-2xl border-2 border-dashed border-track px-4 py-2">
       <summary className="flex cursor-pointer list-none items-center justify-between py-1 text-sm font-extrabold">
         📝 Vorbereitung {shown.length > 0 ? `(${shown.length - open}/${shown.length})` : ""}
         <span className="text-muted underline group-open:hidden">öffnen</span>

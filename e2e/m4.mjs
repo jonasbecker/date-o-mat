@@ -5,6 +5,7 @@ import { chromium } from "playwright";
 import { startMock } from "./google-mock.mjs";
 import { tuesdayMorningOffset } from "./clock.mjs";
 import { openTimes } from "./flow.mjs";
+import { resetDb } from "./db.mjs";
 
 const BASE = "http://localhost:3000";
 const SHOTS = new URL("./shots/", import.meta.url).pathname;
@@ -19,7 +20,7 @@ const encrypt = (text) => {
 const mock = await startMock(4010);
 const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await db.connect();
-await db.query("TRUNCATE users, couples, sessions, ideas CASCADE");
+await resetDb(db, "users, couples, sessions, ideas");
 const { rows: [couple] } = await db.query("INSERT INTO couples DEFAULT VALUES RETURNING id");
 
 async function makeUser(name, email, color, accessToken, createdAt) {

@@ -6,6 +6,7 @@ import { createRequire } from "node:module";
 import pg from "pg";
 import { chromium } from "playwright";
 import { requests as googleRequests, startMock } from "./google-mock.mjs";
+import { resetDb } from "./db.mjs";
 
 const require = createRequire(new URL("../package.json", import.meta.url));
 const ece = require("http_ece");
@@ -51,7 +52,7 @@ await startMock(4010);
 // --- data ------------------------------------------------------------------------------
 const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await db.connect();
-await db.query("TRUNCATE users, couples, sessions, ideas, app_status CASCADE");
+await resetDb(db, "users, couples, sessions, ideas, app_status");
 const { rows: [couple] } = await db.query("INSERT INTO couples DEFAULT VALUES RETURNING id");
 async function makeUser(name, email, color, accessToken, refreshToken, createdAt) {
   const { rows } = await db.query(

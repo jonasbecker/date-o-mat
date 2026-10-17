@@ -8,6 +8,7 @@ import { chromium } from "playwright";
 import { backAtStart, fitsScreen, openTimes } from "./flow.mjs";
 import { tuesdayMorningOffset } from "./clock.mjs";
 import { events as googleEvents, startMock } from "./google-mock.mjs";
+import { resetDb } from "./db.mjs";
 
 const BASE = "http://localhost:3000";
 const OUT = new URL("./shots/", import.meta.url).pathname;
@@ -24,7 +25,7 @@ const encrypt = (text) => {
 await startMock(4010);
 const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await db.connect();
-await db.query("TRUNCATE users, couples, sessions, ideas CASCADE");
+await resetDb(db, "users, couples, sessions, ideas");
 const { rows: [couple] } = await db.query("INSERT INTO couples DEFAULT VALUES RETURNING id");
 async function makeUser(name, email, color, accessToken, createdAt) {
   const { rows } = await db.query(
@@ -124,13 +125,11 @@ check(`surprise saved (${date.title}, ${date.surprise_hint})`, date.surprise ===
 const event = [...googleEvents["token-jonas"].values()].at(-1);
 check(`Google event keeps the secret (${event?.summary})`, event?.summary === "💞 Date: 🎁 Überraschung von Jonas" && !event.location && !JSON.stringify(event).includes("Sushi"));
 
-// 3) Jonas sees everything, plus the checklist with a suggestion and the route (one tap from the start)
+// 3) Jonas sees everything right on the start: the checklist with a suggestion and the route
 await j.reload();
 await j.getByText("Euer nächstes Date", { exact: true }).waitFor({ timeout: 15000 });
-await j.getByRole("link", { name: "Mehr zum Date →" }).click();
-await j.getByRole("link", { name: "← Zum Start" }).waitFor({ timeout: 15000 });
 check("Jonas sees the real title and the surprise note", (await j.getByRole("heading", { name: "Sushi-Abend" }).isVisible()) && (await j.getByText(/🎁 Überraschung: Sam sieht bis zum Tag selbst nur Zeit und deinen Hinweis/).isVisible()));
-const route = await j.getByRole("link", { name: "🗺️ Route (ÖPNV)" }).getAttribute("href");
+const route = await j.getByRole("link", { name: "Route (ÖPNV)" }).getAttribute("href");
 check(`route link with his start point (${route})`, new URL(route).searchParams.get("origin") === "Ehrenfeld, Köln" && new URL(route).searchParams.get("destination") === "Belgisches Viertel, Köln");
 await j.getByText("📝 Vorbereitung").click();
 await j.getByRole("button", { name: "+ Tisch reservieren" }).click();
@@ -143,7 +142,7 @@ await j.waitForTimeout(800);
 const { rows: tasks } = await db.query("SELECT title, done_at IS NOT NULL AS done FROM date_tasks ORDER BY created_at");
 check(`checklist stored (${JSON.stringify(tasks)})`, tasks.length === 2 && tasks[0].title === "Tisch reservieren" && !tasks[0].done && tasks[1].done);
 await j.screenshot({ path: `${OUT}m21-02-jonas.png`, fullPage: true });
-check("date details (with checklist) fit the screen", await fitsScreen(j));
+check("the date with its checklist fits the start screen", await fitsScreen(j));
 
 // 4) Sam sees only time and hint – no title, place, checklist; budget page keeps the secret too
 const s = await pageFor(sam.token);
@@ -193,8 +192,7 @@ check(`Google event now says what it is (${event2?.summary})`, event2?.summary =
 await s.goto(`${BASE}/`);
 await s.getByText("Euer nächstes Date", { exact: true }).waitFor({ timeout: 15000 });
 check("Sam sees the real date now", await s.getByRole("heading", { name: "Sushi-Abend" }).isVisible());
-check("on the day: conversation cards are one tap away", await s.getByRole("link", { name: "Gesprächskarten" }).isVisible());
-await s.getByRole("link", { name: "Mehr zum Date →" }).click();
+check("on the day: conversation cards right on the start", await s.getByRole("button", { name: "💬 Gesprächskarte ziehen" }).isVisible());
 await s.getByRole("button", { name: "💬 Gesprächskarte ziehen" }).click();
 const question = await s.locator("p[aria-live=polite]").innerText();
 await s.getByRole("button", { name: "Nächste Karte →" }).click();
