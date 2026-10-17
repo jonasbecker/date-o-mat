@@ -12,6 +12,9 @@ import { Sheet, type SheetHandle } from "@/components/sheet";
 import { SurpriseButton } from "@/components/surprise-button";
 import { SwapConfirm, type NextDateInfo } from "@/components/swap-confirm";
 import { StepDots } from "@/components/step-dots";
+import { QuickAdd } from "@/components/quick-add";
+import { IdeaForm } from "@/components/idea-form";
+import { archiveIdeaAction, updateIdeaAction } from "../ideas/actions";
 import { Mascot } from "@/components/mascot";
 import { DiceIcon, HeartIcon, MoreIcon } from "@/components/icons";
 import { IdeaCard, ideaFacts, type IdeaCardView } from "@/components/idea-card";
@@ -129,6 +132,12 @@ export function PlanFlow({
   const [slotPage, setSlotPage] = useState(0);
   const moreSheet = useRef<SheetHandle>(null);
   const swapSheet = useRef<SheetHandle>(null);
+  const editSheet = useRef<SheetHandle>(null);
+  const [editing, setEditing] = useState<IdeaOption | null>(null);
+  function editIdea(idea: IdeaOption) {
+    setEditing(idea);
+    editSheet.current?.open();
+  }
   const [swapping, setSwapping] = useState<{ id: string; title: string; size?: IdeaSize } | null>(null);
   const [filter] = useIdeaFilter();
   const [customTitle, setCustomTitle] = useState("");
@@ -228,12 +237,16 @@ export function PlanFlow({
           </form>
         )}
 
-        <div className="flex items-center justify-between gap-3">
-          <div>
+        {/* The wishlist itself: add, edit and choose all happen here. */}
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between gap-2">
             {mode.kind === "swap" ? <p className="text-[12px] font-extrabold text-muted">Lieber was anderes?</p> : <StepDots step={1} of={2} />}
-            <h2 className="text-[22px] font-semibold leading-tight">Was wollt ihr machen?</h2>
+            <span className="flex items-center gap-2">
+              <FilterButton />
+              <QuickAdd />
+            </span>
           </div>
-          <FilterButton />
+          <h2 className="text-[22px] font-semibold leading-tight">Was wollt ihr machen?</h2>
         </div>
         {mode.kind === "swap" && (
           <p className="-mt-1 text-sm font-bold text-muted">
@@ -252,7 +265,7 @@ export function PlanFlow({
           <ul data-scroll className="-mx-1 flex min-h-[7.5rem] flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-1 pb-1" aria-label="Eure Wunschliste">
             {wishlist.map((option) => (
               <li key={option.id}>
-                <IdeaCard idea={option} onOpen={() => chooseIdea({ id: option.id })} />
+                <IdeaCard idea={option} onOpen={() => chooseIdea({ id: option.id })} onMore={() => editIdea(option)} />
               </li>
             ))}
           </ul>
@@ -320,6 +333,21 @@ export function PlanFlow({
             }}
             onEventPlanned={() => setTimeout(() => router.replace("/plan"), 1000)}
           />
+        </Sheet>
+
+        <Sheet ref={editSheet} title="Idee bearbeiten" onClose={() => setEditing(null)}>
+          {editing && (
+            <IdeaForm
+              key={editing.id}
+              action={updateIdeaAction}
+              idea={{ id: editing.id, title: editing.title, size: editing.size, note: editing.note ?? null, url: editing.url ?? null, costEur: editing.costEur, location: editing.location }}
+              onSaved={() => editSheet.current?.close()}
+              onDelete={async () => {
+                await archiveIdeaAction(editing.id);
+                editSheet.current?.close();
+              }}
+            />
+          )}
         </Sheet>
 
         {mode.kind === "swap" && (

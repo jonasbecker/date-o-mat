@@ -84,6 +84,11 @@ const s = await pageFor(sam.token);
 await s.goto(`${BASE}/`);
 await heading(s);
 check(`Sam: "${await heading(s)}"`, (await heading(s)) === "Jonas ist dran");
+// Not Sam's turn: the start offers swiping, planning anyway is one tap away
+check("partner's turn: 'Solange swipen?' with the card stack", await s.getByRole("link", { name: /^Solange swipen\?/ }).isVisible());
+check("…and planning anyway", (await s.getByRole("link", { name: "Lieber selbst planen →" }).getAttribute("href")) === "/plan?self=1");
+await s.screenshot({ path: `${OUT}m13-12-partner-swipe.png` });
+check("partner's start fits the screen", await fitsScreen(s));
 
 // 4) Plan page: quick plan + tabs
 await j.goto(`${BASE}/plan`);
@@ -180,13 +185,14 @@ await jd.screenshot({ path: `${OUT}m13-10-welcome-dark.png` });
 await jd.goto(`${BASE}/plan`);
 const swapLink = jd.getByRole("link", { name: "Lieber was anderes machen?" });
 await swapLink.waitFor({ timeout: 20000 });
+check("with a date: 'Solange swipen?' for the next ideas", await jd.getByRole("link", { name: /Solange swipen\?/ }).isVisible());
 check("with a date: no new plan, but 'Lieber was anderes machen?'", (await jd.getByRole("heading", { name: "Was wollt ihr machen?" }).count()) === 0);
 await jd.screenshot({ path: `${OUT}m13-09-plan-dark.png`, fullPage: true });
 check("start with a confirmed date fits the screen", await fitsScreen(jd));
 await swapLink.click();
 await jd.getByText("Statt „Picknick im Stadtwald“", { exact: false }).waitFor({ timeout: 15000 });
 check("swap mode: tap an idea to do it instead", (await jd.locator("ol li button").count()) === 0 && (await jd.getByRole("link", { name: "Swipen" }).isVisible()));
-await jd.getByRole("list", { name: "Eure Wunschliste" }).getByRole("button", { name: /^Sonnenuntergang/ }).click();
+await jd.getByRole("list", { name: "Eure Wunschliste" }).getByRole("button", { name: "Sonnenuntergang am Rheinboulevard", exact: true }).click();
 await jd.locator("dialog[open]").getByText("Willst du das ändern?", { exact: false }).waitFor({ timeout: 10000 });
 await jd.screenshot({ path: `${OUT}m13-11-swap-dark.png` });
 check("swap mode fits the screen", await fitsScreen(jd));

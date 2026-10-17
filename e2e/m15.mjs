@@ -97,7 +97,7 @@ check("push devices listed", await status(j).getByText("Jonas: 1 Gerät · Sam: 
 check("AI usage listed", await status(j).getByText(/Heute: Ideen 0\/20 · Stapel 0\/6 · Links 0\/30 · Events 0\/40/).isVisible());
 await j.goto(`${BASE}/`);
 await j.waitForURL(/\/(plan|dates)$/, { timeout: 15000 });
-await j.locator("h1").filter({ visible: true }).first().waitFor({ timeout: 15000 });
+await j.locator("[data-next-step], h1:not(.sr-only)").filter({ visible: true }).first().waitFor({ timeout: 15000 });
 check("no cron banner before the first run", (await j.getByText(/Die Automatik ist zuletzt/).count()) === 0);
 
 // 2) Tick runs → all fine
@@ -148,7 +148,7 @@ await db.query("UPDATE google_connections SET status = 'ok', refresh_token_enc =
 await db.query(`UPDATE app_status SET value = jsonb_set(value, '{at}', to_jsonb(to_char((now() - interval '3 hours') AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'))) WHERE key = 'tick'`);
 await j.goto(`${BASE}/`);
 await j.waitForURL(/\/(plan|dates)$/, { timeout: 15000 });
-await j.locator("h1").filter({ visible: true }).first().waitFor({ timeout: 15000 });
+await j.locator("[data-next-step], h1:not(.sr-only)").filter({ visible: true }).first().waitFor({ timeout: 15000 });
 const banner = j.getByRole("alert").filter({ hasText: "Die Automatik ist zuletzt" });
 check(`home banner (${await banner.innerText().catch(() => "–")})`, (await banner.count()) === 1 && (await banner.innerText()).includes("vor 3 Std."));
 check("banner links to the status", (await banner.getAttribute("href")) === "/settings?t=status");
@@ -160,7 +160,7 @@ check("settings: tick is late", await lateRow.isVisible());
 await fetch(`${BASE}/api/cron/tick`, CRON);
 await j.goto(`${BASE}/`);
 await j.waitForURL(/\/(plan|dates)$/, { timeout: 15000 });
-await j.locator("h1").filter({ visible: true }).first().waitFor({ timeout: 15000 });
+await j.locator("[data-next-step], h1:not(.sr-only)").filter({ visible: true }).first().waitFor({ timeout: 15000 });
 check("banner gone after the next tick", (await j.getByText(/Die Automatik ist zuletzt/).count()) === 0);
 
 console.log(failures ? `\n${failures} check(s) failed` : "\nAll checks passed");

@@ -83,7 +83,7 @@ const nextMonthName = month.plus({ months: 1 }).setLocale("de").toFormat("LLLL")
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/`);
 await j.waitForURL(/\/(plan|dates)$/, { timeout: 15000 });
-await j.locator("h1").filter({ visible: true }).first().waitFor({ timeout: 15000 });
+await j.locator("[data-next-step], h1:not(.sr-only)").filter({ visible: true }).first().waitFor({ timeout: 15000 });
 check("no budget → no bar", (await j.getByRole("meter").count()) === 0);
 
 // 2) Set 80 € in the settings
@@ -144,7 +144,8 @@ check("new month starts at 0, pot shows 15 €", (await j.locator("main").innerT
 
 // 7) Planning: an idea over budget is marked; pay from the pot
 await db.query("UPDATE couple_settings SET monthly_budget_eur = 30 WHERE couple_id = $1", [couple.id]);
-await j.goto(`${BASE}/plan`);
+// A new month, a new round – Sam's turn: Jonas plans anyway ("Lieber selbst planen").
+await j.goto(`${BASE}/plan?self=1`);
 await j.getByRole("list", { name: "Eure Wunschliste" }).waitFor({ timeout: 20000 });
 await j.waitForTimeout(800);
 check("idea over budget is marked", await j.getByText("⚠️ über Budget").first().isVisible());

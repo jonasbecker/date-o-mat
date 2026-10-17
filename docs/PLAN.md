@@ -98,6 +98,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M27 | Ohne Scrollen: Bildschirme passen, Durchklicken statt Scrollen; nur Wunschliste und Events scrollen | ✅ |
 | M28 | Feinschliff: Zeiten erst bei Bedarf laden, Reihenfolge, Rundenkarte, eine Ideen-Karte, Begriffe, Einstellungs-Gruppen, Push-Ziele | ✅ |
 | M29 | Design A: diszipliniertes Sticker-Design, Farbrollen, Icons, Maskottchen, Fotoraster, Daumenzone | ✅ |
+| M30 | Ideen-Aufbau: eine Wunschliste, Swipen auf dem Start wenn nichts zu planen ist, „Nächstes Mal?“, „Was läuft“ im Planen | ✅ |
 
 Abweichungen in V2:
 

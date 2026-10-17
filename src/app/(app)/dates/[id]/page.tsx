@@ -14,6 +14,9 @@ import { requireCouple } from "@/server/auth/dal";
 import type { User } from "@/server/db/schema";
 import { pastDate } from "@/server/reviews";
 import { ReviewForm } from "../review-form";
+import { NextTimeIdeas } from "../next-time-ideas";
+import type { IdeaCardView } from "@/components/idea-card";
+import { listIdeas } from "@/server/ideas";
 import { PhotoSection } from "../photo-section";
 import { listPhotos } from "@/server/photos";
 import { env } from "@/server/env";
@@ -58,6 +61,14 @@ async function DateDetail({ params }: { params: PageProps<"/dates/[id]">["params
   if (!date) notFound();
   const { mine, partner: theirs, partnerHidden } = visibleReviews(date.reviews, user.id);
   const photos = await listPhotos(coupleId, date.id);
+  // Reviewed: what's next? The three ideas that have waited longest (not this one).
+  const nextTime: IdeaCardView[] = mine
+    ? (await listIdeas(coupleId))
+        .filter((idea) => idea.id !== date.ideaId)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        .slice(0, 3)
+        .map((idea) => ({ id: idea.id, title: idea.title, size: idea.size, costEur: idea.costEur, location: idea.location }))
+    : [];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
@@ -84,6 +95,7 @@ async function DateDetail({ params }: { params: PageProps<"/dates/[id]">["params
             key: "mine",
             label: mine ? "💗 Deine Herzen" : "💗 Bewerten",
             content: (
+              <>
               <section aria-labelledby="review-heading" className="flat flex flex-col gap-3 rounded-[24px] bg-surface p-4">
                 <h2 id="review-heading" className="text-[21px] font-bold">
                   {mine ? "Deine Herzen" : "Wie war's für dich?"}
@@ -100,6 +112,8 @@ async function DateDetail({ params }: { params: PageProps<"/dates/[id]">["params
                   cost={date.actualCostEur ?? date.estimatedCostEur}
                 />
               </section>
+              <NextTimeIdeas ideas={nextTime} />
+              </>
             ),
           },
           {

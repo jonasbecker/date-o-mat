@@ -41,6 +41,7 @@ gemeinsame Ideen-Wunschliste.
 | M27 | Ohne Scrollen: jeder Bildschirm passt, man klickt sich durch (Zeiten blättern, Einstellungs-Themen, Historie in Seiten, Reiter) | ✅ |
 | M28 | Feinschliff: schneller Start (Zeiten erst bei Bedarf), Zeiten nach Datum, kompakte Rundenkarte, eine Ideen-Karte, einfachere Begriffe, gruppierte Einstellungen | ✅ |
 | M29 | Design (Richtung A): Schatten nur für Aktionen, Farbrollen, Schritt-Punkte, Icons, Maskottchen, Fotoraster, ruhige Kopfzeile, Daumenzone | ✅ |
+| M30 | Eine Wunschliste, wo sie passt: Schritt 1 = Wunschliste, „Solange swipen?“ auf dem Start, „Nächstes Mal?“ nach dem Bewerten, 💡 mit zwei Reitern | ✅ |
 
 ## Tech-Stack
 
@@ -193,6 +194,17 @@ scripts/              Migration beim Build, Secret-Generator
   Was man nimmt, landet auf der Wunschliste und ist sofort gewählt.
 - **Wörter:** Kurz/Lang statt Klein/Groß, „Diese Woche“ statt „Runde 3“, „Plan bis …“ statt
   „Deadline“. Einstellungen: „Das Wichtigste“ oben, der Rest eingeklappt (M22).
+
+### Ideen in Kürze (M30)
+
+- **Eine Wunschliste:** Schritt 1 beim Planen ist die Wunschliste. „+ Idee“ steht direkt dort,
+  ⋯ an jeder Karte bearbeitet oder löscht, Antippen plant. 💡 oben zeigt dieselbe Liste zum Sammeln.
+- **Ideen, wenn ihr Zeit dafür habt:** Ist der/die andere dran, zeigt der Start „Solange swipen?“
+  mit dem Kartenstapel im Kleinformat (`SwipeTeaser`, `deckTeaser()`), dazu „Lieber selbst planen →“
+  (`/plan?self=1`). Steht das Date, gibt es „Solange swipen?“ als kleine Zeile darunter.
+- **Nach dem Bewerten:** „Nächstes Mal?“ mit den drei Ideen, die am längsten warten – ein Tipp plant.
+- **💡 hat zwei Reiter** (Wunschliste, Swipen). „Was läuft“ steckt in „Was anderes …“ beim Planen
+  (Events, bei denen ihr beide Zeit habt, plus „Alles, was in Köln läuft →“) und im Swipe-Stapel.
 
 ### Design in Kürze (M29, Richtung A)
 

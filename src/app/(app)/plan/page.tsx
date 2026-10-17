@@ -19,11 +19,14 @@ import { loadOverview, StartSection } from "../overview";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { buttonClass } from "@/components/button";
 import { SwapIcon } from "@/components/icons";
+import { SwipeTeaser } from "@/components/swipe-teaser";
 import type { NextDateInfo } from "@/components/swap-confirm";
 
 export default function PlanPage({ searchParams }: PageProps<"/plan">) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
+      {/* The step card says what's up – the page title is for screen readers. */}
+      <h1 className="sr-only">Date planen</h1>
       <AppHeader />
       <Suspense fallback={<SlotsSkeleton />}>
         <Plan searchParams={searchParams} />
@@ -46,10 +49,10 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
   const [params, overview] = await Promise.all([searchParams, loadOverview(ctx, settings, now)]);
   // "Lieber selbst aussuchen" in suggestion mode: the flow instead of the proposal.
   const self = params.self === "1";
-  const top = (afterDate?: React.ReactNode) => (
+  const top = (afterDate?: React.ReactNode, teaser?: React.ReactNode) => (
     <>
       <AutoRefresh />
-      <StartSection o={overview} ctx={ctx} now={now} afterDate={afterDate} hideSuggestion={self} />
+      <StartSection o={overview} ctx={ctx} now={now} afterDate={afterDate} teaser={teaser} hideSuggestion={self} />
     </>
   );
   const later = params.later === "1";
@@ -86,6 +89,8 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
       size: idea.size,
       costEur: idea.costEur,
       location: idea.location,
+      note: idea.note,
+      url: idea.url,
       matched: matched.has(idea.id),
       overBudget: Boolean(budget && budgetHint(idea.costEur, budget.left)),
       creator: idea.createdById ? (people[idea.createdById] ?? null) : null,
@@ -98,6 +103,8 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
         <Link href="/plan?pick=1" className={buttonClass("secondary", "md", "w-full")}>
           <SwapIcon width={20} height={20} /> Lieber was anderes machen?
         </Link>,
+        // The date stands – collecting ideas for the next one is what is left to do.
+        <SwipeTeaser deck={overview.deck} />,
       );
     }
     return (
@@ -115,8 +122,16 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
     );
   }
 
-  // The step card above says whose turn it is – the page title is for screen readers.
-  const heading = !reschedule && <h1 className="sr-only">Date planen</h1>;
+
+  // The other one plans this time: swiping is the useful thing to do; planning yourself is one tap away.
+  if (!reschedule && !self && overview.step?.kind === "partner_turn") {
+    return top(
+      <Link href="/plan?self=1" className="self-center text-sm font-extrabold underline">
+        Lieber selbst planen →
+      </Link>,
+      <SwipeTeaser deck={overview.deck} big />,
+    );
+  }
 
   // Suggestion mode: the proposal is the start; planning yourself is one tap away.
   if (!reschedule && !self && overview.suggestion?.status === "ok") {
@@ -142,7 +157,6 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
     return (
       <>
         {top()}
-        {heading}
         <ConnectCalendarCard people={overview.calendars} next="/plan" />
       </>
     );
@@ -164,7 +178,6 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
         ) : (
           <>
             {top()}
-            {heading}
             {roundInfo}
           </>
         )

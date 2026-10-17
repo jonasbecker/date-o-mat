@@ -30,6 +30,7 @@ import { extraOn } from "@/server/settings";
 import { upcomingForHome } from "@/server/special-days";
 import { currentSuggestion } from "@/server/suggestions";
 import { lastTick } from "@/server/system-status";
+import { deckTeaser } from "@/server/deck";
 
 /** Checklist, conversation cards and surprise notes for an upcoming date. */
 export async function dateExtrasFor(ctx: CoupleContext, settings: CoupleSettings, date: DatePlan, now: Date): Promise<DateCardExtras> {
@@ -58,6 +59,7 @@ export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings,
     budgetState(coupleId, now),
     upcomingForHome(ctx, now, SHOW_DAYS_BEFORE),
   ]);
+  const deck = await deckTeaser(ctx, now);
   // A surprise stays one: the partner sees time and hint only.
   const shownDate = nextDate ? dateForViewer(nextDate, user.id, [user, partner], now) : undefined;
   const dateExtras = nextDate ? await dateExtrasFor(ctx, settings, nextDate, now) : undefined;
@@ -96,6 +98,7 @@ export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings,
     storyYear: extraOn(settings, "story") ? storyYearToShow(now) : null,
     roundDate,
     suggestion,
+    deck,
   };
 }
 
@@ -113,13 +116,16 @@ export function StartSection({
   ctx,
   now,
   afterDate,
+  teaser,
   hideSuggestion = false,
 }: {
   o: Overview;
   ctx: CoupleContext;
   now: Date;
-  /** Right below the next date (e.g. "Lieber was anderes machen?"). */
+  /** At the bottom, with "Passt!" (e.g. "Lieber was anderes machen?"). */
   afterDate?: React.ReactNode;
+  /** "Solange swipen?" – below the date or the step card. */
+  teaser?: React.ReactNode;
   /** "Lieber selbst aussuchen": the flow takes the place of the proposal. */
   hideSuggestion?: boolean;
 }) {
@@ -163,6 +169,8 @@ export function StartSection({
       {/* "Passt!" sits in the step card when there is one; the details are one tap away. */}
       {/* The whole date right here – the start page has the room. "Passt!" sits at the bottom. */}
       {o.shownDate && <DateCard date={o.shownDate} me={user} partner={partner} showConfirm={false} extras={o.dateExtras} compact />}
+
+      {teaser}
 
       {o.roundDate?.status === "done" && (
         <form action={notHappenedAction.bind(null, o.roundDate.id)} className="-mt-2 self-center">

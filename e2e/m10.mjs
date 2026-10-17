@@ -57,7 +57,7 @@ const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/ideas/koeln`);
 await j.waitForURL(/\/ideas\/entdecken/, { timeout: 15000 });
 check("/ideas/koeln redirects to the swipe deck", true);
-check("three tabs: Wunschliste, Swipen, Was läuft", (await j.getByRole("navigation", { name: "Ideen" }).getByRole("link").allInnerTexts()).join("|") === "💡 Wunschliste|💞 Swipen|🎟️ Was läuft");
+check("two tabs: Wunschliste, Swipen", (await j.getByRole("navigation", { name: "Ideen" }).getByRole("link").allInnerTexts()).join("|") === "💡 Wunschliste|💞 Swipen");
 let koelnCards = 0;
 for (let i = 0; i < 20 && koelnCards === 0; i++) {
   await j.waitForTimeout(500);

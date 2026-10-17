@@ -1,7 +1,7 @@
 import type { IdeaSize, UserColor } from "@/lib/domain";
 import { displayHost, formatCost } from "@/lib/idea-input";
 import { Avatar } from "./avatar";
-import { PinIcon } from "./icons";
+import { MoreIcon, PinIcon } from "./icons";
 import { SizeChip } from "./size-chip";
 
 /** What an idea card shows – the same card on the wishlist and in the planning flow. */
@@ -28,7 +28,7 @@ export function ideaFacts(idea: Pick<IdeaCardView, "costEur" | "location">): str
 }
 
 /** One idea; tapping it does what the list is for (menu on the wishlist, next step when planning). */
-export function IdeaCard({ idea, onOpen }: { idea: IdeaCardView; onOpen: () => void }) {
+export function IdeaCard({ idea, onOpen, onMore }: { idea: IdeaCardView; onOpen: () => void; /** ⋯ – edit or delete (where tapping does something else). */ onMore?: () => void }) {
   const cost = formatCost(idea.costEur);
   return (
     <div className="flat tap relative flex flex-col gap-1.5 rounded-[18px] bg-surface px-3.5 py-3">
@@ -41,7 +41,19 @@ export function IdeaCard({ idea, onOpen }: { idea: IdeaCardView; onOpen: () => v
         >
           {idea.title}
         </button>
-        {idea.creator && <Avatar person={idea.creator} size={26} className="mt-0.5" />}
+        <span className="flex shrink-0 items-center gap-1.5">
+          {idea.creator && <Avatar person={idea.creator} size={26} className="mt-0.5" />}
+          {onMore && (
+            <button
+              type="button"
+              onClick={onMore}
+              aria-label={`${idea.title} bearbeiten`}
+              className="relative z-10 -mr-1.5 flex size-8 items-center justify-center rounded-full text-muted"
+            >
+              <MoreIcon width={20} height={20} />
+            </button>
+          )}
+        </span>
       </div>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] font-extrabold text-muted">
         <SizeChip size={idea.size} />

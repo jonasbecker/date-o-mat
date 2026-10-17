@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { PageSkeleton } from "@/components/app-header";
+import { AppHeader, PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { IdeasTop } from "@/components/ideas-top";
 import { agoLabel, dayHeading } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
@@ -18,8 +17,8 @@ export const maxDuration = 60;
 export default function EventsPage({ searchParams }: PageProps<"/events">) {
   return (
     <div className="flex flex-col gap-4">
-      <IdeasTop current="events" />
-      <h1 className="text-[30px] font-bold">Was läuft</h1>
+      <AppHeader current="ideas" />
+      <h1 className="text-[26px] font-bold leading-tight">Was läuft</h1>
       <Suspense fallback={<PageSkeleton />}>
         <Events searchParams={searchParams} />
       </Suspense>

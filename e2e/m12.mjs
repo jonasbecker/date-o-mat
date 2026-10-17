@@ -262,9 +262,9 @@ const jd = await pageFor(jonas.token, "dark");
 await jd.goto(`${BASE}/events`);
 await jd.getByText("Jazz im Stadtgarten").waitFor({ timeout: 15000 });
 await jd.screenshot({ path: `${OUT}m12-04-events-dark.png` });
-await jd.getByRole("link", { name: "💡 Wunschliste" }).click();
+await jd.getByRole("link", { name: "Ideen" }).click();
 await jd.getByRole("heading", { name: "Wunschliste" }).waitFor({ timeout: 10000 });
-check("tabs switch to the wishlist", true);
+check("from the events back to the wishlist (💡)", true);
 
 // 7) Tick refreshes due sources (one per tick), not before 05:00
 await db.query("UPDATE event_sources SET last_fetched_at = now() - interval '1 day'");

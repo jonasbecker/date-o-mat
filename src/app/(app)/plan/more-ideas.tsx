@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { AiIdeas } from "@/components/ai-ideas";
 import { Button } from "@/components/button";
@@ -60,6 +61,12 @@ export function MoreIdeas({
         />
         <FilterButton />
       </div>
+
+      {events !== null && (
+        <Link href="/events" className="self-start text-sm font-extrabold underline">
+          🎟️ Alles, was in Köln läuft →
+        </Link>
+      )}
 
       {shownEvents.length > 0 && (
         <section className="flex flex-col gap-2.5">
