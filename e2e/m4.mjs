@@ -165,7 +165,7 @@ const first = await j.locator("[data-next-step] [data-suggestion] p.font-display
 check(`a suggestion with an idea is shown (${first})`, ["Picknick im Stadtwald", "Ramen kochen", "Wandern"].includes(first));
 await j.waitForTimeout(300);
 await j.screenshot({ path: `${SHOTS}m4-05-suggestion.png` });
-check("open proposal: the box has the room, swiping is one line", (await j.locator("[data-swipe-teaser]").filter({ visible: true }).count()) === 1 && (await j.locator('[data-swipe-deck="start"]').count()) === 0);
+check("open proposal: the box first, swiping below it (card or one line)", (await j.locator("[data-swipe-teaser], [data-swipe-deck=\"start\"]").filter({ visible: true }).count()) === 1);
 check("the proposal state fits the screen", await fitsScreen(j));
 const before = (await db.query("SELECT starts_at, idea_id FROM suggestions WHERE status = 'pending'")).rows[0];
 await s.goto(`${BASE}/`);

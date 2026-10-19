@@ -49,6 +49,7 @@ gemeinsame Ideen-Wunschliste.
 | M35 | Der Top-Tipp passt zur Idee: Tageslicht (Sonnenuntergang) und Wetter für Draußen-Ideen, Begründung an der Zeit, `ideas.setting` | ✅ |
 | M36 | Swipen, das man sieht: Kategorien als Chips über der Wunschliste, Herkunft („von dir geswipt“), Fortschritt, Stapel, Flug zum 💡 mit wachsendem Zähler, `ideas.category` | ✅ |
 | M37 | Untere Leiste: das Logo groß in der Mitte (startet „Date planen“), links 💡 Ideen, rechts ♥ Dates; oben nur Name und Einstellungen, die Seiten klappen nicht mehr herunter | ✅ |
+| M38 | Der Start ist nie leer: steht etwas an, bekommt die Swipe-Karte trotzdem den Rest des Bildschirms; nur bei zu wenig Platz bleibt die eine Zeile | ✅ |
 
 ## Tech-Stack
 
@@ -218,8 +219,9 @@ scripts/              Migration beim Build, Secret-Generator
 
 - `deckSize()` in `src/core/start-layout.ts` entscheidet pro Zustand: Steht etwas an (Passt! geben
   oder abwarten, ein Date in dieser Runde, ein Date zu bewerten, ein offener Vorschlag, ein Kalender
-  zu verbinden), bekommt der Kasten den Platz und Swipen ist eine Zeile („6 neue Ideen zum Swipen ›“).
-  Die große Karte gibt es, wenn nichts ansteht (du bist dran, die andere Person ist dran, Runde vorbei).
+  zu verbinden), steht der Kasten oben. Seit M38 bekommt die Swipe-Karte darunter den Rest des
+  Bildschirms (CSS-Container-Query `.deck-fit` in `globals.css`); nur wenn weniger als 15 rem übrig
+  sind, bleibt eine Zeile („6 neue Ideen zum Swipen ›“). Wenn nichts ansteht, ist die Karte groß.
 - **„Wie war's?“** zeigt Titel, Datum, das erste Foto und fünf Herzen; ein Tipp auf ein Herz öffnet die
   Bewertung mit dieser Zahl (`/dates/<id>?herzen=n`). Steht ein anderer Schritt oben, bekommt die
   Bewertung eine eigene Karte.

@@ -87,9 +87,17 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
       <>
         <AutoRefresh intervalMs={deck.generating ? 6_000 : undefined} />
         <StartSection o={overview} ctx={ctx} now={now} swappable={swappable} />
-        {/* Something pending: the box gets the room and swiping is one line. Otherwise the card is big. */}
+        {/* Something pending: the box comes first. The swipe card takes what is left of the screen
+            and shrinks to one line only when that is too little (deck-fit, globals.css). */}
         {deckSize(overview.step?.kind ?? null, overview.suggestion?.status === "ok", Boolean(overview.toReview)) === "teaser" ? (
-          <SwipeTeaser count={deck.cards.length} />
+          <div className="deck-fit">
+            <div className="deck-full">
+              <SwipeDeck {...deck} partnerName={ctx.partner.name} compact />
+            </div>
+            <div className="deck-teaser">
+              <SwipeTeaser count={deck.cards.length} />
+            </div>
+          </div>
         ) : (
           <SwipeDeck {...deck} partnerName={ctx.partner.name} compact />
         )}
