@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { genitive } from "@/lib/format";
 import { connectCalendarHref } from "./connect-calendar";
@@ -18,12 +17,10 @@ export function SetupChecklist({
   calendar,
   partnerName,
   partnerCalendar,
-  pushOn,
 }: {
   calendar: boolean;
   partnerName: string;
   partnerCalendar: boolean;
-  pushOn: boolean;
 }) {
   const [shown, setShown] = useState(0);
   const [env, setEnv] = useState<{ phone: boolean; installed: boolean; ios: boolean; dismissed: boolean } | null>(null);
@@ -70,21 +67,6 @@ export function SetupChecklist({
       hint: env.ios ? "Safari: Teilen-Symbol → „Zum Home-Bildschirm“ → Hinzufügen. Danach die App über das Icon öffnen." : "Browser-Menü (⋮) → „App installieren“ oder „Zum Startbildschirm hinzufügen“.",
     });
   }
-  items.push({
-    key: "push",
-    done: pushOn,
-    label: "Erinnerungen sind an",
-    todo: "Schalte die Erinnerungen an",
-    hint:
-      env.ios && !env.installed ? (
-        "Auf dem iPhone geht das erst, wenn die App auf dem Home-Bildschirm liegt."
-      ) : (
-        <Link href="/settings?t=push" className="underline">
-          In den Einstellungen aktivieren
-        </Link>
-      ),
-  });
-
   const open = items.filter((item) => !item.done);
   if (open.length === 0) return null;
 

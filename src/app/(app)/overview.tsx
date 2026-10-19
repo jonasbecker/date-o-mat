@@ -8,6 +8,7 @@ import { ConnectCalendarCard } from "@/components/connect-calendar";
 import type { DateCardExtras } from "@/components/date-card";
 import { StartDate } from "@/components/start-date";
 import { NextStepCard } from "@/components/next-step";
+import { PushRow } from "@/components/push-row";
 import { SetupChecklist } from "@/components/setup-checklist";
 import { SuggestionCard } from "@/components/suggestion-card";
 import { isSurpriseHidden, suggestTasks } from "@/core/date-extras";
@@ -25,7 +26,7 @@ import { listTasks } from "@/server/date-tasks";
 import { dateForViewer, upcomingDate } from "@/server/dates";
 import type { CoupleSettings, DatePlan } from "@/server/db/schema";
 import { env } from "@/server/env";
-import { countSubscriptions } from "@/server/push";
+import { countSubscriptions, pushPublicKey } from "@/server/push";
 import { dateToReview } from "@/server/reviews";
 import { extraOn } from "@/server/settings";
 import { upcomingForHome } from "@/server/special-days";
@@ -50,11 +51,12 @@ export async function dateExtrasFor(ctx: CoupleContext, settings: CoupleSettings
 export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings, now: Date) {
   const { user, partner, coupleId } = ctx;
   const cycle = await ensureCurrentCycle(coupleId, now);
-  const [calendars, history, nextDate, pushDevices, toReview, tick, budget, specialDays] = await Promise.all([
+  const [calendars, history, nextDate, pushDevices, partnerPushDevices, toReview, tick, budget, specialDays] = await Promise.all([
     calendarStates(ctx),
     cycleHistory(coupleId),
     upcomingDate(coupleId, now),
     countSubscriptions(user.id),
+    countSubscriptions(partner.id),
     dateToReview(ctx, now),
     lastTick(),
     budgetState(coupleId, now),
@@ -90,7 +92,7 @@ export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings,
     toReview,
     calendars,
     previous: history.at(-2),
-    pushDevices,
+    push: { publicKey: pushPublicKey(), mine: pushDevices, partner: partnerPushDevices },
     tick,
     realNow,
     cronStale,
@@ -208,11 +210,12 @@ export function StartSection({
       {/* The budget only speaks up when it gets tight; otherwise it lives under /budget. */}
       {o.budget && o.budget.level !== "ok" && <BudgetBar {...o.budget} />}
 
+      <PushRow publicKey={o.push.publicKey} myDevices={o.push.mine} partnerDevices={o.push.partner} partnerName={partner.name} />
+
       <SetupChecklist
         calendar={o.calendars.find((p) => p.isMe)?.state === "connected"}
         partnerName={partner.name}
         partnerCalendar={o.calendars.find((p) => !p.isMe)?.state === "connected"}
-        pushOn={o.pushDevices > 0}
       />
     </>
   );

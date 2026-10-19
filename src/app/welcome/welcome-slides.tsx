@@ -2,14 +2,38 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/button";
+import { IosInstallGuide, PushDeniedHelp } from "@/components/ios-install-guide";
 import { LogoLockup } from "@/components/logo";
+import { usePush } from "@/components/use-push";
 import { cn } from "@/lib/cn";
 import { finishOnboardingAction } from "./actions";
 
-export type Slide = { emoji: string; title: string; text: string; tone: string };
+export type Slide = { emoji: string; title: string; text: string; tone: string; /** The slide that turns reminders on. */ push?: boolean };
+
+/** The reminders card: one tap asks for permission and registers this device. */
+function PushSlideAction({ push }: { push: ReturnType<typeof usePush> }) {
+  if (push.support === null) return <div className="h-12 w-full animate-pulse rounded-2xl bg-track/60" />;
+  if (push.subscription) return <p className="font-display text-xl font-semibold">🔔 Erinnerungen sind an</p>;
+  if (push.permission === "denied") return <PushDeniedHelp />;
+  if (push.support === "ios-browser") return <IosInstallGuide />;
+  if (push.support === "unsupported") return <p className="text-sm font-bold">Dieser Browser kann keine Erinnerungen schicken.</p>;
+  return (
+    <div className="flex w-full flex-col gap-2">
+      <Button size="lg" className="w-full" onClick={push.enable} disabled={push.pending}>
+        🔔 Erinnerungen an
+      </Button>
+      {push.message && (
+        <p role="status" className="text-sm font-bold">
+          {push.message}
+        </p>
+      )}
+    </div>
+  );
+}
 
 /** Swipeable intro cards (scroll-snap), with dots and a "Weiter" button. */
-export function WelcomeSlides({ slides }: { slides: Slide[] }) {
+export function WelcomeSlides({ slides, publicKey }: { slides: Slide[]; publicKey: string | null }) {
+  const push = usePush(publicKey);
   const track = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
   const last = index === slides.length - 1;
@@ -53,6 +77,7 @@ export function WelcomeSlides({ slides }: { slides: Slide[] }) {
               </span>
               <h1 className="text-[32px] font-bold leading-tight">{slide.title}</h1>
               <p className="text-lg font-semibold">{slide.text}</p>
+              {slide.push && publicKey && <PushSlideAction push={push} />}
             </div>
           </section>
         ))}
@@ -71,11 +96,20 @@ export function WelcomeSlides({ slides }: { slides: Slide[] }) {
       </div>
 
       {last ? (
-        <form action={finishOnboardingAction}>
-          <Button type="submit" size="lg" className="w-full">
-            Los geht&apos;s 🎉
-          </Button>
-        </form>
+        // Without reminders the way out is a small "Später" – with them (or if there is nothing to turn on) the big button.
+        slides[index].push && publicKey && !push.subscription && push.support !== "unsupported" ? (
+          <form action={finishOnboardingAction} className="flex justify-center">
+            <button type="submit" className="text-sm font-extrabold text-muted underline">
+              Später
+            </button>
+          </form>
+        ) : (
+          <form action={finishOnboardingAction}>
+            <Button type="submit" size="lg" className="w-full">
+              Los geht&apos;s 🎉
+            </Button>
+          </form>
+        )
       ) : (
         <Button size="lg" className="w-full" onClick={() => goTo(index + 1)}>
           Weiter

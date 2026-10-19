@@ -198,8 +198,27 @@ await iphone.goto(`${BASE}/`);
 await iphone.getByText("Leg den Date-O-Mat auf den Home-Bildschirm").waitFor({ timeout: 10000 });
 check("iOS browser: checklist explains installing first", await iphone.getByText(/Teilen-Symbol → „Zum Home-Bildschirm“/).isVisible());
 await iphone.screenshot({ path: `${SHOTS}m6-03-ios-home.png` });
-await iphone.getByRole("button", { name: "Nächster Punkt" }).click();
-check("iOS browser: reminders wait for the install", await iphone.getByText("Auf dem iPhone geht das erst, wenn die App auf dem Home-Bildschirm liegt.").isVisible());
+check("iOS browser: the start says reminders need the app", await iphone.getByText("Erinnerungen gehen erst als App.").isVisible());
+await iphone.getByRole("button", { name: "So geht's" }).click();
+check("…and \"So geht's\" opens the install guide", await iphone.locator("dialog[open]").getByText("Erst auf den Home-Bildschirm").isVisible());
+await iphone.keyboard.press("Escape");
+
+// The other person has no device: a quiet line for Jonas, snoozed for a week
+await j.goto(`${BASE}/`);
+const partnerLine = j.getByText("Sam bekommt keine Erinnerungen – sag Bescheid.");
+await partnerLine.waitFor({ timeout: 15000 });
+check("Jonas sees that Sam gets no reminders", true);
+await j.screenshot({ path: `${SHOTS}m6-04-partner-line.png` });
+await j.getByRole("button", { name: "Eine Woche ausblenden" }).click();
+await partnerLine.waitFor({ state: "hidden", timeout: 5000 });
+await j.reload();
+await j.locator("[data-next-step]").filter({ visible: true }).first().waitFor({ timeout: 15000 });
+await j.waitForTimeout(500);
+check("snoozed: still gone after a reload", (await partnerLine.count()) === 0);
+await j.evaluate(() => localStorage.setItem("dom-partner-push-snoozed", String(Date.now() - 8 * 86_400_000)));
+await j.reload();
+await partnerLine.waitFor({ timeout: 15000 });
+check("after a week the line is back", true);
 
 await browser.close();
 await db.end();

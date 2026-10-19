@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { LogoMark } from "@/components/logo";
 import type { Rhythm } from "@/lib/domain";
 import { requireCouple } from "@/server/auth/dal";
+import { pushPublicKey } from "@/server/push";
 import { getCoupleSettings } from "@/server/settings";
 import { WelcomeSlides, type Slide } from "./welcome-slides";
 
@@ -24,6 +25,7 @@ export default function WelcomePage() {
 
 async function Welcome() {
   const { user, partner, coupleId } = await requireCouple();
+  const publicKey = pushPublicKey();
   const settings = await getCoupleSettings(coupleId);
   const slides: Slide[] = [
     {
@@ -50,9 +52,16 @@ async function Welcome() {
     {
       emoji: "💡",
       title: "Idee → Zeit → fertig",
-      text: "Die App ist ein Weg: Idee aussuchen, Zeit wählen, fertig 🎉. Steht ein Date, siehst du es gleich beim Öffnen. Oben links 💡 sammelt ihr Ideen (oder swipt – was du nach rechts wischst, kommt auf die Wunschliste; wollt ihr beide, ist es ein 💞 Match), oben rechts 💞 eure bisherigen Dates und ⚙️ die Einstellungen.",
+      text: "Die App ist ein Weg: „Date planen“, Idee aussuchen, Zeit wählen, fertig 🎉. Steht ein Date, siehst du es gleich beim Öffnen – darunter swipst du neue Ideen (was du nach rechts wischst, kommt auf die Wunschliste; wollt ihr beide, ist es ein 💞 Match). Oben rechts: 💡 Wunschliste, 💞 bisherige Dates und ⚙️ Einstellungen.",
       tone: "bg-minze-soft",
     },
+    {
+      emoji: "🔔",
+      title: "Damit ihr kein Date vergesst",
+      text: "Der Date-O-Mat erinnert euch, wenn ihr dran seid, wenn etwas ansteht und vor dem Date. Ohne Erinnerungen vergisst man es doch.",
+      tone: "bg-zitrone-soft",
+      push: true,
+    },
   ];
-  return <WelcomeSlides slides={slides} />;
+  return <WelcomeSlides slides={slides} publicKey={publicKey} />;
 }

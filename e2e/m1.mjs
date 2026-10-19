@@ -3,6 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import pg from "pg";
 import { chromium } from "playwright";
 import { resetDb } from "./db.mjs";
+import { stubPush } from "./push-stub.mjs";
 
 const BASE = "http://localhost:3000";
 const SHOTS = new URL("./shots/", import.meta.url).pathname;
@@ -50,7 +51,9 @@ await garbage.waitForURL("**/login", { timeout: 10000 }).catch(() => {});
 check("invalid session cookie ends on /login", garbage.url().endsWith("/login"));
 
 // A: no couple yet → /pair
-const a = await (await contextFor(tokenA)).newPage();
+const aContext = await contextFor(tokenA);
+await stubPush(aContext);
+const a = await aContext.newPage();
 await a.goto(`${BASE}/`);
 await a.waitForURL("**/pair", { timeout: 10000 }).catch(() => {});
 check("user without couple is sent to /pair", a.url().endsWith("/pair"));
@@ -66,7 +69,9 @@ check(`invite code shown (${code})`, /^[A-Z2-9]{3}-[A-Z2-9]{3}$/.test(code));
 await a.screenshot({ path: `${SHOTS}03-pair-code.png` });
 
 // B: wrong format, then the real code typed sloppily
-const b = await (await contextFor(tokenB)).newPage();
+const bContext = await contextFor(tokenB);
+await stubPush(bContext);
+const b = await bContext.newPage();
 await b.goto(`${BASE}/pair`);
 await b.getByLabel("Einladungscode").fill("ABC");
 await b.getByRole("button", { name: "Beitreten" }).click();
@@ -81,11 +86,21 @@ await b.getByRole("heading", { name: /^Willkommen, / }).waitFor({ timeout: 10000
 check(`partner joins with lowercase code and sees the introduction (${b.url()})`, b.url().endsWith("/welcome"));
 await b.waitForTimeout(1000); // let the page hydrate before swiping
 await b.screenshot({ path: `${SHOTS}05a-welcome.png` });
-for (let i = 0; i < 3; i++) {
+for (let i = 0; i < 4; i++) {
   await b.getByRole("button", { name: "Weiter" }).click();
   await b.waitForTimeout(450);
 }
+// The last card turns reminders on: "Später" is small, the big button only comes with push.
+const pushCard = b.getByRole("heading", { name: "Damit ihr kein Date vergesst" });
+check("last card of the introduction: reminders", await pushCard.isVisible());
+check("…with a small \"Später\" and no big way out yet", (await b.getByRole("button", { name: "Später" }).isVisible()) && (await b.getByRole("button", { name: "Los geht's 🎉" }).count()) === 0);
 await b.screenshot({ path: `${SHOTS}05b-welcome-last.png` });
+await b.getByRole("button", { name: "🔔 Erinnerungen an" }).click();
+await b.getByText("🔔 Erinnerungen sind an").waitFor({ timeout: 10000 });
+const { rows: [pushed] } = await db.query("SELECT count(*)::int AS n FROM push_subscriptions s JOIN users u ON u.id = s.user_id WHERE u.email = 'partnerin@example.com'");
+check(`one tap asks for permission and saves the device (${pushed.n})`, pushed.n === 1);
+check("now the big \"Los geht's\" is there", await b.getByRole("button", { name: "Los geht's 🎉" }).isVisible());
+await b.screenshot({ path: `${SHOTS}05c-welcome-push-on.png` });
 await b.getByRole("button", { name: "Los geht's 🎉" }).click();
 await b.waitForURL(`${BASE}/plan`, { timeout: 10000 }).catch(() => {});
 await b.getByRole("heading", { name: "Verbinde deinen Google Kalender" }).waitFor({ timeout: 10000 }).catch(() => {});
@@ -109,6 +124,17 @@ await a.getByRole("heading", { name: "Date planen" }).waitFor({ timeout: 15000 }
 check("no bottom bar – the start is the flow", (await a.getByRole("navigation", { name: "Hauptnavigation" }).count()) === 0 && (await a.getByRole("heading", { name: "Date planen" }).isVisible()));
 check("header icons: 💡 Ideen, 💞 Dates, ⚙️ Einstellungen", (await header.getByRole("link", { name: "Ideen" }).isVisible()) && (await header.getByRole("link", { name: "Eure Dates" }).isVisible()) && (await header.getByRole("link", { name: "Einstellungen" }).isVisible()));
 
+// Reminders: my own line stays until a device of mine is registered – one tap, no detour
+const pushLine = a.getByText("Damit ihr kein Date vergesst: Erinnerungen an.");
+await pushLine.waitFor({ timeout: 15000 });
+check("start: a line asks for reminders, with a one-tap button", await a.getByRole("button", { name: "Aktivieren" }).isVisible());
+check("…and it cannot be dismissed (only the button is in it)", (await a.locator("[role=note]").filter({ hasText: "Erinnerungen an" }).getByRole("button").count()) === 1);
+await a.screenshot({ path: `${SHOTS}05d-push-row.png` });
+await a.getByRole("button", { name: "Aktivieren" }).click();
+await pushLine.waitFor({ state: "hidden", timeout: 10000 });
+const { rows: [jonasPush] } = await db.query("SELECT count(*)::int AS n FROM push_subscriptions s JOIN users u ON u.id = s.user_id WHERE u.email = 'jonas@example.com'");
+check(`one tap on the start registers the device and the line is gone (${jonasPush.n})`, jonasPush.n === 1);
+
 // A third person cannot use the (now deleted) code
 const c = await (await contextFor(tokenC)).newPage();
 await c.goto(`${BASE}/pair`);
@@ -120,8 +146,18 @@ const { rows: members } = await db.query("SELECT count(*)::int AS n FROM users W
 check("couple has exactly two members", members[0].n === 2);
 
 // Dark mode screenshot
-const dark = await (await contextFor(tokenB, "dark")).newPage();
+// Sam says no to notifications: the start explains how to allow them again.
+await db.query("DELETE FROM push_subscriptions");
+const darkContext = await contextFor(tokenB, "dark");
+await stubPush(darkContext, "denied");
+const dark = await darkContext.newPage();
 await dark.goto(`${BASE}/`);
+await dark.getByRole("button", { name: "Aktivieren" }).click();
+await dark.getByText("Erinnerungen sind blockiert.").waitFor({ timeout: 10000 });
+await dark.getByRole("button", { name: "So erlaubst du sie" }).click();
+check("denied: the start shows how to allow notifications again", await dark.locator("dialog[open]").getByText("Stelle „Benachrichtigungen“ auf „Zulassen“.").isVisible());
+await dark.screenshot({ path: `${SHOTS}06b-push-denied-dark.png` });
+await dark.keyboard.press("Escape");
 await dark.getByRole("heading", { name: "Date planen" }).waitFor();
 await dark.waitForTimeout(400);
 await dark.screenshot({ path: `${SHOTS}06-home-dark.png` });
