@@ -12,7 +12,7 @@ import { SwapConfirm, type NextDateInfo } from "@/components/swap-confirm";
 import { IdeaForm, type IdeaFormDefaults } from "@/components/idea-form";
 import { Sheet, type SheetHandle } from "@/components/sheet";
 import { IdeaCard } from "@/components/idea-card";
-import { CalendarIcon, PencilIcon, SwapIcon } from "@/components/icons";
+import { CalendarIcon, HeartIcon, PencilIcon, SwapIcon } from "@/components/icons";
 import { Mascot } from "@/components/mascot";
 import type { UserColor } from "@/lib/domain";
 import { archiveIdeaAction, updateIdeaAction } from "./actions";
@@ -65,7 +65,12 @@ export function IdeaBoard({
         <h1 className="text-[30px] font-bold">
           Wunschliste <span className="font-sans text-base font-extrabold text-muted">· {ideas.length}</span>
         </h1>
-        {ideas.length > 0 && <FilterButton />}
+        <div className="flex items-center gap-2">
+          {ideas.length > 0 && <FilterButton />}
+          <Link href="/ideas/entdecken" className="flat tap flex h-9 items-center gap-1.5 rounded-full bg-surface px-3 text-sm font-extrabold">
+            <HeartIcon width={16} height={16} className="text-himbeere" /> Swipen
+          </Link>
+        </div>
       </div>
 
       {ideas.length > 0 && <CategoryChips counts={categoryCounts(ideas)} view={view} onView={setView} matches={matches.length} swiped={swiped.length} />}
@@ -107,7 +112,7 @@ export function IdeaBoard({
 }
 
 /** What tapping an idea offers: plan it (or do it instead of the next date) – or edit it. */
-function IdeaMenu({
+export function IdeaMenu({
   idea,
   next,
   canPlanNew,
@@ -162,7 +167,7 @@ function IdeaMenu({
   );
 }
 
-function footnote(idea: BoardIdea, people: Record<string, BoardPerson>): string | undefined {
+export function footnote(idea: BoardIdea, people: Record<string, BoardPerson>): string | undefined {
   const creator = idea.createdById ? people[idea.createdById]?.name : undefined;
   const editor = idea.updatedById ? people[idea.updatedById]?.name : undefined;
   if (!creator) return undefined;

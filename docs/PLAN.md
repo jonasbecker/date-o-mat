@@ -106,7 +106,8 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M35 | Top-Tipp passt zur Idee: Sonnenuntergang und Wetter für Draußen-Ideen, Begründung an der Zeit | ✅ |
 | M36 | Swipen befriedigend: Kategorien als Chips, Herkunft sichtbar, Fortschritt, Stapel, Flug zum 💡 | ✅ |
 | M37 | Untere Leiste mit großem Logo (Date planen) in der Mitte, Ideen links, Dates rechts; Einstellungen oben | ✅ |
-| M38 | Start nie leer: die Swipe-Karte füllt den Rest, die eine Zeile nur bei zu wenig Platz | ✅ |
+| M38 | Start nie leer: die Swipe-Karte füllt den Rest (durch M39 ersetzt) | ✅ |
+| M39 | Start = Kasten + Wunschliste (Tipp → Zeiten); Swipen als Knopf und im Logo-Menü | ✅ |
 
 Abweichungen in V2:
 
@@ -158,8 +159,9 @@ Abweichungen in V2:
 20. Seit M37 gibt es wieder eine Leiste unten (M26 hatte sie abgeschafft): der Daumen erreicht das
     Wichtigste, und das Logo als Mitte führt von jeder Seite zum Start ; auf dem Start selbst klappt es Aktionen auf (nichts passiert, bevor man eine wählt). Die
     Zähler-Marke `data-header-icon="wishlist"` sitzt jetzt dort (das 💚 beim Liken fliegt hin).
-21. Seit M38 entscheidet der Platz statt nur der Zustand, ob die Swipe-Karte oder eine Zeile steht
-    (`deckSize()` sagt nur noch, ob der Kasten Vorrang hat); reines CSS, damit nichts springt.
+21. Seit M39 steht unter dem Kasten die Wunschliste statt der Swipe-Karte: Wunschliste ist das, woraus ihr
+    wählt (Idee → Zeit, ein Tap weniger), Swipen ist Entdecken und braucht nicht jede Woche den
+    Platz. M34/M38 (`deckSize()`, Container-Query) entfielen damit; Swipen bleibt ein Knopf.
 
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 

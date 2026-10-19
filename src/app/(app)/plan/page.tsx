@@ -17,10 +17,9 @@ import { PlanFlow, type IdeaOption, type RescheduleInfo } from "./plan-form";
 import { AppHeader } from "@/components/app-header";
 import { loadOverview, StartSection } from "../overview";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { SwipeDeck } from "../ideas/entdecken/swipe-deck";
 import { DECK_REFILL_BELOW } from "@/core/deck";
-import { deckSize } from "@/core/start-layout";
-import { SwipeTeaser } from "@/components/swipe-teaser";
+import { StartIdeas } from "../start-ideas";
+import type { BoardIdea, BoardNextDate } from "../ideas/idea-board";
 import { refillDeck } from "@/server/deck";
 import type { NextDateInfo } from "@/components/swap-confirm";
 
@@ -81,26 +80,46 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
   const flow = Boolean(reschedule) || params.pick === "1" || self || later || typeof params.idea === "string" || params.size === "large";
   if (!flow || (roundDate && !swappable)) {
     const deck = overview.deck;
+    const [wishlistRows, matchedIds] = await Promise.all([listIdeas(ctx.coupleId), matchedIdeaIds(ctx.coupleId)]);
+    const startPeople = Object.fromEntries([ctx.user, ctx.partner].map((p) => [p.id, { name: p.name, color: p.color }]));
+    // Longest waiting first – the order the suggestion mode uses.
+    const startIdeas: BoardIdea[] = [...wishlistRows]
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      .map((idea) => ({
+        id: idea.id,
+        title: idea.title,
+        size: idea.size,
+        note: idea.note,
+        url: idea.url,
+        costEur: idea.costEur,
+        location: idea.location,
+        setting: idea.setting,
+        category: idea.category,
+        source: idea.source,
+        createdById: idea.createdById,
+        updatedById: idea.updatedById,
+        matched: matchedIds.has(idea.id),
+      }));
+    // Someone else's surprise is theirs to change – and its idea stays unmarked.
+    const shown = overview.shownDate;
+    const startNext: BoardNextDate | null = shown
+      ? {
+          id: shown.id,
+          title: shown.title,
+          when: `${formatShortDate(shown.startsAt)}, ${formatTimeRange(shown.startsAt, shown.endsAt)}`,
+          size: shown.size,
+          ideaId: shown === overview.nextDate ? shown.ideaId : null,
+          swappable: shown === overview.nextDate,
+        }
+      : null;
     // Running low: the next batch is made in the background, AutoRefresh brings it in.
     if (!deck.generating && deck.cards.length < DECK_REFILL_BELOW) after(() => refillDeck(ctx.coupleId, now));
     return (
       <>
         <AutoRefresh intervalMs={deck.generating ? 6_000 : undefined} />
         <StartSection o={overview} ctx={ctx} now={now} swappable={swappable} />
-        {/* Something pending: the box comes first. The swipe card takes what is left of the screen
-            and shrinks to one line only when that is too little (deck-fit, globals.css). */}
-        {deckSize(overview.step?.kind ?? null, overview.suggestion?.status === "ok", Boolean(overview.toReview)) === "teaser" ? (
-          <div className="deck-fit">
-            <div className="deck-full">
-              <SwipeDeck {...deck} partnerName={ctx.partner.name} compact />
-            </div>
-            <div className="deck-teaser">
-              <SwipeTeaser count={deck.cards.length} />
-            </div>
-          </div>
-        ) : (
-          <SwipeDeck {...deck} partnerName={ctx.partner.name} compact />
-        )}
+        {/* Below the box: the wishlist. Tapping an idea plans it (swiping is a button next to the title). */}
+        <StartIdeas ideas={startIdeas} people={startPeople} next={startNext} canPlanNew={!overview.nextDate || cycle?.status === "open"} partnerName={ctx.partner.name} swipeCount={deck.cards.length} />
       </>
     );
   }

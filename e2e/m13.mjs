@@ -73,22 +73,32 @@ check(`next step: "${await heading(j)}"`, (await heading(j)) === "Du bist dran!"
 check("period instead of round number", await j.locator("[data-next-step]").getByText(/^Diese Woche · Plan bis/).isVisible());
 check("home is focused: no separate surprise / push cards", (await j.getByRole("button", { name: /Überrasch uns/ }).count()) === 0);
 check("'Date planen' sits in the step card", await j.locator("[data-next-step]").filter({ visible: true }).getByRole("link", { name: "Date planen", exact: true }).isVisible());
-const startDeck = j.locator('[data-swipe-deck="start"]');
-await startDeck.locator('[aria-roledescription="Karte"]').waitFor({ timeout: 15000 });
-check("the swipe deck sits right below it", (await startDeck.getByRole("button", { name: "Gefällt mir" }).isVisible()) && (await startDeck.getByRole("heading", { name: "Minigolf im Rheinpark" }).isVisible()));
+const startIdeas = j.locator("[data-start-ideas]").filter({ visible: true });
+await startIdeas.locator("li").first().waitFor({ timeout: 15000 });
+check("the wishlist sits right below the box, longest waiting first", (await startIdeas.locator("li").count()) === 4 && (await startIdeas.locator("li").first().innerText()).includes("Picknick im Stadtwald"));
+check("swiping is one button next to the title", await startIdeas.locator("[data-swipe-link]").isVisible());
 await j.screenshot({ path: `${OUT}m13-01-home-plan.png`, fullPage: true });
-check("start with the deck fits the screen", await fitsScreen(j));
-// A like on the start puts the card on the wishlist, the next card comes up.
+check("start with the wishlist fits the screen", await fitsScreen(j));
+// Tapping an idea goes straight to its free times (no date ahead yet).
+await startIdeas.getByRole("button", { name: "Tagesausflug nach Bonn", exact: true }).click();
+await j.locator("ol li button").first().waitFor({ timeout: 20000 });
+check("a tap on an idea opens its free times", j.url().includes("idea="));
+// A like on the swipe page puts the card on the wishlist.
+await j.goto(`${BASE}/ideas/entdecken`);
+const swipeDeck = j.locator('[data-swipe-deck="page"]');
+await swipeDeck.locator('[aria-roledescription="Karte"]').waitFor({ timeout: 15000 });
 // A tap before hydration does nothing (CI is slower): tap again until the next card shows.
-const nextCard = startDeck.getByRole("heading", { name: "Kino unter Sternen" });
+const nextCard = swipeDeck.getByRole("heading", { name: "Kino unter Sternen" });
 for (let i = 0; i < 6 && !(await nextCard.isVisible()); i++) {
-  await startDeck.getByRole("button", { name: "Gefällt mir" }).click().catch(() => {});
+  await swipeDeck.getByRole("button", { name: "Gefällt mir" }).click().catch(() => {});
   await nextCard.waitFor({ timeout: 2500 }).catch(() => {});
 }
 await nextCard.waitFor({ timeout: 5000 });
 await j.waitForTimeout(800);
 const { rows: [liked] } = await db.query("SELECT count(*)::int AS c FROM ideas WHERE couple_id = $1 AND title = 'Minigolf im Rheinpark'", [couple.id]);
-check("a like on the start saves it to the wishlist", liked.c === 1);
+check("a like on the swipe page saves it to the wishlist", liked.c === 1);
+await j.goto(`${BASE}/`);
+await heading(j);
 
 // 2) ⓘ explains "Plan bis"
 await j.getByRole("button", { name: "Was heißt „Plan bis …“?" }).click();
@@ -105,8 +115,8 @@ await s.goto(`${BASE}/`);
 await heading(s);
 check(`Sam: "${await heading(s)}"`, (await heading(s)) === "Jonas ist dran");
 // Not Sam's turn: the same box (with "Ich übernehme diesmal") and the deck below
-await s.locator('[data-swipe-deck="start"] [aria-roledescription="Karte"]').waitFor({ timeout: 15000 });
-check("partner's turn: box + swipe deck", (await s.getByRole("button", { name: "Ich übernehme diesmal" }).isVisible()) && (await s.getByRole("link", { name: "Date planen", exact: true }).count()) === 0);
+await s.locator("[data-start-ideas] li").first().waitFor({ timeout: 15000 });
+check("partner's turn: box + wishlist", (await s.getByRole("button", { name: "Ich übernehme diesmal" }).isVisible()) && (await s.getByRole("link", { name: "Date planen", exact: true }).count()) === 0);
 await s.screenshot({ path: `${OUT}m13-12-partner-swipe.png` });
 check("partner's start fits the screen", await fitsScreen(s));
 
@@ -144,7 +154,7 @@ await s.goto(`${BASE}/`);
 await s.waitForURL(`${BASE}/plan`, { timeout: 15000 });
 check(`Sam must confirm: "${await heading(s)}"`, (await heading(s)) === "Jonas hat ein Date geplant 🎉");
 check("only one Passt! button on the page", (await s.getByRole("button", { name: "Passt! 💚" }).count()) === 1);
-check("Passt! to give: the box first, swiping below it (card or, when short of room, one line)", (await s.locator("[data-swipe-teaser], [data-swipe-deck=\"start\"]").filter({ visible: true }).count()) === 1);
+check("Passt! to give: the box first, the wishlist below it", await s.locator("[data-start-ideas]").filter({ visible: true }).isVisible());
 check("Passt! state fits the screen", await fitsScreen(s));
 await s.screenshot({ path: `${OUT}m13-05-home-confirm.png`, fullPage: true });
 await s.getByRole("button", { name: "Passt! 💚" }).click();
@@ -194,7 +204,7 @@ check("the logo leads to the start, not into the flow", !j.url().includes("pick=
 const menuBtn = bar.getByRole("button", { name: "Aktionen" });
 await menuBtn.click();
 const menu = j.getByRole("menu", { name: "Aktionen" });
-check("the logo on the start opens three actions", (await menu.getByRole("menuitem").count()) === 3 && (await menuBtn.getAttribute("aria-expanded")) === "true");
+check("the logo on the start opens four actions", (await menu.getByRole("menuitem").count()) === 4 && (await menuBtn.getAttribute("aria-expanded")) === "true");
 await j.waitForTimeout(500);
 await j.screenshot({ path: `${OUT}m13-14-logo-menu.png` });
 await menu.getByRole("menuitem", { name: "Idee" }).click();
@@ -245,7 +255,7 @@ await jd.screenshot({ path: `${OUT}m13-10-welcome-dark.png` });
 await jd.goto(`${BASE}/plan`);
 const swapLink = jd.getByRole("link", { name: "Lieber was anderes?" });
 await swapLink.waitFor({ timeout: 20000 });
-check("with a date: the date in the box, the swipe card fills the rest of the screen", (await jd.locator("[data-next-step] [data-date-card]").filter({ visible: true }).count()) === 1 && (await jd.locator('[data-swipe-deck="start"]').filter({ visible: true }).getByRole("button", { name: "Gefällt mir" }).isVisible()) && (await jd.locator("[data-swipe-teaser]").filter({ visible: true }).count()) === 0);
+check("with a date: the date in the box, the wishlist below it", (await jd.locator("[data-next-step] [data-date-card]").filter({ visible: true }).count()) === 1 && (await jd.locator("[data-start-ideas]").filter({ visible: true }).isVisible()));
 check("with a date: details one tap away", (await jd.getByRole("link", { name: "Details ›" }).getAttribute("href"))?.startsWith("/dates/"));
 await jd.screenshot({ path: `${OUT}m13-09-plan-dark.png`, fullPage: true });
 check("start with a confirmed date fits the screen", await fitsScreen(jd));
