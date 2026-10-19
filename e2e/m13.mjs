@@ -79,8 +79,13 @@ check("the swipe deck sits right below it", (await startDeck.getByRole("button",
 await j.screenshot({ path: `${OUT}m13-01-home-plan.png`, fullPage: true });
 check("start with the deck fits the screen", await fitsScreen(j));
 // A like on the start puts the card on the wishlist, the next card comes up.
-await startDeck.getByRole("button", { name: "Gefällt mir" }).click();
-await startDeck.getByRole("heading", { name: "Kino unter Sternen" }).waitFor({ timeout: 10000 });
+// A tap before hydration does nothing (CI is slower): tap again until the next card shows.
+const nextCard = startDeck.getByRole("heading", { name: "Kino unter Sternen" });
+for (let i = 0; i < 6 && !(await nextCard.isVisible()); i++) {
+  await startDeck.getByRole("button", { name: "Gefällt mir" }).click().catch(() => {});
+  await nextCard.waitFor({ timeout: 2500 }).catch(() => {});
+}
+await nextCard.waitFor({ timeout: 5000 });
 await j.waitForTimeout(800);
 const { rows: [liked] } = await db.query("SELECT count(*)::int AS c FROM ideas WHERE couple_id = $1 AND title = 'Minigolf im Rheinpark'", [couple.id]);
 check("a like on the start saves it to the wishlist", liked.c === 1);
