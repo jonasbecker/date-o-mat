@@ -238,10 +238,13 @@ check(`filter "Lang" shows long cards only (${longTop})`, longCard?.size === "la
 await s.getByRole("button", { name: "Filter: 🎡 Lang" }).click();
 await s.locator("dialog[open]").getByRole("button", { name: "Zurücksetzen" }).click();
 await s.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
-const { rows: others } = await db.query("UPDATE deck_cards SET status = 'passed' WHERE couple_id = $1 AND status = 'open' AND kind <> 'combo' RETURNING id", [couple.id]);
-// The deck may still show a card that was already on screen: load again until the combo is on top.
+// Only the combo cards stay open. A background refill may add new cards after this: pass those
+// too, and load again until the combo is on top.
+const others = [];
 let comboTitle = "";
-for (let attempt = 0; attempt < 4 && !comboTitle.startsWith("Kombi"); attempt++) {
+for (let attempt = 0; attempt < 5 && !comboTitle.startsWith("Kombi"); attempt++) {
+  const { rows } = await db.query("UPDATE deck_cards SET status = 'passed' WHERE couple_id = $1 AND status = 'open' AND kind <> 'combo' RETURNING id", [couple.id]);
+  others.push(...rows);
   await s.reload();
   await topCard(s).waitFor({ timeout: 15000 });
   comboTitle = await topTitle(s);
