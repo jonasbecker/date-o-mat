@@ -190,7 +190,7 @@ await bar.getByRole("link", { name: "Zum Start" }).click();
 await j.waitForURL(`${BASE}/plan`, { timeout: 15000 });
 await j.locator("[data-next-step]").filter({ visible: true }).first().waitFor({ timeout: 15000 });
 check("the logo leads to the start, not into the flow", !j.url().includes("pick=1"));
-// On the start itself the logo opens the actions: Date planen, Idee, Überrasch uns
+// On the start itself the logo opens the actions: Date planen, Idee, Was läuft
 const menuBtn = bar.getByRole("button", { name: "Aktionen" });
 await menuBtn.click();
 const menu = j.getByRole("menu", { name: "Aktionen" });

@@ -4,10 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { useEffect, useState } from "react";
-import { BulbIcon, DiceIcon, HeartIcon, PlusIcon, SparkleIcon } from "./icons";
+import { BulbIcon, HeartIcon, PlusIcon, SparkleIcon, TicketIcon } from "./icons";
 import { LogoMark } from "./logo";
 import { QUICK_ADD_EVENT, QuickAdd } from "./quick-add";
-import { SURPRISE_EVENT, SurpriseButton } from "./surprise-button";
 
 function Side({ href, label, shown, active, marker, badge, children }: { href: string; label: string; shown: string; active: boolean; marker?: string; badge?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -97,12 +96,12 @@ function LogoButton({ onStart }: { onStart: boolean }) {
             </span>
             <span className={label}>Idee</span>
           </button>
-          <button role="menuitem" type="button" onClick={() => fire(SURPRISE_EVENT)} className={`${item} mb-1`}>
+          <Link role="menuitem" href="/events" onClick={() => setOpen(false)} className={`${item} mb-1`}>
             <span className={`${round} bg-minze`}>
-              <DiceIcon width={24} height={24} />
+              <TicketIcon width={24} height={24} />
             </span>
-            <span className={label}>Überrasch uns</span>
-          </button>
+            <span className={label}>Was läuft</span>
+          </Link>
         </div>
       )}
       <button type="button" aria-label="Aktionen" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)} className={`${LOGO_CLASS} relative z-40`}>
@@ -114,7 +113,6 @@ function LogoButton({ onStart }: { onStart: boolean }) {
         </span>
       </button>
       <QuickAdd eventOnly />
-      <SurpriseButton eventOnly />
     </div>
   );
 }

@@ -181,7 +181,8 @@ await j.screenshot({ path: `${SHOTS}m3-05-settings-slots.png` });
 await j.goto(`${BASE}/plan?later=1`);
 await readSlots(j);
 const untilText = await j.getByText(/^Gesucht bis/).textContent();
-const expectedUntil = DateTime.now().setZone(ZONE).plus({ days: 7 }).setLocale("de").toFormat("d.");
+// The app adds 7 × 24 hours; "plus days" keeps the wall clock and differs across the DST change.
+const expectedUntil = DateTime.now().setZone(ZONE).plus({ hours: 7 * 24 }).setLocale("de").toFormat("d.");
 check(`horizon of 7 days is used (${untilText})`, untilText.includes(` ${expectedUntil} `));
 
 // 6) Revoked access → reconnect prompt

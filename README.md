@@ -328,9 +328,9 @@ scripts/              Migration beim Build, Secret-Generator
 ### Ein Ablauf in Kürze (M26, löst die Navigation von M24 ab)
 
 - **Untere Leiste (seit M37, vorher Icons oben):** `BottomNav` im Layout von `(app)`. Links 💡 Ideen
-  (Wunschliste, Swipen; mit Zähler), in der Mitte das große Logo: auf anderen Seiten
+  (die Wunschliste; mit Zähler; Swipen liegt auf dem Start), in der Mitte das große Logo: auf anderen Seiten
   zurück zum Start, auf dem Start selbst klappt es drei runde Aktionen auf (Date planen · Idee ·
-  Überrasch uns; `LogoButton` in `bottom-nav.tsx`, die Sheets öffnen per Fenster-Event), rechts ♥ Dates (Kommendes und Historie). Oben stehen nur der Name (führt zum
+  Was läuft; `LogoButton` in `bottom-nav.tsx`, das Idee-Formular öffnet per Fenster-Event), rechts ♥ Dates (Kommendes und Historie). Oben stehen nur der Name (führt zum
   Start), ⚙️ Einstellungen und – wo es passt – „+ Idee“. Die Seiten öffnen normal; das Herunterklappen
   von M32 gibt es nicht mehr.
 - **Start = was gerade ansteht** (`StartSection` in `src/app/(app)/overview.tsx`): das nächste Date
