@@ -10,9 +10,9 @@ import { saveReviewAction, type ReviewFormState } from "./actions";
 
 const MOODS = ["", "Naja 😕", "Ganz okay 🙂", "Schön 😊", "Richtig schön 🥰", "Unvergesslich 🤩"];
 
-export function ReviewForm({ dateId, rating, note, cost }: { dateId: string; rating: number | null; note: string | null; cost: number | null }) {
+export function ReviewForm({ dateId, rating, note, cost, initialHearts = 0 }: { dateId: string; rating: number | null; note: string | null; cost: number | null; /** From a tap on a heart on the start page. */ initialHearts?: number }) {
   const celebrate = useCelebrate();
-  const [hearts, setHearts] = useState(rating ?? 0);
+  const [hearts, setHearts] = useState(rating ?? initialHearts);
   const [editing, setEditing] = useState(rating === null);
   const [state, action, pending] = useActionState<ReviewFormState, FormData>(async (prev, formData) => {
     const result = await saveReviewAction(prev, formData);

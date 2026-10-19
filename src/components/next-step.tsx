@@ -195,9 +195,10 @@ export function NextStepCard({
       break;
     case "review":
       title = "Wie war's?";
-      body = <p className="font-bold">„{step.title}“ – vergib ein paar Herzen und halt fest, was schön war.</p>;
-      actions = (
-        <Link href={`/dates/${step.dateId}`} className={buttonClass("primary", onPlanPage ? "md" : "lg", "w-full")}>
+      // On the start page the date and the hearts to tap sit in this box (StartReview).
+      body = !onPlanPage && <p className="font-bold">„{step.title}“ – vergib ein paar Herzen und halt fest, was schön war.</p>;
+      actions = !onPlanPage && (
+        <Link href={`/dates/${step.dateId}`} className={buttonClass("primary", "lg", "w-full")}>
           💭 Jetzt bewerten
         </Link>
       );

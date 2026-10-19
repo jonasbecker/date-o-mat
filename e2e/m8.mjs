@@ -114,6 +114,12 @@ const { rows: [d1] } = await db.query(
   [couple.id, c1.id, start.toJSDate(), start.plus({ hours: 3 }).toJSDate(), jonas.id],
 );
 
+// A photo of the date: the start shows it in "Wie war's?" (the file itself does not matter here)
+const { rows: [photo] } = await db.query(
+  "INSERT INTO date_photos (couple_id, date_id, uploaded_by_id, full_path, thumb_path, width, height, bytes) VALUES ($1, $2, $3, 'x/full.jpg', 'x/thumb.jpg', 800, 600, 1000) RETURNING id",
+  [couple.id, d1.id, jonas.id],
+);
+
 // 1) The day after, 11:00: both get "Wie war's?"
 await at(start.plus({ days: 1 }).set({ hour: 10, minute: 50 }));
 check("no review reminder before 11:00", !inbox.some((m) => m.tag === "review"));
@@ -139,14 +145,19 @@ const OUT = new URL("./shots/", import.meta.url).pathname;
 // 2) Home asks Sam; Sam reviews first
 const s = await pageFor(sam.token);
 await s.goto(`${BASE}/`);
-// Either the step card ("Wie war's?") or – when it is Sam's turn to plan – the reminder link.
-const reviewLink = s.getByRole("link", { name: /Jetzt bewerten|Bewerten$/ }).first();
-await reviewLink.waitFor({ timeout: 15000 });
+// The box shows the date, its first photo and five hearts – a tap on a heart is the answer.
+// (Sam's turn to plan: the box says "Du bist dran!", the review has its own card; otherwise it is the box.)
+const reviewBox = s.locator("[data-review-start]").filter({ visible: true });
+await reviewBox.waitFor({ timeout: 15000 });
 check("the start page asks for the review", s.url() === `${BASE}/plan`);
+check("\"Wie war's?\" shows title, date, first photo and five hearts", (await reviewBox.getByText("„Picknick im Stadtwald“").isVisible()) && (await reviewBox.locator(`img[src^="/api/photos/${photo.id}"]`).count()) === 1 && (await reviewBox.getByRole("link", { name: /Herz/ }).count()) === 5);
+check("…and swiping is one line below it", (await s.locator("[data-swipe-teaser]").filter({ visible: true }).count()) === 1);
+check("the review state fits the screen", await fitsScreen(s));
 await s.screenshot({ path: `${OUT}m8-01-home-prompt.png` });
-await reviewLink.click();
+await reviewBox.getByRole("link", { name: "4 Herzen" }).click();
+await s.waitForURL(new RegExp(`/dates/${d1.id}\\?herzen=4`), { timeout: 10000 });
 await s.getByRole("heading", { name: "Wie war's für dich?" }).waitFor({ timeout: 10000 });
-await s.getByLabel("4 Herzen").check({ force: true });
+check("a tap on a heart opens the review with that number chosen", await s.getByRole("radio", { name: "4 Herzen" }).isChecked());
 await s.getByText("Richtig schön 🥰").waitFor();
 await s.getByLabel("Was war besonders?").fill("Das Eis am Weiher!");
 await s.screenshot({ path: `${OUT}m8-02-review-form.png` });

@@ -4,9 +4,11 @@ import Link from "next/link";
 import { DateTime } from "luxon";
 import { notHappenedAction } from "./actions";
 import { BudgetBar } from "@/components/budget-bar";
+import { Card } from "@/components/card";
 import { ConnectCalendarCard } from "@/components/connect-calendar";
 import type { DateCardExtras } from "@/components/date-card";
 import { StartDate } from "@/components/start-date";
+import { StartReview } from "@/components/start-review";
 import { NextStepCard } from "@/components/next-step";
 import { PushRow } from "@/components/push-row";
 import { SetupChecklist } from "@/components/setup-checklist";
@@ -33,6 +35,7 @@ import { upcomingForHome } from "@/server/special-days";
 import { currentSuggestion } from "@/server/suggestions";
 import { lastTick } from "@/server/system-status";
 import { deckFor } from "@/server/deck";
+import { coverPhotos } from "@/server/photos";
 
 /** Checklist, conversation cards and surprise notes for an upcoming date. */
 export async function dateExtrasFor(ctx: CoupleContext, settings: CoupleSettings, date: DatePlan, now: Date): Promise<DateCardExtras> {
@@ -63,6 +66,8 @@ export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings,
     upcomingForHome(ctx, now, SHOW_DAYS_BEFORE),
   ]);
   const deck = await deckFor(ctx, now);
+  // "Wie war's?" shows the date's first photo.
+  const reviewPhoto = toReview ? (await coverPhotos(coupleId, [toReview.id])).get(toReview.id) : undefined;
   // A surprise stays one: the partner sees time and hint only.
   const shownDate = nextDate ? dateForViewer(nextDate, user.id, [user, partner], now) : undefined;
   const dateExtras = nextDate ? await dateExtrasFor(ctx, settings, nextDate, now) : undefined;
@@ -90,6 +95,7 @@ export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings,
     shownDate,
     dateExtras,
     toReview,
+    reviewPhoto,
     calendars,
     previous: history.at(-2),
     push: { publicKey: pushPublicKey(), mine: pushDevices, partner: partnerPushDevices },
@@ -139,6 +145,8 @@ export function StartSection({
   const inBox =
     step && DATE_STEPS.includes(step.kind) && o.shownDate ? (
       <StartDate date={o.shownDate} me={user} partner={partner} surprise={o.dateExtras?.surprise ?? null} swappable={swappable} isToday={o.dateExtras?.isToday} />
+    ) : step?.kind === "review" && o.toReview ? (
+      <StartReview date={o.toReview} photoId={o.reviewPhoto} />
     ) : step?.kind === "suggestion" && o.suggestion?.status === "ok" ? (
       <SuggestionCard suggestion={o.suggestion.suggestion} idea={o.suggestion.idea} />
     ) : null;
@@ -173,12 +181,12 @@ export function StartSection({
         <p className="rounded-[18px] border-2 border-line bg-zitrone-soft px-3.5 py-2 text-sm font-bold text-tinte">{skippedNote}</p>
       )}
 
+      {/* Another step heads the page (e.g. my turn to plan): the review still gets its own card, hearts and all. */}
       {o.toReview && step?.kind !== "review" && (
-        <Link href={`/dates/${o.toReview.id}`} className="flat tap flex items-center gap-2.5 rounded-[18px] bg-surface px-3.5 py-2 text-sm font-bold">
-          <span aria-hidden="true">💭</span>
-          <span className="min-w-0 flex-1 truncate">Wie war „{o.toReview.title}“?</span>
-          <span className="shrink-0 underline">Bewerten</span>
-        </Link>
+        <Card tone="lavendel" flat size="sm" data-review-card className="flex flex-col gap-2 text-sm">
+          <h2 className="text-[20px] font-bold leading-tight">Wie war&apos;s?</h2>
+          <StartReview date={o.toReview} photoId={o.reviewPhoto} />
+        </Card>
       )}
 
       {o.roundDate?.status === "done" && (

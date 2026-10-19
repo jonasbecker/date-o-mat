@@ -27,19 +27,22 @@ import { dateForViewer, getDate } from "@/server/dates";
 import { getCoupleSettings } from "@/server/settings";
 import { dateExtrasFor } from "../../overview";
 
-export default function DatePage({ params }: PageProps<"/dates/[id]">) {
+export default function DatePage({ params, searchParams }: PageProps<"/dates/[id]">) {
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <DateDetail params={params} />
+      <DateDetail params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function DateDetail({ params }: { params: PageProps<"/dates/[id]">["params"] }) {
+async function DateDetail({ params, searchParams }: { params: PageProps<"/dates/[id]">["params"]; searchParams: PageProps<"/dates/[id]">["searchParams"] }) {
   const ctx = await requireCouple();
   const { user, partner, coupleId } = ctx;
   await connection();
   const { id } = await params;
+  const { herzen } = await searchParams;
+  // A tap on a heart on the start page: that many hearts are chosen already.
+  const initialHearts = typeof herzen === "string" && /^[1-5]$/.test(herzen) ? Number(herzen) : 0;
   const valid = /^[0-9a-f-]{36}$/.test(id);
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
@@ -105,7 +108,8 @@ async function DateDetail({ params }: { params: PageProps<"/dates/[id]">["params
                   <p className="text-sm font-bold text-muted">🔒 {partner.name} hat schon bewertet – nach deinen Herzen siehst du {genitive(partner.name)}.</p>
                 )}
                 <ReviewForm
-                  key={mine?.rating ?? 0}
+                  key={mine?.rating ?? initialHearts}
+                  initialHearts={initialHearts}
                   dateId={date.id}
                   rating={mine?.rating ?? null}
                   note={mine?.note ?? null}

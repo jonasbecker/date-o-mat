@@ -19,6 +19,8 @@ import { loadOverview, StartSection } from "../overview";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { SwipeDeck } from "../ideas/entdecken/swipe-deck";
 import { DECK_REFILL_BELOW } from "@/core/deck";
+import { deckSize } from "@/core/start-layout";
+import { SwipeTeaser } from "@/components/swipe-teaser";
 import { refillDeck } from "@/server/deck";
 import type { NextDateInfo } from "@/components/swap-confirm";
 
@@ -85,7 +87,12 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
       <>
         <AutoRefresh intervalMs={deck.generating ? 6_000 : undefined} />
         <StartSection o={overview} ctx={ctx} now={now} swappable={swappable} />
-        <SwipeDeck {...deck} partnerName={ctx.partner.name} compact />
+        {/* Something pending: the box gets the room and swiping is one line. Otherwise the card is big. */}
+        {deckSize(overview.step?.kind ?? null, overview.suggestion?.status === "ok", Boolean(overview.toReview)) === "teaser" ? (
+          <SwipeTeaser count={deck.cards.length} />
+        ) : (
+          <SwipeDeck {...deck} partnerName={ctx.partner.name} compact />
+        )}
       </>
     );
   }
