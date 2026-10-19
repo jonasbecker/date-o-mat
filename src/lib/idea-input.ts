@@ -1,4 +1,4 @@
-import { IDEA_SIZES, type IdeaSize } from "./domain";
+import { IDEA_SIZES, PLACE_SETTINGS, type IdeaSize, type PlaceSetting } from "./domain";
 
 export const IDEA_LIMITS = { title: 120, note: 1000, url: 500, location: 120, maxCostEur: 10_000 } as const;
 
@@ -9,6 +9,8 @@ export type IdeaInput = {
   url: string | null;
   costEur: number | null;
   location: string | null;
+  /** Drinnen / draußen – empty means "egal". */
+  setting: PlaceSetting | null;
 };
 
 export type IdeaField = keyof IdeaInput;
@@ -73,7 +75,8 @@ export function parseIdeaInput(raw: Record<string, unknown>): IdeaParseResult {
   if (location && location.length > IDEA_LIMITS.location) errors.location = `Bitte kürzer als ${IDEA_LIMITS.location} Zeichen.`;
 
   if (Object.keys(errors).length > 0 || !size) return { ok: false, errors };
-  return { ok: true, data: { title, size, note, url, costEur, location } };
+  const setting = PLACE_SETTINGS.find((s) => s === raw.setting) ?? null;
+  return { ok: true, data: { title, size, note, url, costEur, location, setting } };
 }
 
 export function formatCost(costEur: number | null): string | null {

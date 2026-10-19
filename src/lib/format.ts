@@ -34,6 +34,8 @@ export type SlotView = {
   mood: SlotMood;
   startIso: string;
   endIso: string;
+  /** Outdoor ideas: "☀️ 14°, trocken · hell bis 18:20". */
+  note?: string;
 };
 
 export function slotView(slot: Slot): SlotView {
@@ -50,6 +52,7 @@ export function slotView(slot: Slot): SlotView {
     mood: slot.mood,
     startIso: slot.start.toISOString(),
     endIso: slot.end.toISOString(),
+    ...(slot.reason ? { note: slot.reason } : {}),
   };
 }
 

@@ -18,7 +18,7 @@ import webpush from "web-push";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const HERE = fileURLToPath(new URL(".", import.meta.url));
-const ALL = ["m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "m10", "m11", "m12", "m13", "m14", "m15", "m17", "m18", "m19", "m20", "m21"];
+const ALL = ["m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "m10", "m11", "m12", "m13", "m14", "m15", "m17", "m18", "m19", "m20", "m21", "m22"];
 const args = process.argv.slice(2);
 const skipBuild = args.includes("--no-build");
 const named = args.filter((a) => !a.startsWith("--"));

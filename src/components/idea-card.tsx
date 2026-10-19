@@ -1,4 +1,4 @@
-import type { IdeaSize, UserColor } from "@/lib/domain";
+import type { IdeaSize, PlaceSetting, UserColor } from "@/lib/domain";
 import { displayHost, formatCost } from "@/lib/idea-input";
 import { Avatar } from "./avatar";
 import { MoreIcon, PinIcon } from "./icons";
@@ -13,6 +13,8 @@ export type IdeaCardView = {
   location: string | null;
   note?: string | null;
   url?: string | null;
+  /** Drinnen / draußen – outdoors the free times look at daylight and weather. */
+  setting?: PlaceSetting | null;
   /** Both swiped right on it. */
   matched?: boolean;
   /** It is the next date. */

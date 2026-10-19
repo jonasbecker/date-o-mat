@@ -4,6 +4,7 @@
 
 import { DateTime } from "luxon";
 import { APP_TIMEZONE, type IdeaSize } from "@/lib/domain";
+import { outdoorAdjustment, outdoorFacts, outdoorReason, type OutdoorContext } from "./outdoor";
 import { mergeRanges, padRanges, subtractRanges, type TimeRange } from "./ranges";
 
 export type SlotRules = {
@@ -35,6 +36,8 @@ export type Slot = {
   size: IdeaSize;
   score: number;
   mood: SlotMood;
+  /** Outdoor ideas only: "☀️ 14°, trocken · hell bis 18:20". */
+  reason?: string;
 };
 
 export type FindSlotsInput = {
@@ -47,6 +50,8 @@ export type FindSlotsInput = {
   size: IdeaSize;
   limit?: number;
   zone?: string;
+  /** Rank for an outdoor idea: daylight and weather count (see core/outdoor.ts). */
+  outdoor?: OutdoorContext;
 };
 
 const MINUTE = 60_000;
@@ -119,7 +124,7 @@ export function scoreSlot(params: {
  * the `limit` best days, best first.
  */
 export function findSlots(input: FindSlotsInput): Slot[] {
-  const { now, until, busy, rules, size, limit = 5, zone = APP_TIMEZONE } = input;
+  const { now, until, busy, rules, size, limit = 5, zone = APP_TIMEZONE, outdoor } = input;
   const earliest = now.getTime() + rules.minLeadHours * 60 * MINUTE;
   const end = until.getTime();
   if (earliest >= end) return [];
@@ -160,9 +165,14 @@ export function findSlots(input: FindSlotsInput): Slot[] {
 
       const start = DateTime.fromMillis(t, { zone });
       const slackMinutes = Math.min(t - range.start, range.end - (t + length)) / MINUTE;
-      const score = scoreSlot({ start, lengthMinutes: length / MINUTE, size, rules, daysAhead, slackMinutes });
+      let score = scoreSlot({ start, lengthMinutes: length / MINUTE, size, rules, daysAhead, slackMinutes });
+      const slotStart = new Date(t);
+      const slotEnd = new Date(t + length);
+      const facts = outdoor ? outdoorFacts(slotStart, slotEnd, outdoor.weather, zone) : null;
+      if (facts) score = Math.round((score + outdoorAdjustment(facts, { start, darknessOk: outdoor?.darknessOk })) * 100) / 100;
       if (!dayBest || score > dayBest.score) {
-        dayBest = { start: new Date(t), end: new Date(t + length), size, score, mood: moodOf(start, size) };
+        const reason = facts ? outdoorReason(facts, slotStart, { darknessOk: outdoor?.darknessOk, zone }) : "";
+        dayBest = { start: slotStart, end: slotEnd, size, score, mood: moodOf(start, size), ...(reason ? { reason } : {}) };
       }
     }
     if (dayBest) best.push(dayBest);

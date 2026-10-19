@@ -5,7 +5,7 @@ describe("parseIdeaInput", () => {
   it("accepts the minimal quick-add input (title + size)", () => {
     expect(parseIdeaInput({ title: "  Picknick im Stadtwald ", size: "small" })).toEqual({
       ok: true,
-      data: { title: "Picknick im Stadtwald", size: "small", note: null, url: null, costEur: null, location: null },
+      data: { title: "Picknick im Stadtwald", size: "small", note: null, url: null, costEur: null, location: null, setting: null },
     });
   });
 
@@ -17,6 +17,7 @@ describe("parseIdeaInput", () => {
       url: "boulderwelt.de/koeln",
       costEur: "12,50 €",
       location: "Köln-Ehrenfeld",
+      setting: "outdoor",
     });
     expect(result).toEqual({
       ok: true,
@@ -27,8 +28,16 @@ describe("parseIdeaInput", () => {
         url: "https://boulderwelt.de/koeln",
         costEur: 13,
         location: "Köln-Ehrenfeld",
+        setting: "outdoor",
       },
     });
+  });
+
+  it("takes drinnen / draußen, anything else means egal", () => {
+    expect(parseIdeaInput({ title: "Kino", size: "small", setting: "indoor" })).toMatchObject({ ok: true, data: { setting: "indoor" } });
+    for (const setting of ["", "everywhere", undefined, null]) {
+      expect(parseIdeaInput({ title: "Kino", size: "small", setting })).toMatchObject({ ok: true, data: { setting: null } });
+    }
   });
 
   it("requires a title and a valid size", () => {

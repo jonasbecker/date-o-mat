@@ -4,11 +4,13 @@ import "server-only";
 import { connection } from "next/server";
 import type { TimeRange } from "@/core/ranges";
 import { findSlots, type Slot } from "@/core/slots";
+import type { SlotLists } from "@/core/slot-modes";
 import type { CoupleContext } from "@/server/auth/dal";
 import type { User } from "@/server/db/schema";
 import { queryFreeBusy } from "@/server/google/calendar-api";
 import { CalendarNotConnectedError, getConnection } from "@/server/google/connection";
 import { getCoupleSettings, slotRulesFrom } from "@/server/settings";
+import { hourlyWeather } from "@/server/weather";
 
 export type CalendarState = "connected" | "missing" | "reauth";
 
@@ -29,6 +31,9 @@ export type SlotSearch =
       status: "ok";
       small: Slot[];
       large: Slot[];
+      /** Ranked for outdoor ideas (daylight + weather), and for outdoor ideas that want the dark. */
+      outdoor: SlotLists;
+      outdoorDark: SlotLists;
       until: Date;
       /** Number of calendars Google could not read (shown as a hint). */
       failedCalendars: number;
@@ -67,10 +72,16 @@ export async function searchSlots(ctx: CoupleContext, now: Date, until?: Date): 
   }
 
   const rules = slotRulesFrom(settings);
+  // One forecast request per search, for all rankings (best effort – null = weather unknown).
+  const weather = await hourlyWeather(now, end, now);
+  const rank = (size: "small" | "large", outdoor?: { darknessOk: boolean }) =>
+    findSlots({ now, until: end, busy, rules, size, ...(outdoor ? { outdoor: { weather, darknessOk: outdoor.darknessOk } } : {}) });
   return {
     status: "ok",
-    small: findSlots({ now, until: end, busy, rules, size: "small" }),
-    large: findSlots({ now, until: end, busy, rules, size: "large" }),
+    small: rank("small"),
+    large: rank("large"),
+    outdoor: { small: rank("small", { darknessOk: false }), large: rank("large", { darknessOk: false }) },
+    outdoorDark: { small: rank("small", { darknessOk: true }), large: rank("large", { darknessOk: true }) },
     until: end,
     failedCalendars,
   };

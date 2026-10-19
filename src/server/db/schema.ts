@@ -168,6 +168,8 @@ export const ideas = pgTable(
     url: text(),
     costEur: integer(),
     location: text(),
+    // Drinnen / draußen: outdoor ideas get daylight and weather in the free times. Null = unknown.
+    setting: text({ enum: PLACE_SETTINGS }),
     source: text({ enum: IDEA_SOURCES }).notNull().default("wishlist"),
     // V2: id of the idea in an external source (curated list, AI run)
     externalRef: text(),

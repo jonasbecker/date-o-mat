@@ -23,3 +23,9 @@ export function eventEvenings(now = DateTime.now().setZone("Europe/Berlin")) {
   }
   return days;
 }
+
+/** Monday 09:00 of the current week: the whole round (Mon–Sun) still lies ahead. */
+export function mondayMorningOffset(now = DateTime.now().setZone("Europe/Berlin")) {
+  const target = now.startOf("week").plus({ hours: 9 });
+  return Math.round(target.diff(now, "minutes").minutes);
+}

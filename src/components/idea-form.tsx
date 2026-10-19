@@ -5,7 +5,7 @@ import type { IdeaFormState } from "@/app/(app)/ideas/actions";
 import { analyzeLinkAction } from "@/app/(app)/ideas/link-actions";
 import type { Platform } from "@/core/link-idea";
 import { cn } from "@/lib/cn";
-import { IDEA_SIZES, type IdeaSize } from "@/lib/domain";
+import { IDEA_SIZES, type IdeaSize, type PlaceSetting } from "@/lib/domain";
 import { IDEA_LIMITS } from "@/lib/idea-input";
 import { Button } from "./button";
 import { SIZE_LABEL } from "./size-chip";
@@ -18,6 +18,7 @@ export type IdeaFormDefaults = {
   url: string | null;
   costEur: number | null;
   location: string | null;
+  setting?: PlaceSetting | null;
 };
 
 type Action = (prev: IdeaFormState, formData: FormData) => Promise<IdeaFormState>;
@@ -126,7 +127,7 @@ export function IdeaForm({
   const size = (typed?.size as IdeaSize | undefined) ?? base?.size ?? "small";
   const errors = state.errors ?? {};
   const detailsOpen = Boolean(
-    value("note") || value("url") || value("costEur") || value("location") || errors.note || errors.url || errors.costEur || errors.location,
+    value("note") || value("url") || value("costEur") || value("location") || value("setting") || errors.note || errors.url || errors.costEur || errors.location,
   );
   const idPrefix = idea?.id ?? "new";
 
@@ -266,6 +267,25 @@ export function IdeaForm({
               />
             </div>
           </div>
+          {/* Outdoors the free times look at daylight and weather. */}
+          <fieldset className="flex flex-col gap-1">
+            <legend className="mb-1 text-[13px] font-extrabold text-muted">Wo?</legend>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: "", label: "Egal" },
+                { value: "indoor", label: "🏠 Drinnen" },
+                { value: "outdoor", label: "🌳 Draußen" },
+              ].map((option) => (
+                <label
+                  key={option.value}
+                  className="flex h-11 cursor-pointer items-center justify-center rounded-2xl border-2 border-line bg-surface text-sm font-extrabold has-checked:bg-ink has-checked:text-bg has-focus-visible:outline-3 has-focus-visible:outline-himbeere"
+                >
+                  <input type="radio" name="setting" value={option.value} defaultChecked={(value("setting") || "") === option.value} className="sr-only" />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <FieldError id={`${idPrefix}-cost-error`} message={errors.costEur} />
           <FieldError id={`${idPrefix}-location-error`} message={errors.location} />
         </div>

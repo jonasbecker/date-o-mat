@@ -36,6 +36,7 @@ async function saveCurated(coupleId: string, userId: string, curatedId: string):
       note: idea.note,
       costEur: idea.costEur,
       location: idea.location,
+      setting: idea.setting,
       source: "curated",
       externalRef: idea.id,
       createdById: userId,
@@ -129,6 +130,7 @@ const aiIdea = z.object({
   note: z.string().max(1000),
   costEur: z.number().int().min(0).max(10_000).nullable(),
   location: z.string().max(120).nullable(),
+  setting: z.enum(["indoor", "outdoor"]).nullable().optional(),
 });
 
 /** Puts an AI suggestion on the wishlist and returns its id (for "Nehmen" on the plan page). */

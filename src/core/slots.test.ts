@@ -1,6 +1,7 @@
 import { DateTime } from "luxon";
 import { describe, expect, it } from "vitest";
 import { mergeRanges, subtractRanges } from "./ranges";
+import type { HourlyWeather } from "./ai-ideas";
 import { findSlots, orderSlots, type SlotRules } from "./slots";
 
 const ZONE = "Europe/Berlin";
@@ -225,5 +226,93 @@ describe("orderSlots", () => {
     const at = (iso: string) => ({ startIso: iso });
     expect(orderSlots([at("2026-10-16T16:00:00Z"), at("2026-10-14T16:00:00Z"), at("2026-10-18T09:00:00Z"), at("2026-10-15T16:00:00Z")]).map((s) => s.startIso.slice(8, 10))).toEqual(["16", "14", "15", "18"]);
     expect(orderSlots([])).toEqual([]);
+  });
+});
+
+describe("findSlots for outdoor ideas (daylight and weather)", () => {
+  const forecast = (from: string, days: number, shape: (dt: DateTime) => [number, number, number]): HourlyWeather => {
+    const hourly: HourlyWeather = { time: [], temperature_2m: [], precipitation_probability: [], weather_code: [] };
+    for (let t = local(at(from)).startOf("day"); t < local(at(from)).startOf("day").plus({ days }); t = t.plus({ hours: 1 })) {
+      const [temp, rain, code] = shape(t);
+      hourly.time.push(t.toFormat("yyyy-LL-dd'T'HH:mm"));
+      hourly.temperature_2m.push(temp);
+      hourly.precipitation_probability.push(rain);
+      hourly.weather_code.push(code);
+    }
+    return hourly;
+  };
+  const dryAndMild = (from: string, days: number) => forecast(from, days, () => [13, 5, 1]);
+
+  // Monday 19 Oct 2026 – the week until Sunday night; every evening and the weekend are free.
+  const WEEK_NOW = at("2026-10-19T09:00");
+  const WEEK_END = at("2026-10-26T00:00");
+  const week = (extra: object = {}) => ({ now: WEEK_NOW, until: WEEK_END, busy: [], rules: RULES, size: "small" as const, ...extra });
+
+  it("the picnic problem: without outdoor rules a Friday evening after sunset wins", () => {
+    const [top] = findSlots(week());
+    expect(local(top.start).toFormat("ccc HH:mm")).toBe("Fri 18:00");
+  });
+
+  it("…with outdoor rules a weekend afternoon wins, in the light", () => {
+    const [top] = findSlots(week({ outdoor: { weather: dryAndMild("2026-10-19", 7) } }));
+    const start = local(top.start);
+    expect(start.weekday).toBeGreaterThanOrEqual(6);
+    expect(start.hour).toBeGreaterThanOrEqual(11);
+    expect(start.hour).toBeLessThan(17);
+    expect(top.reason).toMatch(/^☀️ 13°, trocken · hell bis 18:/);
+  });
+
+  it("works without any forecast too (daylight alone decides)", () => {
+    const [top] = findSlots(week({ outdoor: { weather: null } }));
+    expect(local(top.start).weekday).toBeGreaterThanOrEqual(6);
+    expect(top.reason).toMatch(/^hell bis /);
+  });
+
+  it("the evening is fine when the dark is the point (stars, sunsets)", () => {
+    const [top] = findSlots(week({ outdoor: { weather: dryAndMild("2026-10-19", 7), darknessOk: true } }));
+    expect(local(top.start).toFormat("ccc HH:mm")).toBe("Fri 18:00");
+  });
+
+  it("rain on the weekend afternoons moves the pick to a dry day", () => {
+    const rainy = forecast("2026-10-19", 7, (dt) => (dt.weekday >= 6 ? [11, 80, 63] : [13, 5, 1]));
+    const slots = findSlots(week({ limit: 7, outdoor: { weather: rainy } }));
+    expect(local(slots[0].start).weekday).toBeLessThan(6);
+    expect(slots[0].reason).not.toContain("Regen");
+    const weekendAfternoon = slots.find((s) => local(s.start).weekday >= 6 && local(s.start).hour < 17)!;
+    expect(weekendAfternoon.score).toBeLessThan(slots[0].score);
+    expect(weekendAfternoon.reason).toContain("Regen angesagt");
+  });
+
+  it("cold weekends lose against milder days", () => {
+    const cold = forecast("2026-10-19", 7, (dt) => (dt.weekday >= 6 ? [3, 0, 1] : [13, 5, 1]));
+    const slots = findSlots(week({ limit: 7, outdoor: { weather: cold } }));
+    const saturday = slots.find((s) => local(s.start).weekday === 6)!;
+    expect(local(slots[0].start).weekday).toBeLessThan(6);
+    expect(saturday.score).toBeLessThan(slots[0].score);
+    expect(saturday.reason).toContain("🥶");
+  });
+
+  it("20 Nov: no outdoor slot in the evening – 18:00 is long dark", () => {
+    const now = at("2026-11-16T09:00");
+    const [top] = findSlots({ now, until: at("2026-11-23T00:00"), busy: [], rules: RULES, size: "small", outdoor: { weather: null } });
+    const start = local(top.start);
+    expect(start.weekday).toBeGreaterThanOrEqual(6);
+    expect(start.hour).toBeLessThan(15);
+    // …while the plain ranking still takes the Friday evening
+    expect(local(findSlots({ now, until: at("2026-11-23T00:00"), busy: [], rules: RULES, size: "small" })[0].start).toFormat("ccc HH:mm")).toBe("Fri 18:00");
+  });
+
+  it("the day the clocks go back: sunset is read in winter time", () => {
+    const now = at("2026-10-24T09:00");
+    const slots = findSlots({ now, until: at("2026-10-26T00:00"), busy: [], rules: RULES, size: "small", limit: 3, outdoor: { weather: null } });
+    const sunday = slots.find((s) => local(s.start).day === 25)!;
+    expect(sunday.reason).toMatch(/hell bis 17:2\d/);
+  });
+
+  it("long outdoor days: summer afternoons stay attractive, no reason is added without outdoor rules", () => {
+    const now = at("2026-06-15T09:00");
+    const slots = findSlots({ now, until: at("2026-06-22T00:00"), busy: [], rules: RULES, size: "large", outdoor: { weather: null } });
+    expect(slots[0].reason).toMatch(/^hell bis 21:/);
+    expect(findSlots({ now, until: at("2026-06-22T00:00"), busy: [], rules: RULES, size: "large" })[0].reason).toBeUndefined();
   });
 });

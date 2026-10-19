@@ -57,6 +57,7 @@ async function Ideas() {
     url: idea.url,
     costEur: idea.costEur,
     location: idea.location,
+    setting: idea.setting,
     createdById: idea.createdById,
     updatedById: idea.updatedById,
     matched: matched.has(idea.id),

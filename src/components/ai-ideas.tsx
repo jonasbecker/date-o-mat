@@ -37,7 +37,7 @@ export function AiIdeas({
 
   function take(idea: AiIdea) {
     startSaving(async () => {
-      const { ideaId } = await saveAiIdeaAction({ title: idea.title, size: idea.size, note: idea.note, costEur: idea.costEur, location: idea.location });
+      const { ideaId } = await saveAiIdeaAction({ title: idea.title, size: idea.size, note: idea.note, costEur: idea.costEur, location: idea.location, setting: idea.setting });
       if (ideaId) onChoose({ id: ideaId, title: idea.title });
     });
   }

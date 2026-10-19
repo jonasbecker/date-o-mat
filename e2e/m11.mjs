@@ -110,6 +110,8 @@ await j.locator("dialog[open]").getByRole("button", { name: "🌳 Draußen" }).c
 await j.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
 await j.getByRole("button", { name: "Was anderes" }).click();
 const sheet = j.locator("dialog[open]");
+// The free times asked for the forecast on their own (for outdoor ideas); count only the AI request.
+const weatherBefore = weatherCalls.length;
 await sheet.getByRole("button", { name: "✨ 3 Ideen von der KI" }).click();
 await sheet.getByText("Sternschnuppen am Rhein 1").waitFor({ timeout: 15000 });
 const cards = await sheet.locator("article").allInnerTexts();
@@ -123,7 +125,7 @@ check("prompt: slot time, size and weather", /Time for the date: \w+, \d+\. \w+,
 // Word boundaries: "Samstag" is a weekday, not Sam.
 check("prompt: no names, e-mails or notes", !/\bJonas\b|\bSam\b|example\.com/.test(prompt + first.system));
 const weatherLine = await sheet.getByText(/Wetter:/).innerText();
-check(`weather for the slot shown (${weatherLine})`, /°C/.test(weatherLine) && weatherCalls.length === 1);
+check(`weather for the slot shown (${weatherLine})`, /°C/.test(weatherLine) && weatherCalls.length - weatherBefore === 1);
 await j.screenshot({ path: `${OUT}m11-02-plan.png` });
 await sheet.locator("article", { hasText: "Tee-Verkostung 1" }).getByRole("button", { name: "Nehmen" }).click();
 await j.locator("div", { hasText: "Ihr macht" }).getByText("Tee-Verkostung 1", { exact: true }).first().waitFor({ timeout: 10000 });

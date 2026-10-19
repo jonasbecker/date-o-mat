@@ -38,7 +38,7 @@ export function IdeaBoard({
   const [open, setOpen] = useState<{ idea: BoardIdea; view: "menu" | "edit" } | null>(null);
   const sheet = useRef<SheetHandle>(null);
 
-  const visible = ideas.filter((idea) => matchesIdeaFilter({ size: idea.size, costEur: idea.costEur }, filter));
+  const visible = ideas.filter((idea) => matchesIdeaFilter({ size: idea.size, costEur: idea.costEur, setting: idea.setting }, filter));
 
   function show(idea: BoardIdea) {
     setOpen({ idea, view: "menu" });

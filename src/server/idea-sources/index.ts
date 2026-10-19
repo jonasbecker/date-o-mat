@@ -7,7 +7,7 @@
 // so no other code has to change. `ideas.source`/`external_ref` in the
 // schema are already prepared for storing such ideas.
 import "server-only";
-import type { IdeaSize, IdeaSource } from "@/lib/domain";
+import type { IdeaSize, IdeaSource, PlaceSetting } from "@/lib/domain";
 import { wishlistSource } from "./wishlist";
 
 export type IdeaCandidate = {
@@ -19,6 +19,7 @@ export type IdeaCandidate = {
   url: string | null;
   costEur: number | null;
   location: string | null;
+  setting: PlaceSetting | null;
   source: IdeaSource;
   addedAt: Date;
 };

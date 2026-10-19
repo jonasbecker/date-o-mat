@@ -114,6 +114,7 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
       size: idea.size,
       costEur: idea.costEur,
       location: idea.location,
+      setting: idea.setting,
       note: idea.note,
       url: idea.url,
       matched: matched.has(idea.id),

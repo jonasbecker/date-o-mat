@@ -70,8 +70,11 @@ export async function saveDateAction(_prev: SaveDateState, formData: FormData): 
   return { status: "saved", savedAt: Date.now() };
 }
 
+/** The free times ranked for an outdoor idea (daylight + weather), per length. */
+export type SlotViewLists = { small: SlotView[]; large: SlotView[] };
+
 export type FreeTimes =
-  | { status: "ok"; small: SlotView[]; large: SlotView[]; untilLabel: string; failedCalendars: number; events: EventView[] | null }
+  | { status: "ok"; small: SlotView[]; large: SlotView[]; outdoor: SlotViewLists; outdoorDark: SlotViewLists; untilLabel: string; failedCalendars: number; events: EventView[] | null }
   | { status: "not_connected" | "google_error" };
 
 /**
@@ -100,6 +103,8 @@ export async function freeTimesAction(input: { later?: boolean; events?: boolean
     status: "ok",
     small: search.small.map(slotView),
     large: search.large.map(slotView),
+    outdoor: { small: search.outdoor.small.map(slotView), large: search.outdoor.large.map(slotView) },
+    outdoorDark: { small: search.outdoorDark.small.map(slotView), large: search.outdoorDark.large.map(slotView) },
     untilLabel: formatShortDate(search.until),
     failedCalendars: search.failedCalendars,
     events,

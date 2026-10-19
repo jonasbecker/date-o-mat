@@ -6,6 +6,7 @@ import { useActionState, useCallback, useEffect, useRef, useState, useTransition
 import { Button } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
 import { SIZE_LABEL } from "@/components/size-chip";
+import { slotModeFor } from "@/core/slot-modes";
 import { orderSlots, type SlotMood } from "@/core/slots";
 import { FilteredEmpty, FilterButton, useIdeaFilter } from "@/components/idea-filter";
 import { Sheet, type SheetHandle } from "@/components/sheet";
@@ -121,8 +122,11 @@ export function PlanFlow({
   }, [mode.kind, later, withEvents]);
   useEffect(() => loadTimes(), [loadTimes]);
   const ok = times?.result.status === "ok" ? times.result : null;
-  const small = ok ? orderSlots(ok.small) : NO_SLOTS;
-  const large = ok ? orderSlots(ok.large) : NO_SLOTS;
+  // Outdoor ideas get their own ranking: daylight and weather count (see core/outdoor.ts).
+  const slotMode = pick?.kind === "idea" ? slotModeFor(ideas.find((i) => i.id === pick.id)) : "standard";
+  const lists = ok ? (slotMode === "outdoor" ? ok.outdoor : slotMode === "outdoorDark" ? ok.outdoorDark : ok) : null;
+  const small = lists ? orderSlots(lists.small) : NO_SLOTS;
+  const large = lists ? orderSlots(lists.large) : NO_SLOTS;
   const events: EventView[] | null = ok?.events ?? null;
   const slots = size === "small" ? small : large;
   const [chosenSlot, setSlotKey] = useState<string | null>(null);
@@ -197,7 +201,7 @@ export function PlanFlow({
   const facts = idea ? ideaFacts(idea) : customLocation && `📍 ${customLocation}`;
   const budgetWarning = budget ? budgetHint(pickedCost, budget.left) : null;
   // Swapping: the date's own idea is not an alternative to itself.
-  const wishlist = ideas.filter((i) => matchesIdeaFilter({ size: i.size, costEur: i.costEur }, filter) && !(mode.kind === "swap" && i.id === mode.next.ideaId));
+  const wishlist = ideas.filter((i) => matchesIdeaFilter({ size: i.size, costEur: i.costEur, setting: i.setting }, filter) && !(mode.kind === "swap" && i.id === mode.next.ideaId));
   const pageCount = Math.max(1, Math.ceil(slots.length / SLOTS_PER_PAGE));
   const shownSlots = slots.slice(slotPage * SLOTS_PER_PAGE, (slotPage + 1) * SLOTS_PER_PAGE);
 
@@ -454,6 +458,7 @@ export function PlanFlow({
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
                     <span className="font-display text-lg font-semibold">{option.timeLabel}</span>
+                    {option.note && <span className={cn("text-xs font-bold", selected ? "" : "text-muted")}>{option.note}</span>}
                     <span className="flex flex-wrap items-center gap-1.5 text-xs font-extrabold">
                       {index === 0 && (
                         <span className="rounded-full border-[1.5px] border-line bg-bg px-2 py-px text-ink">★ Top-Tipp</span>

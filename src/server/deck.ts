@@ -265,6 +265,7 @@ export async function swipe(ctx: CoupleContext, cardId: string, verdict: SwipeVe
           url: card.eventUrl,
           costEur: card.costEur,
           location: card.location ?? card.eventVenue,
+          setting: card.setting,
           source: "deck",
           externalRef: card.id,
           createdById: ctx.user.id,

@@ -17,6 +17,7 @@ export const wishlistSource: IdeaSourceProvider = {
         url: idea.url,
         costEur: idea.costEur,
         location: idea.location,
+        setting: idea.setting,
         source: "wishlist" as const,
         addedAt: idea.createdAt,
       }));

@@ -53,8 +53,10 @@ export async function currentSuggestion(ctx: CoupleContext, cycle: Cycle, now: D
   const pick = pickSuggestion({
     small: search.small,
     large: search.large,
+    outdoor: search.outdoor,
+    outdoorDark: search.outdoorDark,
     preferLarge: cycle.seq % 2 === 0,
-    ideas: candidates.map((c) => ({ ideaId: c.ideaId, title: c.title, size: c.size, addedAt: c.addedAt })),
+    ideas: candidates.map((c) => ({ ideaId: c.ideaId, title: c.title, size: c.size, addedAt: c.addedAt, note: c.note, setting: c.setting })),
     rejected: all.filter((s) => s.status === "rejected").map((s) => ({ startsAt: s.startsAt, size: s.size, ideaId: s.ideaId })),
   });
   if (!pick) return { status: "no_slots" };
