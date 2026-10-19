@@ -1,17 +1,27 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createIdeaAction } from "@/app/(app)/ideas/actions";
 import { PlusIcon } from "./icons";
 import { IdeaForm } from "./idea-form";
 import { Sheet, type SheetHandle } from "./sheet";
 
-/** "+ Idee" in the Ideen tab: capture an idea in a sheet. */
-export function QuickAdd() {
+/** The event the logo menu sends to open the sheet from anywhere. */
+export const QUICK_ADD_EVENT = "dom-quick-add";
+
+/** "+ Idee": capture an idea in a sheet. With `eventOnly` there is no button – the sheet opens on QUICK_ADD_EVENT. */
+export function QuickAdd({ eventOnly = false }: { eventOnly?: boolean }) {
   const sheet = useRef<SheetHandle>(null);
   const [toast, setToast] = useState(false);
   // Remounting the form after each save resets it completely (fields, size, details).
   const [formKey, setFormKey] = useState(0);
+
+  useEffect(() => {
+    if (!eventOnly) return;
+    const open = () => sheet.current?.open();
+    window.addEventListener(QUICK_ADD_EVENT, open);
+    return () => window.removeEventListener(QUICK_ADD_EVENT, open);
+  }, [eventOnly]);
 
   function saved() {
     sheet.current?.close();
@@ -22,9 +32,9 @@ export function QuickAdd() {
 
   return (
     <>
-      <button type="button" aria-label="Idee hinzufügen" onClick={() => sheet.current?.open()} className="sticker press inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-zitrone px-4 font-display text-[15px] font-semibold text-tinte">
+      {!eventOnly && <button type="button" aria-label="Idee hinzufügen" onClick={() => sheet.current?.open()} className="sticker press inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-zitrone px-4 font-display text-[15px] font-semibold text-tinte">
         <PlusIcon width={18} height={18} /> Idee
-      </button>
+      </button>}
 
       <Sheet ref={sheet} title="Neue Idee">
         <IdeaForm key={formKey} action={createIdeaAction} onSaved={saved} footnote="Enter speichert · ihr seht sie beide sofort" />

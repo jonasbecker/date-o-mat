@@ -1,13 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { saveCuratedAction, surpriseAction, type SurpriseView } from "@/app/(app)/ideas/inspiration-actions";
 import { cn } from "@/lib/cn";
 import { Button, buttonClass } from "./button";
 import { Sheet, type SheetHandle } from "./sheet";
 import { SizeChip } from "./size-chip";
 import type { IdeaSize } from "@/lib/domain";
+
+/** The event the logo menu sends to draw from anywhere. */
+export const SURPRISE_EVENT = "dom-surprise";
 
 /** "Überrasch uns": draws a random idea, shown like a gumball falling out of the machine. */
 export function SurpriseButton({
@@ -17,7 +20,10 @@ export function SurpriseButton({
   ideaSize,
   onChoose,
   label = "🎲 Überrasch uns",
+  eventOnly = false,
 }: {
+  /** No button: the draw opens on SURPRISE_EVENT. */
+  eventOnly?: boolean;
   label?: React.ReactNode;
   className?: string;
   variant?: "primary" | "secondary";
@@ -52,6 +58,17 @@ export function SurpriseButton({
     draw();
   }
 
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+  });
+  useEffect(() => {
+    if (!eventOnly) return;
+    const listener = () => openRef.current();
+    window.addEventListener(SURPRISE_EVENT, listener);
+    return () => window.removeEventListener(SURPRISE_EVENT, listener);
+  }, [eventOnly]);
+
   function planIt() {
     if (!pick) return;
     startBusy(async () => {
@@ -66,9 +83,11 @@ export function SurpriseButton({
 
   return (
     <>
-      <button type="button" onClick={open} className={buttonClass(variant, size, cn("w-full", className))}>
-        {label}
-      </button>
+      {!eventOnly && (
+        <button type="button" onClick={open} className={buttonClass(variant, size, cn("w-full", className))}>
+          {label}
+        </button>
+      )}
       <Sheet ref={sheet} title="Der Date-O-Mat zieht …">
         <div aria-live="polite" className="flex min-h-56 flex-col gap-4">
           {drawing ? (

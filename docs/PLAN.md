@@ -156,7 +156,7 @@ Abweichungen in V2:
     Die Kategorie hängt am gemeinsamen Filter, damit sie überall gleich gilt. „Geswipt“ und „Matches“
     sind Ansichten der Wunschliste, keine zweite Liste; die Herkunft kommt aus `ideas.source`.
 20. Seit M37 gibt es wieder eine Leiste unten (M26 hatte sie abgeschafft): der Daumen erreicht das
-    Wichtigste, und das Logo als Mitte führt von jeder Seite zum Start (Tipp: nicht direkt in den Ablauf). Die
+    Wichtigste, und das Logo als Mitte führt von jeder Seite zum Start ; auf dem Start selbst klappt es Aktionen auf (nichts passiert, bevor man eine wählt). Die
     Zähler-Marke `data-header-icon="wishlist"` sitzt jetzt dort (das 💚 beim Liken fliegt hin).
 21. Seit M38 entscheidet der Platz statt nur der Zustand, ob die Swipe-Karte oder eine Zeile steht
     (`deckSize()` sagt nur noch, ob der Kasten Vorrang hat); reines CSS, damit nichts springt.

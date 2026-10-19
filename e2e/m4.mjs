@@ -140,6 +140,7 @@ rows = await cyclesInDb();
 check("current round keeps its end after a rhythm change", Math.round((rows[3].ends_at - rows[3].starts_at) / 86_400_000) === 7);
 await db.query("UPDATE couple_settings SET dev_clock_offset_minutes = dev_clock_offset_minutes + 7 * 24 * 60 WHERE couple_id = $1", [couple.id]);
 await j.goto(`${BASE}/`);
+await j.waitForURL(`${BASE}/plan`, { timeout: 15000 }).catch(() => {});
 rows = await cyclesInDb();
 check(`next round is two weeks long (${Math.round((rows[4].ends_at - rows[4].starts_at) / 86_400_000)} days)`, Math.round((rows[4].ends_at - rows[4].starts_at) / 86_400_000) === 14);
 check("round 5 belongs to Jonas", rows[4].planner_id === jonas.id);

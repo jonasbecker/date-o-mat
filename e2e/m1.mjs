@@ -122,7 +122,7 @@ check("intro is not shown again: / lands on Date planen", a.url() === `${BASE}/p
 const header = a.locator("header").first();
 await a.getByRole("heading", { name: "Date planen" }).waitFor({ timeout: 15000 });
 const bar = a.getByRole("navigation", { name: "Hauptmenü" });
-check("bottom bar: 💡 Ideen left, logo (Zum Start) in the middle, 💞 Dates right", (await bar.getByRole("link").evaluateAll((l) => l.map((x) => x.getAttribute("aria-label")))).join("|") === "Ideen|Zum Start|Eure Dates");
+check("bottom bar: 💡 Ideen left, the logo (Aktionen) in the middle, 💞 Dates right", (await bar.getByRole("link").evaluateAll((l) => l.map((x) => x.getAttribute("aria-label")))).join("|") === "Ideen|Eure Dates" && (await bar.getByRole("button", { name: "Aktionen" }).isVisible()));
 check("settings sit at the top", await header.getByRole("link", { name: "Einstellungen" }).isVisible());
 
 // Reminders: my own line stays until a device of mine is registered – one tap, no detour
