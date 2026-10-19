@@ -239,9 +239,14 @@ await s.getByRole("button", { name: "Filter: 🎡 Lang" }).click();
 await s.locator("dialog[open]").getByRole("button", { name: "Zurücksetzen" }).click();
 await s.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
 const { rows: others } = await db.query("UPDATE deck_cards SET status = 'passed' WHERE couple_id = $1 AND status = 'open' AND kind <> 'combo' RETURNING id", [couple.id]);
-await s.reload();
-await topCard(s).waitFor({ timeout: 15000 });
-const comboTitle = await topTitle(s);
+// The deck may still show a card that was already on screen: load again until the combo is on top.
+let comboTitle = "";
+for (let attempt = 0; attempt < 4 && !comboTitle.startsWith("Kombi"); attempt++) {
+  await s.reload();
+  await topCard(s).waitFor({ timeout: 15000 });
+  comboTitle = await topTitle(s);
+  if (!comboTitle.startsWith("Kombi")) await s.waitForTimeout(1500);
+}
 check(`combo card shows its event (${comboTitle})`, comboTitle.startsWith("Kombi") && (await topCard(s).getByText("🎟️ Konzert: Annenmaykantereit").isVisible()));
 check("combo knows you are both free", await topCard(s).getByText("✓ Ihr habt beide Zeit").isVisible());
 await s.screenshot({ path: `${OUT}m17-04-combo.png` });
