@@ -6,7 +6,7 @@ import { DateTime } from "luxon";
 import pg from "pg";
 import { fitsScreen } from "./flow.mjs";
 import { chromium } from "playwright";
-import { tuesdayMorningOffset } from "./clock.mjs";
+import { eventEvenings, tuesdayMorningOffset } from "./clock.mjs";
 import { startMock } from "./google-mock.mjs";
 import { resetDb } from "./db.mjs";
 
@@ -46,16 +46,12 @@ const sam = await makeUser("Sam", "partnerin@example.com", "himmel", "token-sam"
 await db.query("INSERT INTO couple_settings (couple_id, first_planner_id, dev_clock_offset_minutes) VALUES ($1, $2, $3)", [couple.id, jonas.id, tuesdayMorningOffset() + 120]);
 await db.query("INSERT INTO ideas (couple_id, title, size, created_by_id) VALUES ($1, 'Picknick im Stadtwald', 'small', $2)", [couple.id, jonas.id]);
 const { rows: [source] } = await db.query("INSERT INTO event_sources (couple_id, url, label, kind) VALUES ($1, 'https://example.com/events', 'Test-Events', 'calendar') RETURNING id", [couple.id]);
-// Evenings on days the Google mock keeps free (it is busy on Wednesday, Friday and Saturday).
-const eventStart = (days) => {
-  let d = DateTime.now().setZone("Europe/Berlin").startOf("day").plus({ days });
-  while ([3, 5, 6].includes(d.weekday)) d = d.plus({ days: 1 });
-  return d.set({ hour: 19 }).toUTC().toISO();
-};
-for (const [title, days, venue] of [["Konzert: Annenmaykantereit", 8, "Palladium"], ["Lesung im Literaturhaus", 9, "Literaturhaus"]]) {
+// Two evenings counted from the pinned dev clock, on days the Google mock keeps free.
+const evenings = eventEvenings();
+for (const [i, [title, venue]] of [["Konzert: Annenmaykantereit", "Palladium"], ["Lesung im Literaturhaus", "Literaturhaus"]].entries()) {
   await db.query(
     "INSERT INTO events (couple_id, source_id, kind, title, starts_at, venue, url, dedupe_key) VALUES ($1, $2, 'event', $3, $4, $5, 'https://example.com/e', $6)",
-    [couple.id, source.id, title, eventStart(days), venue, `key-${title}`],
+    [couple.id, source.id, title, evenings[i], venue, `key-${title}`],
   );
 }
 
