@@ -27,6 +27,9 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   minze = it stands/confirmed, yellow = hints and warnings only, everything else neutral. Controls use
   the icons in `components/icons.tsx`; emoji stay for content (ideas, confetti, match, choices).
   Small labels are normal case, not uppercase. Empty and loading states show the `Mascot`.
+- Slot ranking stays pure: `scoreSlot`/`findSlots` get daylight and the hourly forecast as
+  parameters (`core/outdoor.ts`, `core/sun.ts`); the one forecast request per search lives in
+  `server/weather.ts`. Outdoor ideas (`ideas.setting`) use the outdoor ranking, see `core/slot-modes.ts`.
 - Lists of ideas/events filter with the one shared filter (`useIdeaFilter()`, `matchesIdeaFilter()`),
   never with their own chips. New extras go behind `extraOn(settings, …)` and show up only when they fit.
 

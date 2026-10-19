@@ -101,6 +101,9 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M30 | Ideen-Aufbau: eine Wunschliste, Swipen auf dem Start wenn nichts zu planen ist, „Nächstes Mal?“, „Was läuft“ im Planen | ✅ |
 | M31 | Start = Kasten + Swipe-Karte; „Date planen“ im Kasten öffnet die Wunschliste als eigenen Schritt; 💡 ohne Reiter | ✅ |
 | M32 | Icons rechts, Seiten klappen von oben herunter; kompakte Swipe-Karte (nur ✕ ↩️ 💚, „Vielleicht“ und Super-Like entfallen) | ✅ |
+| M33 | Erinnerungen sind Pflicht: Push in der Einführung, Ein-Tipp-Zeile auf dem Start, Hinweis wenn die andere Person keins hat, Hilfe bei verweigerter Erlaubnis | ✅ |
+| M34 | Start: der Kasten bekommt den Platz, wenn etwas ansteht (Swipen = eine Zeile); „Wie war's?“ mit Foto und Herzen | ✅ |
+| M35 | Top-Tipp passt zur Idee: Sonnenuntergang und Wetter für Draußen-Ideen, Begründung an der Zeit | ✅ |
 
 Abweichungen in V2:
 
@@ -137,6 +140,15 @@ Abweichungen in V2:
 15. Seit M31 ist der Start nicht mehr Schritt 1 des Planens: Er zeigt einen Kasten und die
     Swipe-Karte, „Date planen“ öffnet die Wunschliste. Checkliste, Zeit ändern und Absagen liegen
     unter „Details“ (die Seite des Dates), die Gesprächskarten am Tag als Link im Kasten.
+
+16. Seit M33 ist Push keine Checklisten-Zeile mehr, sondern eine eigene, nicht wegklickbare Zeile
+    auf dem Start, bis ein Gerät angemeldet ist (Einführung fragt schon danach).
+17. Seit M34 hängt die Größe der Swipe-Karte am Zustand (`deckSize()`), nicht mehr jeder Zustand
+    zeigt sie groß.
+18. Seit M35 ist die Zeitenliste idee-abhängig: Draußen-Ideen werden nach Tageslicht und Wetter
+    gewertet. Dafür bekam `ideas` die Spalte `setting` (vorher gab es das nur an Swipe-Karten).
+    Dunkelheit ist gewollt bei Stichwörtern (`darknessWanted()`), statt eines Felds an der Idee –
+    es greift für alle Quellen (Wunschliste, Swipen, Köln-Liste, KI) ohne Formularfeld.
 
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 

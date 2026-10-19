@@ -44,6 +44,9 @@ gemeinsame Ideen-Wunschliste.
 | M30 | Eine Wunschliste, wo sie passt: Schritt 1 = Wunschliste, „Solange swipen?“ auf dem Start, „Nächstes Mal?“ nach dem Bewerten, 💡 mit zwei Reitern | ✅ |
 | M31 | Start = ein Kasten + Swipen: im Kasten „Date planen“, „Passt!“, der Vorschlag oder das Date; darunter die Swipe-Karte; „Date planen“ führt zur Wunschliste | ✅ |
 | M32 | Kopfzeile mit 💡 ♥ ⚙️ rechts, die Seiten klappen von oben herunter (gleiches Icon = wieder hoch); Swipe-Karte mit Knöpfen auf der Karte, ohne Vielleicht/Super-Like | ✅ |
+| M33 | Erinnerungen sind Pflicht: letzte Einführungskarte schaltet Push an, auf dem Start eine Zeile mit Ein-Tipp-Aktivierung, Hinweis wenn die andere Person keine bekommt, Hilfe bei verweigerter Erlaubnis | ✅ |
+| M34 | Der Start zeigt, was ansteht: der Kasten bekommt den Platz, Swipen wird eine Zeile; „Wie war's?“ mit Foto und antippbaren Herzen | ✅ |
+| M35 | Der Top-Tipp passt zur Idee: Tageslicht (Sonnenuntergang) und Wetter für Draußen-Ideen, Begründung an der Zeit, `ideas.setting` | ✅ |
 
 ## Tech-Stack
 
@@ -125,8 +128,9 @@ scripts/              Migration beim Build, Secret-Generator
 - **Abwechselnd:** Runde 1 gehört der Person, die das Paar gestartet hat, danach wird
   abgewechselt, auch nach ausgefallenen Runden. „Ich übernehme diese Runde“ tauscht die
   Reihenfolge ab sofort.
-- **Vorschlag:** Pro Runde gibt es einen gemeinsamen Vorschlag (bester freier Slot + die
-  Idee, die am längsten auf der Wunschliste wartet; jede zweite Runde bevorzugt groß).
+- **Vorschlag:** Pro Runde gibt es einen gemeinsamen Vorschlag: die Idee, die am längsten auf der
+  Wunschliste wartet (jede zweite Runde bevorzugt groß), mit dem besten freien Slot *für diese
+  Idee* (Draußen-Ideen: Tageslicht und Wetter, M35).
   „Anderer Vorschlag“ verwirft ihn, verworfene Slots und Ideen kommen nicht wieder.
 - Status: offen → geplant → bestätigt → stattgefunden; ohne Date am Rundenende: übersprungen.
 - Neuer Rhythmus gilt ab der nächsten Runde; Modus und Deadline gelten sofort, solange die
@@ -155,7 +159,7 @@ scripts/              Migration beim Build, Secret-Generator
 - **Web Push** mit VAPID (`web-push`), eigener Service Worker `public/sw.js`. Jede Person kann
   mehrere Geräte anmelden; tote Abos (404/410) räumt der Server beim Senden selbst weg.
 - **iPhone:** Push gibt es nur, wenn die App auf dem Home-Bildschirm installiert ist (iOS 16.4+).
-  In Safari zeigen Startseite und Einstellungen deshalb eine Schritt-für-Schritt-Anleitung.
+  In Safari zeigen Einführung, Startseite und Einstellungen deshalb eine Schritt-für-Schritt-Anleitung.
 - **Arten** (je Person einzeln abschaltbar): Du bist dran (Rundenstart, frühestens 9 Uhr),
   Deadline in 24 Std., Partner:in plant/bestätigt/sagt ab/bewertet, Date morgen (19 Uhr am Vortag),
   Date in 2 Stunden, „Wie war's?“ (Tag danach, 11 Uhr).
@@ -181,21 +185,49 @@ scripts/              Migration beim Build, Secret-Generator
 
 ### Bedienung in Kürze (M13)
 
-- **Einführung** (`/welcome`): vier Karten nach dem Koppeln (Rhythmus/Modus und Namen
+- **Einführung** (`/welcome`): fünf Karten nach dem Koppeln (die letzte schaltet die Erinnerungen an, M33) (Rhythmus/Modus und Namen
   eingesetzt), danach nie wieder automatisch – `users.onboarded_at`. In den Einstellungen
   unter „Hilfe“ jederzeit erneut.
 - **Startseite:** oben genau eine Karte „Dein nächster Schritt“ (`nextStep()` in
   `src/core/next-step.ts`, mit Tests): Kalender verbinden → „Passt!“ geben → planen →
-  bewerten → sonst „Stand der Dinge“. Darunter das nächste Date, eine **Start-Checkliste**
-  (Kalender, Home-Bildschirm, Push; verschwindet, wenn alles erledigt ist) und – nur wenn es
-  welche gibt – Kacheln zu neuen Swipe-Karten und Events.
+  bewerten → sonst „Stand der Dinge“. Seit M31 steckt das nächste Date mit im Kasten, darunter
+  kommen die Erinnerungs-Zeile (M33), eine **Start-Checkliste** (Kalender, Home-Bildschirm;
+  verschwindet, wenn alles erledigt ist) und das Swipen (groß oder eine Zeile, M34).
 - **ⓘ-Hilfen:** `<Info term="…">` mit Texten aus `src/lib/glossary.ts`, über die Popover-API
   des Browsers (kein eigenes JavaScript).
-- **Planen:** „⚡ Schnell planen“ (Top-Termin + älteste kurze Idee, ein Tipp) und unter
-  „Was machen wir?“ die Wunschliste, „🎲 Zufall“, „Was anderes …“ und die eigene Idee (M22).
+- **Planen:** „Was wollt ihr machen?“ mit der Wunschliste (seit M30 ohne „Schnell planen“), „🎲 Zufall“, „Was anderes …“ und die eigene Idee (M22).
   Was man nimmt, landet auf der Wunschliste und ist sofort gewählt.
 - **Wörter:** Kurz/Lang statt Klein/Groß, „Diese Woche“ statt „Runde 3“, „Plan bis …“ statt
   „Deadline“. Einstellungen: „Das Wichtigste“ oben, der Rest eingeklappt (M22).
+
+### Erinnerungen in Kürze (M33)
+
+- **Einführung:** Die letzte Karte schaltet Push mit einem Tipp an (`usePush()` in
+  `src/components/use-push.ts`, dieselbe Logik wie in den Einstellungen); auf dem iPhone in Safari
+  steht dort die Anleitung für den Home-Bildschirm. „Später“ ist klein, der große Knopf kommt mit Push.
+- **Start:** Solange ich kein Gerät angemeldet habe, steht eine Zeile mit „Aktivieren“ da – nicht
+  wegklickbar. Hat die andere Person keins, sagt eine leise Zeile „Sam bekommt keine Erinnerungen –
+  sag Bescheid“ (eine Woche ausblendbar). Welche Zeile gilt, entscheidet `pushRow()` in
+  `src/core/push-nudge.ts`.
+- **Verweigert:** Der Start, die Einführung und die Einstellungen zeigen, wie man die Erlaubnis
+  wieder gibt (iPhone, Android, Computer – `deniedHelp()`).
+
+### Start: Platz für das, was ansteht (M34)
+
+- `deckSize()` in `src/core/start-layout.ts` entscheidet pro Zustand: Steht etwas an (Passt! geben
+  oder abwarten, ein Date in dieser Runde, ein Date zu bewerten, ein offener Vorschlag, ein Kalender
+  zu verbinden), bekommt der Kasten den Platz und Swipen ist eine Zeile („6 neue Ideen zum Swipen ›“).
+  Die große Karte gibt es, wenn nichts ansteht (du bist dran, die andere Person ist dran, Runde vorbei).
+- **„Wie war's?“** zeigt Titel, Datum, das erste Foto und fünf Herzen; ein Tipp auf ein Herz öffnet die
+  Bewertung mit dieser Zahl (`/dates/<id>?herzen=n`). Steht ein anderer Schritt oben, bekommt die
+  Bewertung eine eigene Karte.
+
+### Zeiten passend zur Idee (M35)
+
+- Der Slot-Finder kennt jetzt Tageslicht und Wetter (siehe „Slot-Finder in Kürze“, Punkt 6). Der
+  Ablauf wählt die Rangfolge nach der gewählten Idee; der Vorschlag-Modus nimmt zuerst die Idee und
+  dann die Zeit, die zu ihr passt.
+- Neu am Datenmodell: `ideas.setting` (drinnen / draußen, leer = egal).
 
 ### Start in Kürze (M31)
 
@@ -203,8 +235,9 @@ scripts/              Migration beim Build, Secret-Generator
   „Passt! 💚“, „Jetzt bewerten“, den Vorschlag (Vorschlag-Modus) oder das nächste Date mit Ort,
   Route, „Details ›“ (Checkliste, Zeit ändern, Absagen) und „Lieber was anderes?“.
 - **Darunter swipen:** Die Swipe-Karte liegt direkt auf dem Start (`SwipeDeck compact`) – 💚 legt
-  die Idee auf die Wunschliste, beide 💚 = Match. „x Karten ›“ öffnet den ganzen Stapel mit Filter
-  und „Vielleicht“. Werden die Karten knapp, mischt der Start im Hintergrund neue.
+  die Idee auf die Wunschliste, beide 💚 = Match. Das Badge „x ›“ öffnet den ganzen Stapel mit
+  Filter. Werden die Karten knapp, mischt der Start im Hintergrund neue. Seit M34 gilt das nur,
+  wenn nichts ansteht – sonst ist Swipen eine Zeile (siehe unten).
 - **Durchklicken:** „Date planen“ (`/plan?pick=1`) zeigt die Wunschliste als eigenen Schritt mit
   „← Zurück“, danach die Zeit. Unten nur noch „Zufall“ und „Was anderes“.
 - **💡** ist die Wunschliste zum Sammeln und Bearbeiten, ohne Reiter.
@@ -213,11 +246,10 @@ scripts/              Migration beim Build, Secret-Generator
 
 - **Eine Wunschliste:** Schritt 1 beim Planen ist die Wunschliste. „+ Idee“ steht direkt dort,
   ⋯ an jeder Karte bearbeitet oder löscht, Antippen plant. 💡 oben zeigt dieselbe Liste zum Sammeln.
-- **Ideen, wenn ihr Zeit dafür habt:** Ist der/die andere dran, zeigt der Start „Solange swipen?“
-  mit dem Kartenstapel im Kleinformat (`SwipeTeaser`, `deckTeaser()`), dazu „Lieber selbst planen →“
-  (`/plan?self=1`). Steht das Date, gibt es „Solange swipen?“ als kleine Zeile darunter.
+- **Ideen, wenn ihr Zeit dafür habt:** Ist der/die andere dran, liegt die große Swipe-Karte auf dem
+  Start; steht etwas an (Date, Passt!, Bewerten, Vorschlag), ist Swipen eine Zeile (M34).
 - **Nach dem Bewerten:** „Nächstes Mal?“ mit den drei Ideen, die am längsten warten – ein Tipp plant.
-- **💡 hat zwei Reiter** (Wunschliste, Swipen). „Was läuft“ steckt in „Was anderes …“ beim Planen
+- **💡 ist die Wunschliste** (seit M31 ohne Reiter, Swipen liegt auf dem Start). „Was läuft“ steckt in „Was anderes …“ beim Planen
   (Events, bei denen ihr beide Zeit habt, plus „Alles, was in Köln läuft →“) und im Swipe-Stapel.
 - **Ruhiger Start:** „Schnell planen“ ist weg – Schritt 1 beginnt direkt mit der Wunschliste. Ist die
   letzte Runde ausgefallen, steht das in derselben Farbbox wie „Du bist dran!“ (`NextStepCard note`).
@@ -264,8 +296,8 @@ scripts/              Migration beim Build, Secret-Generator
   scrollt die Seite als Notlösung; die e2e-Tests prüfen das mit `fitsScreen()` (390×844).
 - **Start:** der Stand in kurz und das nächste Date als Zusammenfassung mit „Passt!“. Checkliste,
   Route, Gesprächskarten, Ändern und Absagen liegen auf der Seite des Dates (`/dates/[id]`).
-  „Startklar“ ist eine Zeile, „›“ zeigt den nächsten Punkt.
-- **Schritt 1:** Nur die Wunschliste scrollt. Unten stehen 🎲 Zufall · Was anderes … · 💞 Swipen;
+  „Startklar“ ist eine Zeile, „›“ zeigt den nächsten Punkt (Erinnerungen haben seit M33 eine eigene Zeile).
+- **Schritt 1:** Nur die Wunschliste scrollt. Unten stehen 🎲 Zufall · Was anderes …;
   die eigene Idee (mit Ort) steht in „Was anderes …“.
 - **Schritt 2:** drei Zeiten, „Weitere Zeiten →“ blättert; Länge als kleiner Schalter.
 - **Einstellungen:** eine Übersicht mit Kacheln, jedes Thema eine eigene Seite (`/settings?t=budget`,
@@ -348,9 +380,9 @@ scripts/              Migration beim Build, Secret-Generator
 - **Event-Kombis:** echte Events aus euren Event-Quellen (nächste 14 Tage) plus etwas Passendes
   davor/danach, mit „✓ Ihr habt beide Zeit“. Anteil in den Einstellungen: Keine / Ein paar /
   Viele. Kombi-Karten verschwinden, wenn das Event begonnen hat.
-- **Swipen:** rechts/💚 = gerne, links/✕ = nö, hoch/⭐ = Super-Like (einmal am Tag, der Partner
-  sieht ihn mit Namen), ↩️ nimmt den letzten Swipe zurück – beliebig oft hintereinander.
-  Tastatur: ← → ↑ und Rücktaste. Es gilt der gemeinsame Filter (M22);
+- **Swipen:** rechts/💚 = gerne, links/✕ = nö, ↩️ nimmt den letzten Swipe zurück – beliebig oft
+  hintereinander (Super-Like und „Vielleicht“ gibt es seit M32 nicht mehr in der Oberfläche).
+  Tastatur: ← → und Rücktaste. Es gilt der gemeinsame Filter (M22);
   „Mehr … holen“ macht gezielt passende Karten.
 - **Match:** Jede:r swipet für sich. Seit M25 kommt schon ein einzelnes 💚 auf die Wunschliste
   (`source = 'deck'`, mit deinem Avatar); die Karte bleibt im Stapel des anderen. Gibt der/die
@@ -404,9 +436,8 @@ scripts/              Migration beim Build, Secret-Generator
   „Lang“) und dem Stand des Spartopfs. **Geburtstage sieht und bekommt nur die andere Person**
   – für die Überraschung. Steht ein Tag in den nächsten 30 Tagen an, mischt der Stapel ein paar
   besondere Ideen dafür bei.
-- **„Vielleicht“** (🤔 oder nach unten wischen): Die Karte verschwindet nur für dich und kommt
-  zur passenden Jahreszeit wieder (Claude gibt jeder Karte eine „beste Jahreszeit“; Freibad →
-  1. Juni), sonst nach drei Wochen. „Jetzt nochmal ansehen“ holt sie sofort zurück.
+- **„Vielleicht“** (bis M31): Karten, die so zurückgestellt wurden, kommen zur passenden Jahreszeit
+  wieder. Die Knöpfe sind seit M32 weg, die Logik im Server ist unverändert.
 - **Alte Ideen:** Steht eine Idee seit 3 Monaten unverplant auf der Wunschliste, kommt sie
   (höchstens eine pro Tag) als Karte „🕰️ Steht seit März auf eurer Liste – noch Lust?“ in den
   Stapel. Ein 💚 reicht, damit sie bleibt; erst wenn beide ✕ sagen, fliegt sie von der Liste.
@@ -569,6 +600,13 @@ scripts/              Migration beim Build, Secret-Generator
 4. Jeden Kandidaten bewerten (`scoreSlot`): klein → Abende und Wochenend-Nachmittage,
    groß → Wochenende und viel Zeit am Stück; früher ist leicht besser, etwas Luft drumherum auch.
 5. Bester Slot pro Tag, davon die fünf besten. Platz 1 ist der „Top-Tipp“.
+6. **Draußen-Ideen** (M35) werden anders gewertet (`src/core/outdoor.ts`): starker Abzug, wenn der
+   Slot nach Sonnenuntergang liegt (`src/core/sun.ts`, selbst berechnet für Köln), Bonus für
+   Wochenend-Nachmittage, Abzug bei Regen ab 60 % oder unter 8 °C (stündliche Vorhersage von
+   Open-Meteo, eine Abfrage pro Suche; ohne Vorhersage neutral). Ausnahme: Ideen mit Stichwörtern wie
+   Sterne, Sonnenuntergang, Lichter (`darknessWanted()`) verlieren nichts für die Dunkelheit.
+   Die Zeile an der Zeit sagt es: „☀️ 14°, trocken · hell bis 18:20“. Welche Idee Draußen ist,
+   steht in `ideas.setting` (Formular: „Wo?“; Swipe-Karten, Köln-Ideen und KI-Ideen bringen es mit).
 
 ## Datenmodell
 
