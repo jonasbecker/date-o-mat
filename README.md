@@ -48,6 +48,7 @@ gemeinsame Ideen-Wunschliste.
 | M34 | Der Start zeigt, was ansteht: der Kasten bekommt den Platz, Swipen wird eine Zeile; „Wie war's?“ mit Foto und antippbaren Herzen | ✅ |
 | M35 | Der Top-Tipp passt zur Idee: Tageslicht (Sonnenuntergang) und Wetter für Draußen-Ideen, Begründung an der Zeit, `ideas.setting` | ✅ |
 | M36 | Swipen, das man sieht: Kategorien als Chips über der Wunschliste, Herkunft („von dir geswipt“), Fortschritt, Stapel, Flug zum 💡 mit wachsendem Zähler, `ideas.category` | ✅ |
+| M37 | Untere Leiste: das Logo groß in der Mitte (startet „Date planen“), links 💡 Ideen, rechts ♥ Dates; oben nur Name und Einstellungen, die Seiten klappen nicht mehr herunter | ✅ |
 
 ## Tech-Stack
 
@@ -324,9 +325,11 @@ scripts/              Migration beim Build, Secret-Generator
 
 ### Ein Ablauf in Kürze (M26, löst die Navigation von M24 ab)
 
-- **Keine Leiste unten mehr.** Die App ist ein Weg: `/plan` ist der Start. Oben stehen nur kleine
-  Icons: links 💡 Ideen (Wunschliste, Swipen, Was läuft, „+ Idee“), rechts 💞 eure bisherigen Dates
-  und ⚙️ Einstellungen. Das Logo führt zurück, andere Seiten haben zusätzlich „← Date planen“.
+- **Untere Leiste (seit M37, vorher Icons oben):** `BottomNav` im Layout von `(app)`. Links 💡 Ideen
+  (Wunschliste, Swipen; mit Zähler), in der Mitte das große Logo = „Neues Date planen“
+  (`/plan?pick=1`), rechts ♥ Dates (Kommendes und Historie). Oben stehen nur der Name (führt zum
+  Start), ⚙️ Einstellungen und – wo es passt – „+ Idee“. Die Seiten öffnen normal; das Herunterklappen
+  von M32 gibt es nicht mehr.
 - **Start = was gerade ansteht** (`StartSection` in `src/app/(app)/overview.tsx`): das nächste Date
   mit „Passt!“, „Wie war's?“, der Stand der Runde, die Start-Checkliste.
 - **Steht nichts an:** darunter der Ablauf (`PlanFlow` in `plan/plan-form.tsx`):

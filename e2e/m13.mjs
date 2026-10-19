@@ -177,25 +177,28 @@ await j.getByRole("button", { name: "Weiter" }).click();
 await j.waitForTimeout(600);
 await j.screenshot({ path: `${OUT}m13-07-welcome.png` });
 
-// 6b) The header icons drop their page down; the same icon folds it up again
+// 6b) The bottom bar: Dates opens the history, the logo starts planning, Ideen leads to the wishlist
 await j.goto(`${BASE}/plan`);
 await j.locator("[data-next-step]").filter({ visible: true }).first().waitFor({ timeout: 15000 });
-await j.getByRole("link", { name: "Eure Dates", exact: true }).click();
+const bar = j.getByRole("navigation", { name: "Hauptmenü" });
+await bar.getByRole("link", { name: "Eure Dates", exact: true }).click();
 await j.waitForURL(`${BASE}/dates`, { timeout: 10000 });
 await j.getByRole("heading", { name: "Eure Dates" }).waitFor({ timeout: 10000 });
-check("history icon opens the history", (await j.locator("[data-panel]").filter({ visible: true }).count()) === 1);
+check("Dates opens the history, marked as the current page", (await bar.getByRole("link", { name: "Eure Dates", exact: true }).getAttribute("aria-current")) === "page");
 await j.screenshot({ path: `${OUT}m13-13-panel.png` });
-await j.getByRole("link", { name: "Eure Dates", exact: true }).click();
-await j.waitForURL(`${BASE}/plan`, { timeout: 10000 });
-await j.locator("[data-next-step]").filter({ visible: true }).first().waitFor({ timeout: 10000 });
-check("the same icon folds it up: the start again", true);
-check("icons sit on the right: wishlist, history, settings", (await j.locator("header:visible a").evaluateAll((a) => a.map((x) => x.getAttribute("aria-label")))).join("|") === "Date-O-Mat – zum Start|Ideen|Eure Dates|Einstellungen");
+await bar.getByRole("link", { name: "Neues Date planen" }).click();
+await j.getByRole("heading", { name: "Was wollt ihr machen?" }).waitFor({ timeout: 15000 });
+check("the logo opens the planning flow (step 1)", j.url().includes("/plan?pick=1"));
+await bar.getByRole("link", { name: "Ideen", exact: true }).click();
+await j.getByRole("heading", { name: "Wunschliste" }).waitFor({ timeout: 15000 });
+check("Ideen opens the wishlist", (await bar.getByRole("link", { name: "Ideen", exact: true }).getAttribute("aria-current")) === "page");
+check("top: name + settings only", (await j.locator("header:visible a").evaluateAll((a) => a.map((x) => x.getAttribute("aria-label")))).join("|") === "Date-O-Mat – zum Start|Einstellungen");
 
 // 7) Dark mode + nav label
 const jd = await pageFor(jonas.token, "dark");
 await jd.goto(`${BASE}/`);
 await heading(jd);
-check("nav says Ideen", await jd.getByRole("link", { name: "Ideen", exact: true }).isVisible());
+check("nav says Ideen", await jd.getByRole("navigation", { name: "Hauptmenü" }).getByRole("link", { name: "Ideen", exact: true }).isVisible());
 await jd.screenshot({ path: `${OUT}m13-08-home-dark.png`, fullPage: true });
 // Light cards stay light in dark mode – their text must stay dark (it used to turn light-on-light).
 async function contrastOf(page, textLocator) {

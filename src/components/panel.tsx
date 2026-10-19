@@ -1,11 +1,4 @@
-/**
- * The page behind a header icon (wishlist, history, settings): it drops down
- * from the top under the header; the same icon folds it up again.
- */
+/** The body of a page under the header: takes the height that is left, its lists scroll. */
 export function Panel({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div data-panel className={`animate-drop-in flex min-h-0 pt-1 flex-1 flex-col gap-4 ${className ?? ""}`}>
-      {children}
-    </div>
-  );
+  return <div data-panel className={`flex min-h-0 flex-1 flex-col gap-4 pt-1 ${className ?? ""}`}>{children}</div>;
 }

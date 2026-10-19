@@ -1,4 +1,7 @@
+import { Suspense } from "react";
+import { BottomNav, BottomNavBar } from "@/components/bottom-nav";
 import { CelebrationProvider } from "@/components/celebration";
+import { WishlistCount } from "@/components/app-header";
 
 // Shell for all signed-in pages. Static on purpose: everything that reads the
 // session sits inside a <Suspense> boundary in the pages (Cache Components).
@@ -7,12 +10,21 @@ import { CelebrationProvider } from "@/components/celebration";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <CelebrationProvider>
-      <main
-        data-screen
-        className="mx-auto flex h-dvh max-w-md flex-col overflow-y-auto overscroll-none px-5 pb-[max(env(safe-area-inset-bottom),14px)] pt-[max(env(safe-area-inset-top),16px)]"
-      >
-        {children}
-      </main>
+      <div className="mx-auto flex h-dvh max-w-md flex-col">
+        <main data-screen className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-none px-5 pt-[max(env(safe-area-inset-top),16px)] pb-5">
+          {children}
+        </main>
+        {/* The path is only known at runtime: the bar is there from the start, the active item follows. */}
+        <Suspense fallback={<BottomNavBar path="" />}>
+          <BottomNav
+            wishlistBadge={
+              <Suspense fallback={null}>
+                <WishlistCount />
+              </Suspense>
+            }
+          />
+        </Suspense>
+      </div>
     </CelebrationProvider>
   );
 }

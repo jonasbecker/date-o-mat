@@ -21,6 +21,7 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - Design tokens are in `src/app/globals.css` (`sticker`, `press` utilities); bright fills use `text-tinte`.
   In dark mode the light fills (`bg-zitrone-soft`, `bg-himbeere` …) reset the color tokens to light values,
   so `text-ink`/`text-muted` on them stay readable – new light fills go into that list.
+- **Navigation (M37):** `BottomNav` in the `(app)` layout (Ideen · logo = new date · Dates); the page header (`AppHeader`) holds only the name and settings. `Panel` is a plain page body (no drop-down).
 - **Design (M29, direction A):** the sticker look (`sticker`, thick outline + hard shadow) is only for
   what you tap next – primary buttons and the next date. Lists, infos and secondary buttons are `flat`
   (outline only, `tap` feedback). Color roles: pink = action, the person colors = whose turn,

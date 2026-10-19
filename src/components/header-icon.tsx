@@ -1,16 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { BulbIcon, HeartIcon, SlidersIcon } from "./icons";
 
 const ICONS = { bulb: BulbIcon, heart: HeartIcon, sliders: SlidersIcon };
 
-/**
- * A header icon opens its page (it drops down from the top, see `Panel`). On the
- * page it belongs to, the same icon folds it up again and shows the start.
- */
+/** A round icon in the page header (settings). On its own page it leads back to the start. */
 export function HeaderIcon({
   href,
   label,
@@ -28,22 +24,12 @@ export function HeaderIcon({
   /** Lets scripts find the icon (the swipe deck flies hearts to it). */
   marker?: string;
 }) {
-  const router = useRouter();
   const Icon = ICONS[icon];
   return (
     <Link
       href={active ? "/plan" : href}
       aria-label={label}
       aria-current={active ? "page" : undefined}
-      onClick={(event) => {
-        if (!active) return;
-        // Fold the open page up first, then show the start.
-        const panel = [...document.querySelectorAll<HTMLElement>("[data-panel]")].find((el) => el.offsetParent !== null);
-        if (!panel) return;
-        event.preventDefault();
-        panel.classList.add("animate-lift-out");
-        setTimeout(() => router.push("/plan"), 200);
-      }}
       data-header-icon={marker}
       className={cn("press relative flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-line", active ? "bg-himbeere-soft text-tinte" : "bg-surface")}
     >

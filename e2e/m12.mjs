@@ -262,7 +262,7 @@ const jd = await pageFor(jonas.token, "dark");
 await jd.goto(`${BASE}/events`);
 await jd.getByText("Jazz im Stadtgarten").waitFor({ timeout: 15000 });
 await jd.screenshot({ path: `${OUT}m12-04-events-dark.png` });
-await jd.getByRole("link", { name: "Ideen" }).click();
+await jd.getByRole("navigation", { name: "Hauptmenü" }).getByRole("link", { name: "Ideen" }).click();
 await jd.getByRole("heading", { name: "Wunschliste" }).waitFor({ timeout: 10000 });
 check("from the events back to the wishlist (💡)", true);
 

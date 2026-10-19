@@ -1,13 +1,11 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { requireCouple } from "@/server/auth/dal";
 import { countIdeas } from "@/server/ideas";
 import { WishlistBadge } from "./wishlist-badge";
 import { HeaderIcon } from "./header-icon";
-import { LogoLockup } from "./logo";
 
-/** The number of wishlist ideas for the badge on the bulb (reads the database, so it sits in its own Suspense). */
-async function WishlistCount() {
+/** The number of wishlist ideas for the badge on 💡 in the bottom bar (reads the database, so it sits in its own Suspense). */
+export async function WishlistCount() {
   const { coupleId } = await requireCouple();
   return <WishlistBadge count={await countIdeas(coupleId)} />;
 }
@@ -15,35 +13,18 @@ async function WishlistCount() {
 export type HeaderPlace = "plan" | "ideas" | "dates" | "settings";
 
 /**
- * The only navigation: the app is one flow ("Date planen"), the rest sits in
- * three icons on the right – 💡 wishlist, 💞 past dates, ⚙️ settings. Each
- * drops its page down from the top; the same icon folds it up again.
- * The logo leads back to the start.
+ * The top of a page: the name on the left, settings on the right (and, where a page has one, its
+ * own action such as "+ Idee"). Everything else is in the bottom bar (`BottomNav`).
  */
 export function AppHeader({ current = "plan", action }: { current?: HeaderPlace; action?: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-2">
-      <header className="flex items-center gap-2.5">
-        <Link href="/plan" aria-label="Date-O-Mat – zum Start" className="min-w-0 flex-1">
-          <LogoLockup clipId="header-logo" />
-        </Link>
-        <HeaderIcon
-          href="/ideas"
-          label="Ideen"
-          icon="bulb"
-          marker="wishlist"
-          active={current === "ideas"}
-          badge={
-            <Suspense fallback={null}>
-              <WishlistCount />
-            </Suspense>
-          }
-        />
-        <HeaderIcon href="/dates" label="Eure Dates" icon="heart" active={current === "dates"} />
-        <HeaderIcon href="/settings" label="Einstellungen" icon="sliders" active={current === "settings"} />
-      </header>
-      {action && <div className="flex min-h-9 items-center justify-end">{action}</div>}
-    </div>
+    <header className="flex min-h-10 items-center gap-2.5">
+      <Link href="/plan" aria-label="Date-O-Mat – zum Start" className="min-w-0 flex-1 font-display text-[22px] font-bold leading-none">
+        Date-O-Mat
+      </Link>
+      {action}
+      <HeaderIcon href="/settings" label="Einstellungen" icon="sliders" active={current === "settings"} />
+    </header>
   );
 }
 

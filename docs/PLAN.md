@@ -105,6 +105,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M34 | Start: der Kasten bekommt den Platz, wenn etwas ansteht (Swipen = eine Zeile); „Wie war's?“ mit Foto und Herzen | ✅ |
 | M35 | Top-Tipp passt zur Idee: Sonnenuntergang und Wetter für Draußen-Ideen, Begründung an der Zeit | ✅ |
 | M36 | Swipen befriedigend: Kategorien als Chips, Herkunft sichtbar, Fortschritt, Stapel, Flug zum 💡 | ✅ |
+| M37 | Untere Leiste mit großem Logo (Date planen) in der Mitte, Ideen links, Dates rechts; Einstellungen oben | ✅ |
 
 Abweichungen in V2:
 
@@ -153,6 +154,9 @@ Abweichungen in V2:
 19. Seit M36 hat `ideas` eine optionale `category`; ohne sie schließt `categoryOf()` aus dem Text.
     Die Kategorie hängt am gemeinsamen Filter, damit sie überall gleich gilt. „Geswipt“ und „Matches“
     sind Ansichten der Wunschliste, keine zweite Liste; die Herkunft kommt aus `ideas.source`.
+20. Seit M37 gibt es wieder eine Leiste unten (M26 hatte sie abgeschafft): der Daumen erreicht das
+    Wichtigste, und das Logo als Mitte macht „Date planen“ von jeder Seite aus erreichbar. Die
+    Zähler-Marke `data-header-icon="wishlist"` sitzt jetzt dort (das 💚 beim Liken fliegt hin).
 
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 

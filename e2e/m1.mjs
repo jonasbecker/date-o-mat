@@ -121,8 +121,9 @@ await a.waitForURL(`${BASE}/plan`, { timeout: 10000 }).catch(() => {});
 check("intro is not shown again: / lands on Date planen", a.url() === `${BASE}/plan`);
 const header = a.locator("header").first();
 await a.getByRole("heading", { name: "Date planen" }).waitFor({ timeout: 15000 });
-check("no bottom bar – the start is the flow", (await a.getByRole("navigation", { name: "Hauptnavigation" }).count()) === 0 && (await a.getByRole("heading", { name: "Date planen" }).isVisible()));
-check("header icons: 💡 Ideen, 💞 Dates, ⚙️ Einstellungen", (await header.getByRole("link", { name: "Ideen" }).isVisible()) && (await header.getByRole("link", { name: "Eure Dates" }).isVisible()) && (await header.getByRole("link", { name: "Einstellungen" }).isVisible()));
+const bar = a.getByRole("navigation", { name: "Hauptmenü" });
+check("bottom bar: 💡 Ideen left, logo (Neues Date planen) in the middle, 💞 Dates right", (await bar.getByRole("link").evaluateAll((l) => l.map((x) => x.getAttribute("aria-label")))).join("|") === "Ideen|Neues Date planen|Eure Dates");
+check("settings sit at the top", await header.getByRole("link", { name: "Einstellungen" }).isVisible());
 
 // Reminders: my own line stays until a device of mine is registered – one tap, no detour
 const pushLine = a.getByText("Damit ihr kein Date vergesst: Erinnerungen an.");
