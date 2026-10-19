@@ -258,3 +258,26 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* The start's swipe card: it takes the space the status box leaves; with less than 15rem it is one line. */
+.deck-fit {
+  container-type: size;
+  flex: 1 1 0%;
+  min-height: 3.5rem;
+}
+.deck-fit > .deck-full {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+.deck-fit > .deck-teaser {
+  display: none;
+}
+@container (max-height: 14.99rem) {
+  .deck-fit > .deck-full {
+    display: none;
+  }
+  .deck-fit > .deck-teaser {
+    display: block;
+  }
+}

@@ -84,18 +84,12 @@ function LogoButton({ onStart }: { onStart: boolean }) {
     <div className="relative">
       {open && <button type="button" aria-label="Menü schließen" tabIndex={-1} onClick={() => setOpen(false)} className="animate-pop-in fixed inset-0 z-30 cursor-default bg-tinte/50" />}
       {open && (
-        <div role="menu" aria-label="Aktionen" className="absolute bottom-[4.6rem] left-1/2 z-40 flex -translate-x-1/2 items-end gap-1.5">
+        <div role="menu" aria-label="Aktionen" className="absolute bottom-[4.6rem] left-1/2 z-40 flex -translate-x-1/2 items-end gap-2.5">
           <Link role="menuitem" href="/plan?pick=1" onClick={() => setOpen(false)} className={`${item} mb-1`}>
             <span className={`${round} bg-himbeere`}>
               <SparkleIcon width={24} height={24} />
             </span>
             <span className={label}>Date planen</span>
-          </Link>
-          <Link role="menuitem" href="/ideas/entdecken" onClick={() => setOpen(false)} className={`${item} mb-9`}>
-            <span className={`${round} bg-himbeere-soft`}>
-              <HeartIcon width={24} height={24} />
-            </span>
-            <span className={label}>Swipen</span>
           </Link>
           <button role="menuitem" type="button" onClick={() => fire(QUICK_ADD_EVENT)} className={`${item} mb-9`}>
             <span className={`${round} bg-zitrone`}>

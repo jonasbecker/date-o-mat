@@ -49,8 +49,7 @@ gemeinsame Ideen-Wunschliste.
 | M35 | Der Top-Tipp passt zur Idee: Tageslicht (Sonnenuntergang) und Wetter für Draußen-Ideen, Begründung an der Zeit, `ideas.setting` | ✅ |
 | M36 | Swipen, das man sieht: Kategorien als Chips über der Wunschliste, Herkunft („von dir geswipt“), Fortschritt, Stapel, Flug zum 💡 mit wachsendem Zähler, `ideas.category` | ✅ |
 | M37 | Untere Leiste: das Logo groß in der Mitte (startet „Date planen“), links 💡 Ideen, rechts ♥ Dates; oben nur Name und Einstellungen, die Seiten klappen nicht mehr herunter | ✅ |
-| M38 | (ersetzt durch M39) Swipe-Karte füllt den Rest des Starts | ✅ |
-| M39 | Der Start ist Kasten + Wunschliste: Antippen einer Idee führt direkt zur Zeit; Swipen ist ein Knopf (Start, Ideen) und ein Eintrag im Logo-Menü | ✅ |
+| M38 | Der Start ist nie leer: steht etwas an, bekommt die Swipe-Karte trotzdem den Rest des Bildschirms; nur bei zu wenig Platz bleibt die eine Zeile | ✅ |
 
 ## Tech-Stack
 
@@ -218,10 +217,11 @@ scripts/              Migration beim Build, Secret-Generator
 
 ### Start: Platz für das, was ansteht (M34)
 
-- Der Kasten oben sagt, was ansteht (Passt! geben oder abwarten, ein Date in dieser Runde, ein Date
-  zu bewerten, ein offener Vorschlag, ein Kalender zu verbinden). Seit M39 steht darunter immer die
-  **Wunschliste** (`StartIdeas` in `src/app/(app)/start-ideas.tsx`), die am längsten wartende Idee
-  zuerst; vorher war es die Swipe-Karte bzw. eine Swipe-Zeile (M34/M38, `deckSize()` entfiel).
+- `deckSize()` in `src/core/start-layout.ts` entscheidet pro Zustand: Steht etwas an (Passt! geben
+  oder abwarten, ein Date in dieser Runde, ein Date zu bewerten, ein offener Vorschlag, ein Kalender
+  zu verbinden), steht der Kasten oben. Seit M38 bekommt die Swipe-Karte darunter den Rest des
+  Bildschirms (CSS-Container-Query `.deck-fit` in `globals.css`); nur wenn weniger als 15 rem übrig
+  sind, bleibt eine Zeile („6 neue Ideen zum Swipen ›“). Wenn nichts ansteht, ist die Karte groß.
 - **„Wie war's?“** zeigt Titel, Datum, das erste Foto und fünf Herzen; ein Tipp auf ein Herz öffnet die
   Bewertung mit dieser Zahl (`/dates/<id>?herzen=n`). Steht ein anderer Schritt oben, bekommt die
   Bewertung eine eigene Karte.
@@ -254,12 +254,10 @@ scripts/              Migration beim Build, Secret-Generator
 - **Ein Kasten oben:** Er sagt, wer dran ist, und hat genau das drin, was zu tun ist – „Date planen“,
   „Passt! 💚“, „Jetzt bewerten“, den Vorschlag (Vorschlag-Modus) oder das nächste Date mit Ort,
   Route, „Details ›“ (Checkliste, Zeit ändern, Absagen) und „Lieber was anderes?“.
-- **Darunter die Wunschliste (M39):** Antippen einer Idee führt direkt zu den freien Zeiten
-  (`/plan?idea=…`), solange kein Date ansteht; steht eins an, öffnet sich das Menü der Idee („Statt …
-  machen“, „Neues Date damit planen“, Bearbeiten). Swipen ist der Knopf „Swipen · 3“ neben dem Titel
-  (auch auf der Ideen-Seite und im Logo-Menü); 💚 legt die Idee auf die Wunschliste, beide 💚 = Match.
-  Der Start mischt im Hintergrund neue Karten, wenn der Stapel knapp wird. Ist der/die andere dran,
-  ist die Liste trotzdem antippbar („Selbst planen“).
+- **Darunter swipen:** Die Swipe-Karte liegt direkt auf dem Start (`SwipeDeck compact`) – 💚 legt
+  die Idee auf die Wunschliste, beide 💚 = Match. Das Badge „x ›“ öffnet den ganzen Stapel mit
+  Filter. Werden die Karten knapp, mischt der Start im Hintergrund neue. Seit M34 gilt das nur,
+  wenn nichts ansteht – sonst ist Swipen eine Zeile (siehe unten).
 - **Durchklicken:** „Date planen“ (`/plan?pick=1`) zeigt die Wunschliste als eigenen Schritt mit
   „← Zurück“, danach die Zeit. Unten nur noch „Zufall“ und „Was anderes“.
 - **💡** ist die Wunschliste zum Sammeln und Bearbeiten, ohne Reiter.
@@ -268,6 +266,8 @@ scripts/              Migration beim Build, Secret-Generator
 
 - **Eine Wunschliste:** Schritt 1 beim Planen ist die Wunschliste. „+ Idee“ steht direkt dort,
   ⋯ an jeder Karte bearbeitet oder löscht, Antippen plant. 💡 oben zeigt dieselbe Liste zum Sammeln.
+- **Ideen, wenn ihr Zeit dafür habt:** Ist der/die andere dran, liegt die große Swipe-Karte auf dem
+  Start; steht etwas an (Date, Passt!, Bewerten, Vorschlag), ist Swipen eine Zeile (M34).
 - **Nach dem Bewerten:** „Nächstes Mal?“ mit den drei Ideen, die am längsten warten – ein Tipp plant.
 - **💡 ist die Wunschliste** (seit M31 ohne Reiter, Swipen liegt auf dem Start). „Was läuft“ steckt in „Was anderes …“ beim Planen
   (Events, bei denen ihr beide Zeit habt, plus „Alles, was in Köln läuft →“) und im Swipe-Stapel.
@@ -329,7 +329,7 @@ scripts/              Migration beim Build, Secret-Generator
 
 - **Untere Leiste (seit M37, vorher Icons oben):** `BottomNav` im Layout von `(app)`. Links 💡 Ideen
   (Wunschliste, Swipen; mit Zähler), in der Mitte das große Logo: auf anderen Seiten
-  zurück zum Start, auf dem Start selbst klappt es vier runde Aktionen auf (Date planen · Swipen · Idee ·
+  zurück zum Start, auf dem Start selbst klappt es drei runde Aktionen auf (Date planen · Idee ·
   Überrasch uns; `LogoButton` in `bottom-nav.tsx`, die Sheets öffnen per Fenster-Event), rechts ♥ Dates (Kommendes und Historie). Oben stehen nur der Name (führt zum
   Start), ⚙️ Einstellungen und – wo es passt – „+ Idee“. Die Seiten öffnen normal; das Herunterklappen
   von M32 gibt es nicht mehr.
