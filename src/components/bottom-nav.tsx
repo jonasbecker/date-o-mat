@@ -28,7 +28,7 @@ function Side({ href, label, shown, active, marker, badge, children }: { href: s
 
 /**
  * The navigation of the app: wishlist on the left, past dates on the right and the logo in the
- * middle – it starts planning a date. Settings sit at the top. `wishlistBadge` is the count on 💡.
+ * middle – it leads to the start (the box with "Date planen"). Settings sit at the top. `wishlistBadge` is the count on 💡.
  */
 export function BottomNav({ wishlistBadge }: { wishlistBadge?: React.ReactNode }) {
   return <BottomNavBar path={usePathname()} wishlistBadge={wishlistBadge} />;
@@ -43,9 +43,9 @@ export function BottomNavBar({ path, wishlistBadge }: { path: string; wishlistBa
           <BulbIcon width={22} height={22} />
         </Side>
         <Link
-          href="/plan?pick=1"
-          aria-label="Neues Date planen"
-          data-nav-plan
+          href="/plan"
+          aria-label="Zum Start"
+          data-nav-home
           className="sticker press -mt-6 flex size-[72px] shrink-0 items-center justify-center rounded-full bg-zitrone-soft"
         >
           <LogoMark size={54} clipId="nav-logo" />

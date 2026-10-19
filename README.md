@@ -328,8 +328,8 @@ scripts/              Migration beim Build, Secret-Generator
 ### Ein Ablauf in Kürze (M26, löst die Navigation von M24 ab)
 
 - **Untere Leiste (seit M37, vorher Icons oben):** `BottomNav` im Layout von `(app)`. Links 💡 Ideen
-  (Wunschliste, Swipen; mit Zähler), in der Mitte das große Logo = „Neues Date planen“
-  (`/plan?pick=1`), rechts ♥ Dates (Kommendes und Historie). Oben stehen nur der Name (führt zum
+  (Wunschliste, Swipen; mit Zähler), in der Mitte das große Logo = zurück zum Start
+  (`/plan`; „Date planen“ ist der Knopf im Kasten), rechts ♥ Dates (Kommendes und Historie). Oben stehen nur der Name (führt zum
   Start), ⚙️ Einstellungen und – wo es passt – „+ Idee“. Die Seiten öffnen normal; das Herunterklappen
   von M32 gibt es nicht mehr.
 - **Start = was gerade ansteht** (`StartSection` in `src/app/(app)/overview.tsx`): das nächste Date
