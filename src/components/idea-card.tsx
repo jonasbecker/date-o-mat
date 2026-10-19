@@ -1,4 +1,5 @@
 import type { IdeaSize, PlaceSetting, UserColor } from "@/lib/domain";
+import { CATEGORY_LABEL, categoryOf } from "@/core/categories";
 import { displayHost, formatCost } from "@/lib/idea-input";
 import { Avatar } from "./avatar";
 import { MoreIcon, PinIcon } from "./icons";
@@ -15,6 +16,10 @@ export type IdeaCardView = {
   url?: string | null;
   /** Drinnen / draußen – outdoors the free times look at daylight and weather. */
   setting?: PlaceSetting | null;
+  /** Essen, Natur … – stored, or guessed from the words when empty. */
+  category?: string | null;
+  /** Where it came from when it was swiped: "💚 von dir geswipt". */
+  tag?: string | null;
   /** Both swiped right on it. */
   matched?: boolean;
   /** It is the next date. */
@@ -59,7 +64,10 @@ export function IdeaCard({ idea, onOpen, onMore }: { idea: IdeaCardView; onOpen:
       </div>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] font-extrabold text-muted">
         <SizeChip size={idea.size} />
-        {idea.matched && <span>💞 Match</span>}
+        <span title={CATEGORY_LABEL[categoryOf(idea)].label} aria-label={CATEGORY_LABEL[categoryOf(idea)].label} role="img">
+          {CATEGORY_LABEL[categoryOf(idea)].emoji}
+        </span>
+        {idea.matched ? <span>💞 Match</span> : idea.tag && <span>{idea.tag}</span>}
         {idea.isNext && <span>📅 Nächstes Date</span>}
         {cost && <span>{cost}</span>}
         {idea.location && (

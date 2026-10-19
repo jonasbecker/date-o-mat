@@ -121,6 +121,7 @@ export async function saveEventIdeaAction(eventId: string): Promise<{ ok: boolea
     note: [event.priceText, event.summary].filter(Boolean).join(" · ").slice(0, 1000) || null,
     url: event.url,
     location: event.venue?.slice(0, 120) ?? null,
+    category: "events",
     source: "web",
     externalRef: event.dedupeKey,
     createdById: user.id,

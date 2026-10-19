@@ -5,6 +5,7 @@ import type { IdeaFormState } from "@/app/(app)/ideas/actions";
 import { analyzeLinkAction } from "@/app/(app)/ideas/link-actions";
 import type { Platform } from "@/core/link-idea";
 import { cn } from "@/lib/cn";
+import { CATEGORY_LABEL, IDEA_CATEGORIES, type IdeaCategory } from "@/core/categories";
 import { IDEA_SIZES, type IdeaSize, type PlaceSetting } from "@/lib/domain";
 import { IDEA_LIMITS } from "@/lib/idea-input";
 import { Button } from "./button";
@@ -19,6 +20,7 @@ export type IdeaFormDefaults = {
   costEur: number | null;
   location: string | null;
   setting?: PlaceSetting | null;
+  category?: IdeaCategory | null;
 };
 
 type Action = (prev: IdeaFormState, formData: FormData) => Promise<IdeaFormState>;
@@ -127,7 +129,7 @@ export function IdeaForm({
   const size = (typed?.size as IdeaSize | undefined) ?? base?.size ?? "small";
   const errors = state.errors ?? {};
   const detailsOpen = Boolean(
-    value("note") || value("url") || value("costEur") || value("location") || value("setting") || errors.note || errors.url || errors.costEur || errors.location,
+    value("note") || value("url") || value("costEur") || value("location") || value("setting") || value("category") || errors.note || errors.url || errors.costEur || errors.location,
   );
   const idPrefix = idea?.id ?? "new";
 
@@ -281,6 +283,21 @@ export function IdeaForm({
                   className="flex h-11 cursor-pointer items-center justify-center rounded-2xl border-2 border-line bg-surface text-sm font-extrabold has-checked:bg-ink has-checked:text-bg has-focus-visible:outline-3 has-focus-visible:outline-himbeere"
                 >
                   <input type="radio" name="setting" value={option.value} defaultChecked={(value("setting") || "") === option.value} className="sr-only" />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          {/* Left empty, the wishlist guesses from the words. */}
+          <fieldset className="flex flex-col gap-1">
+            <legend className="mb-1 text-[13px] font-extrabold text-muted">Was für ein Date?</legend>
+            <div className="flex flex-wrap gap-2">
+              {[{ value: "", label: "Automatisch" }, ...IDEA_CATEGORIES.map((c) => ({ value: c, label: `${CATEGORY_LABEL[c].emoji} ${CATEGORY_LABEL[c].label}` }))].map((option) => (
+                <label
+                  key={option.value}
+                  className="flex h-10 cursor-pointer items-center justify-center rounded-full border-2 border-line bg-surface px-3 text-sm font-extrabold has-checked:bg-ink has-checked:text-bg has-focus-visible:outline-3 has-focus-visible:outline-himbeere"
+                >
+                  <input type="radio" name="category" value={option.value} defaultChecked={(value("category") || "") === option.value} className="sr-only" />
                   {option.label}
                 </label>
               ))}

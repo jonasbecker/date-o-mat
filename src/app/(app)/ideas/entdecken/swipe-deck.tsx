@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useTransition, type PointerEvent as ReactPointerEvent } from "react";
 import { buttonClass, Button } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
+import { flyToWishlist } from "@/components/fly-to-wishlist";
 import { Info } from "@/components/info";
 import { SizeChip } from "@/components/size-chip";
+import { WISHLIST_ADDED_EVENT } from "@/components/wishlist-badge";
 import { DECK_THEMES, matchesFilter, type DeckCardView } from "@/core/deck";
 import { activeFilterCount, filterSummary } from "@/core/filters";
 import { FilterButton, useIdeaFilter } from "@/components/idea-filter";
@@ -107,6 +109,10 @@ export function SwipeDeck({
   const [undoing, startUndo] = useTransition();
   const [loading, startLoading] = useTransition();
   const start = useRef<{ x: number; y: number } | null>(null);
+  const topEl = useRef<HTMLDivElement | null>(null);
+  // What this visit has done so far – the deck shows its progress.
+  const [stats, setStats] = useState({ swiped: 0, liked: 0 });
+  const verdicts = useRef<Verdict[]>([]);
   // The fly-out of the last swipe; an undo right after must not be overtaken by it.
   const flyTimer = useRef<{ timer: ReturnType<typeof setTimeout>; id: string } | null>(null);
 
@@ -119,11 +125,24 @@ export function SwipeDeck({
   const cards = all.filter((c) => matchesFilter(c, filter));
   const top = cards[0];
   const next = cards[1];
+  const afterNext = cards[2];
 
   function decide(verdict: Verdict) {
     if (!top || flying || undoing) return;
     const card = top;
     setMessage(null);
+    verdicts.current.push(verdict);
+    setStats((s) => ({ swiped: s.swiped + 1, liked: s.liked + (verdict === "like" ? 1 : 0) }));
+    // A like is felt: the 💚 flies to the 💡 (Android also buzzes); a pass is a short tick.
+    if (verdict === "like") {
+      if (topEl.current) flyToWishlist(topEl.current.getBoundingClientRect());
+    } else {
+      try {
+        navigator.vibrate?.(8);
+      } catch {
+        // vibration is a bonus
+      }
+    }
     setFlying({ id: card.id, verdict });
     setDrag(null);
     flyTimer.current = { id: card.id, timer: setTimeout(() => landed(card.id), FLY_MS) };
@@ -150,6 +169,8 @@ export function SwipeDeck({
           keep: "Bleibt auf eurer Wunschliste 💚",
           archive: "Von der Wunschliste genommen – ihr wart euch einig.",
         };
+        // A new idea on the wishlist (not one the other already put there): the 💡 counts up.
+        if (result.saved) window.dispatchEvent(new Event(WISHLIST_ADDED_EVENT));
         if (result.saved) setMessage(compact ? "Auf der Wunschliste 💚" : `Steht auf eurer Wunschliste 💚 Will ${partnerName} auch, ist's ein Match.`);
         else if (notes[result.outcome]) setMessage(notes[result.outcome]!);
         else if (card.kind === "revisit" && verdict === "nope") setMessage(`Wenn ${partnerName} auch ✕ sagt, fliegt sie von der Liste.`);
@@ -179,6 +200,8 @@ export function SwipeDeck({
         return;
       }
       const card = result.card;
+      const undone = verdicts.current.pop();
+      if (undone) setStats((s) => ({ swiped: Math.max(0, s.swiped - 1), liked: Math.max(0, s.liked - (undone === "like" ? 1 : 0)) }));
       setHandled((prev) => {
         const copy = new Set(prev);
         copy.delete(card.id);
@@ -256,14 +279,21 @@ export function SwipeDeck({
 
       {/* The card takes what the screen has left – no scrolling. */}
       <div className={cn("relative flex-1", compact ? "min-h-[240px]" : "min-h-[300px]")}>
+        {/* A stack: the cards behind peek out, the next one slides forward. */}
+        {afterNext && (
+          <div aria-hidden="true" className="absolute inset-0 translate-y-5 scale-[0.92] opacity-50 transition-transform duration-200">
+            <Card card={afterNext} partnerName={partnerName} compact={compact} />
+          </div>
+        )}
         {next && (
-          <div aria-hidden="true" className="absolute inset-0 scale-[0.96] opacity-70">
+          <div aria-hidden="true" className={cn("absolute inset-0 translate-y-2.5 scale-[0.96] opacity-80 transition-transform duration-200", flying && "translate-y-0 scale-100 opacity-100")}>
             <Card card={next} partnerName={partnerName} compact={compact} />
           </div>
         )}
         {top ? (
           <div
             key={top.id}
+            ref={topEl}
             role="group"
             aria-roledescription="Karte"
             aria-label={top.title}
@@ -373,10 +403,22 @@ export function SwipeDeck({
         </button>
       )}
 
-      {!compact && matches > 0 && (
-        <Link href="/ideas" className="self-center text-sm font-extrabold underline">
-          💞 {matches} {matches === 1 ? "Match" : "Matches"} auf eurer Wunschliste
-        </Link>
+      {!compact && (
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm font-extrabold">
+          {stats.swiped > 0 && (
+            <span data-swipe-progress className="rounded-full bg-surface px-3 py-0.5 text-ink">
+              {stats.swiped} geswipt · {stats.liked} 💚 · {cards.length} übrig
+            </span>
+          )}
+          <Link href="/ideas?ansicht=geswipt" className="underline">
+            💚 Meine Likes
+          </Link>
+          {matches > 0 && (
+            <Link href="/ideas?ansicht=match" className="underline">
+              💞 {matches} {matches === 1 ? "Match" : "Matches"}
+            </Link>
+          )}
+        </div>
       )}
 
       {match && (

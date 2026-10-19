@@ -104,6 +104,7 @@ Date in 2 h. Ruhezeit 22–8 Uhr, außer für „in 2 h“.
 | M33 | Erinnerungen sind Pflicht: Push in der Einführung, Ein-Tipp-Zeile auf dem Start, Hinweis wenn die andere Person keins hat, Hilfe bei verweigerter Erlaubnis | ✅ |
 | M34 | Start: der Kasten bekommt den Platz, wenn etwas ansteht (Swipen = eine Zeile); „Wie war's?“ mit Foto und Herzen | ✅ |
 | M35 | Top-Tipp passt zur Idee: Sonnenuntergang und Wetter für Draußen-Ideen, Begründung an der Zeit | ✅ |
+| M36 | Swipen befriedigend: Kategorien als Chips, Herkunft sichtbar, Fortschritt, Stapel, Flug zum 💡 | ✅ |
 
 Abweichungen in V2:
 
@@ -149,6 +150,9 @@ Abweichungen in V2:
     gewertet. Dafür bekam `ideas` die Spalte `setting` (vorher gab es das nur an Swipe-Karten).
     Dunkelheit ist gewollt bei Stichwörtern (`darknessWanted()`), statt eines Felds an der Idee –
     es greift für alle Quellen (Wunschliste, Swipen, Köln-Liste, KI) ohne Formularfeld.
+19. Seit M36 hat `ideas` eine optionale `category`; ohne sie schließt `categoryOf()` aus dem Text.
+    Die Kategorie hängt am gemeinsamen Filter, damit sie überall gleich gilt. „Geswipt“ und „Matches“
+    sind Ansichten der Wunschliste, keine zweite Liste; die Herkunft kommt aus `ideas.source`.
 
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 

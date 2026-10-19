@@ -1,6 +1,16 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { requireCouple } from "@/server/auth/dal";
+import { countIdeas } from "@/server/ideas";
+import { WishlistBadge } from "./wishlist-badge";
 import { HeaderIcon } from "./header-icon";
 import { LogoLockup } from "./logo";
+
+/** The number of wishlist ideas for the badge on the bulb (reads the database, so it sits in its own Suspense). */
+async function WishlistCount() {
+  const { coupleId } = await requireCouple();
+  return <WishlistBadge count={await countIdeas(coupleId)} />;
+}
 
 export type HeaderPlace = "plan" | "ideas" | "dates" | "settings";
 
@@ -17,7 +27,18 @@ export function AppHeader({ current = "plan", action }: { current?: HeaderPlace;
         <Link href="/plan" aria-label="Date-O-Mat – zum Start" className="min-w-0 flex-1">
           <LogoLockup clipId="header-logo" />
         </Link>
-        <HeaderIcon href="/ideas" label="Ideen" icon="bulb" active={current === "ideas"} />
+        <HeaderIcon
+          href="/ideas"
+          label="Ideen"
+          icon="bulb"
+          marker="wishlist"
+          active={current === "ideas"}
+          badge={
+            <Suspense fallback={null}>
+              <WishlistCount />
+            </Suspense>
+          }
+        />
         <HeaderIcon href="/dates" label="Eure Dates" icon="heart" active={current === "dates"} />
         <HeaderIcon href="/settings" label="Einstellungen" icon="sliders" active={current === "settings"} />
       </header>

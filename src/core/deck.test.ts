@@ -151,12 +151,17 @@ describe("swiping", () => {
   });
 
   it("filters", () => {
-    const card = { kind: "idea" as const, costEur: 10, setting: "indoor" as const, size: "small" as const };
+    const card = { kind: "idea" as const, title: "Sushi-Abend", note: null, theme: "food", costEur: 10, setting: "indoor" as const, size: "small" as const };
     expect(matchesFilter(card, { budget: "cheap" })).toBe(true);
     expect(matchesFilter({ ...card, costEur: null }, { budget: "free" })).toBe(false);
     expect(matchesFilter(card, { setting: "outdoor" })).toBe(false);
     expect(matchesFilter(card, { size: "large" })).toBe(false);
     expect(matchesFilter(card, { size: "small", setting: "indoor" })).toBe(true);
+    // categories: the theme, a guess from the words, events for combos
+    expect(matchesFilter(card, { category: "food" })).toBe(true);
+    expect(matchesFilter(card, { category: "culture" })).toBe(false);
+    expect(matchesFilter({ ...card, theme: null, title: "Museum Ludwig" }, { category: "culture" })).toBe(true);
+    expect(matchesFilter({ ...card, kind: "combo" as const, theme: null, title: "Kombi: Abend" }, { category: "events" })).toBe(true);
   });
 
   it("one super-like per Berlin day", () => {

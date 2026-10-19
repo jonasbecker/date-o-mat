@@ -3,6 +3,7 @@
 // both like it. Pure – the server stores cards and swipes and calls Claude.
 
 import type { CuratedIdea } from "./curated-ideas";
+import { categoryFromTheme, inferCategory, type IdeaCategory } from "./categories";
 import { filterPrompt, matchesIdeaFilter, type IdeaFilter } from "./filters";
 import { DateTime } from "luxon";
 import { APP_TIMEZONE, SEASON_KEYS, type DeckCardKind, type EventMix, type IdeaSize, type PlaceSetting, type SeasonKey, type SwipeVerdict } from "@/lib/domain";
@@ -299,8 +300,13 @@ export function orderDeck<T extends CardForOrder>(cards: T[], partnerVerdicts: M
   });
 }
 
-export function matchesFilter(card: Pick<DeckCardView, "costEur" | "setting" | "size">, filter: IdeaFilter): boolean {
-  return matchesIdeaFilter({ size: card.size, costEur: card.costEur, setting: card.setting }, filter);
+/** A card's category: its theme, a guess from the words, events for combos. */
+export function cardCategory(card: Pick<DeckCardView, "theme" | "title" | "note" | "kind">): IdeaCategory {
+  return categoryFromTheme(card.theme) ?? (card.kind === "combo" ? "events" : inferCategory(card.title, card.note) ?? "other");
+}
+
+export function matchesFilter(card: Pick<DeckCardView, "costEur" | "setting" | "size" | "theme" | "title" | "note" | "kind">, filter: IdeaFilter): boolean {
+  return matchesIdeaFilter({ size: card.size, costEur: card.costEur, setting: card.setting, category: cardCategory(card) }, filter);
 }
 
 /** How many hand-picked Köln ideas go into each batch (all of them, a few at a time, without the AI). */

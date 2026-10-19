@@ -47,6 +47,7 @@ gemeinsame Ideen-Wunschliste.
 | M33 | Erinnerungen sind Pflicht: letzte Einführungskarte schaltet Push an, auf dem Start eine Zeile mit Ein-Tipp-Aktivierung, Hinweis wenn die andere Person keine bekommt, Hilfe bei verweigerter Erlaubnis | ✅ |
 | M34 | Der Start zeigt, was ansteht: der Kasten bekommt den Platz, Swipen wird eine Zeile; „Wie war's?“ mit Foto und antippbaren Herzen | ✅ |
 | M35 | Der Top-Tipp passt zur Idee: Tageslicht (Sonnenuntergang) und Wetter für Draußen-Ideen, Begründung an der Zeit, `ideas.setting` | ✅ |
+| M36 | Swipen, das man sieht: Kategorien als Chips über der Wunschliste, Herkunft („von dir geswipt“), Fortschritt, Stapel, Flug zum 💡 mit wachsendem Zähler, `ideas.category` | ✅ |
 
 ## Tech-Stack
 
@@ -228,6 +229,22 @@ scripts/              Migration beim Build, Secret-Generator
   Ablauf wählt die Rangfolge nach der gewählten Idee; der Vorschlag-Modus nimmt zuerst die Idee und
   dann die Zeit, die zu ihr passt.
 - Neu am Datenmodell: `ideas.setting` (drinnen / draußen, leer = egal).
+
+### Swipen, das man sieht: Kategorien und Likes (M36)
+
+- **Kategorien** (`src/core/categories.ts`): Essen & Trinken, Natur, Kultur, Aktiv, Kreativ, Gemütlich,
+  Ausflug, Events, Sonstiges. `ideas.category` ist optional; fehlt sie, schließt `categoryOf()` aus
+  Titel und Notiz (Stichwörter mit Wortgrenzen). Swipe-Karten übernehmen ihr Thema, im Idee-Formular
+  gibt es „Wo?“ und „Was für ein Date?“ in den Details.
+- **Chips über der Wunschliste:** Alle · Matches · Geswipt · die Kategorien, die vorkommen (mit Zahl).
+  Die Kategorie steckt im gemeinsamen Filter (`IdeaFilter.category`) und gilt damit auch in der
+  Planungsliste; Matches und Geswipt sind nur Ansichten der Liste (`/ideas?ansicht=geswipt|match`).
+- **Geswipt bleibt sichtbar:** Karten der Wunschliste tragen die Kategorie und ihre Herkunft („💚 von
+  dir geswipt“, „💚 Sam hat's geliked“, „💞 Match“). Die Swipe-Seite verlinkt „💚 Meine Likes“.
+- **Gefühl:** ein Like lässt ein 💚 zum 💡 fliegen (der Zähler am 💡 springt hoch, Android vibriert,
+  `prefers-reduced-motion` schaltet es ab); dahinter liegen zwei weitere Karten als Stapel; die
+  Swipe-Seite zeigt „3 geswipt · 2 💚 · 5 übrig“. Der Zähler am 💡 ist die Zahl der Wunschlisten-Ideen
+  (Server) plus das, was seit dem letzten Laden geliked wurde.
 
 ### Start in Kürze (M31)
 

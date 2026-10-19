@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { FilteredEmpty, FilterButton, useIdeaFilter } from "@/components/idea-filter";
+import { categoryCounts, categoryOf } from "@/core/categories";
 import { matchesIdeaFilter } from "@/core/filters";
+import { CategoryChips, type ListView } from "@/components/category-chips";
 import { Button, buttonClass } from "@/components/button";
 import { SwapConfirm, type NextDateInfo } from "@/components/swap-confirm";
 import { IdeaForm, type IdeaFormDefaults } from "@/components/idea-form";
@@ -16,7 +18,7 @@ import type { UserColor } from "@/lib/domain";
 import { archiveIdeaAction, updateIdeaAction } from "./actions";
 
 export type BoardPerson = { name: string; color: UserColor | null };
-export type BoardIdea = IdeaFormDefaults & { id: string; createdById: string | null; updatedById: string | null; matched: boolean };
+export type BoardIdea = IdeaFormDefaults & { id: string; createdById: string | null; updatedById: string | null; matched: boolean; source: string };
 /** The next date – an idea can take its place. */
 export type BoardNextDate = NextDateInfo & { ideaId: string | null; swappable: boolean };
 
@@ -26,6 +28,8 @@ export function IdeaBoard({
   next,
   canPlanNew,
   partnerName,
+  meId,
+  initialView = "all",
 }: {
   ideas: BoardIdea[];
   people: Record<string, BoardPerson>;
@@ -33,12 +37,22 @@ export function IdeaBoard({
   next: BoardNextDate | null;
   /** The round has no date yet – "Date damit planen" works. */
   canPlanNew: boolean;
+  meId: string;
+  initialView?: ListView;
 }) {
   const [filter] = useIdeaFilter();
   const [open, setOpen] = useState<{ idea: BoardIdea; view: "menu" | "edit" } | null>(null);
   const sheet = useRef<SheetHandle>(null);
 
-  const visible = ideas.filter((idea) => matchesIdeaFilter({ size: idea.size, costEur: idea.costEur, setting: idea.setting }, filter));
+  const [view, setView] = useState<ListView>(initialView);
+  // Ideas that came from swiping say who liked them.
+  const tagOf = (idea: BoardIdea): string | null =>
+    idea.source !== "deck" ? null : idea.createdById === meId ? "💚 von dir geswipt" : `💚 ${people[idea.createdById ?? ""]?.name ?? "Ihr"} hat's geliked`;
+  const swiped = ideas.filter((idea) => idea.source === "deck");
+  const matches = ideas.filter((idea) => idea.matched);
+  const visible = ideas
+    .filter((idea) => matchesIdeaFilter({ size: idea.size, costEur: idea.costEur, setting: idea.setting, category: categoryOf(idea) }, filter))
+    .filter((idea) => (view === "match" ? idea.matched : view === "swiped" ? idea.source === "deck" : true));
 
   function show(idea: BoardIdea) {
     setOpen({ idea, view: "menu" });
@@ -54,6 +68,8 @@ export function IdeaBoard({
         {ideas.length > 0 && <FilterButton />}
       </div>
 
+      {ideas.length > 0 && <CategoryChips counts={categoryCounts(ideas)} view={view} onView={setView} matches={matches.length} swiped={swiped.length} />}
+
       {ideas.length === 0 ? (
         <EmptyState />
       ) : visible.length === 0 ? (
@@ -62,7 +78,7 @@ export function IdeaBoard({
         <ul className="flex flex-col gap-3.5">
           {visible.map((idea) => (
             <li key={idea.id} className="animate-pop-in">
-              <IdeaCard idea={{ ...idea, creator: idea.createdById ? people[idea.createdById] : null, isNext: next?.ideaId === idea.id }} onOpen={() => show(idea)} />
+              <IdeaCard idea={{ ...idea, creator: idea.createdById ? people[idea.createdById] : null, isNext: next?.ideaId === idea.id, tag: tagOf(idea) }} onOpen={() => show(idea)} />
             </li>
           ))}
         </ul>

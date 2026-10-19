@@ -54,10 +54,10 @@ export async function POST(request: NextRequest) {
 
   if (result.ok) {
     const d = result.draft;
-    await createIdea(ctx.coupleId, user.id, { title: d.title, size: d.size, note: d.note, url: d.url.slice(0, IDEA_LIMITS.url), costEur: d.costEur, location: d.location, setting: null });
+    await createIdea(ctx.coupleId, user.id, { title: d.title, size: d.size, note: d.note, url: d.url.slice(0, IDEA_LIMITS.url), costEur: d.costEur, location: d.location, setting: null, category: null });
     return reply(`💡 Auf eurer Wunschliste: ${d.title}`);
   }
   // Unreadable (e.g. Instagram without preview): keep the link, the title comes later.
-  if (result.url) await createIdea(ctx.coupleId, user.id, { title: "Idee aus einem Link", size: "small", note: null, url: result.url.slice(0, IDEA_LIMITS.url), costEur: null, location: null, setting: null });
+  if (result.url) await createIdea(ctx.coupleId, user.id, { title: "Idee aus einem Link", size: "small", note: null, url: result.url.slice(0, IDEA_LIMITS.url), costEur: null, location: null, setting: null, category: null });
   return reply("💡 Gespeichert – den Link konnten wir nicht lesen, gib der Idee in der App kurz einen Titel.");
 }

@@ -5,7 +5,7 @@ describe("parseIdeaInput", () => {
   it("accepts the minimal quick-add input (title + size)", () => {
     expect(parseIdeaInput({ title: "  Picknick im Stadtwald ", size: "small" })).toEqual({
       ok: true,
-      data: { title: "Picknick im Stadtwald", size: "small", note: null, url: null, costEur: null, location: null, setting: null },
+      data: { title: "Picknick im Stadtwald", size: "small", note: null, url: null, costEur: null, location: null, setting: null, category: null },
     });
   });
 
@@ -29,6 +29,7 @@ describe("parseIdeaInput", () => {
         costEur: 13,
         location: "Köln-Ehrenfeld",
         setting: "outdoor",
+        category: null,
       },
     });
   });

@@ -1,3 +1,4 @@
+import { isCategory, type IdeaCategory } from "@/core/categories";
 import { IDEA_SIZES, PLACE_SETTINGS, type IdeaSize, type PlaceSetting } from "./domain";
 
 export const IDEA_LIMITS = { title: 120, note: 1000, url: 500, location: 120, maxCostEur: 10_000 } as const;
@@ -11,6 +12,8 @@ export type IdeaInput = {
   location: string | null;
   /** Drinnen / draußen – empty means "egal". */
   setting: PlaceSetting | null;
+  /** Empty = guessed from the words (core/categories.ts). */
+  category: IdeaCategory | null;
 };
 
 export type IdeaField = keyof IdeaInput;
@@ -76,7 +79,8 @@ export function parseIdeaInput(raw: Record<string, unknown>): IdeaParseResult {
 
   if (Object.keys(errors).length > 0 || !size) return { ok: false, errors };
   const setting = PLACE_SETTINGS.find((s) => s === raw.setting) ?? null;
-  return { ok: true, data: { title, size, note, url, costEur, location, setting } };
+  const category = isCategory(raw.category) ? raw.category : null;
+  return { ok: true, data: { title, size, note, url, costEur, location, setting, category } };
 }
 
 export function formatCost(costEur: number | null): string | null {

@@ -3,11 +3,12 @@
 // use it, so a choice made in one place holds everywhere. Pure.
 
 import { PLACE_SETTINGS, type IdeaSize, type PlaceSetting } from "@/lib/domain";
+import { CATEGORY_LABEL, IDEA_CATEGORIES, isCategory, type IdeaCategory } from "./categories";
 
 export const BUDGET_FILTERS = ["free", "cheap"] as const;
 export type BudgetFilter = (typeof BUDGET_FILTERS)[number];
 
-export type IdeaFilter = { size?: IdeaSize; budget?: BudgetFilter; setting?: PlaceSetting };
+export type IdeaFilter = { size?: IdeaSize; budget?: BudgetFilter; setting?: PlaceSetting; category?: IdeaCategory };
 
 /** "Günstig" means at most this much for both. */
 export const CHEAP_MAX_EUR = 20;
@@ -37,6 +38,11 @@ export const FILTER_GROUPS = [
       { value: "outdoor", label: "🌳 Draußen" },
     ],
   },
+  {
+    key: "category",
+    question: "Was für ein Date?",
+    options: IDEA_CATEGORIES.map((value) => ({ value, label: `${CATEGORY_LABEL[value].emoji} ${CATEGORY_LABEL[value].label}` })),
+  },
 ] as const satisfies ReadonlyArray<{ key: keyof IdeaFilter; question: string; options: ReadonlyArray<{ value: string; label: string }> }>;
 
 /** Whatever was stored (old versions, hand edits) – only known values survive. */
@@ -55,11 +61,12 @@ export function parseFilter(raw: unknown): IdeaFilter {
   if (v.size === "small" || v.size === "large") filter.size = v.size;
   if ((BUDGET_FILTERS as readonly unknown[]).includes(v.budget)) filter.budget = v.budget as BudgetFilter;
   if ((PLACE_SETTINGS as readonly unknown[]).includes(v.setting)) filter.setting = v.setting as PlaceSetting;
+  if (isCategory(v.category)) filter.category = v.category;
   return filter;
 }
 
 export function activeFilterCount(filter: IdeaFilter): number {
-  return [filter.size, filter.budget, filter.setting].filter(Boolean).length;
+  return [filter.size, filter.budget, filter.setting, filter.category].filter(Boolean).length;
 }
 
 /** "☕ Kurz · 🆓 Gratis" – for the button and empty states. */
@@ -74,6 +81,7 @@ export type Filterable = {
   /** The source says "Eintritt frei". */
   free?: boolean | null;
   setting?: PlaceSetting | null;
+  category?: IdeaCategory | null;
 };
 
 /**
@@ -83,6 +91,7 @@ export type Filterable = {
 export function matchesIdeaFilter(item: Filterable, filter: IdeaFilter): boolean {
   if (filter.size && item.size && item.size !== filter.size) return false;
   if (filter.setting && item.setting && item.setting !== filter.setting) return false;
+  if (filter.category && item.category && item.category !== filter.category) return false;
   const isFree = item.free === true || item.costEur === 0;
   if (filter.budget === "free" && !isFree) return false;
   if (filter.budget === "cheap" && !isFree && typeof item.costEur === "number" && item.costEur > CHEAP_MAX_EUR) return false;
@@ -98,5 +107,6 @@ export function filterPrompt(filter: IdeaFilter): string[] {
   if (filter.budget === "cheap") lines.push(`All ideas must be cheap (at most about ${CHEAP_MAX_EUR} euros for both).`);
   if (filter.setting === "indoor") lines.push("All ideas must work indoors.");
   if (filter.setting === "outdoor") lines.push("All ideas should be outdoors.");
+  if (filter.category) lines.push(`All ideas should be of this kind: ${CATEGORY_LABEL[filter.category].label}.`);
   return lines;
 }

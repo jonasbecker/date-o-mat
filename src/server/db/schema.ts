@@ -17,6 +17,7 @@ import {
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
+import { IDEA_CATEGORIES } from "@/core/categories";
 import {
   AI_REQUEST_KINDS,
   CONNECTION_STATUSES,
@@ -170,6 +171,8 @@ export const ideas = pgTable(
     location: text(),
     // Drinnen / draußen: outdoor ideas get daylight and weather in the free times. Null = unknown.
     setting: text({ enum: PLACE_SETTINGS }),
+    // Essen, Natur, Kultur … – when empty the wishlist guesses from title and note (core/categories.ts).
+    category: text({ enum: IDEA_CATEGORIES }),
     source: text({ enum: IDEA_SOURCES }).notNull().default("wishlist"),
     // V2: id of the idea in an external source (curated list, AI run)
     externalRef: text(),

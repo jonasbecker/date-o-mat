@@ -6,6 +6,7 @@ import { useActionState, useCallback, useEffect, useRef, useState, useTransition
 import { Button } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
 import { SIZE_LABEL } from "@/components/size-chip";
+import { categoryOf } from "@/core/categories";
 import { slotModeFor } from "@/core/slot-modes";
 import { orderSlots, type SlotMood } from "@/core/slots";
 import { FilteredEmpty, FilterButton, useIdeaFilter } from "@/components/idea-filter";
@@ -201,7 +202,7 @@ export function PlanFlow({
   const facts = idea ? ideaFacts(idea) : customLocation && `📍 ${customLocation}`;
   const budgetWarning = budget ? budgetHint(pickedCost, budget.left) : null;
   // Swapping: the date's own idea is not an alternative to itself.
-  const wishlist = ideas.filter((i) => matchesIdeaFilter({ size: i.size, costEur: i.costEur, setting: i.setting }, filter) && !(mode.kind === "swap" && i.id === mode.next.ideaId));
+  const wishlist = ideas.filter((i) => matchesIdeaFilter({ size: i.size, costEur: i.costEur, setting: i.setting, category: categoryOf(i) }, filter) && !(mode.kind === "swap" && i.id === mode.next.ideaId));
   const pageCount = Math.max(1, Math.ceil(slots.length / SLOTS_PER_PAGE));
   const shownSlots = slots.slice(slotPage * SLOTS_PER_PAGE, (slotPage + 1) * SLOTS_PER_PAGE);
 

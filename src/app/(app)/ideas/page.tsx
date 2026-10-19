@@ -13,23 +13,26 @@ import { listIdeas, matchedIdeaIds } from "@/server/ideas";
 import { getCoupleSettings } from "@/server/settings";
 import { IdeaBoard, type BoardIdea, type BoardNextDate, type BoardPerson } from "./idea-board";
 
-export default function IdeasPage() {
+export default function IdeasPage({ searchParams }: PageProps<"/ideas">) {
   return (
     <div className="flex flex-col gap-4">
       <IdeasTop />
       <Panel>
         <Suspense fallback={<PageSkeleton />}>
-          <Ideas />
+          <Ideas searchParams={searchParams} />
         </Suspense>
       </Panel>
     </div>
   );
 }
 
-async function Ideas() {
+async function Ideas({ searchParams }: { searchParams: PageProps<"/ideas">["searchParams"] }) {
   const ctx = await requireCouple();
   const { user, partner, coupleId } = ctx;
   await connection();
+  // "Meine Likes" on the swipe page lands here with the swiped ideas selected.
+  const { ansicht } = await searchParams;
+  const initialView = ansicht === "geswipt" ? "swiped" : ansicht === "match" ? "match" : "all";
   const now = coupleNow(await getCoupleSettings(coupleId));
   const [ideas, matched, cycle, upcoming] = await Promise.all([listIdeas(coupleId), matchedIdeaIds(coupleId), ensureCurrentCycle(coupleId, now), upcomingDate(coupleId, now)]);
   // Tapping an idea offers to plan it – or, with a date ahead, to do this instead.
@@ -58,6 +61,8 @@ async function Ideas() {
     costEur: idea.costEur,
     location: idea.location,
     setting: idea.setting,
+    category: idea.category,
+    source: idea.source,
     createdById: idea.createdById,
     updatedById: idea.updatedById,
     matched: matched.has(idea.id),
@@ -66,7 +71,7 @@ async function Ideas() {
   return (
     <>
       <AutoRefresh />
-      <IdeaBoard ideas={boardIdeas} people={people} next={next} canPlanNew={!next || cycle?.status === "open"} partnerName={partner.name} />
+      <IdeaBoard ideas={boardIdeas} people={people} next={next} canPlanNew={!next || cycle?.status === "open"} partnerName={partner.name} meId={user.id} initialView={initialView} />
     </>
   );
 }

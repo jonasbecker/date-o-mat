@@ -39,3 +39,22 @@ describe("summary, count, prompt", () => {
     expect(filterPrompt(f)).toEqual(["All ideas must be small dates (up to about 3 hours).", "All ideas must be free (0 euros)."]);
   });
 });
+
+describe("category filter", () => {
+  it("is stored, parsed and counted like the others", () => {
+    expect(parseFilter('{"category":"food"}')).toEqual({ category: "food" });
+    expect(parseFilter({ category: "nonsense" })).toEqual({});
+    expect(activeFilterCount({ category: "nature", size: "small" })).toBe(2);
+    expect(filterSummary({ category: "food" })).toBe("🍜 Essen & Trinken");
+  });
+
+  it("hides ideas of another kind, lets unknown ones through", () => {
+    expect(matchesIdeaFilter({ category: "food" }, { category: "food" })).toBe(true);
+    expect(matchesIdeaFilter({ category: "nature" }, { category: "food" })).toBe(false);
+    expect(matchesIdeaFilter({ category: null }, { category: "food" })).toBe(true);
+  });
+
+  it("tells Claude what kind of ideas to make", () => {
+    expect(filterPrompt({ category: "culture" })).toEqual(["All ideas should be of this kind: Kultur."]);
+  });
+});
