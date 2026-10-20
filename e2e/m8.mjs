@@ -215,7 +215,7 @@ await jd.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 10000 
 await jd.screenshot({ path: `${OUT}m8-05-list-dark.png`, fullPage: true });
 await j.goto(`${BASE}/`);
 await j.getByRole("link", { name: "Einstellungen" }).click();
-await j.getByRole("heading", { name: /Einstellungen/ }).waitFor({ timeout: 10000 });
+await j.getByRole("heading", { name: "setup." }).waitFor({ timeout: 10000 });
 check("settings reachable from the header", true);
 await j.getByRole("link", { name: /^Mehr/ }).click();
 await j.getByRole("link", { name: /Erinnerungen im Detail/ }).click();

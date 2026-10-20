@@ -166,7 +166,7 @@ check(`switching an extra off is saved for both (${JSON.stringify(hidden.hidden_
 await surpriseSwitch.check();
 await j.waitForTimeout(800);
 await j.screenshot({ path: `${OUT}m13-06-settings.png` });
-await j.getByRole("link", { name: "← Mehr" }).click();
+await j.getByRole("link", { name: "Mehr", exact: true }).click();
 await j.getByRole("link", { name: /Einführung/ }).click();
 await j.getByRole("heading", { name: "Willkommen, Jonas!" }).waitFor({ timeout: 10000 });
 check("intro can be watched again", true);
