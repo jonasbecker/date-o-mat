@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bloomGeometry, bloomLeaves, bloomSaying, bloomStimmung } from "./bloom";
+import { bloomGeometry, bloomLeaves, bloomSaying, bloomStimmung, shownPot, unlockedPots } from "./bloom";
 
 describe("bloomGeometry (renderVals of Bloom.html)", () => {
   it("waits: 8 petals Ø32 at distance 38, face 60, dot eyes to the side, o-mouth", () => {
@@ -76,5 +76,18 @@ describe("bloomSaying", () => {
   it("names the partner and the day in lower case", () => {
     expect(bloomSaying("wartet", 0, { partner: "Lotte" })).toBe("lotte guckt grad … daumen drücken.");
     expect(bloomSaying("froh", 0, { partner: "Lotte", day: "Donnerstag" })).toBe("juhu, wasser! donnerstag wird schön.");
+  });
+});
+
+describe("pots", () => {
+  it("unlock at 10 and 25 lived dates", () => {
+    expect(unlockedPots(0)).toEqual(["terrakotta"]);
+    expect(unlockedPots(10)).toEqual(["terrakotta", "blau"]);
+    expect(unlockedPots(25)).toEqual(["terrakotta", "blau", "gelb"]);
+  });
+  it("a locked or unknown choice draws terracotta", () => {
+    expect(shownPot("gelb", 12)).toBe("terrakotta");
+    expect(shownPot("blau", 12)).toBe("blau");
+    expect(shownPot(null, 30)).toBe("terrakotta");
   });
 });

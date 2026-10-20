@@ -18,7 +18,7 @@ export function Tabs({ label, tabs, initial }: { label: string; tabs: Array<{ ke
             aria-selected={tab.key === active}
             aria-controls={`panel-${tab.key}`}
             onClick={() => setActive(tab.key)}
-            className={cn("truncate rounded-full px-2 py-1.5 text-sm font-extrabold", tab.key === active ? "bg-ink text-bg" : "text-muted")}
+            className={cn("truncate rounded-full px-2 py-1.5 text-sm font-bold", tab.key === active ? "bg-green text-white" : "text-muted")}
           >
             {tab.label}
           </button>

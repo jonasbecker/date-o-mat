@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-/* `dark:` follows the theme chosen in setup (data-theme on <html>, set before paint in layout.tsx). */
+/* The whole app is dark ("Garten", docs/design/garten/DESIGN-GARTEN.md): <html data-theme="dark"> is fixed in
+   layout.tsx, so every `dark:` utility always applies. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* ---------------------------------------------------------------------------
@@ -21,7 +22,7 @@
   --color-minze: #8fc79a;
   --color-minze-soft: #dcebd9;
   --color-mandarine: #e58fa6;
-  --color-himmel: #2f5bff;
+  --color-himmel: #4d63e8;
   --color-tinte: #163a22;
 
   --color-leaf: #2e7d46;
@@ -36,6 +37,19 @@
   --color-tile-sky: #dce7f5;
   --color-tile-lilac: #e6e0f2;
 
+  /* Garten (DESIGN-GARTEN.md §2) */
+  --color-butter: #f5efc6;
+  --color-green: #2e7d46;
+  --color-like: #e58fa6;
+  --color-divider: #26332b;
+  --color-text-soft: #c9d4c4;
+  --color-muted-2: #75866f;
+  --color-cta: #e4ecdd;
+  --color-soil: #4a3626;
+  --color-seed: #b9875a;
+  --color-tile-rose: #f6dfd3;
+  --color-tile-light: #e7eedf;
+
   --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-dm-mono), ui-monospace, monospace;
@@ -46,77 +60,21 @@
 }
 
 :root {
-  --bg: #eef2e6;
-  --surface: #ffffff;
-  --soft: #edf3ea;
-  --ink: #163a22;
-  --muted: #56604f;
-  /* Hairlines only where a field needs an edge – cards have none. */
-  --line: #d5dfce;
-  --track: #dde6d6;
-  /* The time left and the deadline marker (Main B); butter in the dark, a deep gold on salbei. */
-  --accent-time: #8a6a12;
-  color-scheme: light;
-}
-
-/* Dark: the system setting, unless the person chose Hell/Dunkel (data-theme on <html>, see setup → Darstellung). */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    /* Main B (docs/design/main-b): the dark look */
-    --bg: #111a14;
-    --surface: #1b2620;
-    --soft: #25362b;
-    --ink: #e7eedf;
-    --muted: #9fb09c;
-    --line: #2f4237;
-    --track: #1f2b24;
-    --accent-time: #f5efc6;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-    /* Main B (docs/design/main-b): the dark look */
-    --bg: #111a14;
-    --surface: #1b2620;
-    --soft: #25362b;
-    --ink: #e7eedf;
-    --muted: #9fb09c;
-    --line: #2f4237;
-    --track: #1f2b24;
-    --accent-time: #f5efc6;
-    color-scheme: dark;
+  /* Garten: one dark background for every screen */
+  --bg: #111a14;
+  --surface: #1b2620;
+  --soft: #25362b;
+  --ink: #e7eedf;
+  --muted: #9fb09c;
+  --line: #2f4237;
+  --track: #1f2b24;
+  --accent-time: #f5efc6;
+  color-scheme: dark;
 }
 
 /* Pastel fills keep their light color in dark mode – so everything on them
    (text, muted text, chips, inputs) uses the light tokens too. `~=` matches whole class
    names only, so `hover:bg-zitrone` or `bg-zitrone/30` do not count. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) :is(
-      [class~="bg-himbeere"],
-      [class~="bg-himbeere-soft"],
-      [class~="bg-zitrone"],
-      [class~="bg-zitrone-soft"],
-      [class~="bg-minze"],
-      [class~="bg-minze-soft"],
-      [class~="bg-mandarine"],
-      [class~="bg-lavendel"],
-      [class~="bg-rose"],
-      [class~="bg-bud"],
-      [class~="bg-tile-green"],
-      [class~="bg-tile-butter"],
-      [class~="bg-tile-sky"],
-      [class~="bg-tile-lilac"]
-    ) {
-    --bg: #eef2e6;
-    --surface: #ffffff;
-    --soft: #edf3ea;
-    --ink: #163a22;
-    --muted: #56604f;
-    --line: #d5dfce;
-    --track: #dde6d6;
-    color-scheme: light;
-  }
-}
 :root[data-theme="dark"] :is(
       [class~="bg-himbeere"],
       [class~="bg-himbeere-soft"],
@@ -131,7 +89,11 @@
       [class~="bg-tile-green"],
       [class~="bg-tile-butter"],
       [class~="bg-tile-sky"],
-      [class~="bg-tile-lilac"]
+      [class~="bg-tile-lilac"],
+      [class~="bg-tile-rose"],
+      [class~="bg-tile-light"],
+      [class~="bg-butter"],
+      [class~="bg-cta"]
     ) {
     --bg: #eef2e6;
     --surface: #ffffff;

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Blume 5 Stimmungen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&amp;family=DM+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1700px; height: 680px; box-sizing: border-box; padding: 48px 50px; background: #111A14; color: #E7EEDF; font-family: 'Bricolage Grotesque', system-ui, sans-serif; display: flex; flex-direction: column; gap: 24px">
+  <div style="display: flex; justify-content: space-between; align-items: baseline">
+    <span style="font-size: 32px; font-weight: 800; letter-spacing: -0.03em">die blume.</span>
+    <span style="font-family: 'DM Mono', monospace; font-size: 12px; color: #9FB09C">Gesicht sitzt in der Blüte · Blätter darunter = eure Dates · Topf bleibt neutral</span>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(5, 300px); gap: 25px">
+    <div style="display: flex; flex-direction: column; gap: 12px"><dc-import name="Bloom" stimmung="schlaeft" blaetter="{{ 0 }}" welk="{{ -1 }}" hint-size="300px,420px"></dc-import><span style="font-size: 17px; font-weight: 700">schläft</span><span style="font-size: 13px; color: #9FB09C">Neue Runde, noch nichts geplant. Knospe zu.</span></div>
+    <div style="display: flex; flex-direction: column; gap: 12px"><dc-import name="Bloom" stimmung="wartet" blaetter="{{ 3 }}" welk="{{ -1 }}" hint-size="300px,420px"></dc-import><span style="font-size: 17px; font-weight: 700">wartet</span><span style="font-size: 13px; color: #9FB09C">Einladung raus, schaut zu der Person, die antworten muss.</span></div>
+    <div style="display: flex; flex-direction: column; gap: 12px"><dc-import name="Bloom" stimmung="froh" blaetter="{{ 4 }}" welk="{{ -1 }}" hint-size="300px,420px"></dc-import><span style="font-size: 17px; font-weight: 700">freut sich</span><span style="font-size: 13px; color: #9FB09C">Date steht. Blüte geht auf.</span></div>
+    <div style="display: flex; flex-direction: column; gap: 12px"><dc-import name="Bloom" stimmung="blueht" blaetter="{{ 5 }}" welk="{{ -1 }}" hint-size="300px,420px"></dc-import><span style="font-size: 17px; font-weight: 700">blüht</span><span style="font-size: 13px; color: #9FB09C">Date erlebt. Volle Blüte, neues Blatt, Funkeln.</span></div>
+    <div style="display: flex; flex-direction: column; gap: 12px"><dc-import name="Bloom" stimmung="traurig" blaetter="{{ 3 }}" welk="{{ 1 }}" hint-size="300px,420px"></dc-import><span style="font-size: 17px; font-weight: 700">traurig</span><span style="font-size: 13px; color: #9FB09C">Frist knapp oder Runde ausgefallen. Kopf hängt, Blatt fällt.</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1700,"height":680}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

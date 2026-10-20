@@ -98,7 +98,7 @@ check("info popover closes", !(await j.getByText("Bis dahin sollte euer Date fes
 const s = await pageFor(sam.token);
 await s.goto(`${BASE}/`);
 await heading(s);
-check(`Sam: "${await heading(s)}"`, (await heading(s)) === "kanne bei Jonas.");
+check(`Sam: "${await heading(s)}"`, (await heading(s)) === "jonas ist dran.");
 // Not Sam's turn: the can stands at Jonas', Sam can nudge or take over
 check("partner's turn: Anstupsen + Ich übernehme diesmal", (await s.getByRole("button", { name: "Anstupsen" }).isVisible()) && (await s.getByRole("button", { name: "Ich übernehme diesmal" }).isVisible()) && (await s.getByRole("link", { name: "Date planen", exact: true }).count()) === 0);
 await s.getByRole("button", { name: "Anstupsen" }).click();
@@ -139,7 +139,7 @@ check("no surprise option before the first date", (await j.getByText("🎁 Als �
 // 5) Planned → Sam's next step is "Passt!"
 await j.getByRole("button", { name: SEND }).click();
 await backAtStart(j, BASE);
-check(`Jonas waits: "${await heading(j)}"`, (await heading(j)) === "kanne bei Sam.");
+check(`Jonas waits: "${await heading(j)}"`, (await heading(j)) === "sam ist dran.");
 await s.goto(`${BASE}/`);
 await s.waitForURL(`${BASE}/plan`, { timeout: 15000 });
 check(`Sam must confirm: "${await heading(s)}"`, (await heading(s)) === "Jonas hat gegossen.");
@@ -148,8 +148,8 @@ check("the invitation: wann, wo, was + Anderer Termin", (await s.locator("[data-
 check("Zusagen state fits the screen", await fitsScreen(s));
 await s.screenshot({ path: `${OUT}m13-05-home-confirm.png`, fullPage: true });
 await s.getByRole("button", { name: "Zusagen" }).click();
-await s.getByRole("heading", { name: "neues blatt!" }).waitFor({ timeout: 15000 });
-check("after Zusagen: neues blatt! – the flower is happy", (await s.locator('[data-next-step] [data-bloom="froh"]').count()) === 1);
+await s.getByRole("heading", { name: "date steht." }).waitFor({ timeout: 15000 });
+check("after Zusagen: date steht. – the flower is happy", (await s.locator('[data-next-step] [data-bloom="froh"]').count()) === 1);
 
 // 6) Settings: a list of topics, each its own screen; intro again
 await j.goto(`${BASE}/settings`);

@@ -87,7 +87,6 @@ const ROUTES = [
   ["story", "/story"],
   ["settings", "/settings"],
   ["s-mehr", "/settings?t=mehr"],
-  ["s-darstellung", "/settings?t=darstellung"],
   ["s-push", "/settings?t=push"],
   ["s-zeiten", "/settings?t=zeiten"],
   ["s-events", "/settings?t=events"],
@@ -98,7 +97,7 @@ const ROUTES = [
   ["s-status", "/settings?t=status"],
   ["welcome", "/welcome"],
 ];
-for (const scheme of ["light", "dark"]) {
+for (const scheme of ["dark"]) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, locale: "de-DE", colorScheme: scheme });
   await ctx.addCookies([{ name: "dom_session", value: jonas.token, url: BASE }]);
   const page = await ctx.newPage();

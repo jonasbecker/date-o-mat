@@ -106,7 +106,7 @@ check("event is in Jonas' calendar and invites Sam", ev?.attendees?.[0]?.email =
 check(`event title and location (${ev?.summary})`, ev?.summary === "💞 Date: Picknick im Stadtwald" && ev.location === "Stadtwald");
 check("guest is notified (sendUpdates=all)", requests.some((r) => r.method === "POST" && r.url.includes("/events?sendUpdates=all")));
 check("round is now 'planned'", (await cycleStatus()) === "planned");
-await j.getByRole("heading", { name: "kanne bei Sam." }).waitFor({ timeout: 10000 });
+await j.getByRole("heading", { name: "sam ist dran." }).waitFor({ timeout: 10000 });
 check("Jonas waits for Sam's confirmation", true);
 await j.waitForTimeout(300);
 await j.screenshot({ path: `${SHOTS}m5-02-home-planned.png` });
@@ -118,7 +118,7 @@ await s.getByRole("button", { name: "Zusagen" }).waitFor({ timeout: 10000 });
 await s.waitForTimeout(300);
 await s.screenshot({ path: `${SHOTS}m5-03-partner-confirm.png` });
 await s.getByRole("button", { name: "Zusagen" }).click();
-await s.getByRole("heading", { name: "neues blatt!" }).waitFor({ timeout: 10000 });
+await s.getByRole("heading", { name: "date steht." }).waitFor({ timeout: 10000 });
 await s.waitForTimeout(150);
 check("confetti flies after confirming", (await s.locator(".animate-confetti").count()) > 10);
 await s.screenshot({ path: `${SHOTS}m5-04-confetti.png` });
@@ -139,7 +139,7 @@ const evMoved = events["token-jonas"].get(date.google_event_id);
 check("Google event moved (PATCH), still only one event", evMoved.start.dateTime === moved.starts_at.toISOString() && eventsOf("token-jonas").length === 1);
 await j.goto(`${BASE}/`);
 await j.getByRole("button", { name: "Zusagen" }).click();
-await j.getByRole("heading", { name: "neues blatt!" }).waitFor({ timeout: 10000 });
+await j.getByRole("heading", { name: "date steht." }).waitFor({ timeout: 10000 });
 check("now Jonas confirms Sam's new time", (await theDate()).confirmed_by_id === jonas.id);
 
 // 4) The chosen slot got taken meanwhile → friendly error, nothing changes
@@ -190,7 +190,7 @@ await db.query("UPDATE cycles SET mode = 'suggestion', planner_id = NULL WHERE c
 await s.goto(`${BASE}/`);
 await s.getByRole("button", { name: "Übernehmen 🎉" }).waitFor({ timeout: 15000 });
 await s.getByRole("button", { name: "Übernehmen 🎉" }).click();
-await s.getByRole("heading", { name: "kanne bei Jonas." }).waitFor({ timeout: 15000 });
+await s.getByRole("heading", { name: "jonas ist dran." }).waitFor({ timeout: 15000 });
 const accepted = await theDate();
 const sug = (await db.query("SELECT status FROM suggestions WHERE status = 'accepted'")).rows.length;
 check("suggestion accepted → date with Sam as organizer", accepted.organizer_id === sam.id && sug === 1);

@@ -150,7 +150,7 @@ export function bloomStimmung(input: { round: BloomRound; livedHoursAgo?: number
 }
 
 const SAYINGS: Record<Stimmung, readonly string[]> = {
-  schlaeft: ["neue woche, neues glück. wer plant?", "noch alles still hier … zeit für ein date?", "ich träum schon von eurem nächsten date."],
+  schlaeft: ["neue woche, neues glück. wer gießt?", "noch alles still hier … zeit für ein date?", "ich träum schon von eurem nächsten date."],
   wartet: ["{partner} guckt grad … daumen drücken.", "pssst, ich warte auf {partner}.", "gleich weiß {partner} bescheid!"],
   froh: ["juhu, wasser! {day} wird schön.", "ich freu mich schon auf {day}!", "date steht. ich grins schon."],
   blueht: ["schaut mal, ein neues blatt!", "das war schön. ich blühe!", "danke fürs gießen!"],
@@ -163,4 +163,25 @@ export function bloomSaying(stimmung: Stimmung, seed: number, words: { partner: 
   // Sad because the last round was missed: that's what it talks about; with time running out the others.
   const pick = stimmung === "traurig" ? (words.missed ? 0 : 1 + (Math.abs(seed) % (options.length - 1))) : Math.abs(seed) % options.length;
   return options[pick].replaceAll("{partner}", words.partner.toLowerCase()).replaceAll("{day}", (words.day ?? "bald").toLowerCase());
+}
+
+/** The pots of the flower (Setup, DESIGN-GARTEN.md §5.5): a small reward for the streak. */
+export const FLOWER_POTS = ["terrakotta", "blau", "gelb"] as const;
+export type FlowerPot = (typeof FLOWER_POTS)[number];
+export const POT_UNLOCK: Record<FlowerPot, number> = { terrakotta: 0, blau: 10, gelb: 25 };
+export const POT_COLORS: Record<FlowerPot, { body: string; rim: string }> = {
+  terrakotta: { body: "#D68456", rim: "#C26A3F" },
+  blau: { body: "#6A8FC7", rim: "#5578AE" },
+  gelb: { body: "#E8C35A", rim: "#CFA941" },
+};
+export const POT_LABEL: Record<FlowerPot, string> = { terrakotta: "Terrakotta", blau: "Blau", gelb: "Gelb" };
+
+/** Which pots you have after so many lived dates. */
+export function unlockedPots(livedDates: number): FlowerPot[] {
+  return FLOWER_POTS.filter((p) => livedDates >= POT_UNLOCK[p]);
+}
+
+/** The pot to draw: the chosen one if it is unlocked, else terracotta. */
+export function shownPot(chosen: string | null | undefined, livedDates: number): FlowerPot {
+  return FLOWER_POTS.includes(chosen as FlowerPot) && livedDates >= POT_UNLOCK[chosen as FlowerPot] ? (chosen as FlowerPot) : "terrakotta";
 }

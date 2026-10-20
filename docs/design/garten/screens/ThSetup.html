@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Setup Gartenschuppen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&amp;family=DM+Mono:wght@400;500&amp;family=Caveat:wght@600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #111A14; color: #E7EEDF; font-family: 'Bricolage Grotesque', system-ui, sans-serif; overflow: hidden">
+
+  <div style="position: absolute; left: 18px; right: 18px; top: 18px; height: 36px; display: flex; justify-content: space-between; align-items: center">
+    <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em">date-o-mat</span>
+    <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">der gartenschuppen</span>
+  </div>
+  <h1 style="position: absolute; left: 20px; top: 62px; margin: 0; font-weight: 800; font-size: 54px; line-height: 0.92; letter-spacing: -0.05em">setup.</h1>
+
+  <div style="position: absolute; left: 16px; right: 16px; top: 128px; height: 104px; border-radius: 22px; background: #F5EFC6; color: #2B1D12; display: grid; grid-template-columns: 82px minmax(0, 1fr); align-items: center; overflow: hidden">
+    <div aria-hidden="true" style="position: relative; width: 82px; height: 104px; overflow: hidden">
+      <div style="position: absolute; left: -32px; top: -10px; width: 300px; height: 420px; transform: scale(0.42); transform-origin: top left">
+        <dc-import name="Bloom" stimmung="traurig" blaetter="{{ 2 }}" welk="{{ -1 }}" grund="#F5EFC6" hint-size="300px,420px"></dc-import>
+      </div>
+    </div>
+    <div style="padding: 0 14px 0 4px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'Caveat', cursive; font-weight: 600; font-size: 21px; line-height: 1.02">mein wecker ist aus – so merkt ihr nicht, wann ihr dran seid.</span>
+      <button type="button" style="align-self: flex-start; height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: #111A14; color: #F5EFC6; font-size: 13px; font-weight: 700">Push anmachen</button>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 16px; right: 16px; top: 244px; padding: 14px 16px; border-radius: 22px; background: #1B2620; display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 13px; color: #9FB09C">Wer gießt?</span>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 4px; border-radius: 999px; background: #111A14">
+      <button type="button" style="height: 38px; border: 0; border-radius: 999px; background: #2E7D46; color: #FFFFFF; font-size: 15px; font-weight: 700">Abwechselnd</button>
+      <button type="button" style="height: 38px; border: 0; border-radius: 999px; background: transparent; color: #E7EEDF; font-size: 15px; font-weight: 600">Vorschlag</button>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #26332B; padding-top: 10px">
+      <span style="display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 700">Gießrhythmus</span><span style="font-size: 12px; color: #9FB09C">wie oft ein Date</span></span><span style="font-size: 15px; color: #C9D4C4">jede Woche</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center">
+      <span style="display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 700">Gießzeit</span><span style="font-size: 12px; color: #9FB09C">Frist zum Planen</span></span><span style="font-size: 15px; color: #C9D4C4">2 Tage vorher, 20:00</span>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 16px; right: 16px; top: 466px; padding: 14px 16px; border-radius: 22px; background: #1B2620; display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 13px; color: #9FB09C">Kalender für freie Abende</span>
+    <div style="display: flex; justify-content: space-between; align-items: center">
+      <span style="display: flex; align-items: center; gap: 8px"><span style="width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; color: #111A14; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #E58FA6">J</span><span style="width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; color: #111A14; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-left: -12px; box-shadow: 0 0 0 2px #4D63E8">L</span><span style="font-size: 15px; font-weight: 700">beide verbunden</span></span>
+      <span style="font-size: 13px; color: #6DBA74">✓</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #26332B; padding-top: 10px">
+      <span style="font-size: 16px; font-weight: 700">Freie Abende ab</span><span style="font-size: 15px; color: #C9D4C4">18:00</span>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 16px; right: 16px; top: 620px; padding: 14px 16px; border-radius: 22px; background: #1B2620; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; justify-content: space-between; align-items: center">
+      <span style="display: flex; flex-direction: column"><span style="font-size: 13px; color: #9FB09C">Eure Blume heißt</span><span style="font-family: 'Caveat', cursive; font-weight: 700; font-size: 26px; line-height: 1">Rosi</span></span>
+      <span style="font-size: 13px; color: #9FB09C; text-decoration: underline; text-underline-offset: 3px">umbenennen</span>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: flex-end">
+      <span style="width: 44px; height: 30px; background: #D68456; clip-path: polygon(0 0, 100% 0, 85% 100%, 15% 100%); box-shadow: 0 0 0 2px #E7EEDF"></span>
+      <span style="width: 44px; height: 30px; background: #6A8FC7; clip-path: polygon(0 0, 100% 0, 85% 100%, 15% 100%); opacity: 0.35"></span>
+      <span style="width: 44px; height: 30px; background: #E8C35A; clip-path: polygon(0 0, 100% 0, 85% 100%, 15% 100%); opacity: 0.35"></span>
+      <span style="font-size: 12px; color: #9FB09C; padding-left: 4px">neue Töpfe ab 10 &amp; 25 Dates</span>
+    </div>
+  </div>
+
+  <nav style="position: absolute; left: 0; right: 0; bottom: 0; height: 66px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; color: #E7EEDF; background: #111A14">
+    <a href="#" aria-label="Beet" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6zM12 11C12 7 9 5 5 5c0 4 3 6 7 6z"/></svg></a>
+    <a href="ThIdeen.dc.html" aria-label="Ideen" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></a>
+    <a href="ThSwipe.dc.html" aria-label="Swipen" style="justify-self: center; width: 60px; height: 60px; border-radius: 50%; background: #2E7D46; color: #FFFFFF; display: flex; align-items: center; justify-content: center; margin-top: -22px; box-shadow: 0 0 0 6px #111A14"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="12" height="16" rx="2.5" transform="rotate(8 13 11)"/><path d="M5.5 6.5L4 17.5a2 2 0 0 0 1.7 2.3l7.3 1"/><path d="M13.2 9.6c.8-.8 2.1-.8 2.9 0 .8.8.8 2.1 0 2.9l-2.9 2.9-2.9-2.9c-.8-.8-.8-2.1 0-2.9.8-.8 2.1-.8 2.9 0z"/></svg></a>
+    <a href="ThArchiv.dc.html" aria-label="Archiv" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-7 8"/></svg></a>
+    <a href="ThSetup.dc.html" aria-label="Einstellungen" style="height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span style="width: 4px; height: 4px; border-radius: 50%; background: currentColor"></span></a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

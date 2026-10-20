@@ -24,21 +24,15 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   // Android: shrink the layout when the keyboard opens, so bottom sheets stay visible.
   interactiveWidget: "resizes-content",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#eef2e6" },
-    { media: "(prefers-color-scheme: dark)", color: "#111a14" },
-  ],
+  // The whole app is dark (Garten).
+  themeColor: "#111a14",
+  colorScheme: "dark",
 };
 
-// Sets the theme before the first paint: the stored choice (setup → Darstellung), else the system's.
-const THEME_SCRIPT = `(function(){try{var m=matchMedia('(prefers-color-scheme: dark)');function a(){var t=localStorage.getItem('dom_theme');var d=t==='dark'||(t!=='light'&&m.matches);document.documentElement.setAttribute('data-theme',d?'dark':'light')}a();m.addEventListener('change',a)}catch(e){}})()`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="de" suppressHydrationWarning className={`${bricolage.variable} ${dmMono.variable} ${caveat.variable} antialiased`}>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-      </head>
+    <html lang="de" data-theme="dark" className={`${bricolage.variable} ${dmMono.variable} ${caveat.variable} antialiased`}>
       <body className="min-h-dvh">
         {children}
         <ServiceWorkerRegistration />

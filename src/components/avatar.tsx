@@ -1,7 +1,7 @@
 import { cn } from "@/lib/cn";
 import type { UserColor } from "@/lib/domain";
 
-// White circle with the initial; the person color is the ring (DESIGN.md §4).
+// White circle with the initial; the person color is the 2.5 px ring (DESIGN-GARTEN.md §3).
 const RING_CLASS: Record<UserColor, string> = {
   mandarine: "ring-mandarine",
   himmel: "ring-himmel",
@@ -27,7 +27,7 @@ export function Avatar({
       title={person.name}
       style={{ width: size, height: size, fontSize: Math.round(size * 0.42) }}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-white font-display font-bold text-tinte ring-2",
+        "inline-flex shrink-0 items-center justify-center rounded-full bg-white font-display font-bold text-[#111A14] ring-[2.5px]",
         RING_CLASS[person.color ?? "mandarine"],
         className,
       )}
@@ -37,11 +37,11 @@ export function Avatar({
   );
 }
 
-export function AvatarPair({ a, b, size = 36 }: { a: AvatarPerson; b: AvatarPerson; size?: number }) {
+export function AvatarPair({ a, b, size = 32 }: { a: AvatarPerson; b: AvatarPerson; size?: number }) {
   return (
     <span className="inline-flex items-center">
       <Avatar person={a} size={size} />
-      <Avatar person={b} size={size} className="-ml-1.5" />
+      <Avatar person={b} size={size} className="-ml-[7px]" />
     </span>
   );
 }

@@ -1,16 +1,17 @@
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/cn";
 
-// Pills (DESIGN.md §4): primary = ink, send = the planner's blue, secondary = outline only.
+// Pills (DESIGN-GARTEN.md §3): primary = --cta with dark text, send = the planner's blue,
+// secondary = 2 px outline.
 const VARIANT = {
-  primary: "bg-ink text-bg",
+  primary: "bg-cta text-bg",
   send: "bg-himmel text-white",
-  success: "bg-ink text-bg",
-  secondary: "border-[1.5px] border-ink bg-transparent text-ink",
+  success: "bg-cta text-bg",
+  secondary: "border-2 border-ink bg-transparent text-ink",
 } as const;
 
 const SIZE = {
-  lg: "h-[58px] rounded-full px-6 text-lg",
+  lg: "h-14 rounded-full px-6 text-lg",
   md: "h-[52px] rounded-full px-5 text-[17px]",
   sm: "h-10 rounded-full px-4 text-[15px]",
 } as const;

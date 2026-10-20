@@ -14,7 +14,7 @@ function Tab({ href, label, active, marker, badge, children }: { href: string; l
       aria-label={label}
       aria-current={active ? "page" : undefined}
       data-header-icon={marker}
-      className={cn("tap relative flex h-[60px] flex-col items-center justify-center gap-[5px] text-ink", !active && "opacity-60")}
+      className={cn("tap relative flex h-[52px] flex-col items-center justify-center gap-[5px] text-ink", !active && "opacity-60")}
     >
       <span className="relative">
         {children}
@@ -39,7 +39,7 @@ export function BottomNavBar({ path, wishlistBadge }: { path: string; wishlistBa
   const swiping = path.startsWith(SWIPE_PATH);
   return (
     <nav aria-label="Hauptmenü" className="shrink-0 bg-bg pb-[max(env(safe-area-inset-bottom),6px)]">
-      <div className="mx-auto grid h-20 max-w-md grid-cols-5 items-center">
+      <div className="mx-auto grid h-[66px] max-w-md grid-cols-5 items-center">
         <Tab href="/plan" label="Beet" active={path === "/plan" || path === "/"}>
           <SproutIcon />
         </Tab>
@@ -51,8 +51,8 @@ export function BottomNavBar({ path, wishlistBadge }: { path: string; wishlistBa
           aria-label="Swipen"
           aria-current={swiping ? "page" : undefined}
           className={cn(
-            "press -mt-[18px] flex size-[60px] items-center justify-center justify-self-center rounded-full text-white",
-            swiping ? "bg-himbeere shadow-[0_8px_18px_rgba(229,143,166,0.4)]" : "bg-tinte shadow-[0_8px_18px_rgba(22,58,34,0.25)] dark:bg-leaf",
+            "press -mt-[22px] flex size-[60px] items-center justify-center justify-self-center rounded-full text-white shadow-[0_0_0_6px_var(--bg)]",
+            swiping ? "bg-like" : "bg-green",
           )}
         >
           <SwipeIcon width={26} height={26} />

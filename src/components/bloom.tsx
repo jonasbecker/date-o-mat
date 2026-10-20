@@ -1,7 +1,7 @@
 // The flower (docs/design/main-b/MAIN-B-UND-BLUME.md §3): drawn as SVG in the 300×420 box of
 // components/Bloom.html – every div there is a shape here with the same coordinates, so it scales.
 // The geometry is core/bloom.ts. The pot has no face; the face sits in the flower.
-import { bloomGeometry, BLOOM_BOX, STIMMUNG_LABEL, type Stimmung } from "@/core/bloom";
+import { bloomGeometry, BLOOM_BOX, POT_COLORS, STIMMUNG_LABEL, type FlowerPot, type Stimmung } from "@/core/bloom";
 import { cn } from "@/lib/cn";
 
 const C = {
@@ -18,8 +18,6 @@ const C = {
   cheek: "#F2A7BB",
   tear: "#7FB6E8",
   tongue: "#E8708A",
-  pot: "#D68456",
-  potRim: "#C26A3F",
   sparkle: "#F5EFC6",
   zzz: "#9FB09C",
 };
@@ -28,6 +26,8 @@ export function Bloom({
   stimmung,
   blaetter,
   welk = -1,
+  grund,
+  topf = "terrakotta",
   className,
 }: {
   stimmung: Stimmung;
@@ -35,6 +35,10 @@ export function Bloom({
   blaetter: number;
   /** Which of them is wilted (a missed round), −1 = none. */
   welk?: number;
+  /** Background of the box (mini flowers on a light banner); none = transparent. */
+  grund?: string;
+  /** The pot chosen in Setup. */
+  topf?: FlowerPot;
   className?: string;
 }) {
   const g = bloomGeometry(stimmung, blaetter, welk);
@@ -49,6 +53,7 @@ export function Bloom({
       data-leaves={g.leaves.length}
       className={cn("block", className)}
     >
+      {grund && <rect width={BLOOM_BOX.width} height={BLOOM_BOX.height} fill={grund} />}
       <path d={g.stem} fill="none" stroke={C.stem} strokeWidth={6} strokeLinecap="round" />
 
       {g.leaves.map((l, i) => (
@@ -141,8 +146,8 @@ export function Bloom({
       )}
       {g.fallen && <ellipse cx={251} cy={406} rx={13} ry={8} transform="rotate(-20 251 406)" fill={C.petalSadB} />}
 
-      <rect x={62} y={330} width={176} height={20} rx={10} fill={C.potRim} />
-      <polygon points="72,348 228,348 209.28,420 90.72,420" fill={C.pot} />
+      <rect x={62} y={330} width={176} height={20} rx={10} fill={POT_COLORS[topf].rim} data-pot={topf} />
+      <polygon points="72,348 228,348 209.28,420 90.72,420" fill={POT_COLORS[topf].body} />
     </svg>
   );
 }

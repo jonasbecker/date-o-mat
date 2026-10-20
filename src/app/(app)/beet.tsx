@@ -59,8 +59,8 @@ function shortWhen(d: Date) {
 export function BeetAvatars({ me, partner, onTurn }: { me: User; partner: User; onTurn: "me" | "partner" | null }) {
   return (
     <span className="flex items-center" aria-label={onTurn ? `${onTurn === "me" ? me.name : partner.name} ist dran` : undefined} role={onTurn ? "img" : undefined}>
-      <Avatar person={me} size={30} className={cn(onTurn !== "me" && "ring-transparent")} />
-      <Avatar person={partner} size={30} className={cn("-ml-1.5", onTurn !== "partner" && "ring-transparent")} />
+      <Avatar person={me} size={32} className={cn(onTurn !== "me" && "ring-transparent")} />
+      <Avatar person={partner} size={32} className={cn("-ml-[7px]", onTurn !== "partner" && "ring-transparent")} />
     </span>
   );
 }
@@ -169,7 +169,7 @@ function roundOf(step: NextStep): BloomRound {
   }
 }
 
-/** 70 px like the mockup – smaller when a line is long ("kanne bei Lotte."), so it never runs into the time on the right. */
+/** 70 px like the mockup – smaller when a line is long ("charlotte ist dran."), so it never runs into the time on the right. */
 function headlineSize(headline: string, withTime?: boolean): string {
   const longest = Math.max(...headline.split("\n").map((line) => line.length));
   const room = withTime ? 228 : 340;
@@ -289,7 +289,7 @@ function viewFor(
       };
     case "partner_turn":
       return {
-        headline: `kanne\nbei ${partner.name}.`,
+        headline: `${partner.name.toLowerCase()} ist\ndran.`,
         deadline: true,
         on: partner,
         cta: (
@@ -305,7 +305,7 @@ function viewFor(
       };
     case "wait_confirm":
       return {
-        headline: `kanne\nbei ${partner.name}.`,
+        headline: `${partner.name.toLowerCase()} ist\ndran.`,
         pill: date ? { when: shortWhen(date.startsAt), title: date.title } : undefined,
         on: partner,
         cta: (
@@ -334,7 +334,7 @@ function viewFor(
     case "date_ahead": {
       const mine = date?.proposedById === me.id;
       return {
-        headline: "neues\nblatt!",
+        headline: "date\nsteht.",
         sub: date && (
           <>
             {mine ? `${partner.name} hat zugesagt.` : "Du hast zugesagt."} Ihr seht euch {weekday(date.startsAt)}.

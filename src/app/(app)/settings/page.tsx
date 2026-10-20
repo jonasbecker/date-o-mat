@@ -33,7 +33,6 @@ import { ExtrasForm } from "./extras-form";
 import { PageTitle } from "@/components/page-title";
 import { MoreList, Topic, type TopicTile } from "./fold";
 import { CycleQuick, EveningFrom, PushToggle } from "./setup-main";
-import { ThemeSwitch } from "./theme-switch";
 import { AlertIcon } from "@/components/icons";
 import { overallLevel } from "@/core/system-status";
 import { upcomingDaysFor } from "@/server/special-days";
@@ -137,7 +136,6 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
       tiles: [
         { id: "push", icon: "bell", title: "Erinnerungen im Detail", hint: "Was aufs Handy kommt" },
         { id: "unterwegs", icon: "compass", title: "Unterwegs & Teilen", hint: "Startort, iPhone-Kurzbefehl" },
-        { id: "darstellung", icon: "theme", title: "Darstellung", hint: "Hell, dunkel oder automatisch" },
         { id: "konto", icon: "user", title: "Ihr zwei & Konto", hint: "Abmelden" },
         { id: "welcome", icon: "intro", title: "Einführung", href: "/welcome" },
       ] satisfies TopicTile[],
@@ -148,13 +146,6 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
     status: (
       <Topic id="status" title="Läuft alles?">
         <SystemStatusCard rows={status} />
-      </Topic>
-    ),
-    darstellung: (
-      <Topic id="darstellung" title="Darstellung" hint="Gilt nur auf diesem Gerät.">
-        <Card>
-          <ThemeSwitch />
-        </Card>
       </Topic>
     ),
     kalender: (

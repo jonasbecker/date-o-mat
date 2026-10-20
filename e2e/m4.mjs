@@ -81,7 +81,7 @@ const len1 = (c1.ends_at - c1.starts_at) / 86_400_000;
 check(`weekly round lasts 7 days (${len1})`, Math.round(len1) === 7);
 
 await s.goto(`${BASE}/`);
-check(`Sam sees "Jonas ist dran" (${await heading(s)})`, (await heading(s)) === "kanne bei Jonas.");
+check(`Sam sees "Jonas ist dran" (${await heading(s)})`, (await heading(s)) === "jonas ist dran.");
 await s.waitForTimeout(300);
 await s.screenshot({ path: `${SHOTS}m4-02-partner-turn.png` });
 
@@ -90,7 +90,7 @@ await s.getByRole("button", { name: "Ich übernehme diesmal" }).click();
 await s.getByRole("heading", { name: "du bist dran." }).waitFor({ timeout: 10000 });
 check("Sam can take over the round", true);
 await j.reload();
-check("…and Jonas now sees Sam's turn", (await heading(j)) === "kanne bei Sam.");
+check("…and Jonas now sees Sam's turn", (await heading(j)) === "sam ist dran.");
 await j.getByRole("button", { name: "Ich übernehme diesmal" }).click();
 await j.getByRole("heading", { name: "du bist dran." }).waitFor({ timeout: 10000 });
 
@@ -108,7 +108,7 @@ await j.goto(`${BASE}/settings?t=konto`);
 await j.getByRole("button", { name: "+1 Woche" }).click();
 await j.getByText(`verstellt um ${Math.round((offsetBefore + 7 * 24 * 60) / 60)} Std`).waitFor({ timeout: 10000 });
 await j.goto(`${BASE}/`);
-check(`round 2 is Sam's (${await heading(j)})`, (await heading(j)) === "kanne bei Sam.");
+check(`round 2 is Sam's (${await heading(j)})`, (await heading(j)) === "sam ist dran.");
 check("the flower is sad and says the round was missed (thought bubble)", (await j.locator('[data-next-step] [data-bloom="traurig"]').count()) === 1 && /letztes mal fiel's aus/.test(await j.locator("[data-next-step] [data-speech]").innerText()));
 await j.screenshot({ path: `${SHOTS}m4-skipped-note.png` });
 check("the Beet has a wilted leaf for the missed round", (await j.locator('[data-next-step] [data-leaf="wilted"]').count()) === 1);

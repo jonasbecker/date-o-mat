@@ -142,7 +142,7 @@ check("subscription answered with 410 is removed", gone === 0);
 const s = await pageFor(sam.token);
 await s.goto(`${BASE}/`);
 await s.getByRole("button", { name: "Zusagen" }).click();
-await s.getByRole("heading", { name: "neues blatt!" }).waitFor({ timeout: 10000 });
+await s.getByRole("heading", { name: "date steht." }).waitFor({ timeout: 10000 });
 await new Promise((r) => setTimeout(r, 1500));
 check(`Jonas: "Sam sagt: Passt! 💚"`, titles("jonas-phone").includes("Sam sagt: Passt! 💚"));
 

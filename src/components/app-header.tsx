@@ -18,7 +18,7 @@ export type HeaderPlace = "plan" | "ideas" | "dates" | "settings";
  */
 export function AppHeader({ action, center }: { current?: HeaderPlace; action?: React.ReactNode; center?: React.ReactNode }) {
   return (
-    <header className={center ? "relative flex h-11 items-center gap-2.5" : "flex min-h-8 items-center gap-2.5"}>
+    <header className={center ? "relative flex h-11 items-center gap-2.5" : "flex min-h-9 items-center gap-2.5"}>
       <Link href="/plan" aria-label="Date-O-Mat – zum Start" className="min-w-0 flex-1 font-display text-[15px] font-extrabold leading-none tracking-[-0.02em]">
         date-o-mat
       </Link>
@@ -30,7 +30,7 @@ export function AppHeader({ action, center }: { current?: HeaderPlace; action?: 
 
 /** Small meta text in DM Mono on the right of the header ("36 Ideen", "Nº15"). */
 export function HeaderMeta({ children }: { children: React.ReactNode }) {
-  return <span className="meta text-ink">{children}</span>;
+  return <span className="meta text-muted">{children}</span>;
 }
 
 export function PageSkeleton() {

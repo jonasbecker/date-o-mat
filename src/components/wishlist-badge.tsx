@@ -26,7 +26,7 @@ export function WishlistBadge({ count }: { count: number }) {
     <span
       key={shown}
       aria-hidden="true"
-      className="animate-pop-in pointer-events-none absolute -right-2.5 -top-2 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose px-1 font-mono text-[10px] leading-none text-partner-ink"
+      className="animate-pop-in pointer-events-none absolute -right-2.5 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-like px-1 font-mono text-[10px] font-medium leading-none text-[#111A14]"
     >
       {shown}
     </span>

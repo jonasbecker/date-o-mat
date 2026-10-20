@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Ideen Saatgut-Regal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&amp;family=DM+Mono:wght@400;500&amp;family=Caveat:wght@600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}
+button{font:inherit;cursor:pointer}
+input::placeholder{color:#8FA08C}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #111A14; color: #E7EEDF; font-family: 'Bricolage Grotesque', system-ui, sans-serif; overflow: hidden">
+
+  <div style="position: absolute; left: 18px; right: 18px; top: 18px; height: 36px; display: flex; justify-content: space-between; align-items: center">
+    <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em">date-o-mat</span>
+    <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">49 Samen im Regal</span>
+  </div>
+  <h1 style="position: absolute; left: 20px; top: 62px; margin: 0; font-weight: 800; font-size: 54px; line-height: 0.92; letter-spacing: -0.05em">ideen.</h1>
+
+  <div style="position: absolute; left: 16px; right: 16px; top: 128px; height: 52px; border-radius: 18px; background: #1B2620; display: flex; align-items: center; padding: 0 5px 0 16px; gap: 8px">
+    <label for="samen" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Eigene Idee</label>
+    <input id="samen" type="text" placeholder="Eigenen Samen einpflanzen …" style="flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-family: inherit; font-size: 16px; color: #E7EEDF">
+    <button type="button" aria-label="Idee hinzufügen" style="width: 42px; height: 42px; border: 0; border-radius: 50%; background: #E4ECDD; color: #111A14; font-size: 22px; line-height: 1">+</button>
+  </div>
+
+  <a href="ThSwipe.dc.html" style="position: absolute; left: 16px; right: 16px; top: 192px; height: 148px; border-radius: 24px; background: #F6DFD3; color: #5A2416; text-decoration: none; padding: 16px; box-sizing: border-box; overflow: hidden">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start">
+      <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 20px; font-weight: 800; letter-spacing: -0.02em">Keimlinge</span><span style="font-size: 13px">eure Matches vom Swipen</span></span>
+      <span style="font-size: 44px; font-weight: 800; line-height: 1; letter-spacing: -0.04em">0</span>
+    </div>
+    <div aria-hidden="true" style="position: absolute; left: 16px; right: 16px; bottom: 30px; display: flex; gap: 22px; align-items: flex-end">
+      <sc-for list="{{ pots }}" as="p" hint-placeholder-count="5">
+        <span style="position: relative; width: 34px; height: 22px">
+          <span style="position: absolute; left: 0; bottom: 0; width: 34px; height: 16px; background: #D68456; clip-path: polygon(0 0, 100% 0, 85% 100%, 15% 100%); opacity: {{ p.op }}"></span>
+          <span style="position: absolute; left: 2px; bottom: 14px; width: 30px; height: 5px; border-radius: 3px; background: #6B4A33; opacity: {{ p.op }}"></span>
+        </span>
+      </sc-for>
+    </div>
+    <span style="position: absolute; left: 16px; bottom: 8px; font-family: 'Caveat', cursive; font-weight: 600; font-size: 19px">noch alles Erde – swipt los!</span>
+  </a>
+
+  <div style="position: absolute; left: 16px; right: 16px; top: 352px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+
+    <a href="#" style="position: relative; height: 112px; border-radius: 22px; background: #DCEBD9; color: #163A22; text-decoration: none; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden">
+      <span aria-hidden="true" style="position: absolute; right: 16px; top: 14px; width: 32px; height: 40px">
+        <span style="position: absolute; left: 4px; top: 14px; width: 24px; height: 24px; border-radius: 50%; background: #E8708A"></span>
+        <span style="position: absolute; left: 8px; top: 0; width: 10px; height: 16px; border-radius: 50%; background: #4FA25E; transform: rotate(-20deg)"></span>
+        <span style="position: absolute; left: 15px; top: 0; width: 10px; height: 16px; border-radius: 50%; background: #6DBA74; transform: rotate(20deg)"></span>
+      </span>
+      <span style="font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: -0.04em">39</span>
+      <span style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 16px; font-weight: 700">Kurz</span><span style="font-size: 12px; color: #4A5A4C">keimt an einem Abend</span></span>
+    </a>
+
+    <a href="#" style="position: relative; height: 112px; border-radius: 22px; background: #F7EBC4; color: #3A2E10; text-decoration: none; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden">
+      <span aria-hidden="true" style="position: absolute; right: 14px; top: 10px; width: 40px; height: 48px">
+        <span style="position: absolute; left: 4px; top: 0; width: 32px; height: 30px; border-radius: 50%; background: #8FB46A"></span>
+        <span style="position: absolute; left: 17px; top: 26px; width: 6px; height: 20px; border-radius: 3px; background: #8A6440"></span>
+      </span>
+      <span style="font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: -0.04em">10</span>
+      <span style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 16px; font-weight: 700">Lang</span><span style="font-size: 12px; color: #6A5A30">wächst einen halben Tag</span></span>
+    </a>
+
+    <a href="#" style="position: relative; height: 112px; border-radius: 22px; background: #DCE7F5; color: #16283E; text-decoration: none; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden">
+      <span aria-hidden="true" style="position: absolute; right: 14px; top: 12px; width: 40px; height: 40px">
+        <span style="position: absolute; left: 0; top: 0; width: 40px; height: 40px; border-radius: 50%; background: repeating-conic-gradient(#F5C84B 0 20deg, transparent 20deg 40deg)"></span>
+        <span style="position: absolute; left: 10px; top: 10px; width: 20px; height: 20px; border-radius: 50%; background: #8A5A2B"></span>
+      </span>
+      <span style="font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: -0.04em">10</span>
+      <span style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 16px; font-weight: 700">Draußen</span><span style="font-size: 12px; color: #3E5470">braucht Sonne</span></span>
+    </a>
+
+    <a href="#" style="position: relative; height: 112px; border-radius: 22px; background: #E6E0F2; color: #2A1E44; text-decoration: none; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden">
+      <span aria-hidden="true" style="position: absolute; right: 16px; top: 10px; width: 34px; height: 48px">
+        <span style="position: absolute; left: 11px; top: 0; width: 12px; height: 34px; border-radius: 6px; background: #5E9E6A"></span>
+        <span style="position: absolute; left: 0; top: 10px; width: 8px; height: 14px; border-radius: 4px; background: #5E9E6A"></span>
+        <span style="position: absolute; left: 26px; top: 6px; width: 8px; height: 14px; border-radius: 4px; background: #5E9E6A"></span>
+        <span style="position: absolute; left: 5px; top: 32px; width: 24px; height: 14px; background: #D68456; clip-path: polygon(0 0, 100% 0, 85% 100%, 15% 100%)"></span>
+      </span>
+      <span style="font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: -0.04em">13</span>
+      <span style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 16px; font-weight: 700">Drinnen</span><span style="font-size: 12px; color: #4E4468">Fensterbank-Sorten</span></span>
+    </a>
+
+    <a href="#" style="position: relative; height: 112px; border-radius: 22px; background: #E7EEDF; color: #163A22; text-decoration: none; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden">
+      <span aria-hidden="true" style="position: absolute; right: 16px; top: 10px; width: 34px; height: 48px">
+        <span style="position: absolute; left: 0; top: 0; width: 34px; height: 22px; border-radius: 4px; background: #B9875A"></span>
+        <span style="position: absolute; left: 15px; top: 20px; width: 4px; height: 26px; background: #8A6440"></span>
+        <span style="position: absolute; left: 6px; top: 7px; width: 22px; height: 3px; border-radius: 2px; background: #F5EFC6"></span>
+      </span>
+      <span style="font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: -0.04em">48</span>
+      <span style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 16px; font-weight: 700">Mit Ort</span><span style="font-size: 12px; color: #4A5A4C">Veedel &amp; Rhein</span></span>
+    </a>
+
+    <a href="#" style="position: relative; height: 112px; border-radius: 22px; background: #1B2620; color: #E7EEDF; text-decoration: none; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; border: 1.5px dashed #3A4A40">
+      <span aria-hidden="true" style="position: absolute; right: 12px; top: 14px; width: 44px; height: 32px">
+        <span style="position: absolute; left: 12px; top: 8px; width: 28px; height: 22px; border-radius: 6px; background: #E58FA6"></span>
+        <span style="position: absolute; left: 18px; top: 0; width: 16px; height: 12px; border: 3px solid #E58FA6; border-bottom: 0; border-radius: 8px 8px 0 0; box-sizing: border-box"></span>
+        <span style="position: absolute; left: 0; top: 14px; width: 16px; height: 4px; border-radius: 2px; background: #E58FA6; transform: rotate(-24deg)"></span>
+      </span>
+      <span style="font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: -0.04em">1</span>
+      <span style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 16px; font-weight: 700">Eigene</span><span style="font-size: 12px; color: #9FB09C">von euch gesät</span></span>
+    </a>
+  </div>
+
+  <nav style="position: absolute; left: 0; right: 0; bottom: 0; height: 66px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; color: #E7EEDF; background: #111A14">
+    <a href="#" aria-label="Beet" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6zM12 11C12 7 9 5 5 5c0 4 3 6 7 6z"/></svg></a>
+    <a href="ThIdeen.dc.html" aria-label="Ideen" style="height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg><span style="width: 4px; height: 4px; border-radius: 50%; background: currentColor"></span></a>
+    <a href="ThSwipe.dc.html" aria-label="Swipen" style="justify-self: center; width: 60px; height: 60px; border-radius: 50%; background: #2E7D46; color: #FFFFFF; display: flex; align-items: center; justify-content: center; margin-top: -22px; box-shadow: 0 0 0 6px #111A14"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="12" height="16" rx="2.5" transform="rotate(8 13 11)"/><path d="M5.5 6.5L4 17.5a2 2 0 0 0 1.7 2.3l7.3 1"/><path d="M13.2 9.6c.8-.8 2.1-.8 2.9 0 .8.8.8 2.1 0 2.9l-2.9 2.9-2.9-2.9c-.8-.8-.8-2.1 0-2.9.8-.8 2.1-.8 2.9 0z"/></svg></a>
+    <a href="ThArchiv.dc.html" aria-label="Archiv" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-7 8"/></svg></a>
+    <a href="ThSetup.dc.html" aria-label="Einstellungen" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { pots: [0, 1, 2, 3, 4].map((i) => ({ op: i === 0 ? 1 : 0.45 })) };
+  }
+}
+</script>
+</body>
+</html>
