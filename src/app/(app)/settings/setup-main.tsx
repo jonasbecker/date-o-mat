@@ -23,7 +23,7 @@ const MODES: Array<{ value: PlanMode; label: string }> = [
 ];
 
 const rowClass = "flex min-h-11 items-center justify-between gap-3";
-const selectClass = "max-w-[60%] cursor-pointer appearance-none bg-transparent text-right text-[15px] text-muted outline-none focus-visible:text-ink";
+const selectClass = "max-w-[60%] cursor-pointer appearance-none bg-transparent text-right text-base text-muted outline-none focus-visible:text-ink";
 
 function Saved({ show, className }: { show: boolean; className?: string }) {
   return (
@@ -112,7 +112,7 @@ export function PushToggle({ publicKey, partnerName }: { publicKey: string | nul
           onClick={() => (on ? push.disable() : push.enable())}
           className={cn("relative h-[30px] w-[50px] shrink-0 rounded-full transition-colors disabled:opacity-50", on ? "bg-leaf" : "bg-track")}
         >
-          <span className={cn("absolute top-[3px] size-6 rounded-full bg-white shadow transition-all", on ? "right-[3px]" : "left-[3px]")} />
+          <span className={cn("absolute top-[3px] left-[3px] size-6 rounded-full bg-white shadow transition-transform duration-200 ease-out", on && "translate-x-5")} />
         </button>
       </div>
       {push.message && <p role="status" className="text-sm text-muted">{push.message}</p>}

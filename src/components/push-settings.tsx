@@ -119,8 +119,8 @@ export function PushSettings({
             >
               <span
                 className={cn(
-                  "absolute top-0.5 size-5 rounded-full bg-surface transition-[left]",
-                  prefs[type] ? "left-[22px]" : "left-0.5",
+                  "absolute top-0.5 left-0.5 size-5 rounded-full bg-surface transition-transform duration-200 ease-out",
+                  prefs[type] && "translate-x-5",
                 )}
               />
             </span>

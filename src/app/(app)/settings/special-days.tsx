@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useOptimistic, useState, useTransition } from "react";
 import { Button } from "@/components/button";
 import { addSpecialDayAction, deleteSpecialDayAction, type SpecialDayFormState } from "./actions";
 
@@ -9,10 +9,12 @@ export type SpecialDayView = { id: string; emoji: string; label: string; dateLab
 const inputClass = "h-12 w-full rounded-[22px] bg-soft px-4 font-bold text-ink";
 
 /** Jahrestag, Geburtstage, eigene Tage – mit Erinnerung 2 Wochen und 2 Tage vorher. */
-export function SpecialDays({ days, people }: { days: SpecialDayView[]; people: Array<{ id: string; name: string }> }) {
+export function SpecialDays({ days: allDays, people }: { days: SpecialDayView[]; people: Array<{ id: string; name: string }> }) {
   const [kind, setKind] = useState("anniversary");
   const [formKey, setFormKey] = useState(0);
   const [, startDelete] = useTransition();
+  // A removed day is gone at once – before the server answers.
+  const [days, hideDay] = useOptimistic(allDays, (current, id: string) => current.filter((d) => d.id !== id));
   const [state, action, pending] = useActionState<SpecialDayFormState, FormData>(async (prev, formData) => {
     const result = await addSpecialDayAction(prev, formData);
     if (result.status === "saved") {
@@ -39,7 +41,10 @@ export function SpecialDays({ days, people }: { days: SpecialDayView[]; people: 
               <button
                 type="button"
                 aria-label={`${d.label} entfernen`}
-                onClick={() => startDelete(() => deleteSpecialDayAction(d.id))}
+                onClick={() => startDelete(async () => {
+                  hideDay(d.id);
+                  await deleteSpecialDayAction(d.id);
+                })}
                 className="shrink-0 text-sm font-extrabold text-muted underline"
               >
                 Entfernen

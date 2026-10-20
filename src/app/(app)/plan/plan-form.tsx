@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
+import { useActionState, useCallback, useEffect, useOptimistic, useRef, useState, useTransition, type ReactNode } from "react";
 import { Button } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
 import { SIZE_LABEL } from "@/components/size-chip";
@@ -61,7 +61,7 @@ function isStale(loadedAt: number): boolean {
 export function PlanFlow({
   mode,
   later = false,
-  ideas,
+  ideas: allIdeas,
   partnerName,
   searchScopeLink,
   preselectIdeaId,
@@ -101,6 +101,8 @@ export function PlanFlow({
   hoursLeft?: string;
 }) {
   const router = useRouter();
+  // A deleted idea leaves the list at once – before the server answers.
+  const [ideas, hideIdea] = useOptimistic(allIdeas, (current, id: string) => current.filter((i) => i.id !== id));
   const preselected = mode.kind === "new" && preselectIdeaId ? ideas.find((i) => i.id === preselectIdeaId) : undefined;
   // "was?" first, then "wann?" – a match or a reschedule starts at the time.
   const [step, setStep] = useState<"idea" | "time">(mode.kind === "reschedule" || preselected ? "time" : "idea");
@@ -417,8 +419,9 @@ export function PlanFlow({
             idea={{ id: editing.id, title: editing.title, size: editing.size, note: editing.note ?? null, url: editing.url ?? null, costEur: editing.costEur, location: editing.location }}
             onSaved={() => editSheet.current?.close()}
             onDelete={async () => {
-              await archiveIdeaAction(editing.id);
               editSheet.current?.close();
+              hideIdea(editing.id);
+              await archiveIdeaAction(editing.id);
             }}
           />
         )}

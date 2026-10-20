@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useOptimistic, useRef, useState } from "react";
 import { FilteredEmpty, FilterButton, useIdeaFilter } from "@/components/idea-filter";
 import { categoryOf } from "@/core/categories";
 import { matchesIdeaFilter } from "@/core/filters";
@@ -25,7 +25,7 @@ export type BoardIdea = IdeaFormDefaults & { id: string; createdById: string | n
 export type BoardNextDate = NextDateInfo & { ideaId: string | null; swappable: boolean };
 
 export function IdeaBoard({
-  ideas,
+  ideas: allIdeas,
   people,
   next,
   canPlanNew,
@@ -44,6 +44,8 @@ export function IdeaBoard({
   view: ListView | "tiles";
 }) {
   const router = useRouter();
+  // A deleted idea leaves the list at once – before the server answers.
+  const [ideas, hideIdea] = useOptimistic(allIdeas, (current, id: string) => current.filter((i) => i.id !== id));
   const [filter] = useIdeaFilter();
   const [open, setOpen] = useState<{ idea: BoardIdea; view: "menu" | "edit" } | null>(null);
   const sheet = useRef<SheetHandle>(null);
@@ -123,8 +125,10 @@ export function IdeaBoard({
             idea={open.idea}
             onSaved={() => sheet.current?.close()}
             onDelete={async () => {
-              await archiveIdeaAction(open.idea.id);
+              const id = open.idea.id;
               sheet.current?.close();
+              hideIdea(id);
+              await archiveIdeaAction(id);
             }}
             footnote={footnote(open.idea, people)}
           />

@@ -76,7 +76,7 @@ export function DateChecklist({ dateId, tasks, suggestions, collapsed = false }:
             maxLength={80}
             placeholder="z. B. Blumen besorgen"
             aria-label="Neuer Punkt"
-            className="h-10 min-w-0 grow rounded-[22px] bg-soft px-3 text-sm font-bold"
+            className="h-10 min-w-0 grow rounded-[22px] bg-soft px-3 text-base font-bold"
           />
           <button type="submit" disabled={pending || !title.trim()} className="rounded-xl px-3 text-sm font-extrabold disabled:opacity-50">
             Dazu

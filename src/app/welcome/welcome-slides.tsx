@@ -90,7 +90,7 @@ export function WelcomeSlides({ slides, publicKey }: { slides: Slide[]; publicKe
             type="button"
             tabIndex={-1}
             onClick={() => goTo(i)}
-            className={cn("h-1.5 rounded-[3px] bg-ink transition-all", i === index ? "w-[22px]" : "w-1.5 opacity-35")}
+            className={cn("h-1.5 rounded-[3px] bg-ink transition-[width,opacity] duration-200", i === index ? "w-[22px]" : "w-1.5 opacity-35")}
           />
         ))}
       </div>

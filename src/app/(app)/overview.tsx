@@ -21,7 +21,7 @@ import { budgetState } from "@/server/budget";
 import { activeDateOf, cycleHistory, ensureCurrentCycle } from "@/server/cycles";
 import { listTasks } from "@/server/date-tasks";
 import { dateForViewer, upcomingDate } from "@/server/dates";
-import type { CoupleSettings, DatePlan } from "@/server/db/schema";
+import type { CoupleSettings, Cycle, DatePlan } from "@/server/db/schema";
 import { env } from "@/server/env";
 import { countSubscriptions, pushPublicKey } from "@/server/push";
 import { dateToReview } from "@/server/reviews";
@@ -45,10 +45,12 @@ export async function dateExtrasFor(ctx: CoupleContext, settings: CoupleSettings
   };
 }
 
-export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings, now: Date) {
+/** Everything the Beet shows. `cycle`: the round the page already rolled over (else it is done here). */
+export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings, now: Date, current?: Cycle | null) {
   const { user, partner, coupleId } = ctx;
-  const cycle = await ensureCurrentCycle(coupleId, now);
-  const [calendars, history, nextDate, pushDevices, partnerPushDevices, toReview, tick, budget, specialDays] = await Promise.all([
+  const cycle = current !== undefined ? current : await ensureCurrentCycle(coupleId, now);
+  // One round trip for everything that only needs the round – then one for what builds on it.
+  const [calendars, history, nextDate, pushDevices, partnerPushDevices, toReview, tick, budget, specialDays, roundDate] = await Promise.all([
     calendarStates(ctx),
     cycleHistory(coupleId),
     upcomingDate(coupleId, now),
@@ -58,19 +60,21 @@ export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings,
     lastTick(),
     budgetState(coupleId, now),
     upcomingForHome(ctx, now, SHOW_DAYS_BEFORE),
+    cycle?.status === "done" ? activeDateOf(cycle.id) : undefined,
   ]);
-  // "Wie war's?" shows the date's first photo.
-  const reviewPhoto = toReview ? (await coverPhotos(coupleId, [toReview.id])).get(toReview.id) : undefined;
+  const calendarsReady = calendars.every((person) => person.state === "connected");
+  const [reviewPhoto, dateExtras, suggestion] = await Promise.all([
+    // "Wie war's?" shows the date's first photo.
+    toReview ? coverPhotos(coupleId, [toReview.id]).then((photos) => photos.get(toReview.id)) : undefined,
+    nextDate ? dateExtrasFor(ctx, settings, nextDate, now) : undefined,
+    cycle && cycle.status === "open" && cycle.mode === "suggestion" && calendarsReady ? currentSuggestion(ctx, cycle, now) : null,
+  ]);
   // A surprise stays one: the partner sees time and hint only.
   const shownDate = nextDate ? dateForViewer(nextDate, user.id, [user, partner], now) : undefined;
-  const dateExtras = nextDate ? await dateExtrasFor(ctx, settings, nextDate, now) : undefined;
   const realNow = new Date();
   // The cron runs in real time (not the dev clock). Only warn once it has worked before –
   // "never ran" is a setup step, shown under Einstellungen → Läuft alles?
   const cronStale = Boolean(env().cronSecret) && tick !== null && tickHealth(tick.at, realNow) === "stale";
-  const roundDate = cycle?.status === "done" ? await activeDateOf(cycle.id) : undefined;
-  const calendarsReady = calendars.every((person) => person.state === "connected");
-  const suggestion = cycle && cycle.status === "open" && cycle.mode === "suggestion" && calendarsReady ? await currentSuggestion(ctx, cycle, now) : null;
   const step = cycle
     ? nextStep({
         meId: user.id,

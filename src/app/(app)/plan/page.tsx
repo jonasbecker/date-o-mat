@@ -26,7 +26,7 @@ export default function PlanPage({ searchParams }: PageProps<"/plan">) {
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       {/* The step card says what's up – the page title is for screen readers. */}
       <h1 className="sr-only">Date planen</h1>
-      <Suspense fallback={<SlotsSkeleton />}>
+      <Suspense fallback={<BeetSkeleton />}>
         <Plan searchParams={searchParams} />
       </Suspense>
     </div>
@@ -42,15 +42,22 @@ export default function PlanPage({ searchParams }: PageProps<"/plan">) {
 async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["searchParams"] }) {
   const ctx = await requireCouple();
   await connection();
-  const settings = await getCoupleSettings(ctx.coupleId);
+  const [settings, params] = await Promise.all([getCoupleSettings(ctx.coupleId), searchParams]);
   const now = coupleNow(settings);
+  // The round rolls over first (once) – everything after reads it.
   const cycle = await ensureCurrentCycle(ctx.coupleId, now);
-  const [params, overview] = await Promise.all([searchParams, loadOverview(ctx, settings, now)]);
   // "Selbst aussuchen" in suggestion mode is the flow too.
   const self = params.self === "1";
   const later = params.later === "1";
   const rescheduleId = typeof params.reschedule === "string" && /^[0-9a-f-]{36}$/.test(params.reschedule) ? params.reschedule : undefined;
-  const existing = rescheduleId ? await getDate(ctx.coupleId, rescheduleId) : undefined;
+  const wantsFlow = Boolean(rescheduleId) || params.pick === "1" || self || later || typeof params.idea === "string" || params.size === "large";
+  // All reads in one round trip: what the Beet needs, or what the flow needs – not one after the other.
+  const [overview, existing, beetRounds, flowData] = await Promise.all([
+    loadOverview(ctx, settings, now, cycle),
+    rescheduleId ? getDate(ctx.coupleId, rescheduleId) : undefined,
+    wantsFlow ? null : plantRounds(ctx.coupleId),
+    wantsFlow ? Promise.all([budgetState(ctx.coupleId, now), countDoneDates(ctx.coupleId), listIdeas(ctx.coupleId), matchedIdeaIds(ctx.coupleId)]) : null,
+  ]);
   // Moving someone else's surprise: the time changes, the secret stays.
   const shownExisting = existing && dateForViewer(existing, ctx.user.id, [ctx.user, ctx.partner], now);
   const reschedule: RescheduleInfo | undefined =
@@ -73,7 +80,8 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
   // "Date planen", a match, a special day, "Auch danach suchen": the flow. Otherwise the start.
   const flow = Boolean(reschedule) || params.pick === "1" || self || later || typeof params.idea === "string" || params.size === "large";
   if (!flow || (roundDate && !swappable)) {
-    const rounds = await plantRounds(ctx.coupleId);
+    // Rare: the flow was asked for, but the round's date is someone else's surprise – the Beet after all.
+    const rounds = beetRounds ?? (await plantRounds(ctx.coupleId));
     const step = overview.step;
     const onTurn = step?.kind === "plan" || step?.kind === "confirm" ? "me" : step?.kind === "partner_turn" || step?.kind === "wait_confirm" ? "partner" : null;
     const calendarStep = step?.kind === "connect_calendar" || step?.kind === "partner_calendar";
@@ -98,9 +106,8 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
     );
   }
 
-  const [budget, doneDates] = await Promise.all([budgetState(ctx.coupleId, now), countDoneDates(ctx.coupleId)]);
   // The same cards as on the wishlist; longest waiting first – the order the suggestion mode uses.
-  const [wishlist, matched] = await Promise.all([listIdeas(ctx.coupleId), matchedIdeaIds(ctx.coupleId)]);
+  const [budget, doneDates, wishlist, matched] = flowData ?? (await Promise.all([budgetState(ctx.coupleId, now), countDoneDates(ctx.coupleId), listIdeas(ctx.coupleId), matchedIdeaIds(ctx.coupleId)]));
   const people = Object.fromEntries([ctx.user, ctx.partner].map((p) => [p.id, { name: p.name, color: p.color }]));
   const ideas: IdeaOption[] = wishlist
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
@@ -171,13 +178,19 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
   );
 }
 
-function SlotsSkeleton() {
+/** The shape of the Beet while it loads (the tab is there at once): name, dots, headline, plant, button. */
+function BeetSkeleton() {
   return (
-    <div className="flex animate-pulse flex-col gap-3" aria-busy="true" aria-label="Sucht freie Zeiten …">
-      <div className="h-[68px] rounded-[22px] bg-track" />
-      {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="h-[76px] rounded-[20px] bg-track" />
-      ))}
+    <div className="flex min-h-0 flex-1 flex-col gap-3" aria-busy="true" aria-label="Lädt …">
+      <AppHeader />
+      <div className="flex animate-pulse flex-1 flex-col gap-3">
+        <div className="mt-1 h-1.5 w-12 rounded-full bg-track" />
+        <div className="h-[46px] w-3/4 rounded-[16px] bg-track" />
+        <div className="h-[46px] w-1/2 rounded-[16px] bg-track" />
+        <div className="h-3 w-2/3 rounded-full bg-track" />
+        <div className="mx-auto mt-auto size-40 rounded-full bg-track" />
+        <div className="mt-auto h-14 rounded-full bg-track" />
+      </div>
     </div>
   );
 }

@@ -73,7 +73,7 @@ export function QuickAdd({ look = "pill" }: { look?: "pill" | "link" | "field" }
         <IdeaForm key={formKey} action={createIdeaAction} onSaved={saved} initialTitle={start.title} initialLink={start.link} footnote="Enter speichert · ihr seht sie beide sofort" />
       </Sheet>
 
-      <div role="status" className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-5">
+      <div role="status" className="pointer-events-none fixed inset-x-0 top-[max(env(safe-area-inset-top),16px)] z-50 flex justify-center px-5">
         {toast && <span className="animate-pop-in rounded-full bg-ink px-5 py-2.5 text-base font-bold text-bg shadow-lg">Auf eurer Wunschliste!</span>}
       </div>
     </>

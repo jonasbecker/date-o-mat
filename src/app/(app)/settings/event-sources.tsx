@@ -101,7 +101,7 @@ export function EventSources({ sources, aiReady }: { sources: SourceView[]; aiRe
           />
         </label>
         <div className="flex flex-wrap items-center gap-3">
-          <select name="kind" aria-label="Art der Seite" className="h-10 rounded-full bg-bg px-3 text-sm font-extrabold">
+          <select name="kind" aria-label="Art der Seite" className="h-10 rounded-full bg-bg px-3 text-base font-extrabold">
             <option value="calendar">Veranstaltungskalender</option>
             <option value="tips">Tipps &amp; Artikel</option>
           </select>
@@ -171,7 +171,7 @@ function SubPages({ source }: { source: SourceView }) {
             required
             aria-label={`Unterseite von ${source.label}`}
             placeholder={`${new URL(source.url).origin}/…`}
-            className="h-10 min-w-0 flex-1 rounded-full bg-bg px-3.5 text-sm font-semibold placeholder:text-muted/70"
+            className="h-10 min-w-0 flex-1 rounded-full bg-bg px-3.5 text-base font-semibold placeholder:text-muted/70"
           />
           <Button type="submit" variant="secondary" size="sm" disabled={pending}>
             + Hinzufügen

@@ -158,16 +158,16 @@
 
 /* Things give way a little when tapped */
 @utility tap {
-  transition: transform 120ms ease-out;
+  transition: scale 100ms ease-out;
   &:active:not(:disabled) {
-    transform: scale(0.98);
+    scale: 0.98;
   }
 }
 
 @utility press {
-  transition: transform 120ms ease-out;
+  transition: scale 100ms ease-out;
   &:active:not(:disabled) {
-    transform: scale(0.97);
+    scale: 0.96;
   }
 }
 
@@ -188,11 +188,41 @@
 }
 
 @layer base {
+  /* An installed app, not a web page: no rubber band of the whole page, no grey tap flash,
+     no text selection or long-press callout on the UI – only where you type. */
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     background: var(--bg);
     color: var(--ink);
     font-family: var(--font-sans);
     -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  input,
+  textarea,
+  select,
+  [contenteditable="true"],
+  .select-text {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+
+  /* Everything you can tap gives way a little at once (GPU: only `scale`). `tap`/`press` and
+     `active:scale-*` on an element win over this. */
+  :where(button, a[href], summary, [role="button"], [role="tab"], [role="switch"], [role="radio"], label:has(input)) {
+    transition: scale 100ms ease-out;
+  }
+  :where(button, a[href], summary, [role="button"], [role="tab"], [role="switch"], [role="radio"], label:has(input)):active:not(:disabled, [aria-disabled="true"]) {
+    scale: 0.97;
   }
 
   h1,
@@ -273,6 +303,22 @@
 
 @utility animate-wiggle {
   animation: wiggle 1.6s ease-in-out infinite;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A new screen fades in instead of popping up (app/(app)/template.tsx) */
+@utility animate-page-in {
+  animation: page-in 180ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
 }
 
 @keyframes slide-in {
