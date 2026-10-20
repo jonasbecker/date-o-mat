@@ -1,17 +1,28 @@
-// The planning flow: the start page (/plan, the Beet) has "Date planen", which opens "was?"
-// (the wishlist: tap an idea, "Weiter"), then "wann?" (the free times, an <ol> of buttons).
+// The planning flow: the start page (/plan, the Beet) has "Date planen", which opens the filter
+// ("worauf lust?", all "Egal", "Weiter"), then "was?" (the wishlist: tap an idea, "Weiter"),
+// then "wann?" (the free times, an <ol> of buttons).
 // "Gießen & an … senden" saves the date. The arrow at the top goes back to "was?".
 
 /** The send button of the flow. */
 export const SEND = /^(Gießen & an .+ senden|Termin ändern)$/;
 
-/** On the start page: "Date planen" opens the flow. Does nothing when it is open already. */
+/** Step 1 of the flow ("worauf lust?"): goes on with the filter as it is. Does nothing on other steps. */
+export async function passFilter(page, { timeout = 20000 } = {}) {
+  const filter = page.getByRole("heading", { name: "worauf lust?", exact: true });
+  const ideas = page.getByRole("heading", { name: "was?", exact: true });
+  await filter.or(ideas).first().waitFor({ timeout });
+  if (await filter.isVisible()) await page.getByRole("button", { name: "Weiter", exact: true }).click();
+  await ideas.waitFor({ timeout });
+}
+
+/** On the start page: "Date planen" opens the flow, past the filter to "was?". Does nothing when it is open already. */
 export async function openFlow(page, { timeout = 20000 } = {}) {
+  const filter = page.getByRole("heading", { name: "worauf lust?", exact: true });
   const step1 = page.getByRole("heading", { name: "was?", exact: true });
   const button = page.getByRole("link", { name: "Date planen", exact: true });
-  await step1.or(button).first().waitFor({ timeout });
-  if (!(await step1.isVisible())) await button.click();
-  await step1.waitFor({ timeout });
+  await step1.or(button).or(filter).first().waitFor({ timeout });
+  if (!(await step1.isVisible()) && !(await filter.isVisible())) await button.click();
+  await passFilter(page, { timeout });
 }
 
 /** From "wann?" back to "was?" (the arrow at the top). */
@@ -34,6 +45,7 @@ export async function openTimes(page, base, query = "") {
   const params = new URLSearchParams(query.replace(/^\?/, ""));
   params.set("pick", "1");
   await page.goto(`${base}/plan?${params}`);
+  await passFilter(page);
   const first = page.getByRole("list", { name: "Eure Wunschliste" }).getByRole("button", { name: /^(?!.* bearbeiten$)/ }).first();
   await first.click({ timeout: 20000 });
   await page.getByRole("button", { name: "Weiter", exact: true }).click();

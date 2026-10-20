@@ -5,6 +5,7 @@ import pg from "pg";
 import { chromium } from "playwright";
 import { startMock } from "./google-mock.mjs";
 import { resetDb } from "./db.mjs";
+import { passFilter } from "./flow.mjs";
 
 const BASE = "http://localhost:3000";
 const OUT = new URL("./shots/", import.meta.url).pathname;
@@ -71,6 +72,7 @@ await j.screenshot({ path: `${OUT}m10-01-koeln.png`, fullPage: false });
 
 // 2) Plan → "Was anderes": Köln ideas with search and the shared filter
 await j.goto(`${BASE}/plan?pick=1`);
+await passFilter(j);
 await j.getByRole("button", { name: "Was anderes" }).click();
 const more = j.locator("dialog[open]");
 await more.getByRole("heading", { name: "📍 Ideen für Köln" }).waitFor({ timeout: 10000 });
@@ -101,6 +103,7 @@ check(`"Nehmen" saves it (curated) and selects it (${JSON.stringify(saved[0])})`
 
 // 3) Plan → "Zufall": draws without repeats, Köln tips too, "Nehmen" selects
 await j.goto(`${BASE}/plan?pick=1`);
+await passFilter(j);
 await j.getByRole("button", { name: "Zufall" }).click();
 await j.getByText("Wird gezogen").waitFor({ timeout: 5000 }).then(() => check("draw animation", true), () => check("draw animation", false));
 await j.locator("dialog[open]").getByRole("button", { name: "Nehmen" }).waitFor({ timeout: 10000 });
@@ -135,6 +138,7 @@ check("Dates stays focused: no Zufall button", (await j.getByRole("button", { na
 await j.screenshot({ path: `${OUT}m10-05-home.png` });
 const jd = await pageFor(jonas.token, "dark");
 await jd.goto(`${BASE}/plan?pick=1`);
+await passFilter(jd);
 await jd.getByRole("button", { name: "Was anderes" }).click();
 await jd.locator("dialog[open]").getByRole("heading", { name: "📍 Ideen für Köln" }).waitFor({ timeout: 15000 });
 await jd.waitForTimeout(400);

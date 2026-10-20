@@ -13,16 +13,29 @@ export type HeaderPlace = "plan" | "ideas" | "dates" | "settings";
 
 /**
  * The top of a page (DESIGN.md): the small name on the left, on the right what the page has there –
- * a meta line ("36 Ideen"), the two avatars or an action. Navigation is in the bottom bar (`BottomNav`).
+ * a meta line ("36 Ideen"), the two avatars or an action. `center`: the step dots, in the middle of
+ * the row – the same spot as in the planning flow (`TopRow`). Navigation is in the bottom bar.
  */
-export function AppHeader({ action }: { current?: HeaderPlace; action?: React.ReactNode }) {
+export function AppHeader({ action, center }: { current?: HeaderPlace; action?: React.ReactNode; center?: React.ReactNode }) {
   return (
-    <header className="flex min-h-8 items-center gap-2.5">
+    <header className={center ? "relative flex h-11 items-center gap-2.5" : "flex min-h-8 items-center gap-2.5"}>
       <Link href="/plan" aria-label="Date-O-Mat – zum Start" className="min-w-0 flex-1 font-display text-[15px] font-extrabold leading-none tracking-[-0.02em]">
         date-o-mat
       </Link>
+      {center && <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">{center}</span>}
       {action}
     </header>
+  );
+}
+
+/** The top row of the planning flow: back on the left, the dots in the middle (where the Beet has them), meta on the right. */
+export function TopRow({ back, center, meta }: { back: React.ReactNode; center?: React.ReactNode; meta?: React.ReactNode }) {
+  return (
+    <div className="relative flex h-11 items-center justify-between">
+      {back}
+      {center && <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">{center}</span>}
+      <span className="w-11 text-right font-mono text-[11px]">{meta ?? ""}</span>
+    </div>
   );
 }
 

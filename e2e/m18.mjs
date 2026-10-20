@@ -4,7 +4,7 @@ import { mkdirSync } from "node:fs";
 import { DateTime } from "luxon";
 import pg from "pg";
 import { chromium } from "playwright";
-import { backAtStart, fitsScreen, openTimes, pickIdea, SEND } from "./flow.mjs";
+import { backAtStart, fitsScreen, openTimes, pickIdea, SEND, passFilter } from "./flow.mjs";
 import { startMock } from "./google-mock.mjs";
 import { resetDb } from "./db.mjs";
 
@@ -146,6 +146,7 @@ check("new month starts at 0, pot shows 15 €", (await j.locator("main").innerT
 await db.query("UPDATE couple_settings SET monthly_budget_eur = 30 WHERE couple_id = $1", [couple.id]);
 // A new month, a new round – Sam's turn: Jonas plans anyway ("Lieber selbst planen").
 await j.goto(`${BASE}/plan?pick=1`);
+await passFilter(j);
 await j.getByRole("list", { name: "Eure Wunschliste" }).waitFor({ timeout: 20000 });
 await j.waitForTimeout(800);
 check("idea over budget is marked", await j.getByText("⚠️ über Budget").first().isVisible());

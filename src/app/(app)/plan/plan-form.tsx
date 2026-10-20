@@ -9,7 +9,8 @@ import { SIZE_LABEL } from "@/components/size-chip";
 import { categoryOf } from "@/core/categories";
 import { slotModeFor } from "@/core/slot-modes";
 import { orderSlots } from "@/core/slots";
-import { FilteredEmpty, FilterButton, useIdeaFilter } from "@/components/idea-filter";
+import { FilteredEmpty, FilterButton, FilterQuestions, useIdeaFilter } from "@/components/idea-filter";
+import { TopRow } from "@/components/app-header";
 import { Sheet, type SheetHandle } from "@/components/sheet";
 import { SurpriseButton } from "@/components/surprise-button";
 import { SwapConfirm, type NextDateInfo } from "@/components/swap-confirm";
@@ -104,8 +105,8 @@ export function PlanFlow({
   // A deleted idea leaves the list at once – before the server answers.
   const [ideas, hideIdea] = useOptimistic(allIdeas, (current, id: string) => current.filter((i) => i.id !== id));
   const preselected = mode.kind === "new" && preselectIdeaId ? ideas.find((i) => i.id === preselectIdeaId) : undefined;
-  // "was?" first, then "wann?" – a match or a reschedule starts at the time.
-  const [step, setStep] = useState<"idea" | "time">(mode.kind === "reschedule" || preselected ? "time" : "idea");
+  // Filter ("worauf lust?") first, then "was?", then "wann?" – a match or a reschedule starts at the time.
+  const [step, setStep] = useState<"filter" | "idea" | "time">(mode.kind === "reschedule" || preselected ? "time" : "filter");
   const [pick, setPick] = useState<IdeaPick | null>(preselected ? { kind: "idea", id: preselected.id } : null);
   const [size, setSize] = useState<IdeaSize>(mode.kind === "reschedule" ? mode.date.size : (preselected?.size ?? preselectSize ?? "small"));
   // The free times are loaded here, not by the page: the start page itself never waits for Google.
@@ -446,27 +447,19 @@ export function PlanFlow({
     </>
   );
 
-  const top = (
-    <div className="flex items-center justify-between">
-      <Link href="/plan" aria-label="Zurück" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
-        <BackIcon width={20} height={20} />
-      </Link>
-      <StepDots step={1} of={4} />
-      <span className="w-11 text-right font-mono text-[11px]">{hoursLeft ?? ""}</span>
-    </div>
+  // The top row: back on the left, the three dots (Filter · was? · wann?) in the middle – where the Beet has its dots.
+  const backHome = (
+    <Link href="/plan" aria-label="Zurück" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
+      <BackIcon width={20} height={20} />
+    </Link>
   );
-  const topWithBack =
-    step === "time" && mode.kind === "new" ? (
-      <div className="flex items-center justify-between">
-        <button type="button" onClick={() => setStep("idea")} aria-label="Andere Idee" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
-          <BackIcon width={20} height={20} />
-        </button>
-        <StepDots step={1} of={4} />
-        <span className="w-11 text-right font-mono text-[11px]">{hoursLeft ?? ""}</span>
-      </div>
-    ) : (
-      top
-    );
+  const backTo = (to: "filter" | "idea", label: string) => (
+    <button type="button" onClick={() => setStep(to)} aria-label={label} className="tap flex size-11 items-center justify-center rounded-full bg-surface">
+      <BackIcon width={20} height={20} />
+    </button>
+  );
+  const top = <TopRow back={backHome} meta={hoursLeft} />;
+  const flowTop = (n: number, back: ReactNode) => <TopRow back={back} center={<StepDots step={n} of={3} />} meta={hoursLeft} />;
 
   // Swapping the idea of a planned date: only "was?" – the time stays.
   if (mode.kind === "swap") {
@@ -516,12 +509,38 @@ export function PlanFlow({
     </form>
   );
 
-  // Step "was?": pick the idea, "Weiter" goes on.
+  // Step 1, "worauf lust?": the filter as big pills – all on "Egal", so "Weiter" works right away.
+  if (step === "filter" && mode.kind === "new") {
+    return (
+      <div key="filter" className="animate-slide-in flex min-h-0 flex-1 flex-col gap-2.5">
+        {flowTop(1, backHome)}
+        {intro}
+        <h2 className="headline pt-2 text-[40px]">worauf lust?</h2>
+        <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-1 pb-1">
+          <FilterQuestions big />
+        </div>
+        <Button
+          type="button"
+          size="lg"
+          className="w-full shrink-0"
+          onClick={() => {
+            // "Kurz"/"Lang" in the filter is the length of the date too.
+            if (filter.size) setSize(filter.size);
+            setStep("idea");
+          }}
+        >
+          Weiter
+        </Button>
+      </div>
+    );
+  }
+
+  // Step 2, "was?": pick the idea, "Weiter" goes on.
   if (step === "idea" && mode.kind === "new") {
     return (
       <div key="idea" className="animate-slide-in flex min-h-0 flex-1 flex-col gap-2.5">
         {hiddenForm}
-        {top}
+        {flowTop(2, backTo("filter", "Zurück zum Filter"))}
         {intro}
         <div className="flex items-baseline justify-between gap-2 pt-2">
           <h2 className="headline text-[40px]">was?</h2>
@@ -544,7 +563,7 @@ export function PlanFlow({
   return (
     <div key="time" className="animate-slide-in flex min-h-0 flex-1 flex-col gap-2.5">
       {hiddenForm}
-      {topWithBack}
+      {mode.kind === "new" ? flowTop(3, backTo("idea", "Andere Idee")) : flowTop(3, backHome)}
       {intro}
 
       <div className="flex items-end justify-between gap-3 pt-1.5">

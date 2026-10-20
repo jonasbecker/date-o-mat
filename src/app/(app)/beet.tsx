@@ -27,6 +27,11 @@ import type { Overview } from "./overview";
 const hex = (u: User) => PERSON_HEX[u.color ?? "mandarine"];
 
 /** The round as four dots: open → planned → confirmed → lived. */
+/** The four dots of the round – in the middle of the header (`AppHeader center`), only the active one moves. */
+export function RoundDots({ step }: { step: NextStep["kind"] }) {
+  return <StepDots step={roundDot(step)} of={4} />;
+}
+
 function roundDot(step: NextStep["kind"]): number {
   switch (step) {
     case "plan":
@@ -106,9 +111,7 @@ export function Beet({
 
   return (
     <div data-next-step={step.kind} className="flex min-h-0 flex-1 flex-col">
-      {/* The four dots always sit right under the name – only the active one moves. */}
-      <StepDots step={roundDot(step.kind)} of={4} className="mt-1 h-1.5" />
-      <h2 className="headline mt-3 min-h-[2lh] whitespace-pre-line text-[clamp(44px,15vw,62px)]">{view.headline}</h2>
+      <h2 className="headline mt-2 min-h-[2lh] whitespace-pre-line text-[clamp(44px,15vw,62px)]">{view.headline}</h2>
       {view.sub && <div className="mt-3 text-base text-muted">{view.sub}</div>}
       {view.pill && (
         <p data-date-pill data-date-card={date?.id} className="mt-3.5 inline-flex h-[34px] max-w-full items-center self-start truncate rounded-full bg-surface px-3.5 text-sm font-medium">

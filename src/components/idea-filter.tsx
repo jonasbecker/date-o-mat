@@ -74,27 +74,7 @@ export function FilterButton({ className }: { className?: string }) {
       </button>
       <Sheet ref={sheet} title="Filter">
         <p className="-mt-2 text-sm text-muted">Gilt überall: Wunschliste, Swipen, Was läuft und beim Planen.</p>
-        {FILTER_GROUPS.map((group) => (
-          <fieldset key={group.key} className="flex flex-col gap-2">
-            <legend className="mb-2 text-[13px] font-medium text-muted">{group.question}</legend>
-            <div className="flex flex-wrap gap-2">
-              {[{ value: undefined, label: "Egal" }, ...group.options].map((option) => {
-                const selected = filter[group.key] === option.value;
-                return (
-                  <button
-                    key={option.label}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => setFilter({ ...filter, [group.key]: option.value })}
-                    className={cn("tap h-10 rounded-full px-4 font-semibold", selected ? "bg-ink text-bg" : "bg-soft text-ink")}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
-          </fieldset>
-        ))}
+        <FilterQuestions />
         <div className="grid grid-cols-2 gap-2.5 pt-1">
           <Button variant="secondary" disabled={count === 0} onClick={() => setFilter({})}>
             Zurücksetzen
@@ -102,6 +82,39 @@ export function FilterButton({ className }: { className?: string }) {
           <Button onClick={() => sheet.current?.close()}>Fertig</Button>
         </div>
       </Sheet>
+    </>
+  );
+}
+
+/**
+ * The four questions of the filter (Wie lang? Was darf es kosten? Wo? Was für ein Date?), each with
+ * "Egal" first. In the sheet behind the Filter button and as the first step of planning (`big` pills).
+ */
+export function FilterQuestions({ big = false }: { big?: boolean }) {
+  const [filter, setFilter] = useIdeaFilter();
+  return (
+    <>
+      {FILTER_GROUPS.map((group) => (
+        <fieldset key={group.key} className="flex flex-col gap-2">
+          <legend className={cn("mb-2 text-muted", big ? "text-sm font-semibold" : "text-[13px] font-medium")}>{group.question}</legend>
+          <div className="flex flex-wrap gap-2">
+            {[{ value: undefined, label: "Egal" }, ...group.options].map((option) => {
+              const selected = filter[group.key] === option.value;
+              return (
+                <button
+                  key={option.label}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setFilter({ ...filter, [group.key]: option.value })}
+                  className={cn("tap rounded-full px-4 font-semibold", big ? "h-11 text-[15px]" : "h-10", selected ? "bg-ink text-bg" : big ? "bg-surface text-ink" : "bg-soft text-ink")}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      ))}
     </>
   );
 }

@@ -17,7 +17,7 @@ import { PlanFlow, type IdeaOption, type RescheduleInfo } from "./plan-form";
 import { AppHeader } from "@/components/app-header";
 import { loadOverview, StartNotices } from "../overview";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { Beet, BeetAvatars } from "../beet";
+import { Beet, BeetAvatars, RoundDots } from "../beet";
 import { plantRounds } from "@/server/plant";
 import type { NextDateInfo } from "@/components/swap-confirm";
 
@@ -88,7 +88,7 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
     return (
       <>
         <AutoRefresh />
-        <AppHeader action={<BeetAvatars me={ctx.user} partner={ctx.partner} onTurn={onTurn} />} />
+        <AppHeader center={step && <RoundDots step={step.kind} />} action={<BeetAvatars me={ctx.user} partner={ctx.partner} onTurn={onTurn} />} />
         <Beet
           o={overview}
           ctx={ctx}
@@ -182,9 +182,8 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
 function BeetSkeleton() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3" aria-busy="true" aria-label="Lädt …">
-      <AppHeader />
+      <AppHeader center={<span className="block h-1.5 w-12 animate-pulse rounded-full bg-track" />} />
       <div className="flex animate-pulse flex-1 flex-col gap-3">
-        <div className="mt-1 h-1.5 w-12 rounded-full bg-track" />
         <div className="h-[46px] w-3/4 rounded-[16px] bg-track" />
         <div className="h-[46px] w-1/2 rounded-[16px] bg-track" />
         <div className="h-3 w-2/3 rounded-full bg-track" />

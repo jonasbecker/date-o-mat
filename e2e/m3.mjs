@@ -3,7 +3,7 @@ import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { DateTime } from "luxon";
 import pg from "pg";
 import { chromium } from "playwright";
-import { customIdea } from "./flow.mjs";
+import { customIdea, passFilter } from "./flow.mjs";
 import { DAYS, requests, startMock } from "./google-mock.mjs";
 import { resetDb } from "./db.mjs";
 
@@ -196,6 +196,7 @@ check("revoked calendar asks for reconnection", true);
 await db.query("UPDATE google_connections SET status = 'ok', access_token_enc = $2 WHERE user_id = $1", [sam.id, encrypt("token-broken")]);
 // The start page no longer asks Google – the free times (step 2) do. (Jonas plans: Sam opts in.)
 await s.goto(`${BASE}/plan?pick=1`);
+await passFilter(s);
 await s.getByRole("button", { name: "Was anderes" }).click({ timeout: 20000 });
 await s.locator("dialog[open]").getByLabel("Eure eigene Idee").fill("Spazieren gehen");
 await s.locator("dialog[open]").getByRole("button", { name: "Weiter →" }).click();
@@ -213,6 +214,7 @@ const dark = await pageFor(sam.token, "dark");
 await db.query("UPDATE google_connections SET access_token_enc = $2 WHERE user_id = $1", [sam.id, encrypt("token-sam")]);
 await connect(jonas, "token-jonas", ["primary"]);
 await dark.goto(`${BASE}/plan?pick=1`); // Jonas' turn – Sam plans anyway
+await passFilter(dark);
 await readSlots(dark);
 await dark.waitForTimeout(300);
 await dark.screenshot({ path: `${SHOTS}m3-06-small-dark.png` });

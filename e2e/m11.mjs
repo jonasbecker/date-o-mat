@@ -54,7 +54,7 @@ async function pageFor(token, scheme = "light") {
 
 import { createServer } from "node:http";
 import { DateTime } from "luxon";
-import { backToIdeas } from "./flow.mjs";
+import { backToIdeas, passFilter } from "./flow.mjs";
 
 // --- fake Open-Meteo -----------------------------------------------------------------------
 const weatherCalls = [];
@@ -103,6 +103,7 @@ await new Promise((r) => claude.listen(4030, r));
 // 1) Plan → "Was anderes" → "✨ 3 Ideen von der KI": follows the shared filter, knows slot, size and weather
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/plan?pick=1`);
+await passFilter(j);
 await j.getByRole("heading", { name: "was?", exact: true }).waitFor({ timeout: 20000 });
 await j.waitForTimeout(800);
 await j.getByRole("button", { name: "Filter", exact: true }).click();
@@ -147,6 +148,7 @@ check("21st request today is refused without calling Claude", claudeCalls.length
 // 3) Dark mode look
 const jd = await pageFor(jonas.token, "dark");
 await jd.goto(`${BASE}/plan?pick=1`);
+await passFilter(jd);
 await jd.getByRole("button", { name: "Was anderes" }).click();
 await jd.locator("dialog[open]").getByRole("button", { name: "✨ 3 Ideen von der KI" }).waitFor({ timeout: 15000 });
 await jd.screenshot({ path: `${OUT}m11-03-ideas-dark.png` });
