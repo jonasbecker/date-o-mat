@@ -201,6 +201,21 @@
     font-family: var(--font-display);
   }
 
+  /* Form controls: the same soft pills as everywhere (no browser frames). */
+  select,
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"]),
+  textarea {
+    border-radius: 22px;
+    border: 0;
+    background: var(--soft);
+    color: var(--ink);
+    font-family: inherit;
+  }
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--ink);
+  }
+
   :focus-visible {
     outline: 3px solid var(--color-himmel);
     outline-offset: 2px;

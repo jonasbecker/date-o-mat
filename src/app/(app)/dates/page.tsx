@@ -85,7 +85,7 @@ async function Dates({ searchParams }: { searchParams: PageProps<"/dates">["sear
       )}
 
       {tiles.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-[24px] border-2 border-dashed border-line px-6 py-8 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-[24px] border-[1.5px] border-dashed border-line px-6 py-8 text-center">
           <Mascot id="no-dates" size={64} />
           <p className="text-xl font-bold">Hier wächst euer Beet</p>
           <p className="text-muted">Jedes Date wird hier eine Kachel – mit Foto, wenn ihr eins festhaltet.</p>
@@ -184,7 +184,7 @@ function WiltedTile({ round, planner }: { round: SkippedRound; planner?: User })
   const week = DateTime.fromJSDate(round.startsAt, { zone: APP_TIMEZONE }).weekNumber;
   return (
     <div className="flex flex-col gap-2" data-wilted>
-      <span className="relative flex h-[clamp(120px,20vh,170px)] items-center justify-center rounded-[20px] border-2 border-dashed border-line px-3 text-center text-[13px] text-muted">
+      <span className="relative flex h-[clamp(120px,20vh,170px)] items-center justify-center rounded-[20px] border-[1.5px] border-dashed border-line px-3 text-center text-[13px] text-muted">
         kein Date – das Blatt ist welk
         <PlannerDot person={planner} />
       </span>

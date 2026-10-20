@@ -88,7 +88,7 @@ export function EventSources({ sources, aiReady }: { sources: SourceView[]; aiRe
       )}
 
       {/* A new key after each save empties the form. */}
-      <form key={state.savedAt ?? 0} action={action} className="flex flex-col gap-2.5 border-t-2 border-track pt-4">
+      <form key={state.savedAt ?? 0} action={action} className="flex flex-col gap-2.5 border-t-[1.5px] border-track pt-4">
         <label className="flex flex-col gap-1.5">
           <span className="font-extrabold">Weitere Seite</span>
           <input
@@ -97,11 +97,11 @@ export function EventSources({ sources, aiReady }: { sources: SourceView[]; aiRe
             inputMode="url"
             required
             placeholder="https://…"
-            className="h-12 rounded-[16px] border-2 border-line bg-bg px-4 font-semibold placeholder:text-muted/70"
+            className="h-12 rounded-[22px] bg-soft px-4 font-semibold placeholder:text-muted/70"
           />
         </label>
         <div className="flex flex-wrap items-center gap-3">
-          <select name="kind" aria-label="Art der Seite" className="h-10 rounded-full border-2 border-line bg-bg px-3 text-sm font-extrabold">
+          <select name="kind" aria-label="Art der Seite" className="h-10 rounded-full bg-bg px-3 text-sm font-extrabold">
             <option value="calendar">Veranstaltungskalender</option>
             <option value="tips">Tipps &amp; Artikel</option>
           </select>
@@ -127,7 +127,7 @@ function SubPages({ source }: { source: SourceView }) {
   const [state, action, pending] = useActionState<SourceFormState, FormData>(addSourcePageAction.bind(null, source.id), { status: "idle" });
   const [busy, startTransition] = useTransition();
   return (
-    <details className="group/sub mt-1 rounded-2xl border-2 border-track">
+    <details className="group/sub mt-1 rounded-2xl border-[1.5px] border-track">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-sm font-extrabold">
         <span>
           Unterseiten · {source.pages.length}
@@ -137,7 +137,7 @@ function SubPages({ source }: { source: SourceView }) {
           ⌄
         </span>
       </summary>
-      <div className="flex flex-col gap-2 border-t-2 border-track px-3 py-2.5">
+      <div className="flex flex-col gap-2 border-t-[1.5px] border-track px-3 py-2.5">
         {source.pages.length === 0 && !source.picking && <p className="text-sm font-semibold text-muted">Keine – gelesen wird nur die Hauptseite (und ihre Seite 2).</p>}
         <ul className="flex flex-col gap-2">
           {source.pages.map((page) => (
@@ -171,7 +171,7 @@ function SubPages({ source }: { source: SourceView }) {
             required
             aria-label={`Unterseite von ${source.label}`}
             placeholder={`${new URL(source.url).origin}/…`}
-            className="h-10 min-w-0 flex-1 rounded-full border-2 border-line bg-bg px-3.5 text-sm font-semibold placeholder:text-muted/70"
+            className="h-10 min-w-0 flex-1 rounded-full bg-bg px-3.5 text-sm font-semibold placeholder:text-muted/70"
           />
           <Button type="submit" variant="secondary" size="sm" disabled={pending}>
             + Hinzufügen

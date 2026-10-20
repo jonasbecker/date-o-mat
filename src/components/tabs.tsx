@@ -8,7 +8,7 @@ export function Tabs({ label, tabs, initial }: { label: string; tabs: Array<{ ke
   const [active, setActive] = useState(initial ?? tabs[0]?.key);
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div role="tablist" aria-label={label} className="grid auto-cols-fr grid-flow-col gap-1 rounded-full border-2 border-line bg-surface p-1">
+      <div role="tablist" aria-label={label} className="grid auto-cols-fr grid-flow-col gap-1 rounded-full bg-surface p-1">
         {tabs.map((tab) => (
           <button
             key={tab.key}

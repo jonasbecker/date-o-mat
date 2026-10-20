@@ -31,11 +31,10 @@ const ICONS = {
 export type TopicTile = { id: string; icon: keyof typeof ICONS; title: string; hint?: string; href?: string };
 
 /** One settings topic. */
-export function Topic({ id, title, hint, children }: { id: string; title?: string; hint?: string; children: ReactNode }) {
+export function Topic({ id, title, children }: { id: string; title?: string; hint?: string; children: ReactNode }) {
+  // The title and the hint stand at the top of the page (`PageTitle` in settings/page.tsx reads them from here).
   return (
     <section id={id} aria-label={title} className="flex flex-col gap-3">
-      {title && <h2 className="text-[22px] font-bold leading-tight tracking-[-0.02em]">{title}</h2>}
-      {hint && <p className="-mt-2 text-sm text-muted">{hint}</p>}
       {children}
     </section>
   );

@@ -334,7 +334,7 @@ export function SwipeDeck({
             )}
           </div>
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-4 rounded-[30px] border-2 border-dashed border-line px-6 text-center">
+          <div className="flex h-full flex-col items-center justify-center gap-4 rounded-[30px] border-[1.5px] border-dashed border-line px-6 text-center">
             {generating || loading ? (
               <>
                 <Mascot id="deck" size={72} busy />

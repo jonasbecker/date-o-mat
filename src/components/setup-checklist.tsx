@@ -82,7 +82,7 @@ export function SetupChecklist({
   // One line: the next thing that is missing – "›" shows the one after (the start page is one screen).
   const next = open[shown % open.length];
   return (
-    <section aria-label={`Startklar? ${items.length - open.length} von ${items.length}`} className="flex items-start gap-2.5 rounded-[18px] border-2 border-dashed border-line px-3.5 py-2 text-sm">
+    <section aria-label={`Startklar? ${items.length - open.length} von ${items.length}`} className="flex items-start gap-2.5 rounded-[18px] border-[1.5px] border-dashed border-line px-3.5 py-2 text-sm">
       <span className="shrink-0 font-mono text-xs leading-5">
         Startklar {items.length - open.length}/{items.length}
       </span>

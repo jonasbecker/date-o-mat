@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { PageSkeleton } from "@/components/app-header";
+import { AppHeader, PageSkeleton } from "@/components/app-header";
+import { PageTitle } from "@/components/page-title";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { Avatar } from "@/components/avatar";
 import { Hearts } from "@/components/hearts";
@@ -53,9 +54,8 @@ async function DateDetail({ params, searchParams }: { params: PageProps<"/dates/
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         <AutoRefresh />
-        <Link href="/plan" className="self-start text-sm font-semibold text-muted underline">
-          ← Zum Beet
-        </Link>
+        <AppHeader />
+        <PageTitle title="euer date." back="/plan" backLabel="Zum Beet" />
         <DateCard date={shown} me={user} partner={partner} extras={await dateExtrasFor(ctx, settings, upcoming, now)} />
       </div>
     );

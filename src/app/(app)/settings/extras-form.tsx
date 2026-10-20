@@ -32,7 +32,7 @@ export function ExtrasForm({ hidden }: { hidden: Extra[] }) {
                     await setExtraAction(extra, shown);
                   });
                 }}
-                className="mt-1 size-5 shrink-0 accent-himbeere"
+                className="mt-1 size-5 shrink-0 accent-ink"
               />
               <span className="flex flex-col">
                 <span className="font-extrabold">{EXTRA_TEXT[extra].label}</span>

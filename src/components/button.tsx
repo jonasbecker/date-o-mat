@@ -6,7 +6,7 @@ const VARIANT = {
   primary: "bg-ink text-bg",
   send: "bg-himmel text-white",
   success: "bg-ink text-bg",
-  secondary: "border-2 border-ink bg-transparent text-ink",
+  secondary: "border-[1.5px] border-ink bg-transparent text-ink",
 } as const;
 
 const SIZE = {

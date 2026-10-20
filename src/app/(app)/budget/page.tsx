@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { PageSkeleton } from "@/components/app-header";
+import { AppHeader, PageSkeleton } from "@/components/app-header";
+import { PageTitle } from "@/components/page-title";
 import { BudgetBar } from "@/components/budget-bar";
 import { buttonClass } from "@/components/button";
 import { Card } from "@/components/card";
@@ -17,12 +18,8 @@ import { getCoupleSettings } from "@/server/settings";
 export default function BudgetPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex flex-col gap-1">
-        <Link href="/" className="self-start text-sm font-extrabold text-muted underline">
-          ← Zurück
-        </Link>
-        <h1 className="headline lowercase text-[clamp(34px,10vw,46px)] after:content-['.']">Budget & Spartopf</h1>
-      </div>
+      <AppHeader />
+      <PageTitle title="budget." back="/plan" />
       <Suspense fallback={<PageSkeleton />}>
         <Budget />
       </Suspense>
@@ -79,7 +76,7 @@ async function Budget() {
             const secret = d !== full;
             const past = d.startsAt <= now || d.status === "done";
             return (
-              <li key={d.id} className="flex items-center justify-between gap-3 rounded-[18px] border-2 border-line bg-surface px-4 py-2.5">
+              <li key={d.id} className="flex items-center justify-between gap-3 rounded-[18px] bg-surface px-4 py-2.5">
                 <span className="min-w-0">
                   <span className="block truncate font-extrabold">{d.title}</span>
                   <span className="text-sm font-bold text-muted">

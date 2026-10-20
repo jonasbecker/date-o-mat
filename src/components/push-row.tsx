@@ -41,7 +41,7 @@ export function PushRow({ publicKey, myDevices, partnerDevices, partnerName }: {
 
   if (row === "partner") {
     return (
-      <p role="note" className="flex items-center gap-2.5 rounded-[18px] border-2 border-dashed border-line px-3.5 py-2 text-sm">
+      <p role="note" className="flex items-center gap-2.5 rounded-[18px] border-[1.5px] border-dashed border-line px-3.5 py-2 text-sm">
         <BellIcon width={18} height={18} className="shrink-0" />
         <span className="min-w-0 flex-1">{partnerName} bekommt keine Erinnerungen – sag Bescheid.</span>
         <button
@@ -80,7 +80,7 @@ export function PushRow({ publicKey, myDevices, partnerDevices, partnerName }: {
           )}
         </span>
         {denied || needsInstall ? (
-          <button type="button" onClick={() => sheet.current?.open()} className="shrink-0 rounded-full border-2 border-ink px-3 py-1 font-bold text-ink">
+          <button type="button" onClick={() => sheet.current?.open()} className="shrink-0 rounded-full border-[1.5px] border-ink px-3 py-1 font-bold text-ink">
             {denied ? "So erlaubst du sie" : "So geht's"}
           </button>
         ) : (

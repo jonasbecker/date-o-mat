@@ -46,7 +46,7 @@ export function Sheet({
       }}
       className="mx-auto mb-0 mt-auto max-h-[92dvh] w-full max-w-md bg-transparent p-0 text-ink backdrop:bg-tinte/45 open:animate-sheet-up"
     >
-      <div className="flex max-h-[92dvh] flex-col gap-4 overflow-y-auto rounded-t-[28px] border-[2.5px] border-b-0 border-line bg-surface px-5 pb-[max(env(safe-area-inset-bottom),24px)] pt-2.5">
+      <div className="flex max-h-[92dvh] flex-col gap-4 overflow-y-auto rounded-t-[28px] border-0 bg-surface px-5 pb-[max(env(safe-area-inset-bottom),24px)] pt-2.5">
         <span aria-hidden="true" className="mx-auto h-[5px] w-11 shrink-0 rounded-full bg-track" />
         <div className="flex items-center justify-between">
           <h2 id={titleId} className="text-[23px] font-bold">
@@ -56,7 +56,7 @@ export function Sheet({
             type="button"
             aria-label="Schließen"
             onClick={() => dialogRef.current?.close()}
-            className="flex size-10 items-center justify-center rounded-full border-2 border-line bg-bg"
+            className="flex size-10 items-center justify-center rounded-full bg-bg"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
               <path d="M6 6l12 12M18 6L6 18" />

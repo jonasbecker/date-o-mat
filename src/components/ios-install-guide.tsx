@@ -6,7 +6,7 @@ import { deniedHelp, type DeniedHelp } from "@/core/push-nudge";
 /** Step-by-step: push on iPhone only works for apps on the home screen. */
 export function IosInstallGuide() {
   return (
-    <div className="flex flex-col gap-3 rounded-[20px] border-2 border-line bg-zitrone-soft p-4 text-left text-tinte">
+    <div className="flex flex-col gap-3 rounded-[20px] bg-zitrone-soft p-4 text-left text-tinte">
       <p className="font-display text-lg font-semibold">📲 Erst auf den Home-Bildschirm</p>
       <p className="text-sm font-semibold">Auf dem iPhone gibt es Push nur, wenn der Date-O-Mat als App installiert ist (ab iOS 16.4):</p>
       <ol className="flex flex-col gap-2 text-sm font-bold">
@@ -43,7 +43,7 @@ export function PushDeniedHelp() {
     setHelp(deniedHelp(navigator.userAgent, navigator.maxTouchPoints));
   }, []);
   return (
-    <div role="note" className="flex flex-col gap-2 rounded-[20px] border-2 border-line bg-zitrone-soft p-4 text-left text-tinte">
+    <div role="note" className="flex flex-col gap-2 rounded-[20px] bg-zitrone-soft p-4 text-left text-tinte">
       <p className="font-display text-lg font-semibold">🔕 Erinnerungen sind blockiert</p>
       <p className="text-sm font-semibold">Du hast Benachrichtigungen abgelehnt. So erlaubst du sie wieder:</p>
       {help && (

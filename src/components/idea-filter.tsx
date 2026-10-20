@@ -110,7 +110,7 @@ export function FilterButton({ className }: { className?: string }) {
 export function FilteredEmpty({ what }: { what: string }) {
   const [filter, setFilter] = useIdeaFilter();
   return (
-    <div className="flex flex-col items-center gap-2 rounded-[20px] border-2 border-dashed border-line px-5 py-6 text-center">
+    <div className="flex flex-col items-center gap-2 rounded-[20px] border-[1.5px] border-dashed border-line px-5 py-6 text-center">
       <p className="font-bold">Keine {what} für „{filterSummary(filter)}“.</p>
       <button type="button" onClick={() => setFilter({})} className="text-sm font-semibold underline">
         Filter zurücksetzen

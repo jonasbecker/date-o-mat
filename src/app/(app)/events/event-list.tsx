@@ -60,7 +60,7 @@ export function EventList({
               type="button"
               aria-pressed={filter === "free"}
               onClick={() => setFilter(filter === "free" ? "all" : "free")}
-              className={cn("h-9 rounded-full border-2 border-line px-3.5 text-sm font-extrabold", filter === "free" ? "bg-ink text-bg" : "bg-surface text-ink")}
+              className={cn("h-9 rounded-full px-3.5 text-sm font-extrabold", filter === "free" ? "bg-ink text-bg" : "bg-surface text-ink")}
             >
               ✓ Nur wenn ihr Zeit habt
             </button>
@@ -70,12 +70,12 @@ export function EventList({
       )}
 
       {total === 0 && (
-        <p className="rounded-[20px] border-2 border-dashed border-line px-4 py-3 font-bold">
+        <p className="rounded-[20px] border-[1.5px] border-dashed border-line px-4 py-3 font-bold">
           Gerade nichts gefunden. Die Quellen werden jeden Morgen neu gelesen.
         </p>
       )}
       {total > 0 && visible.length === 0 && (
-        <p className="rounded-[20px] border-2 border-dashed border-line px-4 py-3 font-bold">
+        <p className="rounded-[20px] border-[1.5px] border-dashed border-line px-4 py-3 font-bold">
           {filter === "free" ? "In den nächsten drei Wochen passt leider nichts in eure freie Zeit." : "Gerade nichts, was zum Filter passt."}
         </p>
       )}
@@ -122,7 +122,7 @@ export function EventCard({ event, onPlanned }: { event: EventView; onPlanned?: 
     <article className="flat flex flex-col gap-2 rounded-[20px] bg-surface p-3.5">
       <div className="flex items-start gap-3">
         {event.time && (
-          <span className="mt-0.5 shrink-0 rounded-full border-2 border-line bg-zitrone px-2 py-px text-[13px] font-extrabold text-tinte">{event.time}</span>
+          <span className="mt-0.5 shrink-0 rounded-full bg-zitrone px-2 py-px text-[13px] font-extrabold text-tinte">{event.time}</span>
         )}
         <h3 className="font-display text-lg font-semibold leading-snug">{event.title}</h3>
       </div>

@@ -15,7 +15,7 @@ export function EventMixPicker({ value }: { value: EventMix }) {
       <p id="event-mix-label" className="font-extrabold">
         Event-Kombis im Stapel
       </p>
-      <div role="radiogroup" aria-labelledby="event-mix-label" className="grid grid-cols-3 gap-1 rounded-full border-2 border-line bg-surface p-1">
+      <div role="radiogroup" aria-labelledby="event-mix-label" className="grid grid-cols-3 gap-1 rounded-full bg-soft p-1">
         {EVENT_MIXES.map((mix) => (
           <button
             key={mix}

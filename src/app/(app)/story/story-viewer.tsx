@@ -216,13 +216,13 @@ export function StoryViewer({ slides }: { slides: Slide[] }) {
         <SlideBody slide={slide} />
       </section>
       <div className="flex items-center justify-between">
-        <button type="button" onClick={prev} disabled={index === 0} className="text-sm font-extrabold underline disabled:opacity-30">
+        <button type="button" onClick={prev} disabled={index === 0} className="tap flex h-10 items-center rounded-full bg-surface px-4 text-sm font-semibold disabled:opacity-30">
           ← Zurück
         </button>
         <span className="text-sm font-bold text-muted">
           {index + 1} / {slides.length}
         </span>
-        <button type="button" onClick={next} disabled={index === slides.length - 1} className="text-sm font-extrabold underline disabled:opacity-30">
+        <button type="button" onClick={next} disabled={index === slides.length - 1} className="tap flex h-10 items-center rounded-full bg-surface px-4 text-sm font-semibold disabled:opacity-30">
           Weiter →
         </button>
       </div>

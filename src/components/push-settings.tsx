@@ -107,19 +107,19 @@ export function PushSettings({
             role="switch"
             aria-checked={prefs[type]}
             onClick={() => toggle(type)}
-            className="flex items-center justify-between gap-3 rounded-2xl border-2 border-line bg-surface px-3 py-2.5 text-left font-semibold"
+            className="flex items-center justify-between gap-3 rounded-[22px] bg-soft px-3 py-2.5 text-left font-semibold"
           >
             <span>{labels[type]}</span>
             <span
               aria-hidden="true"
               className={cn(
-                "relative h-7 w-12 shrink-0 rounded-full border-2 border-line transition-colors",
+                "relative h-7 w-12 shrink-0 rounded-full transition-colors",
                 prefs[type] ? "bg-minze" : "bg-track",
               )}
             >
               <span
                 className={cn(
-                  "absolute top-0.5 size-5 rounded-full border-2 border-line bg-surface transition-[left]",
+                  "absolute top-0.5 size-5 rounded-full bg-surface transition-[left]",
                   prefs[type] ? "left-[22px]" : "left-0.5",
                 )}
               />

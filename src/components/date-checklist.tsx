@@ -24,7 +24,7 @@ export function DateChecklist({ dateId, tasks, suggestions, collapsed = false }:
   }
 
   return (
-    <details open={!collapsed && shown.length > 0 && open > 0} className="group rounded-2xl border-2 border-dashed border-track px-4 py-2">
+    <details open={!collapsed && shown.length > 0 && open > 0} className="group rounded-2xl border-[1.5px] border-dashed border-track px-4 py-2">
       <summary className="flex cursor-pointer list-none items-center justify-between py-1 text-sm font-extrabold">
         📝 Vorbereitung {shown.length > 0 ? `(${shown.length - open}/${shown.length})` : ""}
         <span className="text-muted underline group-open:hidden">öffnen</span>
@@ -44,7 +44,7 @@ export function DateChecklist({ dateId, tasks, suggestions, collapsed = false }:
                       await toggleTaskAction(task.id, e.target.checked);
                     })
                   }
-                  className="size-5 shrink-0 accent-minze"
+                  className="size-5 shrink-0 accent-ink"
                 />
                 <span className={cn("grow font-bold", task.done && "text-muted line-through")}>{task.title}</span>
                 <button type="button" aria-label={`${task.title} löschen`} onClick={() => start(() => deleteTaskAction(task.id))} className="text-muted">
@@ -57,7 +57,7 @@ export function DateChecklist({ dateId, tasks, suggestions, collapsed = false }:
         {suggestions.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {suggestions.map((s) => (
-              <button key={s} type="button" disabled={pending} onClick={() => add(s)} className="rounded-full border-2 border-line px-2.5 py-0.5 text-[13px] font-extrabold">
+              <button key={s} type="button" disabled={pending} onClick={() => add(s)} className="rounded-full px-2.5 py-0.5 text-[13px] font-extrabold">
                 + {s}
               </button>
             ))}
@@ -76,9 +76,9 @@ export function DateChecklist({ dateId, tasks, suggestions, collapsed = false }:
             maxLength={80}
             placeholder="z. B. Blumen besorgen"
             aria-label="Neuer Punkt"
-            className="h-10 min-w-0 grow rounded-xl border-2 border-line bg-surface px-3 text-sm font-bold"
+            className="h-10 min-w-0 grow rounded-[22px] bg-soft px-3 text-sm font-bold"
           />
-          <button type="submit" disabled={pending || !title.trim()} className="rounded-xl border-2 border-line px-3 text-sm font-extrabold disabled:opacity-50">
+          <button type="submit" disabled={pending || !title.trim()} className="rounded-xl px-3 text-sm font-extrabold disabled:opacity-50">
             Dazu
           </button>
         </form>

@@ -33,7 +33,7 @@ export function BudgetBar({ label, budget, spending, left, pot, level, href = "/
         aria-valuemax={budget}
         aria-valuenow={Math.min(used, budget)}
         aria-valuetext={`${used} von ${budget} € verplant oder ausgegeben`}
-        className="flex h-3 overflow-hidden rounded-full border-2 border-line bg-surface"
+        className="flex h-3 overflow-hidden rounded-full bg-surface"
       >
         <span className={cn("h-full", FILL[level])} style={{ width: `${spentPct}%` }} />
         <span className={cn("h-full opacity-50", FILL[level])} style={{ width: `${plannedPct}%` }} />

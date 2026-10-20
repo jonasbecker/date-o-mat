@@ -232,7 +232,7 @@ function footnote(idea: BoardIdea, people: Record<string, BoardPerson>): string 
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-[24px] border-2 border-dashed border-line px-6 py-10 text-center">
+    <div className="flex flex-col items-center gap-3 rounded-[24px] border-[1.5px] border-dashed border-line px-6 py-10 text-center">
       <Mascot id="no-ideas" size={64} />
       <h2 className="text-[22px] font-bold">Noch keine Ideen</h2>
       <p className="text-muted">

@@ -96,7 +96,7 @@ async function Pairing({ searchParams }: { searchParams: PageProps<"/pair">["sea
       <p className="text-center text-muted">
         Sobald dein Schatz beigetreten ist, geht&apos;s hier automatisch weiter.
       </p>
-      <details className="rounded-[20px] border-2 border-dashed border-line px-4 py-3">
+      <details className="rounded-[20px] border-[1.5px] border-dashed border-line px-4 py-3">
         <summary className="cursor-pointer font-semibold">Ich habe doch einen Code bekommen</summary>
         <div className="pt-3">
           <JoinForm defaultCode={prefill} />

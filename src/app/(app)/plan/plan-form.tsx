@@ -298,7 +298,7 @@ export function PlanFlow({
   const chosenId = mode.kind === "swap" ? null : pick?.kind === "idea" ? pick.id : null;
   const ideaList =
     ideas.length === 0 ? (
-      <p className="rounded-2xl border-2 border-dashed border-line px-4 py-4 text-sm text-muted">Eure Wunschliste ist noch leer. Swipt ein paar Ideen – oder tragt eure eigene ein.</p>
+      <p className="rounded-2xl border-[1.5px] border-dashed border-line px-4 py-4 text-sm text-muted">Eure Wunschliste ist noch leer. Swipt ein paar Ideen – oder tragt eure eigene ein.</p>
     ) : wishlist.length === 0 ? (
       <FilteredEmpty what="Ideen" />
     ) : (
@@ -565,7 +565,7 @@ export function PlanFlow({
       {mode.kind === "new" && surpriseEnabled && (
         <div className="flex flex-col gap-1.5">
           <label className="flex items-center gap-2.5 text-sm font-semibold">
-            <input form="plan-form" type="checkbox" name="surprise" value="1" checked={surprise} onChange={(e) => setSurprise(e.target.checked)} className="size-5 accent-himmel" />
+            <input form="plan-form" type="checkbox" name="surprise" value="1" checked={surprise} onChange={(e) => setSurprise(e.target.checked)} className="size-5 accent-ink" />
             🎁 Als Überraschung planen
             {surprise && <span className="font-normal text-muted">({partnerName} sieht nur die Zeit)</span>}
           </label>
@@ -600,7 +600,7 @@ export function PlanFlow({
               {budgetWarning && <span className="rounded-full bg-zitrone-soft px-2.5 py-0.5 text-tinte">⚠️ {budgetWarning}</span>}
               {budget && budget.pot > 0 && (
                 <label className="flex items-center gap-2">
-                  <input form="plan-form" type="checkbox" name="fromPot" value="1" className="size-5 accent-himmel" />
+                  <input form="plan-form" type="checkbox" name="fromPot" value="1" className="size-5 accent-ink" />
                   🎁 Aus dem Spartopf ({budget.pot} €)
                 </label>
               )}
@@ -618,7 +618,7 @@ export function PlanFlow({
 
 function NoSlots({ size }: { size: IdeaSize }) {
   return (
-    <div className="flex flex-col items-center gap-1.5 rounded-[22px] border-2 border-dashed border-line px-5 py-4 text-center">
+    <div className="flex flex-col items-center gap-1.5 rounded-[22px] border-[1.5px] border-dashed border-line px-5 py-4 text-center">
       <h3 className="text-lg font-bold">Keine gemeinsame Lücke gefunden</h3>
       <p className="text-sm text-muted">
         {size === "large"

@@ -16,7 +16,7 @@ export function ConnectCalendarCard({ people, next }: { people: PersonCalendar[]
 
   return (
     <div className="sticker flex flex-col gap-3 rounded-[24px] bg-zitrone-soft p-5 text-tinte">
-      <span className="flex size-12 items-center justify-center rounded-2xl border-[2.5px] border-line bg-surface text-ink">
+      <span className="flex size-12 items-center justify-center rounded-[22px] bg-soft text-ink">
         <CalendarIcon width={26} height={26} />
       </span>
       {meMissing ? (

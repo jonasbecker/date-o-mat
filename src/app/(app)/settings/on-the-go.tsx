@@ -4,7 +4,7 @@ import { useActionState, useState, useTransition } from "react";
 import { Button } from "@/components/button";
 import { createShareKeyAction, deleteShareKeyAction, saveStartLocationAction, type StartLocationState } from "./actions";
 
-const inputClass = "h-12 w-full rounded-2xl border-[2.5px] border-line bg-surface px-4 font-bold text-ink placeholder:font-semibold placeholder:text-muted/70";
+const inputClass = "h-12 w-full rounded-[22px] bg-soft px-4 font-bold text-ink placeholder:font-semibold placeholder:text-muted/70";
 
 /** "Dein Startpunkt" for the route link on the date card. */
 export function StartLocationForm({ value }: { value: string | null }) {
@@ -69,7 +69,7 @@ export function ShareShortcut({ hasKey, endpoint }: { hasKey: boolean; endpoint:
           {hasKey && <span className="text-sm font-bold text-muted">✓ Ein Schlüssel ist aktiv.</span>}
         </div>
       )}
-      <details className="rounded-2xl border-2 border-dashed border-track px-4 py-2">
+      <details className="rounded-2xl border-[1.5px] border-dashed border-track px-4 py-2">
         <summary className="cursor-pointer py-1 text-sm font-extrabold">So richtest du den Kurzbefehl ein (2 Minuten)</summary>
         <ol className="flex list-decimal flex-col gap-1.5 py-2 pl-5 text-sm font-semibold">
           <li>App „Kurzbefehle“ öffnen → <strong>+</strong> → oben den Namen auf <strong>Date-O-Mat</strong> setzen.</li>

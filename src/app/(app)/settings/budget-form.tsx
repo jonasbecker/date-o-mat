@@ -18,7 +18,7 @@ export function BudgetForm({ budget }: { budget: number | null }) {
           defaultValue={budget ?? ""}
           inputMode="numeric"
           placeholder="z. B. 80"
-          className="h-12 w-28 rounded-2xl border-[2.5px] border-line bg-surface px-4 font-bold text-ink placeholder:font-semibold placeholder:text-muted/70"
+          className="h-12 w-28 rounded-[22px] bg-soft px-4 font-bold text-ink placeholder:font-semibold placeholder:text-muted/70"
         />
         <span className="font-bold">€ im Monat</span>
         <Button type="submit" size="sm" disabled={pending} className="ml-auto">

@@ -15,7 +15,6 @@ import { formatDateTime, formatLongDate } from "@/lib/format";
 import { coupleNow } from "@/server/clock";
 import { env } from "@/server/env";
 import { devClockAction, logoutAction } from "./actions";
-import { CycleSettingsForm } from "./cycle-settings-form";
 import { PushSettings } from "@/components/push-settings";
 import { getPrefs, pushPublicKey } from "@/server/push";
 import { CalendarSection } from "./calendar-section";
@@ -24,7 +23,6 @@ import { EventSources, type SourcePageView, type SourceView } from "./event-sour
 import { listSourcePages, listSources } from "@/server/events";
 import type { EventSource, EventSourcePage } from "@/server/db/schema";
 import { agoLabel } from "@/lib/format";
-import { GLOSSARY } from "@/lib/glossary";
 import { systemStatus } from "@/server/system-status";
 import { SystemStatusCard } from "./system-status-card";
 import { EventMixPicker } from "./event-mix-picker";
@@ -32,6 +30,7 @@ import { BudgetForm } from "./budget-form";
 import { ShareShortcut, StartLocationForm } from "./on-the-go";
 import { SpecialDays, type SpecialDayView } from "./special-days";
 import { ExtrasForm } from "./extras-form";
+import { PageTitle } from "@/components/page-title";
 import { MoreList, Topic, type TopicTile } from "./fold";
 import { CycleQuick, EveningFrom, PushToggle } from "./setup-main";
 import { ThemeSwitch } from "./theme-switch";
@@ -72,9 +71,6 @@ export default function SettingsPage({ searchParams }: PageProps<"/settings">) {
   return (
     <div className="flex flex-col gap-4">
       <AppHeader />
-      <h1 className="headline text-[58px]" aria-label="setup. – Einstellungen">
-        setup.
-      </h1>
       <Suspense fallback={<PageSkeleton />}>
         <Settings searchParams={searchParams} />
       </Suspense>
@@ -173,16 +169,6 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
         />
       </Topic>
     ),
-    rhythmus: (
-      <Topic id="rhythmus" title="Rhythmus & Modus" hint="Gilt für euch beide.">
-        <Card>
-          <CycleSettingsForm
-            values={{ rhythm: settings.rhythm, mode: settings.mode, deadlineDaysBeforeEnd: settings.deadlineDaysBeforeEnd }}
-          />
-        </Card>
-        <p className="text-sm font-semibold text-muted">{GLOSSARY.runde.text}</p>
-      </Topic>
-    ),
     push: (
       <Topic id="push" title="Erinnerungen" hint="Stellt jede:r für sich ein.">
         <Card>
@@ -192,6 +178,7 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
     ),
     zeiten: (
       <Topic id="zeiten" title="Freie Zeiten finden" hint="Zeitfenster, Puffer und Vorlauf – für euch beide">
+        <Card>
         <SlotSettingsForm
           values={{
             smallDurationMinutes: settings.smallDurationMinutes,
@@ -206,37 +193,40 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
             horizonDays: settings.horizonDays,
           }}
         />
+        </Card>
       </Topic>
     ),
     events: (
       <Topic id="events" title="Event-Quellen" hint="Seiten für „Was läuft“">
-        <EventSources sources={sources.map((s) => sourceView(s, now, sourcePages))} aiReady={env().ai} />
+        <Card><EventSources sources={sources.map((s) => sourceView(s, now, sourcePages))} aiReady={env().ai} /></Card>
       </Topic>
     ),
     entdecken: (
       <Topic id="entdecken" title="Swipen" hint="Wie viele Events in den Stapel kommen">
-        <EventMixPicker value={settings.deckEventMix} />
+        <Card><EventMixPicker value={settings.deckEventMix} /></Card>
       </Topic>
     ),
     budget: (
       <Topic id="budget" title="Budget & Spartopf">
-        <BudgetForm budget={settings.monthlyBudgetEur} />
+        <Card><BudgetForm budget={settings.monthlyBudgetEur} /></Card>
       </Topic>
     ),
     "besondere-tage": (
       <Topic id="besondere-tage" title="Besondere Tage" hint="Geburtstage, Jahrestag – mit Erinnerung">
-        <SpecialDays days={specialDayViews} people={[user, partner].map((p) => ({ id: p.id, name: p.name }))} />
+        <Card><SpecialDays days={specialDayViews} people={[user, partner].map((p) => ({ id: p.id, name: p.name }))} /></Card>
       </Topic>
     ),
     unterwegs: (
       <Topic id="unterwegs" title="Unterwegs & Teilen">
-        <StartLocationForm value={user.startLocation} />
-        <ShareShortcut hasKey={Boolean(user.shareTokenHash)} endpoint={`${env().appUrl}/api/share`} />
+        <Card className="flex flex-col gap-4">
+          <StartLocationForm value={user.startLocation} />
+          <ShareShortcut hasKey={Boolean(user.shareTokenHash)} endpoint={`${env().appUrl}/api/share`} />
+        </Card>
       </Topic>
     ),
     extras: (
       <Topic id="extras" title="Extras" hint="An- und ausschalten, was ihr nicht braucht">
-        <ExtrasForm hidden={settings.hiddenExtras} />
+        <Card><ExtrasForm hidden={settings.hiddenExtras} /></Card>
       </Topic>
     ),
     konto: (
@@ -299,20 +289,19 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
   if (topic === "mehr") {
     return (
       <>
-        <Link href="/settings" className="-mt-1 self-start text-sm font-semibold text-muted underline">
-          ← Alle Einstellungen
-        </Link>
+        <PageTitle title="mehr." back="/settings" backLabel="Alle Einstellungen" />
         <MoreList groups={moreGroups} status={{ ok: statusOk, tile: statusTile }} />
       </>
     );
   }
   if (topic && topics[topic]) {
     const home = topic === "kalender";
+    const { title, hint } = (topics[topic] as React.ReactElement<{ title?: string; hint?: string }>).props;
     return (
       <>
-        <Link href={home ? "/settings" : "/settings?t=mehr"} className="-mt-1 self-start text-sm font-semibold text-muted underline">
-          {home ? "← Alle Einstellungen" : "← Mehr"}
-        </Link>
+        <PageTitle title={`${(title ?? "Kalender").toLowerCase()}.`} back={home ? "/settings" : "/settings?t=mehr"} backLabel={home ? "Alle Einstellungen" : "Mehr"}>
+          {hint}
+        </PageTitle>
         {topics[topic]}
       </>
     );
@@ -320,6 +309,7 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
   // The main page, as in MSetup.
   return (
     <div className="flex flex-col gap-2.5">
+      <PageTitle title="setup." />
       {!statusOk && (
         <Link href="/settings?t=status" className="tap flex items-center gap-2 rounded-[20px] bg-zitrone-soft px-4 py-3 text-tinte">
           <AlertIcon width={18} height={18} />

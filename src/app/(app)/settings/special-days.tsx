@@ -6,7 +6,7 @@ import { addSpecialDayAction, deleteSpecialDayAction, type SpecialDayFormState }
 
 export type SpecialDayView = { id: string; emoji: string; label: string; dateLabel: string; inDays: string };
 
-const inputClass = "h-12 w-full rounded-2xl border-[2.5px] border-line bg-surface px-4 font-bold text-ink";
+const inputClass = "h-12 w-full rounded-[22px] bg-soft px-4 font-bold text-ink";
 
 /** Jahrestag, Geburtstage, eigene Tage – mit Erinnerung 2 Wochen und 2 Tage vorher. */
 export function SpecialDays({ days, people }: { days: SpecialDayView[]; people: Array<{ id: string; name: string }> }) {
@@ -48,7 +48,7 @@ export function SpecialDays({ days, people }: { days: SpecialDayView[]; people: 
           ))}
         </ul>
       )}
-      <form key={formKey} action={action} className="flex flex-col gap-2.5 rounded-[20px] border-2 border-dashed border-track p-3">
+      <form key={formKey} action={action} className="flex flex-col gap-2.5 rounded-[20px] border-[1.5px] border-dashed border-track p-3">
         <label htmlFor="special-kind" className="text-[13px] font-extrabold text-muted">
           Besonderer Tag
         </label>

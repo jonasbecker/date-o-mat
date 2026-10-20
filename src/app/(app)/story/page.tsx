@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { PageSkeleton } from "@/components/app-header";
+import { AppHeader, PageSkeleton } from "@/components/app-header";
+import { PageTitle } from "@/components/page-title";
 import { DateTime } from "luxon";
 import { APP_TIMEZONE } from "@/lib/domain";
 import { cn } from "@/lib/cn";
@@ -14,9 +15,8 @@ import { StoryViewer } from "./story-viewer";
 export default function StoryPage({ searchParams }: PageProps<"/story">) {
   return (
     <div className="flex flex-col gap-4">
-      <Link href="/dates" className="self-start text-sm font-extrabold text-muted underline">
-        ← Unsere Dates
-      </Link>
+      <AppHeader />
+      <PageTitle title="story." back="/dates" backLabel="Zum Archiv" />
       <Suspense fallback={<PageSkeleton />}>
         <Story searchParams={searchParams} />
       </Suspense>
@@ -43,7 +43,7 @@ async function Story({ searchParams }: { searchParams: PageProps<"/story">["sear
               key={y}
               href={`/story?year=${y}`}
               aria-current={y === year ? "page" : undefined}
-              className={cn("rounded-full border-2 border-line px-3 py-1 text-[13px] font-extrabold", y === year ? "bg-ink text-bg" : "bg-surface")}
+              className={cn("rounded-full px-3 py-1 text-[13px] font-extrabold", y === year ? "bg-ink text-bg" : "bg-surface")}
             >
               {y}
             </Link>

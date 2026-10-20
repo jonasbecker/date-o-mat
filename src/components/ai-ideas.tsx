@@ -60,7 +60,7 @@ export function AiIdeas({
             {result.weather && <p className="text-sm font-bold">🌦️ Wetter: {result.weather}</p>}
             {result.ideas.map((idea) => {
               return (
-                <article key={idea.title} className="animate-pop-in flex flex-col gap-2 rounded-[20px] border-[2.5px] border-line bg-lavendel/25 p-3.5">
+                <article key={idea.title} className="animate-pop-in flex flex-col gap-2 rounded-[20px] bg-lavendel/25 p-3.5">
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="font-display text-lg font-semibold leading-snug">{idea.title}</h3>
                     <SizeChip size={idea.size} className="mt-0.5 shrink-0" />

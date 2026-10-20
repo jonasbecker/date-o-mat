@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { AppHeader, PageSkeleton } from "@/components/app-header";
+import { PageTitle } from "@/components/page-title";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { agoLabel, dayHeading } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
@@ -18,7 +19,7 @@ export default function EventsPage({ searchParams }: PageProps<"/events">) {
   return (
     <div className="flex flex-col gap-4">
       <AppHeader />
-      <h1 className="headline lowercase text-[clamp(34px,10vw,46px)] after:content-['.']">Was läuft</h1>
+      <PageTitle title="was läuft." back="/ideas" />
       <Suspense fallback={<PageSkeleton />}>
         <Events searchParams={searchParams} />
       </Suspense>
@@ -40,7 +41,7 @@ async function Events({ searchParams }: { searchParams: PageProps<"/events">["se
 
   if (sources.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-[24px] border-[2.5px] border-dashed border-line px-6 py-10 text-center">
+      <div className="flex flex-col items-center gap-3 rounded-[24px] border-[1.5px] border-dashed border-line px-6 py-10 text-center">
         <span className="text-5xl" aria-hidden="true">
           🎟️
         </span>

@@ -6,7 +6,7 @@ import { formatHours, minutesToTime, SLOT_OPTIONS, type SlotSettingsValues } fro
 import { saveSlotSettingsAction, type SlotSettingsState } from "./actions";
 
 const fieldClass =
-  "h-11 w-full rounded-xl border-[2.5px] border-line bg-surface px-3 font-bold text-ink focus:shadow-[0_0_0_4px_var(--color-himbeere-soft)] focus:outline-none";
+  "h-11 w-full rounded-[22px] bg-soft px-3 font-bold text-ink focus:shadow-[0_0_0_4px_var(--color-himbeere-soft)] focus:outline-none";
 
 function Field({ label, htmlFor, error, children }: { label: string; htmlFor: string; error?: string; children: ReactNode }) {
   return (

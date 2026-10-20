@@ -37,11 +37,11 @@ export function CalendarSection({
 
   return (
     <section className="flex flex-col gap-3" aria-labelledby="calendar-heading">
-      <h2 id="calendar-heading" className="text-[21px] font-semibold">
+      <h2 id="calendar-heading" className="sr-only">
         Kalender
       </h2>
       {text && (
-        <p role="status" className="rounded-[18px] border-2 border-line bg-minze-soft px-4 py-2.5 font-bold text-tinte">
+        <p role="status" className="rounded-[18px] bg-minze-soft px-4 py-2.5 font-bold text-tinte">
           {text}
         </p>
       )}
@@ -50,7 +50,7 @@ export function CalendarSection({
         {me.state === "connected" ? (
           <>
             <p className="flex items-center gap-2 font-bold">
-              <span className="flex size-7 items-center justify-center rounded-full border-2 border-line bg-minze text-tinte">
+              <span className="flex size-7 items-center justify-center rounded-full bg-minze text-tinte">
                 <CheckIcon width={14} height={14} />
               </span>
               Verbunden mit {email}
@@ -70,7 +70,7 @@ export function CalendarSection({
                             value={calendar.id}
                             defaultChecked={checked}
                             disabled={calendar.primary}
-                            className="size-5 accent-himbeere"
+                            className="size-5 accent-ink"
                           />
                           <span className="min-w-0 truncate">
                             {calendar.summary}
@@ -89,7 +89,7 @@ export function CalendarSection({
             ) : (
               <p className="font-semibold text-muted">Deine Kalenderliste ist gerade nicht abrufbar.</p>
             )}
-            <div className="flex flex-wrap gap-x-5 gap-y-2 border-t-2 border-dashed border-track pt-3 text-sm font-extrabold">
+            <div className="flex flex-wrap gap-x-5 gap-y-2 border-t-[1.5px] border-dashed border-track pt-3 text-sm font-extrabold">
               <a href={connectCalendarHref("/settings")} className="underline">
                 Neu verbinden
               </a>

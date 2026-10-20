@@ -24,7 +24,7 @@ export function JoinForm({ defaultCode = "" }: { defaultCode?: string }) {
         required
         aria-invalid={state.error ? true : undefined}
         aria-describedby={state.error ? "invite-code-error" : undefined}
-        className="h-14 rounded-2xl border-[2.5px] border-line bg-surface px-4 text-center font-display text-2xl font-semibold tracking-[0.2em] uppercase placeholder:text-track focus:shadow-[0_0_0_4px_var(--color-himbeere-soft)] focus:outline-none"
+        className="h-14 rounded-[22px] bg-soft px-4 text-center font-display text-2xl font-semibold tracking-[0.2em] uppercase placeholder:text-track focus:shadow-[0_0_0_4px_var(--color-himbeere-soft)] focus:outline-none"
       />
       {state.error && (
         <p id="invite-code-error" role="alert" className="text-sm font-bold text-ink">

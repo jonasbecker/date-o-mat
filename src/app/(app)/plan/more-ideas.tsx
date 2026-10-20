@@ -57,7 +57,7 @@ export function MoreIdeas({
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Suchen, z. B. Kino, Rhein, Essen"
           aria-label="Ideen durchsuchen"
-          className="h-10 min-w-0 flex-1 rounded-full border-2 border-line bg-surface px-4 font-bold placeholder:font-semibold placeholder:text-muted/70 focus:outline-none"
+          className="h-10 min-w-0 flex-1 rounded-full bg-surface px-4 font-bold placeholder:font-semibold placeholder:text-muted/70 focus:outline-none"
         />
         <FilterButton />
       </div>
@@ -89,7 +89,7 @@ export function MoreIdeas({
         ) : (
           <ul className="flex flex-col gap-2">
             {curated.map((option) => (
-              <li key={option.id} className="flex items-center gap-3 rounded-[18px] border-2 border-line bg-surface px-3 py-2.5">
+              <li key={option.id} className="flex items-center gap-3 rounded-[18px] bg-surface px-3 py-2.5">
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="font-display font-semibold leading-snug">{option.title}</span>
                   <span className="text-xs font-extrabold text-muted">

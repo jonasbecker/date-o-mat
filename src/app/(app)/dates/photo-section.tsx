@@ -63,7 +63,7 @@ export function PhotoSection({ dateId, photos, enabled }: { dateId: string; phot
         <ul className="grid grid-cols-3 gap-2">
           {photos.map((photo, index) => (
             <li key={photo.id}>
-              <button type="button" onClick={() => show(index)} className="press block aspect-square w-full overflow-hidden rounded-2xl border-2 border-line bg-track">
+              <button type="button" onClick={() => show(index)} className="press block aspect-square w-full overflow-hidden rounded-2xl bg-track">
                 {/* eslint-disable-next-line @next/next/no-img-element -- private, already resized; next/image would need a public URL */}
                 <img src={`/api/photos/${photo.id}?size=thumb`} alt={`Foto ${index + 1}`} loading="lazy" className="size-full object-cover" />
               </button>
@@ -114,7 +114,7 @@ export function PhotoSection({ dateId, photos, enabled }: { dateId: string; phot
               alt={`Foto ${open + 1} von ${photos.length}`}
               width={current.width}
               height={current.height}
-              className="max-h-[78dvh] w-auto max-w-full rounded-2xl border-2 border-line object-contain"
+              className="max-h-[78dvh] w-auto max-w-full rounded-2xl object-contain"
             />
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Button variant="secondary" size="sm" disabled={open === 0} onClick={() => (setOpen(open - 1), setConfirmDelete(false))} aria-label="Vorheriges Foto">

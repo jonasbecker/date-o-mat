@@ -1,17 +1,15 @@
-import Link from "next/link";
+import { AppHeader } from "@/components/app-header";
 import { ConversationCards } from "@/components/conversation-cards";
+import { PageTitle } from "@/components/page-title";
 
 // Static: the cards are drawn in the browser.
 export default function QuestionsPage() {
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-1">
-        <Link href="/plan" className="self-start text-sm font-extrabold text-muted underline">
-          ← Zurück
-        </Link>
-        <h1 className="headline lowercase text-[clamp(34px,10vw,46px)] after:content-['.']">Gesprächskarten</h1>
-        <p className="font-semibold text-muted">Für ruhige Momente beim Date: eine Karte ziehen, abwechselnd antworten.</p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <AppHeader />
+      <PageTitle title="fragen." back="/plan">
+        Für ruhige Momente beim Date: eine Karte ziehen, abwechselnd antworten.
+      </PageTitle>
       <ConversationCards />
     </div>
   );

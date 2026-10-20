@@ -38,7 +38,7 @@ function pastedLink(text: string): boolean {
 }
 
 const inputClass =
-  "w-full rounded-2xl border-[2.5px] border-line bg-surface px-4 font-bold text-ink placeholder:font-semibold placeholder:text-muted/70 focus:shadow-[0_0_0_4px_var(--color-himbeere-soft)] focus:outline-none";
+  "w-full rounded-[22px] bg-soft px-4 font-bold text-ink placeholder:font-semibold placeholder:text-muted/70 focus:shadow-[0_0_0_4px_var(--color-himbeere-soft)] focus:outline-none";
 
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
@@ -192,7 +192,7 @@ export function IdeaForm({
           <label
             key={option}
             className={cn(
-              "flex h-[52px] cursor-pointer items-center justify-center gap-1.5 rounded-2xl border-[2.5px] border-line bg-surface font-display text-[17px] font-semibold transition-colors",
+              "flex h-[52px] cursor-pointer items-center justify-center gap-1.5 rounded-[22px] bg-soft font-display text-[17px] font-semibold transition-colors",
               "has-checked:text-tinte has-checked:shadow-[3px_3px_0_var(--line)] has-focus-visible:outline-3 has-focus-visible:outline-himbeere",
               option === "small" ? "has-checked:bg-zitrone" : "has-checked:bg-lavendel",
             )}
@@ -204,7 +204,7 @@ export function IdeaForm({
         ))}
       </fieldset>
 
-      <details open={detailsOpen} className="group rounded-2xl border-2 border-dashed border-track px-4 py-2">
+      <details open={detailsOpen} className="group rounded-2xl border-[1.5px] border-dashed border-track px-4 py-2">
         <summary className="flex cursor-pointer list-none items-center justify-between py-1.5 text-sm font-extrabold text-muted">
           Mehr Details: Notiz, Link, Kosten, Ort
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform group-open:rotate-180">
@@ -283,7 +283,7 @@ export function IdeaForm({
               ].map((option) => (
                 <label
                   key={option.value}
-                  className="flex h-11 cursor-pointer items-center justify-center rounded-2xl border-2 border-line bg-surface text-sm font-extrabold has-checked:bg-ink has-checked:text-bg has-focus-visible:outline-3 has-focus-visible:outline-himbeere"
+                  className="flex h-11 cursor-pointer items-center justify-center rounded-[22px] bg-soft text-sm font-extrabold has-checked:bg-ink has-checked:text-bg has-focus-visible:outline-3 has-focus-visible:outline-himbeere"
                 >
                   <input type="radio" name="setting" value={option.value} defaultChecked={(value("setting") || "") === option.value} className="sr-only" />
                   {option.label}
@@ -298,7 +298,7 @@ export function IdeaForm({
               {[{ value: "", label: "Automatisch" }, ...IDEA_CATEGORIES.map((c) => ({ value: c, label: `${CATEGORY_LABEL[c].emoji} ${CATEGORY_LABEL[c].label}` }))].map((option) => (
                 <label
                   key={option.value}
-                  className="flex h-10 cursor-pointer items-center justify-center rounded-full border-2 border-line bg-surface px-3 text-sm font-extrabold has-checked:bg-ink has-checked:text-bg has-focus-visible:outline-3 has-focus-visible:outline-himbeere"
+                  className="flex h-10 cursor-pointer items-center justify-center rounded-full bg-surface px-3 text-sm font-extrabold has-checked:bg-ink has-checked:text-bg has-focus-visible:outline-3 has-focus-visible:outline-himbeere"
                 >
                   <input type="radio" name="category" value={option.value} defaultChecked={(value("category") || "") === option.value} className="sr-only" />
                   {option.label}
