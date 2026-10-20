@@ -107,6 +107,8 @@ const audit = async (page, label) => {
 for (const [size, viewport] of [["", { width: 390, height: 844 }], ["small-", { width: 360, height: 640 }]]) {
   const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, locale: "de-DE", colorScheme: "dark" });
   await ctx.addCookies([{ name: "dom_session", value: jonas.token, url: BASE }]);
+  // Push blocked by the browser – the longest texts (Setup banner, welcome), and what CI's Chromium reports.
+  await ctx.addInitScript(() => Object.defineProperty(Notification, "permission", { get: () => "denied" }));
   const page = await ctx.newPage();
   page.on("pageerror", (e) => console.log("PAGEERROR", e.message));
   const tag = `${viewport.width}×${viewport.height}`;

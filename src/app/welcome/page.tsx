@@ -15,7 +15,7 @@ const RHYTHM_TITLE: Record<Rhythm, string> = {
 
 export default function WelcomePage() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pb-[max(env(safe-area-inset-bottom),24px)] pt-6">
+    <main className="mx-auto flex h-dvh max-w-md flex-col px-5 pb-[max(env(safe-area-inset-bottom),24px)] pt-6">
       <Suspense fallback={<div className="flex flex-1 items-center justify-center"><LogoMark size={72} /></div>}>
         <Welcome />
       </Suspense>

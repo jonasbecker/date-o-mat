@@ -45,7 +45,7 @@ export function WelcomeSlides({ slides, publicKey }: { slides: Slide[]; publicKe
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-5">
+    <div className="flex min-h-0 flex-1 flex-col gap-5">
       <div className="flex items-center justify-between">
         <LogoLockup />
         <form action={finishOnboardingAction}>
@@ -61,7 +61,7 @@ export function WelcomeSlides({ slides, publicKey }: { slides: Slide[]; publicKe
           const el = event.currentTarget;
           setIndex(Math.round(el.scrollLeft / el.clientWidth));
         }}
-        className="-mx-5 flex flex-1 snap-x snap-mandatory overflow-x-auto [scrollbar-width:none]"
+        className="-mx-5 flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto [scrollbar-width:none]"
         aria-roledescription="Karussell"
       >
         {slides.map((slide, i) => (
@@ -71,7 +71,8 @@ export function WelcomeSlides({ slides, publicKey }: { slides: Slide[]; publicKe
             aria-hidden={i !== index}
             className="flex w-full shrink-0 snap-center px-5"
           >
-            <div className={cn("flex flex-1 flex-col items-center justify-center gap-5 rounded-[30px] p-7 text-center text-ink", slide.tone)}>
+            {/* The buttons below always stay on screen: a slide too long for a small phone scrolls inside its card. */}
+            <div className={cn("flex flex-1 flex-col items-center justify-center-safe gap-5 overflow-y-auto rounded-[30px] p-7 text-center text-ink", slide.tone)}>
               <span className="text-7xl" aria-hidden="true">
                 {slide.emoji}
               </span>
