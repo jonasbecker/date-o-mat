@@ -8,14 +8,11 @@ const LEAF_LIGHT = "#5BAE6A";
 const BUD = "#F2A7BB";
 
 export type CanProps = { color: string; pouring: boolean };
-/** The pot's face: happy (a date stands), neutral (nothing missed yet), sad with tears (missed last time, nothing planned yet). */
-export type PlantMood = "happy" | "neutral" | "sad";
 
 export function Plant({
   leaves,
   bud = "waiting",
   can,
-  mood,
   fit = "box",
   label,
   className,
@@ -23,7 +20,6 @@ export function Plant({
   leaves: readonly LeafKind[];
   bud?: BudState;
   can?: CanProps;
-  mood?: PlantMood;
   /** "box": the full 390×420 box (the pot stays put); "tight": cropped to the plant (small marks). */
   fit?: "box" | "tight";
   /** Read out instead of hiding the plant, e.g. "11 Blätter". */
@@ -77,7 +73,6 @@ export function Plant({
         points={`${POT.bodyX},${POT.bodyTop} ${POT.bodyX + POT.bodyWidth},${POT.bodyTop} ${POT.bodyX + POT.bodyWidth - 16},${POT.bottom} ${POT.bodyX + 16},${POT.bottom}`}
         fill="#D97B52"
       />
-      {mood && <Face mood={mood} />}
       {can && canY !== undefined && <WateringCan x={canX} y={canY} color={can.color} pouring={can.pouring} />}
     </svg>
   );
@@ -111,44 +106,4 @@ function WateringCan({ x, y, color, pouring }: { x: number; y: number; color: st
 
 function clamp(v: number, min: number, max: number) {
   return Math.min(max, Math.max(min, v));
-}
-
-/** Eyes and mouth on the pot – it laughs, waits or cries. */
-function Face({ mood }: { mood: PlantMood }) {
-  const ink = "#5A2A17";
-  const eyeY = 366;
-  return (
-    <g data-mood={mood} aria-hidden="true">
-      {mood === "happy" ? (
-        // Laughing eyes: little arches
-        <>
-          <path d={`M170 ${eyeY + 2} q7 -8 14 0`} fill="none" stroke={ink} strokeWidth={3.5} strokeLinecap="round" />
-          <path d={`M206 ${eyeY + 2} q7 -8 14 0`} fill="none" stroke={ink} strokeWidth={3.5} strokeLinecap="round" />
-        </>
-      ) : (
-        <>
-          <circle cx={177} cy={eyeY} r={4.2} fill={ink} />
-          <circle cx={213} cy={eyeY} r={4.2} fill={ink} />
-        </>
-      )}
-      {mood === "happy" && (
-        <>
-          <ellipse cx={162} cy={378} rx={7} ry={4} fill="#F2A7BB" opacity={0.8} />
-          <ellipse cx={228} cy={378} rx={7} ry={4} fill="#F2A7BB" opacity={0.8} />
-          <path d="M181 378 q14 16 28 0 z" fill={ink} />
-        </>
-      )}
-      {mood === "neutral" && <path d="M185 382 h20" stroke={ink} strokeWidth={3.5} strokeLinecap="round" />}
-      {mood === "sad" && (
-        <>
-          <path d="M183 388 q12 -11 24 0" fill="none" stroke={ink} strokeWidth={3.5} strokeLinecap="round" />
-          {/* Sad brows and tears that keep running */}
-          <path d="M169 356 l12 -4" stroke={ink} strokeWidth={3} strokeLinecap="round" />
-          <path d="M221 356 l-12 -4" stroke={ink} strokeWidth={3} strokeLinecap="round" />
-          <path d="M175 373 q3 6 0 9 q-3 -3 0 -9 z" fill="#8EC5F0" className="animate-drip" style={{ transformBox: "fill-box" }} />
-          <path d="M215 373 q3 6 0 9 q-3 -3 0 -9 z" fill="#8EC5F0" className="animate-drip [animation-delay:0.7s]" style={{ transformBox: "fill-box" }} />
-        </>
-      )}
-    </g>
-  );
 }

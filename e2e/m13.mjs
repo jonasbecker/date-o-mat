@@ -70,11 +70,16 @@ const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/`);
 await heading(j);
 check(`next step: "${await heading(j)}"`, (await heading(j)) === "du bist dran.");
-const deadlineBoxes = j.locator("[data-next-step] [data-deadline]");
-check("the deadline in boxes next to the headline (Frist with the round · Noch)", /frist.*Uhr.*Diese Woche.*noch/s.test(await deadlineBoxes.innerText()));
+const timeLeft = j.locator("[data-next-step] [data-deadline]");
+check("the time left big next to the headline (noch · 3h · bis …)", /noch[\s\S]*\d+\s*(h|Tage)[\s\S]*bis .+ Uhr/.test(await timeLeft.innerText()));
 check("home is focused: no surprise button", (await j.getByRole("button", { name: /Überrasch uns/ }).count()) === 0);
 check("'Date planen' is the one big button", await j.locator("[data-next-step]").filter({ visible: true }).getByRole("link", { name: "Date planen", exact: true }).isVisible());
-check("the plant grows from the done rounds, the can is Jonas' and pours", (await j.locator("[data-next-step] [data-plant]").count()) === 1 && (await j.locator('[data-next-step] [data-can="pouring"]').count()) === 1);
+// Main B: the flower with a leaf per lived round, the time left big on the right, the round as a bar.
+const bloom = j.locator("[data-next-step] [data-bloom]");
+check(`the flower grows from the done rounds and has a mood (${await bloom.getAttribute("data-bloom")})`, (await bloom.count()) === 1 && /^(schlaeft|traurig)$/.test((await bloom.getAttribute("data-bloom")) ?? ""));
+check("the flower thinks out loud (thought bubble)", (await j.locator("[data-next-step] [data-speech]").innerText()).length > 10);
+check("the round as a bar with the deadline", (await j.locator("[data-next-step] [data-week-bar]").count()) === 1);
+check("handing over is the round button next to Date planen", await j.getByRole("button", { name: "Diesmal an Sam abgeben" }).isVisible());
 check("Jonas' avatar has the ring", (await j.getByRole("img", { name: "Jonas ist dran" }).count()) === 1);
 check("no swipe deck on the start any more", (await j.locator("[data-swipe-deck]").count()) === 0);
 await j.screenshot({ path: `${OUT}m13-01-home-plan.png`, fullPage: true });
@@ -144,7 +149,7 @@ check("Zusagen state fits the screen", await fitsScreen(s));
 await s.screenshot({ path: `${OUT}m13-05-home-confirm.png`, fullPage: true });
 await s.getByRole("button", { name: "Zusagen" }).click();
 await s.getByRole("heading", { name: "neues blatt!" }).waitFor({ timeout: 15000 });
-check("after Zusagen: neues blatt! – with a fresh leaf", (await s.locator('[data-next-step] [data-leaf="fresh"]').count()) === 1);
+check("after Zusagen: neues blatt! – the flower is happy", (await s.locator('[data-next-step] [data-bloom="froh"]').count()) === 1);
 
 // 6) Settings: a list of topics, each its own screen; intro again
 await j.goto(`${BASE}/settings`);

@@ -112,6 +112,16 @@ for (const scheme of ["light", "dark"]) {
   }
   await ctx.close();
 }
+// The five moods of the flower side by side (/dev/blume), to compare with BloomStates.html
+const wide = await browser.newContext({ viewport: { width: 1800, height: 720 }, locale: "de-DE", colorScheme: "dark" });
+await wide.addCookies([{ name: "dom_session", value: jonas.token, url: BASE }]);
+const bp = await wide.newPage();
+await bp.goto(`${BASE}/dev/blume`);
+await bp.waitForTimeout(600);
+await bp.screenshot({ path: `${OUT}m24-blume.png` });
+check("all five moods on /dev/blume", (await bp.locator("[data-bloom]").count()) === 5);
+await wide.close();
+
 // Logged out
 const anon = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "de-DE" });
 const ap = await anon.newPage();

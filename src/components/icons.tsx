@@ -262,6 +262,13 @@ export const BackIcon = (p: SVGProps<SVGSVGElement>) => (
   </Icon>
 );
 
+/** → (hand the turn over, HomeB.html) */
+export const ArrowIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon strokeWidth={2} {...p}>
+    <path d="M4 12h14M13 6l6 6-6 6" />
+  </Icon>
+);
+
 export const UndoIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon strokeWidth={2} {...p}>
     <path d="M9 14L4 9l5-5" />

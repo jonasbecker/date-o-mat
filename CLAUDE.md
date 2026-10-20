@@ -37,10 +37,13 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   calendars, "Freie Abende ab" – every control saves by itself); "Mehr" (`?t=mehr`) lists the other topics.
   Theme: Hell/Dunkel/Automatisch (`theme-switch.tsx`, `data-theme` on `<html>` set before paint in `layout.tsx`;
   the `dark:` variant follows it).
-- **The Beet (start):** `src/app/(app)/beet.tsx` – headline per step ("du bist dran.", "kanne bei Sam.",
-  "Jonas hat gegossen.", "neues blatt!"), the `Plant` (`components/plant.tsx`, geometry in
-  `core/plant.ts`: a leaf per lived date, a wilted one per skipped round, from `server/plant.ts`) with the
-  watering can of whoever is on, and one action ("Date planen", "Anstupsen" → `nudgeAction`, "Zusagen").
+- **The Beet (start, Main B – `docs/design/main-b/`):** `src/app/(app)/beet.tsx` – headline per step ("du bist dran.",
+  "kanne bei Sam." …) at 70 px, the time left big on the right (`TimeLeft`, `--accent-time`), the round as a bar with the
+  deadline marker (`WeekBar`), the flower (`components/bloom.tsx`, geometry and mood in `core/bloom.ts`: `bloomGeometry`
+  is renderVals() of Bloom.html 1:1, `bloomStimmung` = §3, `bloomLeaves` = the last 5 rounds from `server/plant.ts`)
+  with its thought bubble in Caveat (`font-hand`), and one action ("Date planen" + the round hand-over button,
+  "Anstupsen", "Zusagen"). The pot has no face. All five moods side by side: `/dev/blume`. The old `Plant`
+  (components/plant.tsx) is only the small mark (logo, mascot, empty states).
 - Slot ranking stays pure: `scoreSlot`/`findSlots` get daylight and the hourly forecast as
   parameters (`core/outdoor.ts`, `core/sun.ts`); the one forecast request per search lives in
   `server/weather.ts`. Outdoor ideas (`ideas.setting`) use the outdoor ranking, see `core/slot-modes.ts`.

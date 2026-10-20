@@ -39,6 +39,8 @@
   --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-dm-mono), ui-monospace, monospace;
+  /* Only the flower's thought bubble */
+  --font-hand: var(--font-caveat), "Comic Sans MS", cursive;
 
   --radius-sticker: 22px;
 }
@@ -52,30 +54,36 @@
   /* Hairlines only where a field needs an edge – cards have none. */
   --line: #d5dfce;
   --track: #dde6d6;
+  /* The time left and the deadline marker (Main B); butter in the dark, a deep gold on salbei. */
+  --accent-time: #8a6a12;
   color-scheme: light;
 }
 
 /* Dark: the system setting, unless the person chose Hell/Dunkel (data-theme on <html>, see setup → Darstellung). */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #121c16;
-    --surface: #1c2a21;
+    /* Main B (docs/design/main-b): the dark look */
+    --bg: #111a14;
+    --surface: #1b2620;
     --soft: #25362b;
-    --ink: #e4eddc;
-    --muted: #a3b09b;
+    --ink: #e7eedf;
+    --muted: #9fb09c;
     --line: #2f4237;
-    --track: #2a3a30;
+    --track: #1f2b24;
+    --accent-time: #f5efc6;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-    --bg: #121c16;
-    --surface: #1c2a21;
+    /* Main B (docs/design/main-b): the dark look */
+    --bg: #111a14;
+    --surface: #1b2620;
     --soft: #25362b;
-    --ink: #e4eddc;
-    --muted: #a3b09b;
+    --ink: #e7eedf;
+    --muted: #9fb09c;
     --line: #2f4237;
-    --track: #2a3a30;
+    --track: #1f2b24;
+    --accent-time: #f5efc6;
     color-scheme: dark;
 }
 
@@ -143,6 +151,7 @@
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-track: var(--track);
+  --color-accent-time: var(--accent-time);
 }
 
 /* What you tap next: a plain shape – white card or ink pill, no outline, no shadow.

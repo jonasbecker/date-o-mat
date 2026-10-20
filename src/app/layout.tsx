@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, DM_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Caveat, DM_Mono } from "next/font/google";
 import { ServiceWorkerRegistration } from "@/components/service-worker";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-bricolage" });
 const dmMono = DM_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-dm-mono" });
+// Only for the flower's thought bubble on the Beet.
+const caveat = Caveat({ subsets: ["latin"], weight: ["600"], variable: "--font-caveat" });
 
 export const metadata: Metadata = {
   title: "Date-O-Mat",
@@ -24,7 +26,7 @@ export const viewport: Viewport = {
   interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#eef2e6" },
-    { media: "(prefers-color-scheme: dark)", color: "#121c16" },
+    { media: "(prefers-color-scheme: dark)", color: "#111a14" },
   ],
 };
 
@@ -33,7 +35,7 @@ const THEME_SCRIPT = `(function(){try{var m=matchMedia('(prefers-color-scheme: d
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="de" suppressHydrationWarning className={`${bricolage.variable} ${dmMono.variable} antialiased`}>
+    <html lang="de" suppressHydrationWarning className={`${bricolage.variable} ${dmMono.variable} ${caveat.variable} antialiased`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>

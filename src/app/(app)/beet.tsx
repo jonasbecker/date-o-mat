@@ -1,6 +1,7 @@
-// The Beet (DESIGN.md §1, screens MBeet, MBeetSie, MEinladung, MBestaetigt): the start page.
-// A big lowercase headline says whose turn it is, the plant shows every date lived, and there is
-// one thing to do – "Date planen", "Anstupsen", "Zusagen" or "Wie war's?".
+// The Beet (docs/design/main-b: Main Page B; DESIGN.md MBeetSie, MEinladung, MBestaetigt): the start page.
+// A big lowercase headline says whose turn it is, the time left stands big on the right, a bar shows
+// the round and its deadline, the flower (core/bloom.ts) shows the mood and thinks out loud, and there
+// is one thing to do – "Date planen", "Anstupsen", "Zusagen" or "Wie war's?".
 import Link from "next/link";
 import { DateTime } from "luxon";
 import { confirmDateAction, swapTurnAction } from "./actions";
@@ -8,25 +9,22 @@ import { Avatar } from "@/components/avatar";
 import { buttonClass } from "@/components/button";
 import { ConfettiActionButton } from "@/components/confetti";
 import { NudgeButton } from "@/components/nudge-button";
-import { Plant, type PlantMood } from "@/components/plant";
+import { Bloom } from "@/components/bloom";
 import { StepDots } from "@/components/step-dots";
 import { StartReview } from "@/components/start-review";
 import { SuggestionCard } from "@/components/suggestion-card";
-import { SwapIcon } from "@/components/icons";
+import { ArrowIcon, SwapIcon } from "@/components/icons";
 import { Info } from "@/components/info";
-import { leafKinds, type BudState, type LeafKind } from "@/core/plant";
+import { bloomLeaves, bloomSaying, bloomStimmung, type BloomRound } from "@/core/bloom";
 import { periodLabel, type NextStep } from "@/core/next-step";
-import { APP_TIMEZONE, PERSON_HEX } from "@/lib/domain";
-import { formatShortDate, formatTimeRange, timeLeftLabel, shortDeadline } from "@/lib/format";
+import { APP_TIMEZONE } from "@/lib/domain";
+import { formatShortDate, formatTimeRange, shortDeadline } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import type { CoupleContext } from "@/server/auth/dal";
 import type { DatePlan, User } from "@/server/db/schema";
 import type { Round } from "@/server/plant";
 import type { Overview } from "./overview";
 
-const hex = (u: User) => PERSON_HEX[u.color ?? "mandarine"];
-
-/** The round as four dots: open → planned → confirmed → lived. */
 /** The four dots of the round – in the middle of the header (`AppHeader center`), only the active one moves. */
 export function RoundDots({ step }: { step: NextStep["kind"] }) {
   return <StepDots step={roundDot(step)} of={4} />;
@@ -69,13 +67,12 @@ export function BeetAvatars({ me, partner, onTurn }: { me: User; partner: User; 
 
 type View = {
   headline: string;
-  /** The round's deadline as boxes next to the headline (Frist · Noch). */
+  /** The time left until the deadline, big on the right of the headline. */
   deadline?: boolean;
   sub?: React.ReactNode;
   pill?: { when: string; title: string };
-  bud: BudState;
-  can?: { who: User; pouring: boolean };
-  fresh?: boolean;
+  /** Whose turn it is (the ring on the avatar). */
+  on?: User;
   /** The Einladung: a small plant and the date card instead of the big plant. */
   invitation?: boolean;
   cta: React.ReactNode;
@@ -103,30 +100,29 @@ export function Beet({
   if (!step || !cycle) return null;
   const date = o.shownDate;
   const view = viewFor(step, { me, partner, date, swappable, o, now });
-  const leaves: LeafKind[] = leafKinds(rounds);
-  // The upcoming (or just lived) date is the pink leaf on top.
-  if (view.fresh) leaves.push("fresh");
-  const onTurn = view.can ? (view.can.who.id === me.id ? "me" : "partner") : null;
-  // The pot's face: happy once a date stands (or was lived), sad while a missed round is not made up yet.
+  const onTurn = view.on ? (view.on.id === me.id ? "me" : "partner") : null;
+  const { blaetter, welk } = bloomLeaves(rounds);
   const missed = cycle.status === "open" && o.previous?.status === "skipped";
-  const planned = ["confirm", "wait_confirm", "date_ahead", "review"].includes(step.kind) || (step.kind === "round_done" && !step.skipped);
-  const mood: PlantMood = planned ? "happy" : missed || (step.kind === "round_done" && step.skipped) ? "sad" : "neutral";
-  // What the plant says (a speech bubble instead of a line on the page).
-  const says = missed && !planned ? "Letztes Mal ist ausgefallen – passiert! Diesmal holt ihr's nach." : null;
+  const hoursLeft = cycle.status === "open" && cycle.deadlineAt > now ? (cycle.deadlineAt.getTime() - now.getTime()) / 3_600_000 : null;
+  const lived = step.kind === "review" ? o.toReview?.endsAt : step.kind === "round_done" && !step.skipped ? o.roundDate?.endsAt : undefined;
+  const stimmung = bloomStimmung({
+    round: roundOf(step),
+    livedHoursAgo: lived ? (now.getTime() - lived.getTime()) / 3_600_000 : null,
+    lastRoundSkipped: missed,
+    hoursLeft,
+  });
+  const dayOfYear = DateTime.fromJSDate(now, { zone: APP_TIMEZONE }).ordinal;
+  const saying = bloomSaying(stimmung, dayOfYear, { partner: partner.name, day: date ? weekday(date.startsAt) : undefined, missed });
 
   return (
     <div data-next-step={step.kind} className="flex min-h-0 flex-1 flex-col">
-      {view.deadline ? (
-        // The headline on the left, what's due in boxes on the right (MBeet).
-        <div className="mt-2 grid grid-cols-[minmax(0,1fr)_minmax(112px,34%)] gap-2">
-          <div className="flex items-end rounded-[24px] bg-surface px-4 pb-3.5 pt-4">
-            <h2 className="headline whitespace-pre-line break-words text-[clamp(36px,11vw,48px)]">{view.headline}</h2>
-          </div>
-          <DeadlineBoxes cycle={cycle} now={now} />
-        </div>
-      ) : (
-        <h2 className="headline mt-2 min-h-[2lh] whitespace-pre-line text-[clamp(44px,15vw,62px)]">{view.headline}</h2>
-      )}
+      <div className="mt-2 flex items-start justify-between gap-3">
+        <h2 className="headline whitespace-pre-line font-extrabold leading-[0.9] tracking-[-0.055em]" style={{ fontSize: headlineSize(view.headline, view.deadline) }}>
+          {view.headline}
+        </h2>
+        {view.deadline && <TimeLeft cycle={cycle} now={now} />}
+      </div>
+      <WeekBar cycle={cycle} now={now} />
       {view.sub && <div className="mt-3 text-base text-muted">{view.sub}</div>}
       {view.pill && (
         <p data-date-pill data-date-card={date?.id} className="mt-3.5 inline-flex h-[34px] max-w-full items-center self-start truncate rounded-full bg-surface px-3.5 text-sm font-medium">
@@ -143,22 +139,110 @@ export function Beet({
       {view.invitation && date ? (
         <Invitation date={date} partner={partner} surprise={o.dateExtras?.surprise === "hidden"} />
       ) : (
-        <div className="relative -mx-5 min-h-24 flex-1">
-          {says && <SpeechBubble text={says} />}
-          <Plant
-            leaves={leaves}
-            mood={mood}
-            bud={view.bud}
-            can={view.can && { color: hex(view.can.who), pouring: view.can.pouring }}
-            label={`Euer Beet: ${rounds.filter((r) => r === "done").length} ${rounds.filter((r) => r === "done").length === 1 ? "Blatt" : "Blätter"}`}
-            className="absolute inset-0 size-full py-3"
-          />
+        <div className="relative min-h-28 flex-1" data-onturn={onTurn ?? undefined}>
+          {/* The flower box keeps the mockup's 300×420 proportions; the bubble sits by its head. */}
+          <div className="absolute inset-y-0 left-1/2 aspect-[300/420] max-w-full -translate-x-1/2 [container-type:size]">
+            <Bloom stimmung={stimmung} blaetter={blaetter} welk={welk} className="absolute inset-0 size-full" />
+            <ThoughtBubble text={saying} />
+          </div>
         </div>
       )}
-      <div className="mt-auto flex shrink-0 flex-col gap-2 pt-2" data-onturn={onTurn ?? undefined}>
-        {view.cta}
+      <div className="mt-auto flex shrink-0 flex-col gap-2 pt-2">{view.cta}</div>
+    </div>
+  );
+}
+
+/** The round as the flower sees it (§3). */
+function roundOf(step: NextStep): BloomRound {
+  switch (step.kind) {
+    case "wait_confirm":
+    case "confirm":
+      return "eingeladen";
+    case "date_ahead":
+      return "bestaetigt";
+    case "review":
+      return "erlebt";
+    case "round_done":
+      return step.skipped ? "ausgefallen" : "erlebt";
+    default:
+      return "offen";
+  }
+}
+
+/** 70 px like the mockup – smaller when a line is long ("kanne bei Lotte."), so it never runs into the time on the right. */
+function headlineSize(headline: string, withTime?: boolean): string {
+  const longest = Math.max(...headline.split("\n").map((line) => line.length));
+  const room = withTime ? 228 : 340;
+  return `${Math.min(70, Math.floor(room / (longest * 0.5)))}px`;
+}
+
+/** "noch / 3h / bis Fr, 20 Uhr" – big on the right; days once more than two are left. */
+function TimeLeft({ cycle, now }: { cycle: NonNullable<Overview["cycle"]>; now: Date }) {
+  const open = cycle.deadlineAt > now;
+  const until = open ? cycle.deadlineAt : cycle.endsAt;
+  const hours = Math.max(0, (until.getTime() - now.getTime()) / 3_600_000);
+  const [value, unit] = hours < 1 ? ["<1", "h"] : hours < 48 ? [String(Math.floor(hours)), "h"] : [String(Math.floor(hours / 24)), "Tage"];
+  return (
+    <div data-deadline className="flex shrink-0 flex-col items-end pt-3.5 text-right">
+      <span className="meta flex items-center gap-1.5 text-muted">
+        <Info term="frist" /> {open ? "noch" : "frist vorbei · noch"}
+      </span>
+      <span className="font-display text-[64px] font-extrabold leading-[0.95] tracking-[-0.05em] text-accent-time">
+        {value}
+        <span className={unit === "h" ? undefined : "ml-1.5 text-[26px] tracking-[-0.03em]"}>{unit}</span>
+      </span>
+      <span className="text-[13px] text-muted">{open ? `bis ${shortDeadline(cycle.deadlineAt).replace(" ", ", ")}` : `bis ${formatShortDate(new Date(cycle.endsAt.getTime() - 1))}`}</span>
+    </div>
+  );
+}
+
+/** MO–SO with today lit, the part of the round that is gone, and the deadline as a marker. Longer rounds show dates. */
+function WeekBar({ cycle, now }: { cycle: NonNullable<Overview["cycle"]>; now: Date }) {
+  const start = DateTime.fromJSDate(cycle.startsAt, { zone: APP_TIMEZONE }).setLocale("de");
+  const span = cycle.endsAt.getTime() - cycle.startsAt.getTime();
+  const at = (d: Date) => Math.min(100, Math.max(0, ((d.getTime() - cycle.startsAt.getTime()) / span) * 100));
+  const days = Math.round(span / 86_400_000);
+  const today = DateTime.fromJSDate(now, { zone: APP_TIMEZONE });
+  const labels =
+    days <= 8
+      ? Array.from({ length: days }, (_, i) => {
+          const d = start.plus({ days: i });
+          return { text: d.toFormat("ccc").replace(".", "").slice(0, 2).toUpperCase(), now: d.hasSame(today, "day") };
+        })
+      : Array.from({ length: 5 }, (_, i) => ({ text: start.plus({ days: Math.round((i * (days - 1)) / 4) }).toFormat("d.M."), now: false }));
+  return (
+    <div data-week-bar className="mt-5" aria-label={`${periodLabel(cycle.startsAt, cycle.endsAt)}: Frist ${shortDeadline(cycle.deadlineAt)}`} role="img">
+      <div className="grid font-mono text-[10px] text-muted" style={{ gridTemplateColumns: `repeat(${labels.length}, minmax(0, 1fr))` }}>
+        {labels.map((l, i) => (
+          <span key={i} className={l.now ? "text-accent-time" : undefined}>
+            {l.text}
+          </span>
+        ))}
+      </div>
+      <div className="relative mt-2 h-1.5 rounded-[3px] bg-track">
+        <div aria-hidden="true" className="absolute inset-y-0 left-0 rounded-[3px] bg-ink opacity-85" style={{ width: `${at(now)}%` }} />
+        <div aria-hidden="true" className="absolute -top-[5px] h-4 w-[3px] rounded-[2px] bg-accent-time" style={{ left: `${at(cycle.deadlineAt)}%` }} />
       </div>
     </div>
+  );
+}
+
+/**
+ * What the flower thinks (Caveat, a tilted oval) and two dots leading to its head – positions from
+ * HomeB.html in the flower's 300×420 box; sizes in container units (cqw), so it scales with the flower.
+ */
+function ThoughtBubble({ text }: { text: string }) {
+  return (
+    <>
+      <p
+        data-speech
+        className="animate-pop-in absolute left-[-9.7%] top-[1.9%] z-10 w-[58.7%] -rotate-[4deg] rounded-[40px/34px] bg-ink px-[5.3cqw] pb-[5.3cqw] pt-[4.7cqw] text-center font-hand text-[7.67cqw] font-semibold leading-[1.02] text-bg"
+      >
+        {text}
+      </p>
+      <span aria-hidden="true" className="absolute left-[48.3%] top-[23.3%] size-[4.67cqw] rounded-full bg-ink" />
+      <span aria-hidden="true" className="absolute left-[53.7%] top-[28.6%] size-[2.67cqw] rounded-full bg-ink" />
+    </>
   );
 }
 
@@ -188,44 +272,42 @@ function viewFor(
       return {
         headline: "du bist\ndran.",
         deadline: true,
-        bud: "waiting",
-        can: { who: me, pouring: true },
+        on: me,
         cta: (
-          <>
-            <Link href="/plan?pick=1" className={buttonClass("primary", "lg", "w-full")}>
+          // "Date planen" and, round next to it, handing the turn over (HomeB.html).
+          <div className="grid grid-cols-[minmax(0,1fr)_56px] gap-2">
+            <Link href="/plan?pick=1" className={buttonClass("primary", "lg", "h-14 w-full")}>
               Date planen
             </Link>
-            <form action={swapTurnAction} className="self-center">
-              <button type="submit" className="h-9 text-sm font-semibold text-muted underline">
-                Diesmal an {partner.name} abgeben
+            <form action={swapTurnAction}>
+              <button type="submit" aria-label={`Diesmal an ${partner.name} abgeben`} className="press flex size-14 items-center justify-center rounded-full bg-surface text-ink">
+                <ArrowIcon width={20} height={20} />
               </button>
             </form>
-          </>
+          </div>
         ),
       };
     case "partner_turn":
       return {
         headline: `kanne\nbei ${partner.name}.`,
         deadline: true,
-        bud: "waiting",
-        can: { who: partner, pouring: false },
+        on: partner,
         cta: (
-          <>
+          <div className="grid grid-cols-[minmax(0,1fr)_56px] gap-2">
             <NudgeButton />
-            <form action={swapTurnAction} className="self-center">
-              <button type="submit" className="h-9 text-sm font-semibold text-muted underline">
-                Ich übernehme diesmal
+            <form action={swapTurnAction}>
+              <button type="submit" aria-label="Ich übernehme diesmal" className="press flex size-14 items-center justify-center rounded-full bg-surface text-ink">
+                <SwapIcon width={20} height={20} />
               </button>
             </form>
-          </>
+          </div>
         ),
       };
     case "wait_confirm":
       return {
         headline: `kanne\nbei ${partner.name}.`,
         pill: date ? { when: shortWhen(date.startsAt), title: date.title } : undefined,
-        bud: "filled",
-        can: { who: partner, pouring: false },
+        on: partner,
         cta: (
           <>
             <NudgeButton />
@@ -236,7 +318,6 @@ function viewFor(
     case "confirm":
       return {
         headline: `${partner.name} hat\ngegossen.`,
-        bud: "filled",
         invitation: true,
         cta: date && (
           <>
@@ -259,8 +340,6 @@ function viewFor(
             {mine ? `${partner.name} hat zugesagt.` : "Du hast zugesagt."} Ihr seht euch {weekday(date.startsAt)}.
           </>
         ),
-        bud: "none",
-        fresh: true,
         cta: date && (
           <>
             <DateCard date={date} surprise={o.dateExtras?.surprise ?? null} partner={partner} />
@@ -273,8 +352,6 @@ function viewFor(
       return {
         headline: "wie war's?",
         sub: o.toReview?.title,
-        bud: "none",
-        fresh: true,
         cta: o.toReview && (
           <div className="flex flex-col gap-3 rounded-[22px] bg-surface p-4">
             <StartReview date={o.toReview} photoId={o.reviewPhoto} />
@@ -285,7 +362,6 @@ function viewFor(
       return {
         headline: "zeit für\nein date.",
         deadline: true,
-        bud: "waiting",
         cta:
           o.suggestion?.status === "ok" ? (
             <div className="flex flex-col gap-3 rounded-[22px] bg-surface p-4">
@@ -299,53 +375,20 @@ function viewFor(
       };
     case "round_done":
       return step.skipped
-        ? { headline: "diesmal\nwelk.", sub: `Kein Date diesmal – passiert. Weiter geht's am ${formatShortDate(o.cycle!.endsAt)}.`, bud: "waiting", cta: null }
-        : { headline: "geschafft.", sub: `Weiter geht's am ${formatShortDate(o.cycle!.endsAt)}.`, bud: "waiting", cta: null };
+        ? { headline: "diesmal\nwelk.", sub: `Kein Date diesmal – passiert. Weiter geht's am ${formatShortDate(o.cycle!.endsAt)}.`, cta: null }
+        : { headline: "geschafft.", sub: `Weiter geht's am ${formatShortDate(o.cycle!.endsAt)}.`, cta: null };
     case "connect_calendar":
     case "partner_calendar":
-      return { headline: "fast\nstartklar.", bud: "waiting", cta: null };
+      return { headline: "fast\nstartklar.", cta: null };
   }
   void now;
-}
-
-/** "bis Do 20 Uhr · noch 2 Tage" with the one ⓘ (what "Plan bis" means). */
-/** What the plant says: a white bubble over the plant, its tail pointing down to the pot. */
-function SpeechBubble({ text }: { text: string }) {
-  return (
-    <p data-speech className="animate-pop-in absolute left-5 right-[38%] top-1 z-10 rounded-[20px] bg-surface px-3.5 py-2.5 text-[14px] font-semibold leading-snug">
-      {text}
-      <span aria-hidden="true" className="absolute -bottom-2 right-8 size-4 rotate-45 rounded-[3px] bg-surface" />
-    </p>
-  );
-}
-
-/** "Frist Fr 20 Uhr" and "Noch 3 Std." as two boxes, the round ("Diese Woche") under them. */
-function DeadlineBoxes({ cycle, now }: { cycle: NonNullable<Overview["cycle"]>; now: Date }) {
-  const open = cycle.deadlineAt > now;
-  return (
-    <div data-deadline className="grid grid-rows-2 gap-2">
-      <div className="flex flex-col justify-between rounded-[20px] bg-surface px-3 py-2.5">
-        <span className="meta flex items-center justify-between text-muted">
-          frist <Info term="frist" />
-        </span>
-        <span className="block text-[17px] font-extrabold leading-tight tracking-[-0.02em]">{open ? shortDeadline(cycle.deadlineAt) : "vorbei"}</span>
-        <span className="meta text-muted">{periodLabel(cycle.startsAt, cycle.endsAt)}</span>
-      </div>
-      <div className="flex flex-col justify-between rounded-[20px] bg-tile-butter px-3 py-2.5 text-ink">
-        <span className="meta block text-muted">{open ? "noch" : "geht bis"}</span>
-        <span className="block text-[22px] font-extrabold leading-tight tracking-[-0.03em]">
-          {open ? timeLeftLabel(now, cycle.deadlineAt).replace(/^noch /, "") : formatShortDate(new Date(cycle.endsAt.getTime() - 1))}
-        </span>
-      </div>
-    </div>
-  );
 }
 
 /** MEinladung: when, where, what (and the note) – what the other one has planned. */
 function Invitation({ date, partner, surprise }: { date: DatePlan; partner: User; surprise: boolean }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col justify-center gap-3 py-3">
-      <Plant leaves={["leaf", "leaf", "leaf"]} bud="filled" fit="tight" className="mx-auto h-[clamp(64px,16vh,150px)] w-auto" />
+      <Bloom stimmung="wartet" blaetter={3} className="mx-auto h-[clamp(72px,17vh,160px)] w-auto" />
       <div data-date-card={date.id} className="flex flex-col gap-3.5 rounded-[24px] bg-surface p-[18px]">
         <div className="grid grid-cols-2 gap-2.5">
           <div className="flex flex-col gap-0.5 rounded-2xl bg-soft p-3">

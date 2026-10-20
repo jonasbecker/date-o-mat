@@ -151,7 +151,7 @@ const reviewBox = s.locator("[data-review-start]").filter({ visible: true });
 await reviewBox.waitFor({ timeout: 15000 });
 check("the start page asks for the review", s.url() === `${BASE}/plan`);
 check("\"Wie war's?\" shows title, date, first photo and five hearts", (await reviewBox.getByText("Picknick im Stadtwald", { exact: true }).isVisible()) && (await reviewBox.locator(`img[src^="/api/photos/${photo.id}"]`).count()) === 1 && (await reviewBox.getByRole("link", { name: /Herz/ }).count()) === 5);
-check("…on the Beet (its own line when another step heads it)", (await s.locator('[data-next-step] [data-leaf="fresh"], [data-review-card]').count()) >= 1);
+check("…on the Beet (its own line when another step heads it)", (await s.locator('[data-next-step] [data-bloom], [data-review-card]').count()) >= 1);
 check("the review state fits the screen", await fitsScreen(s));
 await s.screenshot({ path: `${OUT}m8-01-home-prompt.png` });
 await reviewBox.getByRole("link", { name: "4 Herzen" }).click();
