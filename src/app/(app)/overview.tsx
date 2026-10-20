@@ -134,13 +134,7 @@ export function StartNotices({ o, ctx }: { o: Overview; ctx: CoupleContext }) {
         </Link>
       )}
 
-      {o.cycle?.status === "open" && o.previous?.status === "skipped" && (
-        <p className={`${line} bg-surface`}>
-          <span className="min-w-0 flex-1">
-            🌦️ <strong className="font-bold">Letztes Mal ist ausgefallen – passiert!</strong> Diesmal holt ihr&apos;s nach.
-          </span>
-        </p>
-      )}
+      {/* "Letztes Mal ist ausgefallen" is said by the plant (a speech bubble on the Beet). */}
 
       {/* Another step heads the page (e.g. my turn to plan): the review still gets its own line, hearts and all. */}
       {o.toReview && step?.kind !== "review" && (

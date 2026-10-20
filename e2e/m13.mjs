@@ -71,7 +71,7 @@ await j.goto(`${BASE}/`);
 await heading(j);
 check(`next step: "${await heading(j)}"`, (await heading(j)) === "du bist dran.");
 const deadlineBoxes = j.locator("[data-next-step] [data-deadline]");
-check("the deadline in boxes next to the headline (Frist · Noch · the round)", /frist.*Uhr.*noch.*Diese Woche/s.test(await deadlineBoxes.innerText()));
+check("the deadline in boxes next to the headline (Frist with the round · Noch)", /frist.*Uhr.*Diese Woche.*noch/s.test(await deadlineBoxes.innerText()));
 check("home is focused: no surprise button", (await j.getByRole("button", { name: /Überrasch uns/ }).count()) === 0);
 check("'Date planen' is the one big button", await j.locator("[data-next-step]").filter({ visible: true }).getByRole("link", { name: "Date planen", exact: true }).isVisible());
 check("the plant grows from the done rounds, the can is Jonas' and pours", (await j.locator("[data-next-step] [data-plant]").count()) === 1 && (await j.locator('[data-next-step] [data-can="pouring"]').count()) === 1);
