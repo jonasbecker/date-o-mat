@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useTransition, type PointerEvent as ReactPointerEvent } from "react";
 import { Bloom } from "@/components/bloom";
 import { Button, buttonClass } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
@@ -47,49 +47,93 @@ function infoRows(card: DeckCardView) {
   return rows;
 }
 
+/** How many steps the card can tighten to fit its box (see `Card`). */
+const DENSEST = 5;
+
 /**
  * One idea as a card (SWIPE-KARTE.md §2, SwipeC.html variant 2): the picture strip in its pastel, the sort
  * and number, the day big (the event's or the next free evening), the title, and WO · DAUER · KOSTEN.
  * The card is light in the dark app – its colors are fixed, not tokens.
+ *
+ * Phones differ by 300 px in height (Safari's bars, safe areas), and a card by a row (event) or a chip:
+ * the card measures itself and tightens step by step until everything fits – the picture first, then
+ * the small lines, then the type, the title's second line last; the info box is never cut.
+ * 1: smaller picture · 2: no sub-lines · 3: small picture, smaller type · 4: no picture, no Sorte · 5: title on one line.
  */
 function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: string; pos?: string }) {
   const when = card.when;
+  const box = useRef<HTMLDivElement>(null);
+  const body = useRef<HTMLDivElement>(null);
+  const [dense, setDense] = useState(0);
+  // Before paint: one more step while the content is taller than its box.
+  useLayoutEffect(() => {
+    const el = body.current;
+    if (el && dense < DENSEST && el.scrollHeight > el.clientHeight + 1) setDense(dense + 1);
+  }, [dense]);
+  // The box changes height (rotation, Safari's bars come and go) or the fonts arrive (the fallback is
+  // wider): start over from the roomiest.
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    let last = el.clientHeight;
+    const ro = new ResizeObserver(() => {
+      if (Math.abs(el.clientHeight - last) < 2) return;
+      last = el.clientHeight;
+      setDense(0);
+    });
+    ro.observe(el);
+    let live = true;
+    void document.fonts?.ready.then(() => live && setDense(0));
+    return () => {
+      live = false;
+      ro.disconnect();
+    };
+  }, []);
+  const d = (n: number) => dense >= n;
   return (
-    <div className="relative flex h-full flex-col overflow-hidden rounded-[28px] bg-[#E7EEDF] text-[#1B2620] shadow-[0_18px_30px_rgba(0,0,0,0.4)]">
-      <IllustrationStrip names={card.art.illustrations} hex={card.art.hex} className="-mb-2.5 h-[clamp(44px,13vh,110px)] shrink-0 overflow-hidden [@media(max-height:700px)]:h-12" />
-      <div className="relative flex min-h-0 flex-1 flex-col gap-3.5 p-5 [@media(max-height:700px)]:gap-2 [@media(max-height:700px)]:p-3.5">
-        <div className="flex items-center justify-between gap-2">
-          <span className="inline-flex h-[26px] items-center truncate rounded-full bg-white px-2.5 font-mono text-[11px]">Sorte: {card.sorte}</span>
-          {pos && <span className="shrink-0 font-mono text-[11px] text-[#6A7566]">Nº {pos}</span>}
-        </div>
+    <div ref={box} data-card-dense={dense} className="relative flex h-full flex-col overflow-hidden rounded-[28px] bg-[#E7EEDF] text-[#1B2620] shadow-[0_18px_30px_rgba(0,0,0,0.4)]">
+      {!d(4) && (
+        <IllustrationStrip
+          names={card.art.illustrations}
+          hex={card.art.hex}
+          className={cn("-mb-2.5 shrink-0 overflow-hidden", d(3) ? "h-11" : d(1) ? "h-16" : "h-[clamp(56px,13vh,110px)]")}
+        />
+      )}
+      <div ref={body} className={cn("relative flex min-h-0 flex-1 flex-col overflow-hidden", d(3) ? "gap-2 p-3.5" : d(1) ? "gap-2.5 p-4" : "gap-3.5 p-5")}>
+        {!d(4) && (
+          <div className="flex items-center justify-between gap-2">
+            <span className="inline-flex h-[26px] items-center truncate rounded-full bg-white px-2.5 font-mono text-[11px]">Sorte: {card.sorte}</span>
+            {pos && <span className="shrink-0 font-mono text-[11px] text-[#6A7566]">Nº {pos}</span>}
+          </div>
+        )}
         {(card.partnerSuper || card.kind === "revisit") && (
-          <div className="-mt-1.5 flex flex-wrap gap-1.5 font-mono text-[10px]">
+          <div className={cn("flex flex-wrap gap-1.5 font-mono text-[10px]", !d(4) && "-mt-1.5")}>
             {card.partnerSuper && <span className="rounded-full bg-[#F6DFD3] px-2.5 py-1">★ {partnerName} findet das super</span>}
             {card.kind === "revisit" && <span className="rounded-full bg-[#E6E0F2] px-2.5 py-1">🕰️ Liegt {card.waitingSince ?? "lange"} im Regal</span>}
           </div>
         )}
         {when && (
-          <div className="flex flex-col gap-1 [@media(max-height:700px)]:gap-0.5" data-card-when>
-            <span className="text-[42px] font-extrabold leading-[0.92] tracking-[-0.055em] [@media(max-height:700px)]:text-[30px]">{when.day}</span>
-            <span className={cn("flex flex-wrap items-center gap-x-2 text-[17px] font-bold [@media(max-height:700px)]:text-[15px]", when.free === true ? "text-[#2E7D46]" : when.free === false ? "text-[#A0522D]" : "text-[#6A7566]")}>
+          <div className={cn("flex flex-col", d(3) ? "gap-0.5" : "gap-1")} data-card-when>
+            <span className={cn("font-extrabold leading-[0.92] tracking-[-0.055em]", d(3) ? "text-[32px]" : "text-[42px]")}>{when.day}</span>
+            <span className={cn("flex flex-wrap items-center gap-x-2 font-bold", d(3) ? "text-[15px]" : "text-[17px]", when.free === true ? "text-[#2E7D46]" : when.free === false ? "text-[#A0522D]" : "text-[#6A7566]")}>
               <span>{when.time}</span>
               <span aria-hidden="true">·</span>
               <span>{when.note}</span>
             </span>
           </div>
         )}
-        <div className="border-t-[1.5px] border-[#C9D4C4] pt-3 [@media(max-height:700px)]:pt-2">
-          <h2 className="line-clamp-2 text-2xl font-extrabold leading-[1.05] tracking-[-0.03em] [@media(max-height:700px)]:line-clamp-1 [@media(max-height:700px)]:text-xl">{card.title}</h2>
+        <div className={cn("border-t-[1.5px] border-[#C9D4C4]", d(3) ? "pt-2" : "pt-3")}>
+          <h2 className={cn("font-extrabold leading-[1.05] tracking-[-0.03em]", d(5) ? "line-clamp-1" : "line-clamp-2", d(3) ? "text-xl" : "text-2xl")}>{card.title}</h2>
         </div>
-        <div className="mt-auto shrink-0 overflow-hidden rounded-[18px] bg-white">
+        <div data-card-info className="mt-auto shrink-0 overflow-hidden rounded-[18px] bg-white">
           {infoRows(card).map((r, i) => (
-            <div key={r.k} className={cn("grid grid-cols-[30px_minmax(0,1fr)_auto] items-center gap-2.5 px-3.5 py-[9px] [@media(max-height:700px)]:py-1", i > 0 && "border-t border-[#EDF3EA]")}>
-              <span aria-hidden="true" className="flex size-7 items-center justify-center rounded-[9px] text-[13px] font-extrabold [@media(max-height:700px)]:size-6" style={{ background: r.bg }}>
+            <div key={r.k} className={cn("grid grid-cols-[30px_minmax(0,1fr)_auto] items-center gap-2.5 px-3.5", d(3) ? "py-1" : d(2) ? "py-1.5" : "py-[9px]", i > 0 && "border-t border-[#EDF3EA]")}>
+              <span aria-hidden="true" className={cn("flex items-center justify-center rounded-[9px] text-[13px] font-extrabold", d(3) ? "size-6" : "size-7")} style={{ background: r.bg }}>
                 {r.icon}
               </span>
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-[15px] font-bold leading-[1.15]">{r.v}</span>
-                {r.s && <span className="truncate text-xs text-[#6A7566] [@media(max-height:700px)]:hidden">{r.s}</span>}
+                {r.s && !d(2) && <span className="truncate text-xs text-[#6A7566]">{r.s}</span>}
               </span>
               <span className="font-mono text-[10px] text-[#6A7566]">{r.k}</span>
             </div>

@@ -138,6 +138,35 @@ for (const [size, viewport] of [["", { width: 390, height: 844 }], ["small-", { 
   await audit(page, `${tag} flow: wann?`);
   await ctx.close();
 }
+// The swipe card on the phones people really have (Safari with its bars, SE, Pro Max, a PWA with
+// safe areas): the info box (WO · DAUER · KOSTEN) is always whole, the card tightens instead.
+for (const viewport of [
+  { width: 390, height: 664 },
+  { width: 375, height: 667 },
+  { width: 390, height: 760 },
+  { width: 430, height: 932 },
+  { width: 360, height: 640 },
+]) {
+  const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, locale: "de-DE", colorScheme: "dark" });
+  await ctx.addCookies([{ name: "dom_session", value: jonas.token, url: BASE }]);
+  const page = await ctx.newPage();
+  const tag = `${viewport.width}×${viewport.height}`;
+  await page.goto(`${BASE}/ideas/entdecken`);
+  await page.locator("[data-card-info]").first().waitFor({ timeout: 20000 });
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: `${OUT}m24-card-${tag}.png` });
+  const fit = await page.evaluate(() => {
+    const card = [...document.querySelectorAll("[data-card-dense]")].find((el) => el.getBoundingClientRect().height > 0);
+    const info = card?.querySelector("[data-card-info]");
+    if (!card || !info) return null;
+    const c = card.getBoundingClientRect();
+    const i = info.getBoundingClientRect();
+    return { whole: i.bottom <= c.bottom - 4 && i.top >= c.top, dense: card.getAttribute("data-card-dense") };
+  });
+  check(`${tag} swipe card: WO · DAUER · KOSTEN whole (step ${fit?.dense})`, fit?.whole === true);
+  await audit(page, `${tag} swipe card`);
+  await ctx.close();
+}
 // The five moods of the flower side by side (/dev/blume), to compare with BloomStates.html
 const wide = await browser.newContext({ viewport: { width: 1800, height: 720 }, locale: "de-DE", colorScheme: "dark" });
 await wide.addCookies([{ name: "dom_session", value: jonas.token, url: BASE }]);
