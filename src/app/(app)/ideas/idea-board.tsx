@@ -2,18 +2,18 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useOptimistic, useRef, useState } from "react";
+import { useOptimistic, useRef, useState, useTransition } from "react";
 import { FilteredEmpty, FilterButton, useIdeaFilter } from "@/components/idea-filter";
 import { categoryOf } from "@/core/categories";
 import { matchesIdeaFilter } from "@/core/filters";
 import type { ListView } from "@/components/category-chips";
-import { Button, buttonClass } from "@/components/button";
-import { SwapConfirm, type NextDateInfo } from "@/components/swap-confirm";
+import type { NextDateInfo } from "@/components/swap-confirm";
 import { IdeaForm, type IdeaFormDefaults } from "@/components/idea-form";
 import { Sheet, type SheetHandle } from "@/components/sheet";
 import { IdeaCard } from "@/components/idea-card";
-import { BackIcon, CalendarIcon, PencilIcon, SwapIcon } from "@/components/icons";
+import { BackIcon } from "@/components/icons";
 import { QuickAdd } from "@/components/quick-add";
+import { IdeaDetail } from "./idea-detail";
 import { IdeaTiles, type TileCounts } from "./idea-tiles";
 import { Mascot } from "@/components/mascot";
 import type { UserColor } from "@/lib/domain";
@@ -32,6 +32,8 @@ export function IdeaBoard({
   partnerName,
   meId,
   view,
+  ideaId,
+  listHref,
 }: {
   ideas: BoardIdea[];
   people: Record<string, BoardPerson>;
@@ -42,12 +44,17 @@ export function IdeaBoard({
   meId: string;
   /** "tiles": the overview of MIdeen; a view: its list (the page URL decides, so the Ideen tab brings you back). */
   view: ListView | "tiles";
+  /** `?idee=<id>`: this idea on the whole screen. */
+  ideaId?: string;
+  /** The list this page shows (`/ideas?ansicht=alle`) – where the detail goes back to. */
+  listHref: string;
 }) {
   const router = useRouter();
   // A deleted idea leaves the list at once – before the server answers.
   const [ideas, hideIdea] = useOptimistic(allIdeas, (current, id: string) => current.filter((i) => i.id !== id));
   const [filter] = useIdeaFilter();
-  const [open, setOpen] = useState<{ idea: BoardIdea; view: "menu" | "edit" } | null>(null);
+  const [open, setOpen] = useState<{ idea: BoardIdea; view: "edit" } | null>(null);
+  const [, startDelete] = useTransition();
   const sheet = useRef<SheetHandle>(null);
 
   // Ideas that came from swiping say who liked them.
@@ -59,9 +66,57 @@ export function IdeaBoard({
     .filter((idea) => view !== "tiles" && inView(idea, view));
   const counts = Object.fromEntries((["small", "large", "outdoor", "indoor", "local", "own"] as const).map((v) => [v, ideas.filter((i) => inView(i, v)).length])) as TileCounts;
 
+  // Tapping an idea opens it on the whole screen (in the URL, so "back" works like everywhere).
+  const detailHref = (id: string) => `${listHref}${listHref.includes("?") ? "&" : "?"}idee=${id}`;
   function show(idea: BoardIdea) {
-    setOpen({ idea, view: "menu" });
+    router.push(detailHref(idea.id));
+  }
+  function edit(idea: BoardIdea) {
+    setOpen({ idea, view: "edit" });
     sheet.current?.open();
+  }
+  function remove(id: string) {
+    sheet.current?.close();
+    router.replace(listHref);
+    startDelete(async () => {
+      hideIdea(id);
+      await archiveIdeaAction(id);
+    });
+  }
+
+  const editSheet = (
+    <Sheet ref={sheet} title="Idee bearbeiten" onClose={() => setOpen(null)}>
+      {open && (
+        <IdeaForm
+          key={open.idea.id}
+          action={updateIdeaAction}
+          idea={open.idea}
+          onSaved={() => sheet.current?.close()}
+          onDelete={async () => remove(open.idea.id)}
+          footnote={footnote(open.idea, people)}
+        />
+      )}
+    </Sheet>
+  );
+
+  const detail = ideaId ? ideas.find((i) => i.id === ideaId) : undefined;
+  if (detail) {
+    return (
+      <>
+        <IdeaDetail
+          idea={detail}
+          backHref={listHref}
+          next={next}
+          canPlanNew={canPlanNew}
+          partnerName={partnerName}
+          tag={tagOf(detail)}
+          footnote={footnote(detail, people)}
+          onEdit={() => edit(detail)}
+          onDelete={() => remove(detail.id)}
+        />
+        {editSheet}
+      </>
+    );
   }
 
   if (view === "tiles") {
@@ -114,26 +169,7 @@ export function IdeaBoard({
         </ul>
       )}
 
-      <Sheet ref={sheet} title={open?.view === "edit" ? "Idee bearbeiten" : (open?.idea.title ?? "Idee")} onClose={() => setOpen(null)}>
-        {open?.view === "menu" && (
-          <IdeaMenu key={open.idea.id} idea={open.idea} next={next} canPlanNew={canPlanNew} partnerName={partnerName} onEdit={() => setOpen({ idea: open.idea, view: "edit" })} onDone={() => sheet.current?.close()} />
-        )}
-        {open?.view === "edit" && (
-          <IdeaForm
-            key={open.idea.id}
-            action={updateIdeaAction}
-            idea={open.idea}
-            onSaved={() => sheet.current?.close()}
-            onDelete={async () => {
-              const id = open.idea.id;
-              sheet.current?.close();
-              hideIdea(id);
-              await archiveIdeaAction(id);
-            }}
-            footnote={footnote(open.idea, people)}
-          />
-        )}
-      </Sheet>
+      {editSheet}
     </div>
   );
 }
@@ -172,61 +208,6 @@ function inView(idea: BoardIdea, view: ListView): boolean {
 }
 
 /** What tapping an idea offers: plan it (or do it instead of the next date) – or edit it. */
-function IdeaMenu({
-  idea,
-  next,
-  canPlanNew,
-  partnerName,
-  onEdit,
-  onDone,
-}: {
-  idea: BoardIdea;
-  next: BoardNextDate | null;
-  canPlanNew: boolean;
-  partnerName: string;
-  onEdit: () => void;
-  onDone: () => void;
-}) {
-  const router = useRouter();
-  const [confirming, setConfirming] = useState(false);
-  const isNext = next?.ideaId === idea.id;
-  const swap = next?.swappable && !isNext;
-
-  if (confirming && next) {
-    return (
-      <SwapConfirm
-        next={next}
-        idea={idea}
-        onCancel={() => setConfirming(false)}
-        onDone={() => {
-          onDone();
-          router.push("/plan");
-        }}
-      />
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-2.5">
-      {isNext && <p className="rounded-[18px] bg-minze-soft px-4 py-2.5 font-semibold text-tinte">📅 Das ist euer nächstes Date: {next!.when}</p>}
-      {next && !next.swappable && <p className="text-sm text-muted">Euer nächstes Date ist eine Überraschung von {partnerName} – das kann nur {partnerName} ändern.</p>}
-      {swap && (
-        <Button onClick={() => setConfirming(true)} className="w-full">
-          <SwapIcon width={20} height={20} /> Statt „{next!.title}“ machen
-        </Button>
-      )}
-      {canPlanNew && !isNext && (
-        <Link href={`/plan?idea=${idea.id}`} onClick={onDone} className={buttonClass(swap ? "secondary" : "primary", "md", "w-full")}>
-          <CalendarIcon width={20} height={20} /> {swap ? "Neues Date damit planen" : "Date damit planen"}
-        </Link>
-      )}
-      <Button variant="secondary" onClick={onEdit} className="w-full">
-        <PencilIcon width={18} height={18} /> Bearbeiten
-      </Button>
-    </div>
-  );
-}
-
 function footnote(idea: BoardIdea, people: Record<string, BoardPerson>): string | undefined {
   const creator = idea.createdById ? people[idea.createdById]?.name : undefined;
   const editor = idea.updatedById ? people[idea.updatedById]?.name : undefined;

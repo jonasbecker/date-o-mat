@@ -447,7 +447,7 @@ export function PlanFlow({
     </>
   );
 
-  // The top row: back on the left, the three dots (Filter · was? · wann?) in the middle – where the Beet has its dots.
+  // The top row: back on the left, four dots (Filter · was? · wann? · gesendet) in the middle – where the Beet has its dots.
   const backHome = (
     <Link href="/plan" aria-label="Zurück" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
       <BackIcon width={20} height={20} />
@@ -459,7 +459,7 @@ export function PlanFlow({
     </button>
   );
   const top = <TopRow back={backHome} meta={hoursLeft} />;
-  const flowTop = (n: number, back: ReactNode) => <TopRow back={back} center={<StepDots step={n} of={3} />} meta={hoursLeft} />;
+  const flowTop = (n: number, back: ReactNode) => <TopRow back={back} center={<StepDots step={n} of={4} />} meta={hoursLeft} />;
 
   // Swapping the idea of a planned date: only "was?" – the time stays.
   if (mode.kind === "swap") {

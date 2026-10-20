@@ -99,16 +99,22 @@ await a.keyboard.press("Escape");
 // Partner edits Jonas' idea
 await b.reload();
 await card(b, "Picknick im Stadtwald").getByRole("button").first().click();
-check("tapping an idea offers planning and editing", await b.locator("dialog[open]").getByRole("link", { name: "Date damit planen" }).isVisible());
-await b.locator("dialog[open]").getByRole("button", { name: "Bearbeiten" }).click();
+// Tapping an idea opens it on the whole screen: everything about it, planning and editing at the bottom.
+await b.getByRole("heading", { name: "Picknick im Stadtwald", exact: true }).waitFor({ timeout: 10000 });
+check("tapping an idea opens it full screen (in the URL)", /[?&]idee=/.test(b.url()));
+check("tapping an idea offers planning and editing", await b.locator("main").getByRole("link", { name: "Date damit planen" }).isVisible());
+await b.screenshot({ path: `${SHOTS}m2-03b-idea.png` });
+await b.locator("main").getByRole("button", { name: "Bearbeiten" }).click();
 const editSheet = b.locator("dialog[open]");
 await editSheet.getByLabel("Was wollt ihr machen?").waitFor();
 await editSheet.getByLabel("Was wollt ihr machen?").fill("Picknick im Stadtwald mit Frisbee");
 await editSheet.getByRole("button", { name: "Speichern" }).click();
+await b.getByRole("heading", { name: "Picknick im Stadtwald mit Frisbee", exact: true }).waitFor({ timeout: 5000 });
+await b.getByRole("link", { name: "Zurück zur Liste" }).click();
 await card(b, "Picknick im Stadtwald mit Frisbee").waitFor({ timeout: 5000 });
 check("partner can edit any idea", (await card(b, "Picknick im Stadtwald mit Frisbee").count()) === 1);
 await card(b, "Picknick im Stadtwald mit Frisbee").getByRole("button").first().click();
-await b.locator("dialog[open]").getByRole("button", { name: "Bearbeiten" }).click();
+await b.locator("main").getByRole("button", { name: "Bearbeiten" }).click();
 await b.locator("dialog[open]").getByText("zuletzt geändert von Sam").waitFor({ timeout: 5000 }).catch(() => {});
 check("edit sheet shows creator and last editor", (await b.locator("dialog[open]").getByText("Eingetragen von Jonas · zuletzt geändert von Sam").count()) === 1);
 await b.screenshot({ path: `${SHOTS}m2-04-edit.png` });

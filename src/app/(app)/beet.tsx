@@ -69,6 +69,8 @@ export function BeetAvatars({ me, partner, onTurn }: { me: User; partner: User; 
 
 type View = {
   headline: string;
+  /** The round's deadline as boxes next to the headline (Frist · Noch). */
+  deadline?: boolean;
   sub?: React.ReactNode;
   pill?: { when: string; title: string };
   bud: BudState;
@@ -100,10 +102,7 @@ export function Beet({
   const cycle = o.cycle;
   if (!step || !cycle) return null;
   const date = o.shownDate;
-  const deadline = `${periodLabel(cycle.startsAt, cycle.endsAt)} · ${
-    cycle.deadlineAt > now ? `Plan bis ${shortDeadline(cycle.deadlineAt)} · ${timeLeftLabel(now, cycle.deadlineAt)}` : `Geht noch bis ${formatShortDate(new Date(cycle.endsAt.getTime() - 1))}`
-  }`;
-  const view = viewFor(step, { me, partner, date, deadline, swappable, o, now });
+  const view = viewFor(step, { me, partner, date, swappable, o, now });
   const leaves: LeafKind[] = leafKinds(rounds);
   // The upcoming (or just lived) date is the pink leaf on top.
   if (view.fresh) leaves.push("fresh");
@@ -111,7 +110,15 @@ export function Beet({
 
   return (
     <div data-next-step={step.kind} className="flex min-h-0 flex-1 flex-col">
-      <h2 className="headline mt-2 min-h-[2lh] whitespace-pre-line text-[clamp(44px,15vw,62px)]">{view.headline}</h2>
+      {view.deadline ? (
+        // The headline on the left, what's due in boxes on the right (MBeet).
+        <div className="mt-2 grid grid-cols-[minmax(0,1fr)_minmax(118px,36%)] items-start gap-3">
+          <h2 className="headline min-h-[2lh] whitespace-pre-line break-words text-[clamp(40px,12.5vw,56px)]">{view.headline}</h2>
+          <DeadlineBoxes cycle={cycle} now={now} />
+        </div>
+      ) : (
+        <h2 className="headline mt-2 min-h-[2lh] whitespace-pre-line text-[clamp(44px,15vw,62px)]">{view.headline}</h2>
+      )}
       {view.sub && <div className="mt-3 text-base text-muted">{view.sub}</div>}
       {view.pill && (
         <p data-date-pill data-date-card={date?.id} className="mt-3.5 inline-flex h-[34px] max-w-full items-center self-start truncate rounded-full bg-surface px-3.5 text-sm font-medium">
@@ -147,7 +154,7 @@ export function Beet({
 
 function viewFor(
   step: NextStep,
-  { me, partner, date, deadline, swappable, o, now }: { me: User; partner: User; date?: DatePlan; deadline: string; swappable: boolean; o: Overview; now: Date },
+  { me, partner, date, swappable, o, now }: { me: User; partner: User; date?: DatePlan; swappable: boolean; o: Overview; now: Date },
 ): View {
   const details = date && (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm font-semibold">
@@ -170,7 +177,7 @@ function viewFor(
     case "plan":
       return {
         headline: "du bist\ndran.",
-        sub: <Deadline text={deadline} />,
+        deadline: true,
         bud: "waiting",
         can: { who: me, pouring: true },
         cta: (
@@ -189,7 +196,7 @@ function viewFor(
     case "partner_turn":
       return {
         headline: `kanne\nbei ${partner.name}.`,
-        sub: <Deadline text={deadline} />,
+        deadline: true,
         bud: "waiting",
         can: { who: partner, pouring: false },
         cta: (
@@ -267,7 +274,7 @@ function viewFor(
     case "suggestion":
       return {
         headline: "zeit für\nein date.",
-        sub: <Deadline text={deadline} />,
+        deadline: true,
         bud: "waiting",
         cta:
           o.suggestion?.status === "ok" ? (
@@ -292,12 +299,25 @@ function viewFor(
 }
 
 /** "bis Do 20 Uhr · noch 2 Tage" with the one ⓘ (what "Plan bis" means). */
-function Deadline({ text }: { text: string }) {
+/** "Frist Fr 20 Uhr" and "Noch 3 Std." as two boxes, the round ("Diese Woche") under them. */
+function DeadlineBoxes({ cycle, now }: { cycle: NonNullable<Overview["cycle"]>; now: Date }) {
+  const open = cycle.deadlineAt > now;
   return (
-    <span className="flex items-center gap-2">
-      <span className="font-mono text-xs">{text}</span>
-      <Info term="frist" />
-    </span>
+    <div data-deadline className="flex flex-col gap-2 pt-1">
+      <div className="rounded-[18px] bg-surface px-3 py-2">
+        <span className="meta flex items-center justify-between text-muted">
+          frist <Info term="frist" />
+        </span>
+        <span className="block text-[17px] font-extrabold leading-tight tracking-[-0.02em]">{open ? shortDeadline(cycle.deadlineAt) : "vorbei"}</span>
+      </div>
+      <div className="rounded-[18px] bg-tile-butter px-3 py-2 text-ink">
+        <span className="meta block text-muted">{open ? "noch" : "geht bis"}</span>
+        <span className="block text-[17px] font-extrabold leading-tight tracking-[-0.02em]">
+          {open ? timeLeftLabel(now, cycle.deadlineAt).replace(/^noch /, "") : formatShortDate(new Date(cycle.endsAt.getTime() - 1))}
+        </span>
+      </div>
+      <span className="meta px-1 text-muted">{periodLabel(cycle.startsAt, cycle.endsAt)}</span>
+    </div>
   );
 }
 

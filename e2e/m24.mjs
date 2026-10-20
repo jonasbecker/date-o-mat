@@ -44,8 +44,9 @@ const jonas = await makeUser("Jonas", "jonas@example.com", "mandarine", "token-j
 const sam = await makeUser("Sam", "partnerin@example.com", "himmel", "token-sam");
 await db.query("INSERT INTO couple_settings (couple_id, first_planner_id, dev_clock_offset_minutes) VALUES ($1, $2, $3)", [couple.id, jonas.id, mondayMorningOffset()]);
 const idea = (title, size, setting, by = jonas.id) =>
-  db.query("INSERT INTO ideas (couple_id, title, size, setting, created_by_id) VALUES ($1, $2, $3, $4, $5)", [couple.id, title, size, setting, by]);
-await idea("Picknick im Stadtwald", "small", "outdoor");
+  db.query("INSERT INTO ideas (couple_id, title, size, setting, created_by_id) VALUES ($1, $2, $3, $4, $5) RETURNING id", [couple.id, title, size, setting, by]);
+const { rows: [picnic] } = await idea("Picknick im Stadtwald", "small", "outdoor");
+await db.query("UPDATE ideas SET note = 'Decke, Käse, Wein – und Frisbee nicht vergessen.', location = 'Stadtwald, Weiher', cost_eur = 15 WHERE id = $1", [picnic.id]);
 await idea("Sushi-Abend", "small", "indoor", sam.id);
 await idea("Ausflug nach Bonn", "large", "outdoor");
 await idea("Töpferkurs", "small", "indoor", sam.id);
@@ -74,6 +75,7 @@ const ROUTES = [
   ["flow", "/plan?pick=1"],
   ["ideas", "/ideas"],
   ["ideas-all", "/ideas?ansicht=alle"],
+  ["idea", `/ideas?ansicht=alle&idee=${picnic.id}`],
   ["swipe", "/ideas/entdecken"],
   ["koeln", "/ideas/koeln"],
   ["archive", "/dates"],

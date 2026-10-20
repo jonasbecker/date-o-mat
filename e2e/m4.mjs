@@ -69,9 +69,9 @@ const s = await pageFor(sam.token);
 // Round 1 – Jonas starts
 await j.goto(`${BASE}/`);
 await heading(j);
-check("round 1 is created on first visit", (await j.locator("[data-next-step]").getByText(/^Diese Woche · /).count()) === 1);
+check("round 1 is created on first visit", (await j.locator("[data-next-step] [data-deadline]").getByText("Diese Woche", { exact: true }).count()) === 1);
 check(`Jonas sees "Du bist dran!" (${await heading(j)})`, (await heading(j)) === "du bist dran.");
-check("deadline with time left in one line", await j.getByText(/^Diese Woche · Plan bis \w+ \d+(:\d\d)? Uhr · noch \d/).waitFor({ timeout: 10000 }).then(() => true, () => false));
+check("deadline and time left as boxes", /frist[\s\S]*\w+ \d+(:\d\d)? Uhr[\s\S]*noch\s+\d/.test(await j.locator("[data-deadline]").innerText()));
 check("/ lands on Date planen", j.url() === `${BASE}/plan`);
 check("one 'Date planen' button, inside the card", (await j.getByRole("link", { name: "Date planen", exact: true }).count()) === 1 && (await j.locator("[data-next-step]").getByRole("link", { name: "Date planen", exact: true }).count()) === 1);
 await j.waitForTimeout(300);

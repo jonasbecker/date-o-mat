@@ -178,7 +178,7 @@ check(`moved, still the same secret (${moved.title})`, moved.title === "Sushi-Ab
 // Sam on the wishlist: tapping an idea cannot touch Jonas' surprise – and does not give it away
 await s.goto(`${BASE}/ideas?ansicht=alle`);
 await s.getByRole("button", { name: "Sushi-Abend" }).click();
-const samMenu = s.locator("dialog[open]");
+const samMenu = s.locator("main"); // the idea opens full screen
 await samMenu.getByText("das kann nur Jonas ändern", { exact: false }).waitFor({ timeout: 10000 });
 check("Sam: no swap for Jonas' surprise", (await samMenu.getByRole("button", { name: /Statt/ }).count()) === 0 && (await samMenu.getByRole("button", { name: "Bearbeiten" }).isVisible()));
 check("Sam: the surprise idea is not marked on the wishlist", (await s.getByText("📅 Nächstes Date").count()) === 0);
@@ -233,7 +233,7 @@ check("deleted key → 401", (await share(shareKey, { text: "https://www.tiktok.
 // 7b) Tapping an idea: do it instead of the next date – after a question; the time stays
 await j.goto(`${BASE}/ideas?ansicht=alle`);
 await j.getByRole("button", { name: "Kino: Dune" }).click();
-const menu = j.locator("dialog[open]");
+const menu = j.locator("main"); // the idea opens full screen
 await menu.getByRole("button", { name: "Statt „Sushi-Abend“ machen" }).click();
 await menu.getByText("Willst du das ändern?", { exact: false }).waitFor({ timeout: 10000 });
 await j.screenshot({ path: `${OUT}m21-05-swap.png` });

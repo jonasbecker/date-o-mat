@@ -34,7 +34,7 @@ async function Ideas({ searchParams }: { searchParams: PageProps<"/ideas">["sear
   const { user, partner, coupleId } = ctx;
   await connection();
   // "Meine Likes" on the swipe page lands here with the swiped ideas selected.
-  const { ansicht } = await searchParams;
+  const { ansicht, idee } = await searchParams;
   const VIEWS = { geswipt: "swiped", match: "match", alle: "all", small: "small", large: "large", outdoor: "outdoor", indoor: "indoor", local: "local", own: "own" } as const;
   const view = typeof ansicht === "string" && ansicht in VIEWS ? VIEWS[ansicht as keyof typeof VIEWS] : "tiles";
   const now = coupleNow(await getCoupleSettings(coupleId));
@@ -76,7 +76,7 @@ async function Ideas({ searchParams }: { searchParams: PageProps<"/ideas">["sear
     <>
       <AutoRefresh />
       <AppHeader action={<HeaderMeta>{ideas.length} Ideen</HeaderMeta>} />
-      <IdeaBoard ideas={boardIdeas} people={people} next={next} canPlanNew={!next || cycle?.status === "open"} partnerName={partner.name} meId={user.id} view={view} />
+      <IdeaBoard ideas={boardIdeas} people={people} next={next} canPlanNew={!next || cycle?.status === "open"} partnerName={partner.name} meId={user.id} view={view} ideaId={typeof idee === "string" ? idee : undefined} listHref={typeof ansicht === "string" && ansicht in VIEWS ? `/ideas?ansicht=${ansicht}` : "/ideas?ansicht=alle"} />
     </>
   );
 }
