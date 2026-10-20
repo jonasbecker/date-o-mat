@@ -23,35 +23,31 @@ export function IdeaTiles({ counts, matches, onView }: { counts: TileCounts; mat
   const sprouted = Math.min(matches.length, POTS);
   return (
     <div className="grid shrink-0 grid-cols-2 gap-2.5">
+      {/* Like the other tiles: the count, the name, one line – the pots are its picture, on the right. */}
       <button
         type="button"
         onClick={() => onView("match")}
         aria-label={`Matchlinge: ${matches.length}`}
-        className="tap relative col-span-2 h-[clamp(140px,18vh,148px)] overflow-hidden rounded-[24px] bg-tile-rose p-4 text-left text-[#5A2416]"
+        className="tap relative col-span-2 flex min-h-[clamp(92px,13.3vh,112px)] flex-col justify-between gap-2 overflow-hidden rounded-[22px] bg-tile-rose p-3.5 text-left text-[#5A2416]"
       >
-        <span className="flex items-start justify-between">
-          <span className="flex flex-col gap-0.5">
-            <span className="text-xl font-extrabold tracking-[-0.02em]">Matchlinge</span>
-            <span className="text-[13px]">eure Matches vom Swipen</span>
-          </span>
-          <span className="text-[44px] font-extrabold leading-none tracking-[-0.04em]">{matches.length}</span>
-        </span>
         {/* A row of pots: every match grows a seedling, empty ones are pale. */}
-        <span aria-hidden="true" className="absolute bottom-[30px] left-4 right-4 flex items-end gap-[22px]">
+        <span aria-hidden="true" className="absolute bottom-4 right-4 flex items-end gap-2.5">
           {Array.from({ length: POTS }, (_, i) => {
             const growing = i < sprouted;
             const opacity = growing || (sprouted === 0 && i === 0) ? 1 : 0.45;
             return (
-              <span key={i} className="relative h-[22px] w-[34px]">
+              <span key={i} className="relative h-[22px] w-[30px]">
                 {growing && <Seedling />}
-                <span className="absolute bottom-0 left-0 h-4 w-[34px] bg-[#D68456]" style={{ opacity, clipPath: "polygon(0 0, 100% 0, 85% 100%, 15% 100%)" }} />
-                <span className="absolute bottom-3.5 left-0.5 h-[5px] w-[30px] rounded-[3px] bg-[#6B4A33]" style={{ opacity }} />
+                <span className="absolute bottom-0 left-0 h-4 w-[30px] bg-[#D68456]" style={{ opacity, clipPath: "polygon(0 0, 100% 0, 85% 100%, 15% 100%)" }} />
+                <span className="absolute bottom-3.5 left-0.5 h-[5px] w-[26px] rounded-[3px] bg-[#6B4A33]" style={{ opacity }} />
               </span>
             );
           })}
         </span>
-        <span className="absolute bottom-2 left-4 right-4 truncate font-hand text-[19px] font-semibold">
-          {matches.length === 0 ? "noch alles Erde – swipt los!" : `zuletzt gekeimt: ${matches[0].title}`}
+        <span className="relative text-[30px] font-extrabold leading-none tracking-[-0.04em]">{matches.length}</span>
+        <span className="relative flex flex-col gap-px">
+          <span className="text-base font-bold">Matchlinge</span>
+          <span className="text-xs leading-tight text-[#7A4A3A]">ihr wollt beide</span>
         </span>
       </button>
       {TILES.map((t) => (
@@ -79,7 +75,7 @@ export function IdeaTiles({ counts, matches, onView }: { counts: TileCounts; mat
 // The small plants (ThIdeen.html), positioned in a 44 × 48 box at the top right of a tile.
 function Seedling() {
   return (
-    <span className="absolute -top-[18px] left-[13px] h-6 w-2">
+    <span className="absolute -top-[18px] left-[11px] h-6 w-2">
       <span className="absolute bottom-0 left-[3px] h-4 w-[3px] rounded-sm bg-[#4FA25E]" />
       <span className="absolute left-1 top-0.5 h-2 w-3.5 origin-left -rotate-[25deg] rounded-[50%] bg-[#6DBA74]" />
       <span className="absolute -left-2.5 top-1.5 h-2 w-3.5 origin-right rotate-[25deg] rounded-[50%] bg-[#4FA25E]" />

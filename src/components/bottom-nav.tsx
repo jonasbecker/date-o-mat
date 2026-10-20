@@ -27,7 +27,7 @@ function Tab({ href, label, active, marker, badge, children }: { href: string; l
 }
 
 /**
- * The navigation (DESIGN.md §4): Beet · Ideen · Swipen (big, in the middle) · Archiv · Setup.
+ * The navigation: Ideen · Swipen · Beet (the start, big and green in the middle) · Archiv · Setup.
  * `wishlistBadge` is the count on Ideen.
  */
 export function BottomNav({ wishlistBadge }: { wishlistBadge?: React.ReactNode }) {
@@ -37,25 +37,26 @@ export function BottomNav({ wishlistBadge }: { wishlistBadge?: React.ReactNode }
 /** The bar itself – also what shows while the current path is still unknown (prerender). */
 export function BottomNavBar({ path, wishlistBadge }: { path: string; wishlistBadge?: React.ReactNode }) {
   const swiping = path.startsWith(SWIPE_PATH);
+  const home = path === "/plan" || path === "/";
   return (
     <nav aria-label="Hauptmenü" className="shrink-0 bg-bg pb-[max(env(safe-area-inset-bottom),6px)]">
       <div className="mx-auto grid h-[66px] max-w-md grid-cols-5 items-center">
-        <Tab href="/plan" label="Beet" active={path === "/plan" || path === "/"}>
-          <SproutIcon />
-        </Tab>
         <Tab href="/ideas" label="Ideen" active={path.startsWith("/ideas") && !swiping} marker="wishlist" badge={wishlistBadge}>
           <GridIcon />
         </Tab>
+        <Tab href={SWIPE_PATH} label="Swipen" active={swiping}>
+          <SwipeIcon />
+        </Tab>
         <Link
-          href={SWIPE_PATH}
-          aria-label="Swipen"
-          aria-current={swiping ? "page" : undefined}
+          href="/plan"
+          aria-label="Beet"
+          aria-current={home ? "page" : undefined}
           className={cn(
-            "press -mt-[22px] flex size-[60px] items-center justify-center justify-self-center rounded-full text-white shadow-[0_0_0_6px_var(--bg)]",
-            swiping ? "bg-like" : "bg-green",
+            "press -mt-[22px] flex size-[60px] items-center justify-center justify-self-center rounded-full bg-green text-white shadow-[0_0_0_6px_var(--bg)]",
+            home && "ring-2 ring-ink ring-offset-[3px] ring-offset-green",
           )}
         >
-          <SwipeIcon width={26} height={26} />
+          <SproutIcon width={28} height={28} />
         </Link>
         <Tab href="/dates" label="Archiv" active={path.startsWith("/dates") || path.startsWith("/story")}>
           <PhotoIcon />

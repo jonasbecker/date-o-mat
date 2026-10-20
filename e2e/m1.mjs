@@ -122,7 +122,7 @@ check("intro is not shown again: / lands on Date planen", a.url() === `${BASE}/p
 const header = a.locator("header").first();
 await a.getByRole("heading", { name: "Date planen" }).waitFor({ timeout: 15000 });
 const bar = a.getByRole("navigation", { name: "Hauptmenü" });
-check("bottom bar: Beet · Ideen · Swipen · Archiv · Einstellungen", (await bar.getByRole("link").evaluateAll((l) => l.map((x) => x.getAttribute("aria-label")))).join("|") === "Beet|Ideen|Swipen|Archiv|Einstellungen");
+check("bottom bar: Ideen · Swipen · Beet · Archiv · Einstellungen", (await bar.getByRole("link").evaluateAll((l) => l.map((x) => x.getAttribute("aria-label")))).join("|") === "Ideen|Swipen|Beet|Archiv|Einstellungen");
 await header.getByRole("link", { name: "Date-O-Mat – zum Start" }).waitFor({ timeout: 15000 });
 check("the header is only the name", (await header.getByRole("link").count()) === 1);
 

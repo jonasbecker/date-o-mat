@@ -27,25 +27,12 @@ import type { Overview } from "./overview";
 
 /** The four dots of the round – in the middle of the header (`AppHeader center`), only the active one moves. */
 export function RoundDots({ step }: { step: NextStep["kind"] }) {
-  return <StepDots step={roundDot(step)} of={4} />;
+  return <StepDots step={1} of={4} all={!stillPlanning(step)} />;
 }
 
-function roundDot(step: NextStep["kind"]): number {
-  switch (step) {
-    case "plan":
-    case "partner_turn":
-    case "suggestion":
-    case "connect_calendar":
-    case "partner_calendar":
-      return 1;
-    case "confirm":
-    case "wait_confirm":
-      return 2;
-    case "date_ahead":
-      return 3;
-    default:
-      return 4;
-  }
+/** Before a date is proposed the Beet is dot 1 (the flow is 2–4); from then on the whole bar is lit. */
+function stillPlanning(step: NextStep["kind"]): boolean {
+  return step === "plan" || step === "partner_turn" || step === "suggestion" || step === "connect_calendar" || step === "partner_calendar";
 }
 
 function weekday(d: Date) {
@@ -103,6 +90,9 @@ export function Beet({
   if (!step || !cycle) return null;
   const date = o.shownDate;
   const view = viewFor(step, { me, partner, date, swappable, o, now });
+  // Whose turn it is: "du bist dran." and "sam ist dran." are always the same size.
+  const turns = ["du bist\ndran.", `${partner.name.toLowerCase()} ist\ndran.`];
+  const size = turns.includes(view.headline) ? Math.min(...turns.map((t) => headlineSize(t, true))) : headlineSize(view.headline, view.deadline);
   const onTurn = view.on ? (view.on.id === me.id ? "me" : "partner") : null;
   const { blaetter, welk } = bloomLeaves(rounds);
   const missed = cycle.status === "open" && o.previous?.status === "skipped";
@@ -120,7 +110,7 @@ export function Beet({
   return (
     <div data-next-step={step.kind} className="flex min-h-0 flex-1 flex-col">
       <div className="mt-2 flex items-start justify-between gap-3">
-        <h2 className="headline whitespace-pre-line font-extrabold leading-[0.9] tracking-[-0.055em]" style={{ fontSize: headlineSize(view.headline, view.deadline) }}>
+        <h2 className="headline whitespace-pre-line font-extrabold leading-[0.9] tracking-[-0.055em]" style={{ fontSize: `${size}px` }}>
           {view.headline}
         </h2>
         {view.deadline && <TimeLeft cycle={cycle} now={now} />}
@@ -173,10 +163,10 @@ function roundOf(step: NextStep): BloomRound {
 }
 
 /** 70 px like the mockup – smaller when a line is long ("charlotte ist dran."), so it never runs into the time on the right. */
-function headlineSize(headline: string, withTime?: boolean): string {
+function headlineSize(headline: string, withTime?: boolean): number {
   const longest = Math.max(...headline.split("\n").map((line) => line.length));
   const room = withTime ? 228 : 340;
-  return `${Math.min(70, Math.floor(room / (longest * 0.5)))}px`;
+  return Math.min(70, Math.floor(room / (longest * 0.5)));
 }
 
 /** "noch / 3h / bis Fr, 20 Uhr" – big on the right; days once more than two are left. */
@@ -188,7 +178,7 @@ function TimeLeft({ cycle, now }: { cycle: NonNullable<Overview["cycle"]>; now: 
   return (
     <div data-deadline className="flex shrink-0 flex-col items-end pt-3.5 text-right">
       <span className="meta flex items-center gap-1.5 text-muted">
-        <Info term="frist" /> {open ? "noch" : "frist vorbei · noch"}
+        <Info term="frist" /> {open ? "noch" : "frist vorbei · runde noch"}
       </span>
       <span className="font-display text-[64px] font-extrabold leading-[0.95] tracking-[-0.05em] text-accent-time">
         {value}
@@ -200,31 +190,38 @@ function TimeLeft({ cycle, now }: { cycle: NonNullable<Overview["cycle"]>; now: 
 }
 
 /**
- * MO–SO with today lit, the days already gone pale and a dot under the deadline day – no bar, so nothing
- * looks like a slider. Longer rounds show dates.
+ * MO–SO with today lit and the bar filled up to today (the middle of its column). No deadline marker –
+ * the time on the right says it. Longer rounds show dates and fill by the hour.
  */
 function WeekBar({ cycle, now }: { cycle: NonNullable<Overview["cycle"]>; now: Date }) {
   const start = DateTime.fromJSDate(cycle.startsAt, { zone: APP_TIMEZONE }).setLocale("de");
   const span = cycle.endsAt.getTime() - cycle.startsAt.getTime();
   const days = Math.round(span / 86_400_000);
   const today = DateTime.fromJSDate(now, { zone: APP_TIMEZONE });
-  const deadline = DateTime.fromJSDate(cycle.deadlineAt, { zone: APP_TIMEZONE });
-  const labels =
-    days <= 8
-      ? Array.from({ length: days }, (_, i) => {
-          const d = start.plus({ days: i });
-          return { text: d.toFormat("ccc").replace(".", "").slice(0, 2).toUpperCase(), now: d.hasSame(today, "day"), gone: d < today.startOf("day"), deadline: d.hasSame(deadline, "day") };
-        })
-      : Array.from({ length: 5 }, (_, i) => ({ text: start.plus({ days: Math.round((i * (days - 1)) / 4) }).toFormat("d.M."), now: false, gone: false, deadline: false }));
+  const daily = days <= 8;
+  const labels = daily
+    ? Array.from({ length: days }, (_, i) => {
+        const d = start.plus({ days: i });
+        return { text: d.toFormat("ccc").replace(".", "").slice(0, 2).toUpperCase(), now: d.hasSame(today, "day") };
+      })
+    : Array.from({ length: 5 }, (_, i) => ({ text: start.plus({ days: Math.round((i * (days - 1)) / 4) }).toFormat("d.M."), now: false }));
+  const todayIndex = labels.findIndex((l) => l.now);
+  const filled = daily
+    ? todayIndex >= 0
+      ? ((todayIndex + 0.5) / labels.length) * 100
+      : now >= cycle.endsAt ? 100 : 0
+    : Math.min(100, Math.max(0, ((now.getTime() - cycle.startsAt.getTime()) / span) * 100));
   return (
     <div data-week-bar className="mt-5" aria-label={`${periodLabel(cycle.startsAt, cycle.endsAt)}: Frist ${shortDeadline(cycle.deadlineAt)}`} role="img">
-      <div className="grid font-mono text-[11px] text-muted" style={{ gridTemplateColumns: `repeat(${labels.length}, minmax(0, 1fr))` }}>
+      <div className="grid text-center font-mono text-[11px] text-muted" style={{ gridTemplateColumns: `repeat(${labels.length}, minmax(0, 1fr))` }}>
         {labels.map((l, i) => (
-          <span key={i} className={cn("flex flex-col items-start gap-1", l.now ? "font-bold text-accent-time" : l.gone && "opacity-45")}>
+          <span key={i} className={l.now ? "font-bold text-accent-time" : undefined}>
             {l.text}
-            <span aria-hidden="true" className={cn("ml-[5px] size-1.5 rounded-full", l.deadline ? "bg-accent-time" : "bg-transparent")} />
           </span>
         ))}
+      </div>
+      <div className="relative mt-2 h-1.5 rounded-[3px] bg-track">
+        <div aria-hidden="true" className="absolute inset-y-0 left-0 rounded-[3px] bg-ink opacity-85" style={{ width: `${filled}%` }} />
       </div>
     </div>
   );

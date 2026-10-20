@@ -68,7 +68,7 @@ export async function layoutAudit(page) {
         if (meet(rects[i], rects[j], 2)) issues.push(`overlap: "${name(hits[i])}" × "${name(hits[j])}"`);
       }
     }
-    // The swipe circle of the tab bar reaches up into the page: nothing may sit under it.
+    // The big circle of the tab bar (Beet) reaches up into the page: nothing may sit under it.
     const circle = nav && [...nav.querySelectorAll("a")].map((a) => a.getBoundingClientRect()).find((r) => r.top < navTop - 4);
     // …unless it scrolls: then it passes under the circle and the page's bottom padding lets it out.
     const scrollsAway = (el) => {
@@ -80,9 +80,9 @@ export async function layoutAudit(page) {
     if (circle) {
       for (const el of root.querySelectorAll("*")) {
         if (!shown(el) || el.children.length || !el.textContent.trim() || scrollsAway(el)) continue;
-        if (meet(seen(el), circle, 2)) issues.push(`under the swipe circle: "${name(el)}"`);
+        if (meet(seen(el), circle, 2)) issues.push(`under the big circle: "${name(el)}"`);
       }
-      for (let i = 0; i < hits.length; i++) if (!scrollsAway(hits[i]) && meet(rects[i], circle, 2)) issues.push(`under the swipe circle: "${name(hits[i])}"`);
+      for (let i = 0; i < hits.length; i++) if (!scrollsAway(hits[i]) && meet(rects[i], circle, 2)) issues.push(`under the big circle: "${name(hits[i])}"`);
     }
     const scrolls = root.scrollHeight > root.clientHeight + 1;
     for (let i = 0; i < hits.length; i++) if (rects[i].bottom > navTop + 1) issues.push(`under the tab bar: "${name(hits[i])}"`);

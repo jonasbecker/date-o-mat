@@ -11,7 +11,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <CelebrationProvider>
       <div className="mx-auto flex h-dvh max-w-md flex-col">
-        {/* pb-7: the swipe circle of the tab bar reaches 22 px (+ its 6 px ring) up into the page. */}
+        {/* pb-7: the big Beet circle of the tab bar reaches 22 px (+ its 6 px ring) up into the page. */}
         <main data-screen className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-none px-5 pt-[max(env(safe-area-inset-top),16px)] pb-7">
           {children}
         </main>

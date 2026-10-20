@@ -99,6 +99,12 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
           pot={shownPot(settings.flowerPot, rounds.filter((r) => r === "done").length)}
           notices={
             <>
+              {/* The dev clock moves "now" for the whole round logic – say so, or the Beet makes no sense. */}
+              {env().devTools && settings.devClockOffsetMinutes !== 0 && (
+                <Link href="/settings?t=konto" data-dev-clock className="meta self-start rounded-full bg-zitrone-soft px-3 py-1 text-tinte">
+                  🧪 dev-uhr: {formatShortDate(now)} · zurücksetzen ›
+                </Link>
+              )}
               {calendarStep && <ConnectCalendarCard people={overview.calendars} next="/plan" />}
               <StartNotices o={overview} ctx={ctx} />
             </>

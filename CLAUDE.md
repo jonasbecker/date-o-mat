@@ -18,6 +18,7 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - Google Calendar calls go through `calendarRequest()` (`src/server/google/calendar-api.ts`), which awaits `connection()` first so prefetch/prerender never hits Google. Call `connection()` before any try/catch around live Google data.
 - "Now" for a couple is `coupleNow(settings)` (`src/server/clock.ts`), never `new Date()` in round/slot logic – the dev clock shifts it.
 - Pages that use time or write round state call `await connection()` right after `requireCouple()`.
+  While the dev clock is moved (`ENABLE_DEV_TOOLS=1`), the Beet says so (`data-dev-clock`, reset in `?t=konto`).
 - **Design ("Garten", dark only):** spec and mockups in `docs/design/garten/` (DESIGN-GARTEN.md + `screens/*.html`,
   `components/Bloom.html`) – it replaces the older DESIGN.md / main-b for these pages. The whole app is dark:
   `<html data-theme="dark">` is fixed in `layout.tsx`, one token set in `globals.css` (`bg`, `surface`, `ink`, `muted`,
@@ -27,10 +28,11 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   (`bg-tile-*`, `bg-rose`, `bg-zitrone-soft` …) reset the tokens to light values, so `text-ink` on them stays readable
   – `bg-cta`/`bg-butter` are NOT in that list (their text is dark by design). Garden words: Ideen = Samen, Like =
   einpflanzen, Nein = Kompost, Match = keimt / Matchlinge, Frist = Gießzeit, Rhythmus = Gießrhythmus, Planen = gießen.
-- **Navigation (M40):** `BottomNav` in the `(app)` layout: Beet (`/plan`) · Ideen · **Swipen** (big circle,
-  `/ideas/entdecken`) · Archiv (`/dates`) · Einstellungen. `AppHeader` is the small name plus the page's
+- **Navigation (M40):** `BottomNav` in the `(app)` layout: Ideen · Swipen (`/ideas/entdecken`) · **Beet** (`/plan`,
+  the big green circle) · Archiv (`/dates`) · Einstellungen. `AppHeader` is the small name plus the page's
   own thing on the right (avatars, "36 Ideen", matches pill). The four dots are one path: the Beet is dot 1, the
-  planning flow's filter / "was?" / "wann?" are dots 2–4 (`flowTop` in `plan-form.tsx`). `/ideas` shows tiles; a tile opens `/ideas?ansicht=<kind>` (URL-driven, so the
+  planning flow's filter / "was?" / "wann?" are dots 2–4 (`flowTop` in `plan-form.tsx`); once a date is proposed
+  the Beet shows them as one lit bar (`StepDots all`). `/ideas` shows tiles; a tile opens `/ideas?ansicht=<kind>` (URL-driven, so the
   Ideen tab brings you back); the one Filter button (incl. category) is the only filter.
 - **Setup (Garten):** `/settings` is the garden shed (`setup-main.tsx`: "Wer gießt?", Gießrhythmus, Gießzeit, push
   switch; calendars + "Freie Abende ab"; `flower-card.tsx`: the flower's name and pot – `couple_settings.flower_name`,
@@ -39,8 +41,8 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - **Swipen / Ideen / Archiv (Garten):** seed packets (`swipe-deck.tsx`, "kompost"/"einpflanzen", "keimt!"), the seed
   shelf (`idea-tiles.tsx`, Matchlinge in pots), the stem (`/dates`, `?ansicht=raster` is the old grid).
 - **The Beet (start, Main B – `docs/design/main-b/`):** `src/app/(app)/beet.tsx` – headline per step ("du bist dran.",
-  "sam ist dran.", "date steht." …) at 70 px, the time left big on the right (`TimeLeft`, `--accent-time`), the round as its weekdays
-  (`WeekBar`: today lit, past days pale, a dot under the deadline day – no bar, it looked like a slider), the flower (`components/bloom.tsx`, geometry and mood in `core/bloom.ts`: `bloomGeometry`
+  "sam ist dran." – always the same size –, "date steht." …) at up to 70 px, the time left big on the right (`TimeLeft`, `--accent-time`), the round as its weekdays
+  (`WeekBar`: today lit, the bar filled up to today – no deadline marker, it looked like a slider handle), the flower (`components/bloom.tsx`, geometry and mood in `core/bloom.ts`: `bloomGeometry`
   is renderVals() of Bloom.html 1:1, `bloomStimmung` = §3, `bloomLeaves` = the last 5 rounds from `server/plant.ts`)
   with its thought bubble in Caveat (`font-hand`), and one action ("Date planen" + the round hand-over button,
   "Anstupsen", "Zusagen"). The pot has no face. All five moods side by side: `/dev/blume`. The old `Plant`
