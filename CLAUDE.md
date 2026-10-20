@@ -39,7 +39,7 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - **Swipen / Ideen / Archiv (Garten):** seed packets (`swipe-deck.tsx`, "kompost"/"einpflanzen", "keimt!"), the seed
   shelf (`idea-tiles.tsx`, Keimlinge in pots), the stem (`/dates`, `?ansicht=raster` is the old grid).
 - **The Beet (start, Main B – `docs/design/main-b/`):** `src/app/(app)/beet.tsx` – headline per step ("du bist dran.",
-  "kanne bei Sam." …) at 70 px, the time left big on the right (`TimeLeft`, `--accent-time`), the round as a bar with the
+  "sam ist dran.", "date steht." …) at 70 px, the time left big on the right (`TimeLeft`, `--accent-time`), the round as a bar with the
   deadline marker (`WeekBar`), the flower (`components/bloom.tsx`, geometry and mood in `core/bloom.ts`: `bloomGeometry`
   is renderVals() of Bloom.html 1:1, `bloomStimmung` = §3, `bloomLeaves` = the last 5 rounds from `server/plant.ts`)
   with its thought bubble in Caveat (`font-hand`), and one action ("Date planen" + the round hand-over button,

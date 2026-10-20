@@ -154,7 +154,7 @@ check(`swipes stored (${js.map((s) => s.verdict).join(",")})`, js.map((s) => `${
 check("nope passes the card for both", (await db.query("SELECT status FROM deck_cards WHERE title = $1", [second])).rows[0].status === "passed");
 const deckIdeas = async () => (await db.query("SELECT title FROM ideas WHERE source = 'deck' AND archived_at IS NULL ORDER BY title")).rows.map((r) => r.title);
 let saved = await deckIdeas();
-check(`a like alone puts the card on the wishlist (${saved.join(", ")})`, saved.join("|") === [first, third, fourth].sort().join("|"));
+check(`a like alone puts the card on the wishlist (${saved.join(", ")})`, [...saved].sort().join("|") === [first, third, fourth].sort().join("|"));
 check("…and the card stays open for Sam", (await db.query("SELECT status FROM deck_cards WHERE title = $1", [first])).rows[0].status === "open");
 
 // 3) Undo – twice: the drag-like and the like before it come back
@@ -239,12 +239,25 @@ check(`filter "Lang" shows long cards only (${longTop})`, longCard?.size === "la
 await s.getByRole("button", { name: "Filter: 🎡 Lang" }).click();
 await s.locator("dialog[open]").getByRole("button", { name: "Zurücksetzen" }).click();
 await s.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
-// Only the combo cards stay open. A background refill may add new cards after this: pass those
-// too, and load again until the combo is on top.
+// Only one open concert combo stays (a copy when the match above took it – the deck order is
+// random). A background refill may add new cards after this: pass those too, and load again
+// until the combo is on top.
+const openCombo = "SELECT c.id FROM deck_cards c WHERE c.couple_id = $1 AND c.kind = 'combo' AND c.status = 'open' AND c.event_title = 'Konzert: Annenmaykantereit' AND NOT EXISTS (SELECT 1 FROM deck_swipes w WHERE w.card_id = c.id AND w.user_id = $2) LIMIT 1";
+let { rows: [combo] } = await db.query(openCombo, [couple.id, sam.id]);
+let comboCopy = null;
+if (!combo) {
+  ({ rows: [combo] } = await db.query(
+    `INSERT INTO deck_cards (couple_id, kind, title, note, size, cost_eur, location, setting, theme, emoji, wildcard, dedupe_key, event_title, event_starts_at, event_ends_at, event_all_day, event_venue, event_url, event_key, batch, best_season)
+     SELECT couple_id, kind, 'Kombi-Kopie: Event und Burger', note, size, cost_eur, location, setting, theme, emoji, wildcard, dedupe_key || '-copy', event_title, event_starts_at, event_ends_at, event_all_day, event_venue, event_url, event_key, batch, best_season
+     FROM deck_cards WHERE couple_id = $1 AND kind = 'combo' AND event_title = 'Konzert: Annenmaykantereit' LIMIT 1 RETURNING id`,
+    [couple.id],
+  ));
+  comboCopy = combo.id;
+}
 const others = [];
 let comboTitle = "";
 for (let attempt = 0; attempt < 5 && !comboTitle.startsWith("Kombi"); attempt++) {
-  const { rows } = await db.query("UPDATE deck_cards SET status = 'passed' WHERE couple_id = $1 AND status = 'open' AND kind <> 'combo' RETURNING id", [couple.id]);
+  const { rows } = await db.query("UPDATE deck_cards SET status = 'passed' WHERE couple_id = $1 AND status = 'open' AND id <> $2 RETURNING id", [couple.id, combo.id]);
   others.push(...rows);
   await s.reload();
   await topCard(s).waitFor({ timeout: 15000 });
@@ -255,6 +268,7 @@ check(`combo card shows its event (${comboTitle})`, comboTitle.startsWith("Kombi
 check("combo knows you are both free", await topCard(s).getByText("✓ Ihr habt beide Zeit").isVisible());
 await s.screenshot({ path: `${OUT}m17-04-combo.png` });
 await db.query("UPDATE deck_cards SET status = 'open' WHERE id = ANY($1::uuid[])", [others.map((r) => r.id)]);
+if (comboCopy) await db.query("DELETE FROM deck_cards WHERE id = $1", [comboCopy]);
 
 // 8) Nudge: Jonas liked cards Sam has not seen → one push per day (logged)
 await fetch(`${BASE}/api/cron/tick`, CRON);
