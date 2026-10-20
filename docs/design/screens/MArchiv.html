@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Archiv</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&amp;family=DM+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #EEF2E6; color: #163A22; font-family: 'Bricolage Grotesque', system-ui, sans-serif; overflow: hidden">
+
+  <div style="position: absolute; left: 20px; right: 20px; top: 20px; display: flex; justify-content: space-between; align-items: center">
+    <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em">date-o-mat</span>
+    <span style="font-family: 'DM Mono', monospace; font-size: 11px">11 Dates · seit Juli</span>
+  </div>
+
+  <div style="position: absolute; left: 20px; right: 20px; top: 62px">
+    <h1 style="margin: 0; font-weight: 800; font-size: 54px; line-height: 0.92; letter-spacing: -0.045em">unser beet.</h1>
+  </div>
+
+  <div style="position: absolute; left: 16px; right: 16px; top: 132px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px">
+    <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="6">
+      <a href="#" style="display: flex; flex-direction: column; gap: 8px; text-decoration: none">
+        <div style="position: relative; height: 170px; border-radius: 20px; background: {{ t.photo }}; border: {{ t.border }}; box-sizing: border-box; overflow: hidden; display: flex; align-items: center; justify-content: center">
+          <sc-if value="{{ t.hasPhoto }}" hint-placeholder-val="{{ true }}">
+            <span aria-hidden="true" style="position: absolute; left: -20px; bottom: -30px; width: 120px; height: 90px; border-radius: 50%; background: {{ t.blob }}"></span>
+            <span aria-hidden="true" style="position: absolute; right: -10px; top: 20px; width: 70px; height: 70px; border-radius: 50%; background: {{ t.blob2 }}"></span>
+            <span style="position: relative; font-family: 'DM Mono', monospace; font-size: 11px; color: #163A22; background: rgba(255,255,255,0.75); padding: 4px 8px; border-radius: 999px">[Foto]</span>
+          </sc-if>
+          <sc-if value="{{ t.noPhoto }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size: 13px; color: #56604F; text-align: center; padding: 0 12px">{{ t.empty }}</span>
+          </sc-if>
+          <span aria-label="{{ t.whoLabel }}" style="position: absolute; left: 10px; top: 10px; width: 24px; height: 24px; border-radius: 50%; background: {{ t.whoBg }}; color: {{ t.whoFg }}; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{ t.who }}</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 1px; padding: 0 4px">
+          <span style="font-size: 15px; font-weight: 700; line-height: 1.15; color: {{ t.fg }}">{{ t.title }}</span>
+          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #56604F">{{ t.date }}</span>
+        </div>
+      </a>
+    </sc-for>
+  </div>
+
+  <nav style="position: absolute; left: 0; right: 0; bottom: 0; height: 80px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; color: #163A22; background: #EEF2E6">
+    <a href="MBeet.dc.html" aria-label="Beet" style="height: 60px; display: flex; align-items: center; justify-content: center; opacity: 0.6">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6zM12 11C12 7 9 5 5 5c0 4 3 6 7 6z"/></svg></a>
+    <a href="MIdeen.dc.html" aria-label="Ideen" style="height: 60px; display: flex; align-items: center; justify-content: center; opacity: 0.6">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></a>
+    <a href="MSwipe.dc.html" aria-label="Swipen" style="justify-self: center; width: 60px; height: 60px; border-radius: 50%; background: #163A22; color: #FFFFFF; display: flex; align-items: center; justify-content: center; margin-top: -18px; box-shadow: 0 8px 18px rgba(22,58,34,0.25)">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="12" height="16" rx="2.5" transform="rotate(8 13 11)"/><path d="M5.5 6.5L4 17.5a2 2 0 0 0 1.7 2.3l7.3 1"/><path d="M13.2 9.6c.8-.8 2.1-.8 2.9 0 .8.8.8 2.1 0 2.9l-2.9 2.9-2.9-2.9c-.8-.8-.8-2.1 0-2.9.8-.8 2.1-.8 2.9 0z"/></svg></a>
+    <a href="MArchiv.dc.html" aria-label="Archiv" style="height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-7 8"/></svg>
+      <span style="width: 4px; height: 4px; border-radius: 50%; background: currentColor"></span></a>
+    <a href="MSetup.dc.html" aria-label="Einstellungen" style="height: 60px; display: flex; align-items: center; justify-content: center; opacity: 0.6">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const data = [
+      { title: 'Bouldern ausprobieren', date: 'Sa 18.10.', who: 'S', photo: '#DCE7F5', blob: '#B9CDEB', blob2: '#F2A7BB' },
+      { title: 'Woche 41 ausgefallen', date: 'KW 41', who: 'J', none: true, empty: 'kein Date – das Blatt ist welk' },
+      { title: 'Ramen selbst kochen', date: 'Fr 03.10.', who: 'S', photo: '#F7EBC4', blob: '#EBD58F', blob2: '#E8A58D' },
+      { title: 'Flohmarkt am Sonntag', date: 'So 28.09.', who: 'J', photo: '#E6E0F2', blob: '#CBBFE6', blob2: '#BFDDB9' },
+      { title: 'Kino: Spätvorstellung', date: 'Mi 17.09.', who: 'S', photo: '#F6DFD3', blob: '#E8A58D', blob2: '#163A22' },
+      { title: 'Picknick im Stadtwald', date: 'Sa 13.09.', who: 'J', photo: '#DCEBD9', blob: '#8FC79A', blob2: '#F7EBC4' }
+    ];
+    const tiles = data.map((d) => ({
+      ...d,
+      hasPhoto: !d.none, noPhoto: !!d.none,
+      photo: d.none ? 'transparent' : d.photo,
+      border: d.none ? '2px dashed #C2CCBC' : '0',
+      fg: d.none ? '#56604F' : '#163A22',
+      whoBg: d.who === 'J' ? '#2F5BFF' : '#E58FA6', whoFg: '#FFFFFF',
+      whoLabel: d.who === 'J' ? 'geplant von Jonas' : 'geplant von S.'
+    }));
+    return { tiles };
+  }
+}
+</script>
+</body>
+</html>

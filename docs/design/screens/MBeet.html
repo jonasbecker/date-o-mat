@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Beet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&amp;family=DM+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: {{ bg }}; color: {{ ink }}; font-family: 'Bricolage Grotesque', system-ui, sans-serif; overflow: hidden">
+
+  <div style="position: absolute; left: 20px; right: 20px; top: 20px; display: flex; justify-content: space-between; align-items: center">
+    <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em">date-o-mat</span>
+    <div style="display: flex">
+      <span style="width: 30px; height: 30px; border-radius: 50%; background: #FFFFFF; color: #163A22; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px {{ jRing }}">J</span>
+      <span style="width: 30px; height: 30px; border-radius: 50%; background: #FFFFFF; color: #5A2416; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-left: -6px; box-shadow: 0 0 0 2px {{ sRing }}">S</span>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 20px; right: 20px; top: 70px">
+    <h1 style="margin: 0; font-weight: 800; font-size: 62px; line-height: 0.92; letter-spacing: -0.045em; white-space: pre-line">{{ headline }}</h1>
+    <div aria-hidden="true" style="margin-top: 16px; display: flex; gap: 6px">
+      <sc-for list="{{ dots }}" as="d" hint-placeholder-count="4">
+        <span style="height: 6px; width: {{ d.w }}; border-radius: 3px; background: {{ ink }}; opacity: {{ d.op }}"></span>
+      </sc-for>
+    </div>
+    <sc-if value="{{ waiting }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top: 14px; display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 999px; background: #FFFFFF; font-size: 14px; font-weight: 500">Do 18:30 · Sonnenuntergang am Rhein</div>
+    </sc-if>
+  </div>
+
+  <div aria-hidden="true" style="position: absolute; left: 0; top: {{ plantTop }}; width: 390px; height: 420px">
+    <div style="position: absolute; left: 193px; top: 62px; width: 4px; height: 276px; border-radius: 2px; background: #2E7D46"></div>
+    <sc-for list="{{ leaves }}" as="l" hint-placeholder-count="12">
+      <div style="position: absolute; left: {{ l.x }}; top: {{ l.y }}; width: {{ l.w }}; height: {{ l.h }}; border-radius: 50%; background: {{ l.bg }}; border: {{ l.border }}; box-sizing: border-box; transform: rotate({{ l.rot }}); transform-origin: {{ l.origin }}"></div>
+    </sc-for>
+    <div style="position: absolute; left: 177px; top: 22px; width: 36px; height: 36px; border-radius: 50%; border: 2px {{ budLine }} #2E7D46; background: {{ budBg }}; box-sizing: border-box"></div>
+    <div style="position: absolute; left: 120px; top: 334px; width: 150px; height: 14px; border-radius: 7px; background: #C9693F"></div>
+    <div style="position: absolute; left: 128px; top: 346px; width: 134px; height: 74px; background: #D97B52; clip-path: polygon(0 0, 100% 0, 88% 100%, 12% 100%)"></div>
+    <div style="position: absolute; left: {{ canX }}; top: {{ canY }}; width: 100px; height: 66px; transform: rotate({{ canRot }})">
+      <div style="position: absolute; left: 32px; top: 18px; width: 62px; height: 46px; border-radius: 18px; background: {{ can }}"></div>
+      <div style="position: absolute; left: 46px; top: 0; width: 34px; height: 24px; border: 5px solid {{ can }}; border-bottom: 0; border-radius: 17px 17px 0 0; box-sizing: border-box"></div>
+      <div style="position: absolute; left: -4px; top: 32px; width: 42px; height: 7px; border-radius: 4px; background: {{ can }}; transform: rotate(-26deg); transform-origin: right center"></div>
+    </div>
+    <sc-for list="{{ drops }}" as="dr" hint-placeholder-count="3">
+      <div style="position: absolute; left: {{ dr.x }}; top: {{ dr.y }}; width: 7px; height: 11px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #2F5BFF"></div>
+    </sc-for>
+  </div>
+
+  <div style="position: absolute; left: 20px; right: 20px; top: 672px">
+    <a href="{{ ctaHref }}" style="height: 58px; border-radius: 999px; background: {{ ctaBg }}; color: {{ ctaFg }}; border: 2px solid {{ ink }}; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700">{{ cta }}</a>
+  </div>
+
+  <nav style="position: absolute; left: 0; right: 0; bottom: 0; height: 80px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; color: {{ ink }}">
+    <a href="MBeet.dc.html" aria-label="Beet" style="height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6zM12 11C12 7 9 5 5 5c0 4 3 6 7 6z"/></svg>
+      <span style="width: 4px; height: 4px; border-radius: 50%; background: currentColor"></span></a>
+    <a href="MIdeen.dc.html" aria-label="Ideen" style="height: 60px; display: flex; align-items: center; justify-content: center; opacity: 0.6">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></a>
+    <a href="MSwipe.dc.html" aria-label="Swipen" style="justify-self: center; width: 60px; height: 60px; border-radius: 50%; background: #163A22; color: #FFFFFF; display: flex; align-items: center; justify-content: center; margin-top: -18px; box-shadow: 0 8px 18px rgba(22,58,34,0.25)">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="12" height="16" rx="2.5" transform="rotate(8 13 11)"/><path d="M5.5 6.5L4 17.5a2 2 0 0 0 1.7 2.3l7.3 1"/><path d="M13.2 9.6c.8-.8 2.1-.8 2.9 0 .8.8.8 2.1 0 2.9l-2.9 2.9-2.9-2.9c-.8-.8-.8-2.1 0-2.9.8-.8 2.1-.8 2.9 0z"/></svg></a>
+    <a href="MArchiv.dc.html" aria-label="Archiv" style="height: 60px; display: flex; align-items: center; justify-content: center; opacity: 0.6">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-7 8"/></svg></a>
+    <a href="MSetup.dc.html" aria-label="Einstellungen" style="height: 60px; display: flex; align-items: center; justify-content: center; opacity: 0.6">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"seite":{"editor":"enum","options":["du","sie"],"default":"du"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mine = (this.props.seite ?? 'du') !== 'sie';
+    const ink = '#163A22';
+    const leaves = Array.from({ length: 12 }, (_, i) => {
+      const right = i % 2 === 0;
+      const wilted = i === 10;
+      const size = Math.round(64 - i * 2.4);
+      const h = Math.round(size * 0.56);
+      let rot = right ? -28 : 28;
+      if (wilted) rot = right ? 34 : -34;
+      return {
+        x: right ? '197px' : (193 - size) + 'px',
+        y: (318 - i * 22 - Math.round(h / 2)) + 'px',
+        w: size + 'px', h: h + 'px',
+        bg: wilted ? 'transparent' : (i % 3 === 0 ? '#5BAE6A' : '#2E7D46'),
+        border: wilted ? '2px dashed #2E7D46' : '0',
+        rot: rot + 'deg', origin: right ? 'left center' : 'right center'
+      };
+    });
+    return {
+      mine, waiting: !mine, ink, leaves,
+      bg: '#EEF2E6',
+      jRing: mine ? '#2F5BFF' : 'transparent', sRing: mine ? 'transparent' : '#E58FA6',
+      headline: mine ? 'du bist\ndran.' : 'kanne\nbei S.',
+      dots: [0, 1, 2, 3].map((n) => ({ w: n === (mine ? 0 : 1) ? '22px' : '6px', op: n === (mine ? 0 : 1) ? 1 : 0.35 })),
+      budLine: mine ? 'dashed' : 'solid', budBg: mine ? 'transparent' : '#F2A7BB',
+      can: mine ? '#2F5BFF' : '#E58FA6',
+      plantTop: mine ? '210px' : '240px',
+      canX: mine ? '262px' : '272px', canY: mine ? '170px' : '40px', canRot: mine ? '-28deg' : '0deg',
+      drops: mine ? [{ x: '240px', y: '214px' }, { x: '228px', y: '232px' }, { x: '246px', y: '240px' }] : [],
+      cta: mine ? 'Date planen' : 'Anstupsen',
+      ctaHref: mine ? 'MPlan.dc.html' : 'MEinladung.dc.html',
+      ctaBg: mine ? '#163A22' : 'transparent', ctaFg: mine ? '#FFFFFF' : '#163A22'
+    };
+  }
+}
+</script>
+</body>
+</html>

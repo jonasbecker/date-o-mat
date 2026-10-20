@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Bestätigt</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&amp;family=DM+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #EEF2E6; color: #1F2A1C; font-family: 'Bricolage Grotesque', system-ui, sans-serif; overflow: hidden">
+
+  <div style="position: absolute; left: 20px; right: 20px; top: 20px; display: flex; justify-content: space-between; align-items: center">
+    <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em">date-o-mat</span>
+    <span style="font-family: 'DM Mono', monospace; font-size: 11px">Nº15</span>
+  </div>
+
+  <div style="position: absolute; left: 20px; right: 20px; top: 70px">
+    <h1 style="margin: 0; font-weight: 800; font-size: 58px; line-height: 0.92; letter-spacing: -0.045em">neues<br>blatt!</h1>
+    <div style="margin-top: 10px; font-size: 16px; color: #56604F">S. hat zugesagt. Ihr seht euch Donnerstag.</div>
+  </div>
+
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 236px; width: 390px; height: 300px">
+    <div style="position: absolute; left: 193px; top: 30px; width: 4px; height: 200px; border-radius: 2px; background: #2E7D46"></div>
+    <sc-for list="{{ leaves }}" as="l" hint-placeholder-count="9">
+      <div style="position: absolute; left: {{ l.x }}; top: {{ l.y }}; width: {{ l.w }}; height: {{ l.h }}; border-radius: 50%; background: {{ l.bg }}; border: {{ l.border }}; box-sizing: border-box; transform: rotate({{ l.rot }}); transform-origin: {{ l.origin }}; box-shadow: {{ l.glow }}"></div>
+    </sc-for>
+    <div style="position: absolute; left: 120px; top: 226px; width: 150px; height: 14px; border-radius: 7px; background: #C9693F"></div>
+    <div style="position: absolute; left: 128px; top: 238px; width: 134px; height: 62px; background: #D97B52; clip-path: polygon(0 0, 100% 0, 88% 100%, 12% 100%)"></div>
+    <span style="position: absolute; left: 256px; top: 6px; height: 26px; padding: 0 10px; border-radius: 999px; background: #F2A7BB; color: #5A2416; font-family: 'DM Mono', monospace; font-size: 11px; display: inline-flex; align-items: center">Nº15</span>
+  </div>
+
+  <div style="position: absolute; left: 16px; right: 16px; top: 560px; padding: 16px; border-radius: 22px; background: #FFFFFF; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <span style="font-size: 20px; font-weight: 800; letter-spacing: -0.02em">Sonnenuntergang am Rhein</span>
+    </div>
+    <div style="font-size: 15px; color: #56604F">Do 22.10. · 18:30–21:00 · Rheinufer</div>
+    <div style="display: flex; flex-wrap: wrap; gap: 6px">
+      <span style="height: 30px; padding: 0 12px; border-radius: 999px; background: #EDF3EA; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px">✓ in beiden Kalendern</span>
+      <span style="height: 30px; padding: 0 12px; border-radius: 999px; background: #EDF3EA; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center">Erinnerung Do 17:30</span>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 16px; right: 16px; top: 712px">
+    <a href="MBeet.dc.html" style="height: 52px; border-radius: 999px; background: #163A22; color: #FFFFFF; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700">Zum Beet</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const n = 9;
+    const leaves = Array.from({ length: n }, (_, i) => {
+      const right = i % 2 === 0;
+      const fresh = i === n - 1;
+      const size = Math.round(60 - i * 2.6);
+      const h = Math.round(size * 0.56);
+      return {
+        x: right ? '197px' : (193 - size) + 'px',
+        y: (210 - i * 22 - Math.round(h / 2)) + 'px',
+        w: size + 'px', h: h + 'px',
+        bg: fresh ? '#F2A7BB' : (i % 3 === 0 ? '#5BAE6A' : '#2E7D46'),
+        border: '0', glow: fresh ? '0 0 0 6px rgba(242,167,187,0.35)' : 'none',
+        rot: (right ? -28 : 28) + 'deg', origin: right ? 'left center' : 'right center'
+      };
+    });
+    return { leaves };
+  }
+}
+</script>
+</body>
+</html>

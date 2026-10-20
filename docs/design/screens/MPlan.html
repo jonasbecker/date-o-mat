@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Date planen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&amp;family=DM+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #EEF2E6; color: #163A22; font-family: 'Bricolage Grotesque', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 0">
+    <a href="MBeet.dc.html" aria-label="Zurück" style="width: 44px; height: 44px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+    <div aria-hidden="true" style="display: flex; gap: 6px"><span style="width: 22px; height: 6px; border-radius: 3px; background: #163A22"></span><span style="width: 6px; height: 6px; border-radius: 3px; background: #163A22; opacity: 0.35"></span><span style="width: 6px; height: 6px; border-radius: 3px; background: #163A22; opacity: 0.35"></span><span style="width: 6px; height: 6px; border-radius: 3px; background: #163A22; opacity: 0.35"></span></div>
+    <span style="width: 44px; font-family: 'DM Mono', monospace; font-size: 11px; text-align: right">54 h</span>
+  </div>
+
+  <div style="padding: 22px 20px 10px">
+    <h1 style="margin: 0; font-weight: 800; font-size: 40px; line-height: 0.95; letter-spacing: -0.04em">wann?</h1>
+  </div>
+  <div style="padding: 0 16px; display: flex; flex-direction: column; gap: 6px">
+    <sc-for list="{{ slots }}" as="s" hint-placeholder-count="3">
+      <button type="button" onClick="{{ s.pick }}" style="height: 56px; border: 0; border-radius: 16px; background: {{ s.bg }}; color: {{ s.fg }}; display: grid; grid-template-columns: 78px minmax(0, 1fr) auto; align-items: center; padding: 0 16px; text-align: left">
+        <span style="font-family: 'DM Mono', monospace; font-size: 12px">{{ s.day }}</span>
+        <span style="font-size: 20px; font-weight: 700; letter-spacing: -0.02em">{{ s.time }}</span>
+        <span style="font-family: 'DM Mono', monospace; font-size: 11px">{{ s.len }}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="padding: 22px 20px 10px; display: flex; justify-content: space-between; align-items: baseline">
+    <div style="font-weight: 800; font-size: 40px; line-height: 0.95; letter-spacing: -0.04em">was?</div>
+    <a href="MIdeen.dc.html" style="font-size: 14px; font-weight: 700; text-decoration: none; padding: 8px 0">+ neue Idee</a>
+  </div>
+  <div style="padding: 0 16px; display: flex; flex-direction: column; gap: 6px">
+    <sc-for list="{{ ideas }}" as="i" hint-placeholder-count="4">
+      <button type="button" onClick="{{ i.pick }}" style="height: 52px; border: 0; border-radius: 16px; background: {{ i.bg }}; color: {{ i.fg }}; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 0 12px 0 16px; text-align: left">
+        <span style="font-size: 16px; font-weight: 600">{{ i.title }}</span>
+        <span style="height: 26px; padding: 0 10px; border-radius: 999px; background: {{ i.chip }}; font-family: 'DM Mono', monospace; font-size: 11px; display: inline-flex; align-items: center">{{ i.size }}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="margin: auto 16px 20px; padding: 14px; border-radius: 22px; background: #FFFFFF; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <span aria-hidden="true" style="flex: none; width: 34px; height: 20px; border-radius: 50%; background: #5BAE6A; transform: rotate(-24deg)"></span>
+      <span style="font-size: 16px; font-weight: 700; line-height: 1.2">{{ summary }}</span>
+    </div>
+    <a href="MBeetSie.dc.html" style="height: 56px; border-radius: 999px; background: #2F5BFF; color: #FFFFFF; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700">Gießen &amp; an S. senden</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { slot: 1, idea: 1 };
+  }
+  renderVals() {
+    const slots = [
+      { day: 'Mi 21.10.', time: '19:00–21:30', len: '2,5 h' },
+      { day: 'Do 22.10.', time: '18:30–21:00', len: '2,5 h' },
+      { day: 'Sa 24.10.', time: '14:00–18:00', len: '4 h' }
+    ];
+    const ideas = [
+      { title: 'Kajak auf dem Rhein', size: '♥ match' },
+      { title: 'Sonnenuntergang am Rhein', size: '♥ match' },
+      { title: 'Nachtflohmarkt', size: '♥ match' },
+      { title: 'Ramen selbst kochen', size: 'klein' }
+    ];
+    const s = slots[this.state.slot], i = ideas[this.state.idea];
+    return {
+      slots: slots.map((x, n) => ({ ...x, bg: n === this.state.slot ? '#163A22' : '#FFFFFF', fg: n === this.state.slot ? '#FFFFFF' : '#163A22', pick: () => this.setState({ slot: n }) })),
+      ideas: ideas.map((x, n) => ({ ...x, bg: n === this.state.idea ? '#163A22' : '#FFFFFF', fg: n === this.state.idea ? '#FFFFFF' : '#163A22', chip: n === this.state.idea ? 'rgba(255,255,255,0.16)' : '#EDF3EA', pick: () => this.setState({ idea: n }) })),
+      summary: s.day.slice(0, 2) + ' ' + s.time.split('–')[0] + ' · ' + i.title
+    };
+  }
+}
+</script>
+</body>
+</html>
