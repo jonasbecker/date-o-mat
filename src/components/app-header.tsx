@@ -14,7 +14,7 @@ export type HeaderPlace = "plan" | "ideas" | "dates" | "settings";
 /**
  * The top of a page (DESIGN.md): the small name on the left, on the right what the page has there –
  * a meta line ("36 Ideen"), the two avatars or an action. `center`: the step dots, in the middle of
- * the row – the same spot as in the planning flow (`TopRow`). Navigation is in the bottom bar.
+ * the row – the same spot as in the planning flow (`TopRow`, top-row.tsx). Navigation is in the bottom bar.
  */
 export function AppHeader({ action, center }: { current?: HeaderPlace; action?: React.ReactNode; center?: React.ReactNode }) {
   return (
@@ -25,17 +25,6 @@ export function AppHeader({ action, center }: { current?: HeaderPlace; action?: 
       {center && <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">{center}</span>}
       {action}
     </header>
-  );
-}
-
-/** The top row of the planning flow: back on the left, the dots in the middle (where the Beet has them), meta on the right. */
-export function TopRow({ back, center, meta }: { back: React.ReactNode; center?: React.ReactNode; meta?: React.ReactNode }) {
-  return (
-    <div className="relative flex h-11 items-center justify-between">
-      {back}
-      {center && <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">{center}</span>}
-      <span className="w-11 text-right font-mono text-[11px]">{meta ?? ""}</span>
-    </div>
   );
 }
 

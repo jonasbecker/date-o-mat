@@ -10,7 +10,7 @@ import { categoryOf } from "@/core/categories";
 import { slotModeFor } from "@/core/slot-modes";
 import { orderSlots } from "@/core/slots";
 import { FilteredEmpty, FilterButton, FilterQuestions, useIdeaFilter } from "@/components/idea-filter";
-import { TopRow } from "@/components/app-header";
+import { TopRow } from "@/components/top-row";
 import { Sheet, type SheetHandle } from "@/components/sheet";
 import { SurpriseButton } from "@/components/surprise-button";
 import { SwapConfirm, type NextDateInfo } from "@/components/swap-confirm";
