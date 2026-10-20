@@ -6,6 +6,8 @@ export const APP_TIMEZONE = "Europe/Berlin";
 
 export const USER_COLORS = ["mandarine", "himmel"] as const;
 export type UserColor = (typeof USER_COLORS)[number];
+/** The person colors as accents (DESIGN.md §2): himmel = blue, mandarine = rosé. */
+export const PERSON_HEX: Record<UserColor, string> = { himmel: "#2F5BFF", mandarine: "#E58FA6" };
 
 export const IDEA_SIZES = ["small", "large"] as const;
 export type IdeaSize = (typeof IDEA_SIZES)[number];
@@ -58,6 +60,8 @@ export const NOTIFICATION_TYPES = [
   "story",
   // Preparation checklist of a date: still open the day before.
   "prep",
+  // "Anstupsen" on the Beet: the one waiting reminds the one with the watering can.
+  "nudge",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

@@ -4,7 +4,7 @@ import { mkdirSync } from "node:fs";
 import { DateTime } from "luxon";
 import pg from "pg";
 import { chromium } from "playwright";
-import { backAtStart, fitsScreen, openTimes, pickIdea } from "./flow.mjs";
+import { backAtStart, fitsScreen, openTimes, pickIdea, SEND } from "./flow.mjs";
 import { startMock } from "./google-mock.mjs";
 import { resetDb } from "./db.mjs";
 
@@ -153,7 +153,7 @@ await pickIdea(j, "Sushi-Abend");
 check("hint in the footer", await j.getByText("⚠️ Sprengt euer Budget (noch 30 €)").isVisible());
 await j.getByLabel(/Aus dem Spartopf \(15 €\)/).check();
 await j.screenshot({ path: `${OUT}m18-03-plan.png` });
-await j.getByRole("button", { name: "Date festlegen 🎉" }).click();
+await j.getByRole("button", { name: SEND }).click();
 await backAtStart(j, BASE);
 const { rows: [planned] } = await db.query("SELECT title, from_pot, estimated_cost_eur FROM date_plans WHERE couple_id = $1 AND status = 'planned' ORDER BY created_at DESC LIMIT 1", [couple.id]);
 check(`planned from the pot with the estimate (${JSON.stringify(planned)})`, planned.title === "Sushi-Abend" && planned.from_pot === true && planned.estimated_cost_eur === 40);

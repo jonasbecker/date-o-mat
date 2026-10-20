@@ -83,19 +83,19 @@ export function SetupChecklist({
   const next = open[shown % open.length];
   return (
     <section aria-label={`Startklar? ${items.length - open.length} von ${items.length}`} className="flex items-start gap-2.5 rounded-[18px] border-2 border-dashed border-line px-3.5 py-2 text-sm">
-      <span className="shrink-0 font-extrabold">
+      <span className="shrink-0 font-mono text-xs leading-5">
         Startklar {items.length - open.length}/{items.length}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block font-bold">{next.todo}</span>
-        {next.hint && <span className="block font-semibold text-muted">{next.hint}</span>}
+        <span className="block font-semibold">{next.todo}</span>
+        {next.hint && <span className="block text-muted">{next.hint}</span>}
       </span>
       {open.length > 1 && (
-        <button type="button" onClick={() => setShown((i) => i + 1)} aria-label="Nächster Punkt" className="shrink-0 text-base font-extrabold">
+        <button type="button" onClick={() => setShown((i) => i + 1)} aria-label="Nächster Punkt" className="shrink-0 text-base font-bold">
           ›
         </button>
       )}
-      <button type="button" onClick={dismiss} aria-label="Ausblenden" className="shrink-0 text-base font-extrabold text-muted">
+      <button type="button" onClick={dismiss} aria-label="Ausblenden" className="shrink-0 text-base font-bold text-muted">
         ×
       </button>
     </section>

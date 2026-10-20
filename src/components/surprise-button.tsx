@@ -9,7 +9,7 @@ import { Sheet, type SheetHandle } from "./sheet";
 import { SizeChip } from "./size-chip";
 import type { IdeaSize } from "@/lib/domain";
 
-/** "Überrasch uns": draws a random idea, shown like a gumball falling out of the machine. */
+/** "Zufall": draws a random idea from the wishlist (or a Köln tip). */
 export function SurpriseButton({
   className,
   variant = "secondary",
@@ -17,8 +17,11 @@ export function SurpriseButton({
   ideaSize,
   onChoose,
   label = "🎲 Überrasch uns",
+  look = "button",
 }: {
   label?: React.ReactNode;
+  /** "link": a quiet text button (next to "Was anderes" on the plan page). */
+  look?: "button" | "link";
   className?: string;
   variant?: "primary" | "secondary";
   size?: "sm" | "md";
@@ -66,7 +69,7 @@ export function SurpriseButton({
 
   return (
     <>
-      <button type="button" onClick={open} className={buttonClass(variant, size, cn("w-full", className))}>
+      <button type="button" onClick={open} className={look === "link" ? cn("tap flex items-center gap-1.5 underline", className) : buttonClass(variant, size, cn("w-full", className))}>
         {label}
       </button>
       <Sheet ref={sheet} title="Der Date-O-Mat zieht …">
@@ -74,22 +77,22 @@ export function SurpriseButton({
           {drawing ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 py-6">
               <span className="animate-spin text-6xl [animation-duration:700ms]" aria-hidden="true">
-                🍬
+                🎲
               </span>
-              <p className="font-display text-lg font-semibold">Kurbel dreht sich …</p>
+              <p className="text-lg font-semibold">Wird gezogen …</p>
             </div>
           ) : empty ? (
             <p className="font-bold">Gerade gibt es nichts zu ziehen – setzt ein paar Ideen auf die Wunschliste.</p>
           ) : (
             pick && (
-              <div className="animate-pop-in flex flex-col gap-3 rounded-[22px] border-[2.5px] border-line bg-zitrone-soft p-4 text-tinte">
+              <div className="animate-pop-in flex flex-col gap-3 rounded-[22px] bg-zitrone-soft p-4 text-tinte">
                 <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-display text-2xl font-semibold leading-tight">{pick.title}</h3>
+                  <h3 className="text-2xl font-extrabold leading-tight tracking-[-0.03em]">{pick.title}</h3>
                   <SizeChip size={pick.size} className="mt-1 shrink-0" />
                 </div>
-                {pick.meta && <p className="text-sm font-extrabold">{pick.meta}</p>}
-                {pick.note && <p className="font-semibold">{pick.note}</p>}
-                <p className="text-xs font-extrabold uppercase tracking-wide">{pick.ideaId ? "Von eurer Wunschliste" : "Köln-Tipp vom Date-O-Mat"}</p>
+                {pick.meta && <p className="meta">{pick.meta}</p>}
+                {pick.note && <p className="text-muted">{pick.note}</p>}
+                <p data-draw-source className="meta">{pick.ideaId ? "von eurer Wunschliste" : "Köln-Tipp vom Date-O-Mat"}</p>
               </div>
             )
           )}

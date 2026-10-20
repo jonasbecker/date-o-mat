@@ -12,7 +12,9 @@ import { SwapConfirm, type NextDateInfo } from "@/components/swap-confirm";
 import { IdeaForm, type IdeaFormDefaults } from "@/components/idea-form";
 import { Sheet, type SheetHandle } from "@/components/sheet";
 import { IdeaCard } from "@/components/idea-card";
-import { CalendarIcon, PencilIcon, SwapIcon } from "@/components/icons";
+import { BackIcon, CalendarIcon, PencilIcon, SwapIcon } from "@/components/icons";
+import { QuickAdd } from "@/components/quick-add";
+import { IdeaTiles, type TileCounts } from "./idea-tiles";
 import { Mascot } from "@/components/mascot";
 import type { UserColor } from "@/lib/domain";
 import { archiveIdeaAction, updateIdeaAction } from "./actions";
@@ -29,7 +31,7 @@ export function IdeaBoard({
   canPlanNew,
   partnerName,
   meId,
-  initialView = "all",
+  initialView = "tiles",
 }: {
   ideas: BoardIdea[];
   people: Record<string, BoardPerson>;
@@ -38,13 +40,14 @@ export function IdeaBoard({
   /** The round has no date yet – "Date damit planen" works. */
   canPlanNew: boolean;
   meId: string;
-  initialView?: ListView;
+  /** "tiles": the overview of MIdeen; a view: its list. */
+  initialView?: ListView | "tiles";
 }) {
   const [filter] = useIdeaFilter();
   const [open, setOpen] = useState<{ idea: BoardIdea; view: "menu" | "edit" } | null>(null);
   const sheet = useRef<SheetHandle>(null);
 
-  const [view, setView] = useState<ListView>(initialView);
+  const [view, setView] = useState<ListView | "tiles">(initialView);
   // Ideas that came from swiping say who liked them.
   const tagOf = (idea: BoardIdea): string | null =>
     idea.source !== "deck" ? null : idea.createdById === meId ? "💚 von dir geswipt" : `💚 ${people[idea.createdById ?? ""]?.name ?? "Ihr"} hat's geliked`;
@@ -52,21 +55,49 @@ export function IdeaBoard({
   const matches = ideas.filter((idea) => idea.matched);
   const visible = ideas
     .filter((idea) => matchesIdeaFilter({ size: idea.size, costEur: idea.costEur, setting: idea.setting, category: categoryOf(idea) }, filter))
-    .filter((idea) => (view === "match" ? idea.matched : view === "swiped" ? idea.source === "deck" : true));
+    .filter((idea) => view !== "tiles" && inView(idea, view));
+  const counts = Object.fromEntries((["small", "large", "outdoor", "indoor", "local", "own"] as const).map((v) => [v, ideas.filter((i) => inView(i, v)).length])) as TileCounts;
 
   function show(idea: BoardIdea) {
     setOpen({ idea, view: "menu" });
     sheet.current?.open();
   }
 
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-[30px] font-bold">
-          Wunschliste <span className="font-sans text-base font-extrabold text-muted">· {ideas.length}</span>
-        </h1>
-        {ideas.length > 0 && <FilterButton />}
+  if (view === "tiles") {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex items-end justify-between gap-3">
+          <h1 className="headline text-[54px]">ideen.</h1>
+          <span className="flex items-center gap-3 pb-1.5 text-sm font-bold">
+            <Link href="/events" className="tap">
+              Was läuft ›
+            </Link>
+            <button type="button" onClick={() => setView("all")} className="tap">
+              Alle {ideas.length} ›
+            </button>
+          </span>
+        </div>
+        <QuickAdd look="field" />
+        <IdeaTiles counts={counts} matches={matches} onView={setView} />
       </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="flex min-w-0 items-center gap-3">
+          <button type="button" onClick={() => setView("tiles")} aria-label="Zurück zu den Kacheln" className="tap flex size-10 shrink-0 items-center justify-center rounded-full bg-surface">
+            <BackIcon width={18} height={18} />
+          </button>
+          <h1 className="headline truncate text-[40px]">{VIEW_TITLE[view]}</h1>
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          {ideas.length > 0 && <FilterButton />}
+          <QuickAdd />
+        </span>
+      </div>
+      <span className="sr-only">Wunschliste · {ideas.length}</span>
 
       {ideas.length > 0 && <CategoryChips counts={categoryCounts(ideas)} view={view} onView={setView} matches={matches.length} swiped={swiped.length} />}
 
@@ -75,7 +106,7 @@ export function IdeaBoard({
       ) : visible.length === 0 ? (
         <FilteredEmpty what="Ideen" />
       ) : (
-        <ul className="flex flex-col gap-3.5">
+        <ul data-scroll className="-mx-1 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-1 pb-2" aria-label="Eure Wunschliste">
           {visible.map((idea) => (
             <li key={idea.id} className="animate-pop-in">
               <IdeaCard idea={{ ...idea, creator: idea.createdById ? people[idea.createdById] : null, isNext: next?.ideaId === idea.id, tag: tagOf(idea) }} onOpen={() => show(idea)} />
@@ -104,6 +135,39 @@ export function IdeaBoard({
       </Sheet>
     </div>
   );
+}
+
+const VIEW_TITLE: Record<ListView, string> = {
+  all: "alle.",
+  match: "matches.",
+  swiped: "geswipt.",
+  small: "kurz.",
+  large: "lang.",
+  outdoor: "draußen.",
+  indoor: "drinnen.",
+  local: "mit ort.",
+  own: "eigene.",
+};
+
+function inView(idea: BoardIdea, view: ListView): boolean {
+  switch (view) {
+    case "all":
+      return true;
+    case "match":
+      return idea.matched;
+    case "swiped":
+      return idea.source === "deck";
+    case "small":
+    case "large":
+      return idea.size === view;
+    case "outdoor":
+    case "indoor":
+      return idea.setting === view;
+    case "local":
+      return Boolean(idea.location);
+    case "own":
+      return idea.source === "wishlist";
+  }
 }
 
 /** What tapping an idea offers: plan it (or do it instead of the next date) – or edit it. */
@@ -143,8 +207,8 @@ function IdeaMenu({
 
   return (
     <div className="flex flex-col gap-2.5">
-      {isNext && <p className="rounded-[18px] border-2 border-line bg-minze-soft px-4 py-2.5 font-bold text-tinte">📅 Das ist euer nächstes Date: {next!.when}</p>}
-      {next && !next.swappable && <p className="text-sm font-bold text-muted">Euer nächstes Date ist eine Überraschung von {partnerName} – das kann nur {partnerName} ändern.</p>}
+      {isNext && <p className="rounded-[18px] bg-minze-soft px-4 py-2.5 font-semibold text-tinte">📅 Das ist euer nächstes Date: {next!.when}</p>}
+      {next && !next.swappable && <p className="text-sm text-muted">Euer nächstes Date ist eine Überraschung von {partnerName} – das kann nur {partnerName} ändern.</p>}
       {swap && (
         <Button onClick={() => setConfirming(true)} className="w-full">
           <SwapIcon width={20} height={20} /> Statt „{next!.title}“ machen
@@ -171,12 +235,11 @@ function footnote(idea: BoardIdea, people: Record<string, BoardPerson>): string 
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-[24px] border-[2.5px] border-dashed border-line px-6 py-10 text-center">
+    <div className="flex flex-col items-center gap-3 rounded-[24px] border-2 border-dashed border-line px-6 py-10 text-center">
       <Mascot id="no-ideas" size={64} />
       <h2 className="text-[22px] font-bold">Noch keine Ideen</h2>
-      <p className="font-semibold text-muted">
-        Tippt oben auf <strong className="text-ink">+ Idee</strong>, sobald euch etwas einfällt – Titel und Größe
-        reichen.
+      <p className="text-muted">
+        Tippt auf <strong className="text-ink">+ Idee</strong>, sobald euch etwas einfällt – oder swipt ein paar Vorschläge.
       </p>
     </div>
   );

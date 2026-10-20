@@ -3,7 +3,7 @@ import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import pg from "pg";
 import { chromium } from "playwright";
-import { backAtStart, customIdea, fitsScreen, openFlow, pickIdea } from "./flow.mjs";
+import { backAtStart, customIdea, fitsScreen, openFlow, pickIdea, SEND } from "./flow.mjs";
 import { startMock } from "./google-mock.mjs";
 import { tuesdayMorningOffset } from "./clock.mjs";
 import { resetDb } from "./db.mjs";
@@ -62,33 +62,22 @@ async function pageFor(token, scheme = "light") {
 const heading = async (p) => {
   const h = p.locator("[data-next-step] h2").filter({ visible: true }).first();
   await h.waitFor({ timeout: 15000 }).catch(() => {});
-  return (await h.innerText()).trim();
+  return (await h.innerText()).replace(/\s+/g, " ").trim();
 };
 
 // 1) Jonas' turn: one big next step
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/`);
 await heading(j);
-check(`next step: "${await heading(j)}"`, (await heading(j)) === "Du bist dran!");
-check("period instead of round number", await j.locator("[data-next-step]").getByText(/^Diese Woche · Plan bis/).isVisible());
-check("home is focused: no separate surprise / push cards", (await j.getByRole("button", { name: /Überrasch uns/ }).count()) === 0);
-check("'Date planen' sits in the step card", await j.locator("[data-next-step]").filter({ visible: true }).getByRole("link", { name: "Date planen", exact: true }).isVisible());
-const startDeck = j.locator('[data-swipe-deck="start"]');
-await startDeck.locator('[aria-roledescription="Karte"]').waitFor({ timeout: 15000 });
-check("the swipe deck sits right below it", (await startDeck.getByRole("button", { name: "Gefällt mir" }).isVisible()) && (await startDeck.getByRole("heading", { name: "Minigolf im Rheinpark" }).isVisible()));
+check(`next step: "${await heading(j)}"`, (await heading(j)) === "du bist dran.");
+check("the deadline under the headline", await j.locator("[data-next-step]").getByText(/^Diese Woche · Plan bis .+ · noch/).isVisible());
+check("home is focused: no surprise button", (await j.getByRole("button", { name: /Überrasch uns/ }).count()) === 0);
+check("'Date planen' is the one big button", await j.locator("[data-next-step]").filter({ visible: true }).getByRole("link", { name: "Date planen", exact: true }).isVisible());
+check("the plant grows from the done rounds, the can is Jonas' and pours", (await j.locator("[data-next-step] [data-plant]").count()) === 1 && (await j.locator('[data-next-step] [data-can="pouring"]').count()) === 1);
+check("Jonas' avatar has the ring", (await j.getByRole("img", { name: "Jonas ist dran" }).count()) === 1);
+check("no swipe deck on the start any more", (await j.locator("[data-swipe-deck]").count()) === 0);
 await j.screenshot({ path: `${OUT}m13-01-home-plan.png`, fullPage: true });
-check("start with the deck fits the screen", await fitsScreen(j));
-// A like on the start puts the card on the wishlist, the next card comes up.
-// A tap before hydration does nothing (CI is slower): tap again until the next card shows.
-const nextCard = startDeck.getByRole("heading", { name: "Kino unter Sternen" });
-for (let i = 0; i < 6 && !(await nextCard.isVisible()); i++) {
-  await startDeck.getByRole("button", { name: "Gefällt mir" }).click().catch(() => {});
-  await nextCard.waitFor({ timeout: 2500 }).catch(() => {});
-}
-await nextCard.waitFor({ timeout: 5000 });
-await j.waitForTimeout(800);
-const { rows: [liked] } = await db.query("SELECT count(*)::int AS c FROM ideas WHERE couple_id = $1 AND title = 'Minigolf im Rheinpark'", [couple.id]);
-check("a like on the start saves it to the wishlist", liked.c === 1);
+check("the Beet fits the screen", await fitsScreen(j));
 
 // 2) ⓘ explains "Plan bis"
 await j.getByRole("button", { name: "Was heißt „Plan bis …“?" }).click();
@@ -103,14 +92,19 @@ check("info popover closes", !(await j.getByText("Bis dahin sollte euer Date fes
 const s = await pageFor(sam.token);
 await s.goto(`${BASE}/`);
 await heading(s);
-check(`Sam: "${await heading(s)}"`, (await heading(s)) === "Jonas ist dran");
-// Not Sam's turn: the same box (with "Ich übernehme diesmal") and the deck below
-await s.locator('[data-swipe-deck="start"] [aria-roledescription="Karte"]').waitFor({ timeout: 15000 });
-check("partner's turn: box + swipe deck", (await s.getByRole("button", { name: "Ich übernehme diesmal" }).isVisible()) && (await s.getByRole("link", { name: "Date planen", exact: true }).count()) === 0);
-await s.screenshot({ path: `${OUT}m13-12-partner-swipe.png` });
+check(`Sam: "${await heading(s)}"`, (await heading(s)) === "kanne bei Jonas.");
+// Not Sam's turn: the can stands at Jonas', Sam can nudge or take over
+check("partner's turn: Anstupsen + Ich übernehme diesmal", (await s.getByRole("button", { name: "Anstupsen" }).isVisible()) && (await s.getByRole("button", { name: "Ich übernehme diesmal" }).isVisible()) && (await s.getByRole("link", { name: "Date planen", exact: true }).count()) === 0);
+await s.getByRole("button", { name: "Anstupsen" }).click();
+await s.getByText("Jonas ist angestupst.").waitFor({ timeout: 10000 });
+await s.getByRole("button", { name: "Anstupsen" }).click();
+await s.getByText(/Schon angestupst/).waitFor({ timeout: 10000 });
+const { rows: [nudges] } = await db.query("SELECT count(*)::int AS c FROM notification_log WHERE type = 'nudge'");
+check(`Anstupsen: once an hour (${nudges.c})`, nudges.c === 1);
+await s.screenshot({ path: `${OUT}m13-12-partner-turn.png` });
 check("partner's start fits the screen", await fitsScreen(s));
 
-// 4) "Date planen" in the step card opens the wishlist (no quick plan)
+// 4) "Date planen" opens the one planning screen (wann? + was?)
 await j.goto(`${BASE}/plan`);
 await openFlow(j);
 check("'Date planen' opens /plan?pick=1", j.url().endsWith("/plan?pick=1"));
@@ -122,34 +116,34 @@ check("wishlist first, then Zufall / Was anderes", (await j.getByRole("button", 
 await j.getByRole("button", { name: "Was anderes" }).click();
 const row = j.locator("dialog[open] li", { hasText: "Sonnenuntergang am Rheinboulevard" });
 await row.getByRole("button", { name: "Nehmen" }).click();
-const chosen = (title) => j.locator("div", { hasText: "Ihr macht" }).getByText(title, { exact: true }).first();
+const chosen = (title) => j.locator("[data-plan-summary]", { hasText: title }).first();
 await chosen("Sonnenuntergang am Rheinboulevard").waitFor({ timeout: 10000 });
-check("Köln idea taken → straight on to the times", !(await j.locator("dialog[open]").count()) && (await j.getByRole("heading", { name: "Wann?" }).isVisible()));
+check("Köln idea taken → it is the chosen one, the times stand above", !(await j.locator("dialog[open]").count()) && (await j.getByRole("heading", { name: "wann?", exact: true }).isVisible()));
 const { rows: curated } = await db.query("SELECT count(*)::int AS n FROM ideas WHERE source = 'curated'");
 check("…and put on the wishlist", curated[0].n === 1);
-await j.getByRole("button", { name: "← Andere Idee" }).click();
+// (one screen: the ideas stay right below the times)
 await customIdea(j, "Eis am Rhein", "Rheinufer");
-check("own idea (with place) goes on to the times too", (await chosen("Eis am Rhein").isVisible()) && (await j.getByText("📍 Rheinufer").isVisible()));
+check("own idea is the chosen one too", await chosen("Eis am Rhein").isVisible());
 await j.screenshot({ path: `${OUT}m13-04-plan-tabs.png`, fullPage: true });
-await j.getByRole("button", { name: "← Andere Idee" }).click();
+// (one screen: the ideas stay right below the times)
 await pickIdea(j, "Picknick im Stadtwald");
 check("picking a wishlist idea replaces the own idea", await chosen("Picknick im Stadtwald").isVisible());
 check("no surprise option before the first date", (await j.getByText("🎁 Als Überraschung planen").count()) === 0);
 
 // 5) Planned → Sam's next step is "Passt!"
-await j.getByRole("button", { name: "Date festlegen 🎉" }).click();
+await j.getByRole("button", { name: SEND }).click();
 await backAtStart(j, BASE);
-check(`Jonas waits: "${await heading(j)}"`, (await heading(j)) === "Wartet auf Sams „Passt!“");
+check(`Jonas waits: "${await heading(j)}"`, (await heading(j)) === "kanne bei Sam.");
 await s.goto(`${BASE}/`);
 await s.waitForURL(`${BASE}/plan`, { timeout: 15000 });
-check(`Sam must confirm: "${await heading(s)}"`, (await heading(s)) === "Jonas hat ein Date geplant 🎉");
-check("only one Passt! button on the page", (await s.getByRole("button", { name: "Passt! 💚" }).count()) === 1);
-check("Passt! to give: the box first, swiping below it (card or, when short of room, one line)", (await s.locator("[data-swipe-teaser], [data-swipe-deck=\"start\"]").filter({ visible: true }).count()) === 1);
-check("Passt! state fits the screen", await fitsScreen(s));
+check(`Sam must confirm: "${await heading(s)}"`, (await heading(s)) === "Jonas hat gegossen.");
+check("only one Zusagen button on the page", (await s.getByRole("button", { name: "Zusagen" }).count()) === 1);
+check("the invitation: wann, wo, was + Anderer Termin", (await s.locator("[data-next-step] [data-date-card]").getByText("wann", { exact: true }).isVisible()) && (await s.getByRole("link", { name: "Anderer Termin" }).isVisible()));
+check("Zusagen state fits the screen", await fitsScreen(s));
 await s.screenshot({ path: `${OUT}m13-05-home-confirm.png`, fullPage: true });
-await s.getByRole("button", { name: "Passt! 💚" }).click();
-await s.getByRole("heading", { name: "Date steht! 🎉" }).waitFor({ timeout: 15000 });
-check("after Passt!: Date steht!", true);
+await s.getByRole("button", { name: "Zusagen" }).click();
+await s.getByRole("heading", { name: "neues blatt!" }).waitFor({ timeout: 15000 });
+check("after Zusagen: neues blatt! – with a fresh leaf", (await s.locator('[data-next-step] [data-leaf="fresh"]').count()) === 1);
 
 // 6) Settings: a list of topics, each its own screen; intro again
 await j.goto(`${BASE}/settings`);
@@ -177,42 +171,29 @@ await j.getByRole("button", { name: "Weiter" }).click();
 await j.waitForTimeout(600);
 await j.screenshot({ path: `${OUT}m13-07-welcome.png` });
 
-// 6b) The bottom bar: Dates opens the history, the logo starts planning, Ideen leads to the wishlist
+// 6b) The bottom bar: Beet · Ideen · Swipen · Archiv · Einstellungen
 await j.goto(`${BASE}/plan`);
 await j.locator("[data-next-step]").filter({ visible: true }).first().waitFor({ timeout: 15000 });
 const bar = j.getByRole("navigation", { name: "Hauptmenü" });
-await bar.getByRole("link", { name: "Eure Dates", exact: true }).click();
+check("Beet is the current tab on the start", (await bar.getByRole("link", { name: "Beet", exact: true }).getAttribute("aria-current")) === "page");
+await bar.getByRole("link", { name: "Archiv", exact: true }).click();
 await j.waitForURL(`${BASE}/dates`, { timeout: 10000 });
 await j.getByRole("heading", { name: "Eure Dates" }).waitFor({ timeout: 10000 });
-check("Dates opens the history, marked as the current page", (await bar.getByRole("link", { name: "Eure Dates", exact: true }).getAttribute("aria-current")) === "page");
+check("Archiv opens the history, marked as the current page", (await bar.getByRole("link", { name: "Archiv", exact: true }).getAttribute("aria-current")) === "page");
 await j.screenshot({ path: `${OUT}m13-13-panel.png` });
-await bar.getByRole("link", { name: "Zum Start" }).click();
+await bar.getByRole("link", { name: "Swipen", exact: true }).click();
+await j.waitForURL(`${BASE}/ideas/entdecken`, { timeout: 15000 });
+check("Swipen opens the deck and Ideen is not marked", (await bar.getByRole("link", { name: "Swipen" }).getAttribute("aria-current")) === "page" && (await bar.getByRole("link", { name: "Ideen", exact: true }).getAttribute("aria-current")) === null);
+await j.waitForTimeout(500);
+await j.screenshot({ path: `${OUT}m13-14-swipe-tab.png` });
+await bar.getByRole("link", { name: "Beet", exact: true }).click();
 await j.waitForURL(`${BASE}/plan`, { timeout: 15000 });
 await j.locator("[data-next-step]").filter({ visible: true }).first().waitFor({ timeout: 15000 });
-check("the logo leads to the start, not into the flow", !j.url().includes("pick=1"));
-// On the start itself the logo opens the actions: Date planen, Idee, Was läuft
-const menuBtn = bar.getByRole("button", { name: "Aktionen" });
-await menuBtn.click();
-const menu = j.getByRole("menu", { name: "Aktionen" });
-check("the logo on the start opens three actions", (await menu.getByRole("menuitem").count()) === 3 && (await menuBtn.getAttribute("aria-expanded")) === "true");
-await j.waitForTimeout(500);
-await j.screenshot({ path: `${OUT}m13-14-logo-menu.png` });
-await menu.getByRole("menuitem", { name: "Idee" }).click();
-await j.locator("dialog[open]").getByText("Neue Idee").waitFor({ timeout: 10000 });
-check("Idee opens the idea form right here", true);
-await j.keyboard.press("Escape");
-await menuBtn.click();
-await menu.getByRole("menuitem", { name: "Date planen" }).click();
-await j.getByRole("heading", { name: "Was wollt ihr machen?" }).waitFor({ timeout: 15000 });
-check("Date planen opens the flow", j.url().includes("pick=1"));
-await j.goto(`${BASE}/plan`);
-await menuBtn.click();
-await j.keyboard.press("Escape");
-check("Escape closes the menu", (await menu.count()) === 0);
+check("Beet leads to the start, not into the flow", !j.url().includes("pick=1"));
 await bar.getByRole("link", { name: "Ideen", exact: true }).click();
-await j.getByRole("heading", { name: "Wunschliste" }).waitFor({ timeout: 15000 });
+await j.getByRole("heading", { name: "ideen." }).waitFor({ timeout: 15000 });
 check("Ideen opens the wishlist", (await bar.getByRole("link", { name: "Ideen", exact: true }).getAttribute("aria-current")) === "page");
-check("top: name + settings only", (await j.locator("header:visible a").evaluateAll((a) => a.map((x) => x.getAttribute("aria-label")))).join("|") === "Date-O-Mat – zum Start|Einstellungen");
+check("top: the name only (plus the page's own action)", (await j.locator("header:visible a").evaluateAll((a) => a.map((x) => x.getAttribute("aria-label")))).join("|") === "Date-O-Mat – zum Start");
 
 // 7) Dark mode + nav label
 const jd = await pageFor(jonas.token, "dark");
@@ -245,7 +226,7 @@ await jd.screenshot({ path: `${OUT}m13-10-welcome-dark.png` });
 await jd.goto(`${BASE}/plan`);
 const swapLink = jd.getByRole("link", { name: "Lieber was anderes?" });
 await swapLink.waitFor({ timeout: 20000 });
-check("with a date: the date in the box, the swipe card fills the rest of the screen", (await jd.locator("[data-next-step] [data-date-card]").filter({ visible: true }).count()) === 1 && (await jd.locator('[data-swipe-deck="start"]').filter({ visible: true }).getByRole("button", { name: "Gefällt mir" }).isVisible()) && (await jd.locator("[data-swipe-teaser]").filter({ visible: true }).count()) === 0);
+check("with a date: the date card on the Beet", (await jd.locator("[data-next-step] [data-date-card]").filter({ visible: true }).count()) === 1);
 check("with a date: details one tap away", (await jd.getByRole("link", { name: "Details ›" }).getAttribute("href"))?.startsWith("/dates/"));
 await jd.screenshot({ path: `${OUT}m13-09-plan-dark.png`, fullPage: true });
 check("start with a confirmed date fits the screen", await fitsScreen(jd));
@@ -258,7 +239,7 @@ await jd.screenshot({ path: `${OUT}m13-11-swap-dark.png` });
 check("swap mode fits the screen", await fitsScreen(jd));
 await jd.locator("dialog[open]").getByRole("button", { name: "Ja, ändern" }).click();
 await jd.waitForURL(`${BASE}/plan`, { timeout: 15000 });
-await jd.locator("[data-next-step]").filter({ visible: true }).getByText("„Sonnenuntergang am Rheinboulevard“").waitFor({ timeout: 15000 });
+await jd.locator("[data-next-step]").filter({ visible: true }).getByText("Sonnenuntergang am Rheinboulevard", { exact: true }).waitFor({ timeout: 15000 });
 const { rows: [swappedDate] } = await db.query("SELECT title, status FROM date_plans WHERE couple_id = $1 AND status <> 'cancelled' ORDER BY created_at DESC LIMIT 1", [couple.id]);
 check(`swapped on the start page, "Passt!" kept (${swappedDate.title}, ${swappedDate.status})`, swappedDate.title === "Sonnenuntergang am Rheinboulevard" && swappedDate.status === "confirmed");
 

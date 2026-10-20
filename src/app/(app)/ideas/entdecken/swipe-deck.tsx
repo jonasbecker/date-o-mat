@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition, type PointerEvent as ReactPointerEvent } from "react";
-import { buttonClass, Button } from "@/components/button";
+import { Button } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
 import { flyToWishlist } from "@/components/fly-to-wishlist";
-import { Info } from "@/components/info";
-import { SizeChip } from "@/components/size-chip";
+import { Mascot } from "@/components/mascot";
+import { CloseIcon, UndoIcon } from "@/components/icons";
+import type { AvatarPerson } from "@/components/avatar";
 import { WISHLIST_ADDED_EVENT } from "@/components/wishlist-badge";
 import { DECK_THEMES, matchesFilter, type DeckCardView } from "@/core/deck";
 import { activeFilterCount, filterSummary } from "@/core/filters";
-import { FilterButton, useIdeaFilter } from "@/components/idea-filter";
+import { useIdeaFilter } from "@/components/idea-filter";
 import { cn } from "@/lib/cn";
 import { formatCost } from "@/lib/idea-input";
 import { moreCardsAction, swipeAction, undoSwipeAction } from "./actions";
@@ -21,56 +22,75 @@ const THRESHOLD_X = 100;
 const FLY_MS = 220;
 
 const THEME_LABEL = Object.fromEntries(DECK_THEMES.map((t) => [t.key, t.label])) as Record<string, string>;
-// Light, fixed tones with dark ink – readable in dark mode too.
-const TONE: Record<string, string> = {
-  food: "bg-zitrone-soft",
-  nature: "bg-minze-soft",
-  culture: "bg-himbeere-soft",
-  active: "bg-minze-soft",
-  creative: "bg-zitrone-soft",
-  cozy: "bg-himbeere-soft",
-  new: "bg-zitrone-soft",
-  free: "bg-minze-soft",
-  romantic: "bg-himbeere-soft",
-  trip: "bg-minze-soft",
-  learn: "bg-zitrone-soft",
-  night: "bg-himbeere-soft",
-};
+// The picture area of a card: a pastel tile with two soft shapes (DESIGN.md §2) – fixed light
+// tones, so they stay the same in dark mode.
+const TILES = [
+  { bg: "#DCE7F5", shape: "#9DB8E3" },
+  { bg: "#F7EBC4", shape: "#E3C76E" },
+  { bg: "#E6E0F2", shape: "#B7A7DE" },
+  { bg: "#F6DFD3", shape: "#E8A58D" },
+  { bg: "#DCEBD9", shape: "#8FC79A" },
+];
+const THEME_TILE: Record<string, number> = { food: 1, nature: 4, culture: 2, active: 0, creative: 1, cozy: 3, new: 2, free: 4, romantic: 3, trip: 0, learn: 1, night: 2 };
 
-function Card({ card, partnerName, compact }: { card: DeckCardView; partnerName: string; compact?: boolean }) {
+function tileFor(card: DeckCardView) {
+  if (card.theme && card.theme in THEME_TILE) return TILES[THEME_TILE[card.theme]];
+  let h = 0;
+  for (const ch of card.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return TILES[h % TILES.length];
+}
+
+function sourceOf(card: DeckCardView): string {
+  if (card.kind === "combo") return "Event";
+  if (card.kind === "revisit") return "Eure Liste";
+  return card.location && /köln/i.test(card.location) ? "Köln" : "Vorschlag";
+}
+
+function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: string; pos?: string }) {
   const cost = formatCost(card.costEur);
+  const tile = tileFor(card);
+  const tags = [card.size === "large" ? "groß" : "klein", card.setting === "indoor" ? "drinnen" : card.setting === "outdoor" ? "draußen" : null, cost, card.location].filter(Boolean) as string[];
   return (
-    <div className={cn("sticker flex h-full flex-col overflow-hidden text-tinte", compact ? "gap-2 rounded-[24px] p-4 pb-[4.5rem]" : "gap-3 rounded-[28px] p-5", TONE[card.theme ?? ""] ?? "bg-zitrone-soft")}>
-      <div className={cn("flex shrink-0 flex-wrap gap-1.5 text-[12px] font-extrabold", compact && "pr-24")}>
-        {card.kind === "revisit" && <span className="rounded-full bg-lavendel px-2.5 py-0.5">🕰️ Steht {card.waitingSince ?? "lange"} auf eurer Liste</span>}
-        {card.partnerSuper && <span className="rounded-full bg-zitrone px-2.5 py-0.5">⭐ {partnerName} findet das super</span>}
-        {card.kind === "combo" && <span className="rounded-full bg-himmel px-2.5 py-0.5">🎟️ Event-Kombi</span>}
-        {card.wildcard && <span className="rounded-full bg-lavendel px-2.5 py-0.5">🎲 Mal was anderes</span>}
-        {card.theme && THEME_LABEL[card.theme] && <span className="rounded-full border-[1.5px] border-tinte/30 px-2.5 py-0.5">{THEME_LABEL[card.theme]}</span>}
+    <div className="flex h-full flex-col overflow-hidden rounded-[30px] bg-white text-tinte shadow-[0_18px_40px_rgba(22,58,34,0.14)]">
+      <div className="relative flex min-h-[96px] flex-[1.1] items-center justify-center overflow-hidden" style={{ background: tile.bg }}>
+        <span aria-hidden="true" className="absolute h-[66px] w-[120px] rounded-[50%]" style={{ background: tile.shape, transform: "translate(-30%, -20%) rotate(-24deg)" }} />
+        <span aria-hidden="true" className="absolute h-[38px] w-[70px] rounded-[50%] opacity-60" style={{ background: tile.shape, transform: "translate(70%, 110%) rotate(28deg)" }} />
+        <span aria-hidden="true" className="relative text-5xl drop-shadow-sm">
+          {card.emoji ?? "💡"}
+        </span>
+        <span className="absolute left-4 top-4 inline-flex h-7 items-center rounded-full bg-white/80 px-2.5 font-mono text-[11px]">{sourceOf(card)}</span>
+        {pos && <span className="absolute right-4 top-4 font-mono text-[11px]">{pos}</span>}
       </div>
-      <span className={cn("shrink-0 leading-none", compact ? "text-4xl" : "text-6xl")} aria-hidden="true">
-        {card.emoji ?? "💡"}
-      </span>
-      <h2 className={cn("shrink-0 font-display font-bold leading-tight", compact ? "line-clamp-2 text-[22px]" : "text-[27px]")}>{card.title}</h2>
-      {/* The description gives way when the card is short: it is clipped instead of pushing the facts out of the card. */}
-      {card.note && (
-        <p className={cn("min-h-0 overflow-hidden font-semibold leading-snug", compact ? "text-[15px]" : "text-[16px]")}>{card.note}</p>
-      )}
-      {card.event && (
-        <div className={cn("shrink-0 rounded-2xl border-2 border-tinte/20 bg-white/60 font-bold", compact ? "px-3 py-1.5 text-[13px]" : "px-3.5 py-2.5 text-[14px]")}>
-          <p className="font-extrabold">🎟️ {card.event.title}</p>
-          <p>{card.event.when}</p>
-          {card.event.venue && <p>📍 {card.event.venue}</p>}
-          {card.bothFree === true && <p className="mt-1 text-[13px]">✓ Ihr habt beide Zeit</p>}
-          {card.bothFree === false && <p className="mt-1 text-[13px]">✗ Da hat jemand von euch schon was vor</p>}
+      <div className="flex min-h-0 shrink flex-col gap-2.5 px-5 pb-5 pt-4">
+        {(card.partnerSuper || card.kind === "revisit" || card.wildcard || (card.theme && THEME_LABEL[card.theme])) && (
+          <div className="flex flex-wrap gap-1.5 font-mono text-[11px]">
+            {card.partnerSuper && <span className="rounded-full bg-rose px-2.5 py-1 text-partner-ink">★ {partnerName} findet das super</span>}
+            {card.kind === "revisit" && <span className="rounded-full bg-tile-lilac px-2.5 py-1">🕰️ Steht {card.waitingSince ?? "lange"} auf eurer Liste</span>}
+            {card.wildcard && <span className="rounded-full bg-tile-lilac px-2.5 py-1">Mal was anderes</span>}
+            {card.theme && THEME_LABEL[card.theme] && <span className="rounded-full bg-[#EDF3EA] px-2.5 py-1">{THEME_LABEL[card.theme]}</span>}
+          </div>
+        )}
+        <h2 className="line-clamp-2 text-[clamp(24px,7.5vw,30px)] font-extrabold leading-none tracking-[-0.035em]">{card.title}</h2>
+        {/* The description gives way when the card is short. */}
+        {card.note && <p className="line-clamp-3 min-h-0 text-[15px] leading-[1.35] text-[#56604F]">{card.note}</p>}
+        {card.event && (
+          <div className="shrink-0 rounded-2xl bg-[#EDF3EA] px-3 py-2 text-[13px]">
+            <p className="font-bold">🎟️ {card.event.title}</p>
+            <p className="text-[#56604F]">
+              {card.event.when}
+              {card.event.venue ? ` · ${card.event.venue}` : ""}
+            </p>
+            {card.bothFree === true && <p className="mt-0.5">✓ Ihr habt beide Zeit</p>}
+            {card.bothFree === false && <p className="mt-0.5">✗ Da hat jemand von euch schon was vor</p>}
+          </div>
+        )}
+        <div className="flex shrink-0 flex-wrap gap-1.5">
+          {tags.map((t) => (
+            <span key={t} className="inline-flex h-7 items-center rounded-full bg-[#EDF3EA] px-[11px] font-mono text-[11px]">
+              {t}
+            </span>
+          ))}
         </div>
-      )}
-      {card.kind === "revisit" && !compact && <p className="text-[15px] font-extrabold">Noch Lust? 💚 = bleibt drauf · ✕ = weg damit (wenn ihr euch einig seid)</p>}
-      <div className="mt-auto flex shrink-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] font-extrabold">
-        <SizeChip size={card.size} />
-        {cost && <span>{cost}</span>}
-        {card.setting && <span>{card.setting === "indoor" ? "🏠 drinnen" : "🌳 draußen"}</span>}
-        {card.location && <span>📍 {card.location}</span>}
       </div>
     </div>
   );
@@ -79,26 +99,22 @@ function Card({ card, partnerName, compact }: { card: DeckCardView; partnerName:
 export function SwipeDeck({
   cards: serverCards,
   generating,
-  matches,
   ai,
   partnerName,
-  compact = false,
+  people,
 }: {
   cards: DeckCardView[];
   generating: boolean;
-  matches: number;
   ai: boolean;
   partnerName: string;
-  /** On the start page, below the step card: the card and its buttons, nothing else. */
-  compact?: boolean;
+  /** Me and the partner – their avatars on the match screen. */
+  people: [AvatarPerson, AvatarPerson];
 }) {
   const celebrate = useCelebrate();
   // Swiped here (hidden at once), and cards brought back with ↩️ (shown first).
   const [handled, setHandled] = useState<Set<string>>(() => new Set());
   const [restored, setRestored] = useState<DeckCardView[]>([]);
-  const [storedFilter, setFilter] = useIdeaFilter();
-  // The start page has no filter button – it shows every card.
-  const filter = compact ? {} : storedFilter;
+  const [filter, setFilter] = useIdeaFilter();
   const filtered = activeFilterCount(filter) > 0;
   const [match, setMatch] = useState<{ title: string; ideaId: string } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -125,7 +141,8 @@ export function SwipeDeck({
   const cards = all.filter((c) => matchesFilter(c, filter));
   const top = cards[0];
   const next = cards[1];
-  const afterNext = cards[2];
+  // "3 / 12": how far this visit got.
+  const position = stats.swiped + 1;
 
   function decide(verdict: Verdict) {
     if (!top || flying || undoing) return;
@@ -171,7 +188,7 @@ export function SwipeDeck({
         };
         // A new idea on the wishlist (not one the other already put there): the 💡 counts up.
         if (result.saved) window.dispatchEvent(new Event(WISHLIST_ADDED_EVENT));
-        if (result.saved) setMessage(compact ? "Auf der Wunschliste 💚" : `Steht auf eurer Wunschliste 💚 Will ${partnerName} auch, ist's ein Match.`);
+        if (result.saved) setMessage(`Steht auf eurer Wunschliste ♥ Will ${partnerName} auch, ist's ein Match.`);
         else if (notes[result.outcome]) setMessage(notes[result.outcome]!);
         else if (card.kind === "revisit" && verdict === "nope") setMessage(`Wenn ${partnerName} auch ✕ sagt, fliegt sie von der Liste.`);
       }
@@ -270,24 +287,12 @@ export function SwipeDeck({
   const hint = drag ? (drag.x > 40 ? "like" : drag.x < -40 ? "nope" : null) : (flying?.verdict ?? null);
 
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col", compact ? "gap-2" : "gap-3")} data-swipe-deck={compact ? "start" : "page"}>
-      {!compact && (
-        <div className="flex justify-end">
-          <FilterButton />
-        </div>
-      )}
-
-      {/* The card takes what the screen has left – no scrolling. */}
-      <div className={cn("relative flex-1", compact ? "min-h-[240px]" : "min-h-[300px]")}>
-        {/* A stack: the cards behind peek out, the next one slides forward. */}
-        {afterNext && (
-          <div aria-hidden="true" className="absolute inset-0 translate-y-5 scale-[0.92] opacity-50 transition-transform duration-200">
-            <Card card={afterNext} partnerName={partnerName} compact={compact} />
-          </div>
-        )}
+    <div className="flex min-h-0 flex-1 flex-col gap-3" data-swipe-deck="page">
+      {/* The card takes what the screen has left – no scrolling. A stack: the next one peeks out, tilted. */}
+      <div className="relative mx-1 min-h-[300px] flex-1">
         {next && (
-          <div aria-hidden="true" className={cn("absolute inset-0 translate-y-2.5 scale-[0.96] opacity-80 transition-transform duration-200", flying && "translate-y-0 scale-100 opacity-100")}>
-            <Card card={next} partnerName={partnerName} compact={compact} />
+          <div aria-hidden="true" className={cn("absolute inset-x-2.5 bottom-0 top-2.5 rotate-[4deg] opacity-70 transition-transform duration-200", flying && "inset-x-0 top-0 rotate-[-2deg] opacity-100")}>
+            <div className="h-full rounded-[30px]" style={{ background: tileFor(next).bg }} />
           </div>
         )}
         {top ? (
@@ -297,7 +302,7 @@ export function SwipeDeck({
             role="group"
             aria-roledescription="Karte"
             aria-label={top.title}
-            className="absolute inset-0 cursor-grab touch-none select-none active:cursor-grabbing"
+            className="absolute inset-0 -rotate-2 cursor-grab touch-none select-none active:cursor-grabbing"
             style={topStyle}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
@@ -307,142 +312,133 @@ export function SwipeDeck({
               setDrag(null);
             }}
           >
-            <Card card={top} partnerName={partnerName} compact={compact} />
+            <Card card={top} partnerName={partnerName} pos={`${position} / ${position + cards.length - 1}`} />
             {hint && (
               <span
                 aria-hidden="true"
                 className={cn(
-                  "sticker absolute top-6 rounded-2xl px-4 py-1.5 font-display text-2xl font-bold text-tinte",
-                  hint === "like" && "left-6 -rotate-12 bg-minze",
-                  hint === "nope" && "right-6 rotate-12 bg-himbeere",
+                  "absolute top-16 rounded-full px-4 py-1.5 text-2xl font-extrabold tracking-[-0.03em]",
+                  hint === "like" && "left-6 -rotate-12 bg-himbeere text-white",
+                  hint === "nope" && "right-6 rotate-12 bg-white text-tinte shadow-md",
                 )}
               >
-                {hint === "like" ? "💚 Gerne!" : "✕ Nö"}
+                {hint === "like" ? "♥ will ich" : "✕ nö"}
               </span>
             )}
           </div>
         ) : (
-          <div className={cn("flex h-full flex-col items-center justify-center rounded-[28px] border-[2.5px] border-dashed border-line px-6 text-center", compact ? "gap-2" : "gap-4")}>
+          <div className="flex h-full flex-col items-center justify-center gap-4 rounded-[30px] border-2 border-dashed border-line px-6 text-center">
             {generating || loading ? (
               <>
-                <span className="animate-wiggle text-5xl" aria-hidden="true">
-                  🔀
-                </span>
-                <p className="font-display text-xl font-semibold">Neue Ideen werden gemischt …</p>
-                <p className="text-sm font-bold text-muted">Dauert etwa eine halbe Minute.</p>
+                <Mascot id="deck" size={72} busy />
+                <p className="text-xl font-bold">Neue Ideen werden gemischt …</p>
+                <p className="text-sm text-muted">Dauert etwa eine halbe Minute.</p>
               </>
             ) : (
               <>
                 <span className="text-5xl" aria-hidden="true">
                   {filtered ? "🔍" : "🎉"}
                 </span>
-                <p className="font-display text-xl font-semibold">{filtered ? "Gerade nichts Passendes" : "Alles durchgeswipt!"}</p>
+                <p className="text-xl font-bold">{filtered ? "Gerade nichts Passendes" : "Alles durchgeswipt!"}</p>
                 {ai ? (
                   <Button onClick={more} disabled={loading}>
                     {filtered ? `✨ Mehr „${filterSummary(filter)}“ holen` : "✨ Neue Ideen holen"}
                   </Button>
                 ) : (
-                  <p className="text-sm font-bold text-muted">Neue Karten macht die KI – sie ist noch nicht eingerichtet.</p>
+                  <p className="text-sm text-muted">Neue Karten macht die KI – sie ist noch nicht eingerichtet.</p>
                 )}
               </>
             )}
           </div>
         )}
+      </div>
 
-        {compact && top && (
-          <>
-            <span className="absolute right-3 top-3 z-10 flex items-center gap-1.5">
-              <Link href="/ideas/entdecken" aria-label={`Alle ${cards.length} Karten`} className="rounded-full border-2 border-line bg-surface px-2.5 py-0.5 text-[13px] font-extrabold text-ink">
-                {cards.length} ›
-              </Link>
-              <Info term="swipen" className="bg-surface text-ink" />
-            </span>
-            {message && (
-              <p role="status" className="absolute inset-x-6 bottom-[4.4rem] z-10 rounded-full border-2 border-line bg-surface px-3 py-1 text-center text-sm font-extrabold text-ink">
-                {message}
-              </p>
-            )}
-            <div className="absolute inset-x-0 bottom-3 z-10 flex items-center justify-center gap-4">
-              <button type="button" aria-label="Nein" onClick={() => decide("nope")} disabled={undoing} className="sticker press flex size-12 items-center justify-center rounded-full bg-himbeere text-xl text-tinte disabled:opacity-40">
-                ✕
-              </button>
-              <button type="button" aria-label="Rückgängig" onClick={undo} disabled={busy || undoing} className="sticker press flex size-9 items-center justify-center rounded-full bg-surface text-base text-ink disabled:opacity-40">
-                ↩️
-              </button>
-              <button type="button" aria-label="Gefällt mir" onClick={() => decide("like")} disabled={undoing} className="sticker press flex size-12 items-center justify-center rounded-full bg-minze text-xl text-tinte disabled:opacity-40">
-                💚
-              </button>
-            </div>
-          </>
+      <div className="flex items-center justify-center gap-5 pt-1">
+        <button
+          type="button"
+          aria-label="Rückgängig"
+          onClick={undo}
+          disabled={busy || undoing}
+          className="press flex size-11 items-center justify-center rounded-full bg-surface text-muted disabled:opacity-40"
+        >
+          <UndoIcon width={18} height={18} />
+        </button>
+        <button
+          type="button"
+          aria-label="Nein"
+          onClick={() => decide("nope")}
+          disabled={!top || undoing}
+          className="press flex size-[66px] items-center justify-center rounded-full bg-white text-tinte shadow-[0_6px_16px_rgba(22,58,34,0.12)] disabled:opacity-40"
+        >
+          <CloseIcon width={26} height={26} />
+        </button>
+        <button
+          type="button"
+          aria-label="Gefällt mir"
+          onClick={() => decide("like")}
+          disabled={!top || undoing}
+          className="press flex size-[78px] items-center justify-center rounded-full bg-himbeere text-white shadow-[0_8px_20px_rgba(229,143,166,0.45)] disabled:opacity-40"
+        >
+          <HeartFill width={32} height={32} />
+        </button>
+        <span className="size-11" aria-hidden="true" />
+      </div>
+      <p role="status" className="min-h-5 text-center text-[13px] text-muted">
+        {message ?? (top ? "Nur wenn ihr beide ♥ drückt, wird’s ein Match." : "")}
+      </p>
+
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[13px] font-semibold">
+        {stats.swiped > 0 && (
+          <span data-swipe-progress className="meta rounded-full bg-surface px-3 py-1 text-ink">
+            {stats.swiped} geswipt · {stats.liked} ♥ · {cards.length} übrig
+          </span>
+        )}
+        <Link href="/ideas?ansicht=geswipt" className="text-muted underline">
+          Meine Likes
+        </Link>
+        {top && ai && cards.length < 8 && !generating && (
+          <button type="button" onClick={more} disabled={loading} className="text-muted underline disabled:opacity-60">
+            {loading ? "Mische neue Ideen …" : filtered ? `Mehr „${filterSummary(filter)}“` : "Mehr Ideen"}
+          </button>
         )}
       </div>
 
-      {/* Start page: counter, toast and buttons sit on the card itself. */}
-      {!compact && (
-        <>
-          <div className="flex items-center justify-center gap-4">
-            <button type="button" aria-label="Nein" onClick={() => decide("nope")} disabled={!top || undoing} className="sticker press flex size-16 items-center justify-center rounded-full bg-himbeere text-2xl text-tinte disabled:opacity-40">
-              ✕
-            </button>
-            <button type="button" aria-label="Rückgängig" onClick={undo} disabled={busy || undoing} className="sticker press flex size-12 items-center justify-center rounded-full bg-surface text-xl text-ink disabled:opacity-40">
-              ↩️
-            </button>
-            <button type="button" aria-label="Gefällt mir" onClick={() => decide("like")} disabled={!top || undoing} className="sticker press flex size-16 items-center justify-center rounded-full bg-minze text-2xl text-tinte disabled:opacity-40">
-              💚
-            </button>
-          </div>
-          <p role="status" className="min-h-5 text-center text-sm font-bold text-muted">
-            {message ?? (top ? `${cards.length} ${cards.length === 1 ? "Karte" : "Karten"} · 💚 kommt auf die Wunschliste, beide 💚 = Match` : "")}
-          </p>
-        </>
-      )}
-
-      {!compact && top && ai && cards.length < 8 && !generating && (
-        <button type="button" onClick={more} disabled={loading} className="self-center text-sm font-extrabold text-muted underline disabled:opacity-60">
-          {loading ? "Mische neue Ideen …" : filtered ? `✨ Mehr „${filterSummary(filter)}“ holen` : "✨ Mehr Ideen holen"}
-        </button>
-      )}
-
-      {!compact && (
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm font-extrabold">
-          {stats.swiped > 0 && (
-            <span data-swipe-progress className="rounded-full bg-surface px-3 py-0.5 text-ink">
-              {stats.swiped} geswipt · {stats.liked} 💚 · {cards.length} übrig
-            </span>
-          )}
-          <Link href="/ideas?ansicht=geswipt" className="underline">
-            💚 Meine Likes
-          </Link>
-          {matches > 0 && (
-            <Link href="/ideas?ansicht=match" className="underline">
-              💞 {matches} {matches === 1 ? "Match" : "Matches"}
-            </Link>
-          )}
-        </div>
-      )}
-
       {match && (
-        <div role="dialog" aria-modal="true" aria-labelledby="match-title" className="fixed inset-0 z-40 flex items-center justify-center bg-tinte/70 px-6">
-          <div className="sticker animate-pop-in flex w-full max-w-sm flex-col items-center gap-4 rounded-[28px] bg-himbeere-soft p-6 text-center text-tinte">
-            <span className="text-6xl" aria-hidden="true">
-              💞
-            </span>
-            <h2 id="match-title" className="font-display text-4xl font-bold">
-              Match!
-            </h2>
-            <p className="text-lg font-bold">
-              Ihr wollt beide: <span className="font-extrabold">{match.title}</span>
-            </p>
-            <p className="text-sm font-semibold">Steht jetzt auf eurer Wunschliste.</p>
-            <Link href={`/plan?idea=${match.ideaId}`} className={buttonClass("primary", "md", "w-full")}>
-              📅 Jetzt planen
+        <div role="dialog" aria-modal="true" aria-labelledby="match-title" className="animate-pop-in fixed inset-0 z-40 flex flex-col items-center justify-center gap-[18px] bg-[rgba(22,58,34,0.94)] px-7 text-center text-white">
+          <div aria-hidden="true" className="flex items-center">
+            <span className="flex size-16 items-center justify-center rounded-full bg-tile-green text-2xl font-extrabold text-tinte">{initial(people[0].name)}</span>
+            <span className="-ml-3.5 flex size-16 items-center justify-center rounded-full bg-rose text-2xl font-extrabold text-partner-ink">{initial(people[1].name)}</span>
+          </div>
+          <h2 id="match-title" className="text-[72px] font-extrabold leading-[0.9] tracking-[-0.05em]">
+            match!
+          </h2>
+          <p className="text-lg leading-snug">
+            Ihr wollt beide:
+            <br />
+            <b>{match.title}</b>
+          </p>
+          <div className="mt-2.5 flex w-full max-w-sm flex-col gap-2">
+            <Link href={`/plan?idea=${match.ideaId}`} className="press flex h-14 items-center justify-center rounded-full bg-white text-[17px] font-bold text-tinte">
+              Direkt planen
             </Link>
-            <button type="button" onClick={() => setMatch(null)} className="text-sm font-extrabold underline">
+            <button type="button" onClick={() => setMatch(null)} className="press h-[54px] rounded-full border-2 border-white text-base font-bold">
               Weiter swipen
             </button>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+function initial(name: string) {
+  return name.trim().charAt(0).toUpperCase() || "?";
+}
+
+function HeartFill(p: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...p}>
+      <path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.8 4.5c2.1 0 3.6 1.2 5.2 3 1.6-1.8 3.1-3 5.2-3 3.8 0 5.9 3.9 4.4 7.3C19.5 16.4 12 21 12 21z" />
+    </svg>
   );
 }

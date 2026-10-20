@@ -1,9 +1,7 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { Panel } from "@/components/panel";
-import { PageSkeleton } from "@/components/app-header";
+import { AppHeader, HeaderMeta, PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { IdeasTop } from "@/components/ideas-top";
 import { formatShortDate, formatTimeRange } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
@@ -13,15 +11,20 @@ import { listIdeas, matchedIdeaIds } from "@/server/ideas";
 import { getCoupleSettings } from "@/server/settings";
 import { IdeaBoard, type BoardIdea, type BoardNextDate, type BoardPerson } from "./idea-board";
 
+/** MIdeen: the field for your own ideas, the matches and the kinds of dates as tiles – a tap opens the list. */
 export default function IdeasPage({ searchParams }: PageProps<"/ideas">) {
   return (
-    <div className="flex flex-col gap-4">
-      <IdeasTop />
-      <Panel>
-        <Suspense fallback={<PageSkeleton />}>
-          <Ideas searchParams={searchParams} />
-        </Suspense>
-      </Panel>
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <Suspense
+        fallback={
+          <>
+            <AppHeader />
+            <PageSkeleton />
+          </>
+        }
+      >
+        <Ideas searchParams={searchParams} />
+      </Suspense>
     </div>
   );
 }
@@ -32,7 +35,7 @@ async function Ideas({ searchParams }: { searchParams: PageProps<"/ideas">["sear
   await connection();
   // "Meine Likes" on the swipe page lands here with the swiped ideas selected.
   const { ansicht } = await searchParams;
-  const initialView = ansicht === "geswipt" ? "swiped" : ansicht === "match" ? "match" : "all";
+  const initialView = ansicht === "geswipt" ? "swiped" : ansicht === "match" ? "match" : ansicht === "alle" ? "all" : "tiles";
   const now = coupleNow(await getCoupleSettings(coupleId));
   const [ideas, matched, cycle, upcoming] = await Promise.all([listIdeas(coupleId), matchedIdeaIds(coupleId), ensureCurrentCycle(coupleId, now), upcomingDate(coupleId, now)]);
   // Tapping an idea offers to plan it – or, with a date ahead, to do this instead.
@@ -71,6 +74,7 @@ async function Ideas({ searchParams }: { searchParams: PageProps<"/ideas">["sear
   return (
     <>
       <AutoRefresh />
+      <AppHeader action={<HeaderMeta>{ideas.length} Ideen</HeaderMeta>} />
       <IdeaBoard ideas={boardIdeas} people={people} next={next} canPlanNew={!next || cycle?.status === "open"} partnerName={partner.name} meId={user.id} initialView={initialView} />
     </>
   );

@@ -41,8 +41,8 @@ const card = (page, title) => page.locator("li").filter({ has: page.getByRole("b
 
 const a = await pageFor(tokenA);
 const b = await pageFor(tokenB);
-await a.goto(`${BASE}/ideas`);
-await b.goto(`${BASE}/ideas`);
+await a.goto(`${BASE}/ideas?ansicht=alle`);
+await b.goto(`${BASE}/ideas?ansicht=alle`);
 check("empty state on a fresh wishlist", (await a.getByText("Noch keine Ideen").count()) > 0);
 await a.screenshot({ path: `${SHOTS}m2-01-empty.png` });
 
@@ -149,11 +149,11 @@ await b.screenshot({ path: `${SHOTS}m2-05-list.png` });
 
 // Home teaser + dark mode
 const dark = await pageFor(tokenA, "dark");
-await dark.goto(`${BASE}/ideas`);
+await dark.goto(`${BASE}/ideas?ansicht=alle`);
 await card(dark, "Ramen selbst kochen").waitFor();
 await dark.waitForTimeout(400);
 await dark.screenshot({ path: `${SHOTS}m2-06-list-dark.png` });
-check("wishlist heading shows the count", (await dark.getByRole("heading", { level: 1 }).innerText()).includes("3"));
+check("the header shows the count", (await dark.locator("header").filter({ visible: true }).first().innerText()).includes("3 Ideen"));
 await a.goto(`${BASE}/plan`);
 await a.getByRole("heading", { name: "Date planen" }).waitFor({ timeout: 10000 });
 await a.screenshot({ path: `${SHOTS}m2-07-home.png` });

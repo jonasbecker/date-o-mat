@@ -160,6 +160,12 @@ Abweichungen in V2:
     Zähler-Marke `data-header-icon="wishlist"` sitzt jetzt dort (das 💚 beim Liken fliegt hin).
 21. Seit M38 entscheidet der Platz statt nur der Zustand, ob die Swipe-Karte oder eine Zeile steht
     (`deckSize()` sagt nur noch, ob der Kasten Vorrang hat); reines CSS, damit nichts springt.
+22. Seit M40 gilt das Design „Pastell & rund“ aus `docs/design/DESIGN.md`. Es löst M29 (Sticker),
+    M37 (Logo in der Mitte) und M38 (Swipe-Karte auf dem Start) ab: Swipen hat einen eigenen Platz in
+    der Mitte der Leiste, der Start ist das Beet. Planen ist ein Screen statt zwei Schritte; die
+    Zeiten richten sich weiter nach der gewählten Idee (Draußen-Ranking). Die Personenfarben bleiben
+    wählbar (himmel = Blau, mandarine = Rosé). „Anstupsen“ schickt höchstens einmal pro Stunde einen
+    Push (`notification_log`, Typ `nudge`).
 
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 

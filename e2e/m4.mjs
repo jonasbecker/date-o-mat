@@ -58,7 +58,7 @@ const check = (label, ok) => {
 // The state of the round sits on top of "Date planen" (where / lands without a date).
 const heading = async (page) => {
   await page.locator("[data-next-step] h2").first().waitFor({ timeout: 15000 }).catch(() => {});
-  return page.locator("[data-next-step] h2").first().textContent();
+  return ((await page.locator("[data-next-step] h2").first().textContent()) ?? "").replace(/\s+/g, " ").trim();
 };
 const cyclesInDb = async () =>
   (await db.query("SELECT seq, status, mode, planner_id, starts_at, ends_at, deadline_at FROM cycles WHERE couple_id = $1 ORDER BY seq", [couple.id])).rows;
@@ -70,7 +70,7 @@ const s = await pageFor(sam.token);
 await j.goto(`${BASE}/`);
 await heading(j);
 check("round 1 is created on first visit", (await j.locator("[data-next-step]").getByText(/^Diese Woche · /).count()) === 1);
-check(`Jonas sees "Du bist dran!" (${await heading(j)})`, (await heading(j)) === "Du bist dran!");
+check(`Jonas sees "Du bist dran!" (${await heading(j)})`, (await heading(j)) === "du bist dran.");
 check("deadline with time left in one line", await j.getByText(/^Diese Woche · Plan bis \w+ \d+(:\d\d)? Uhr · noch \d/).waitFor({ timeout: 10000 }).then(() => true, () => false));
 check("/ lands on Date planen", j.url() === `${BASE}/plan`);
 check("one 'Date planen' button, inside the card", (await j.getByRole("link", { name: "Date planen", exact: true }).count()) === 1 && (await j.locator("[data-next-step]").getByRole("link", { name: "Date planen", exact: true }).count()) === 1);
@@ -81,18 +81,18 @@ const len1 = (c1.ends_at - c1.starts_at) / 86_400_000;
 check(`weekly round lasts 7 days (${len1})`, Math.round(len1) === 7);
 
 await s.goto(`${BASE}/`);
-check(`Sam sees "Jonas ist dran" (${await heading(s)})`, (await heading(s)) === "Jonas ist dran");
+check(`Sam sees "Jonas ist dran" (${await heading(s)})`, (await heading(s)) === "kanne bei Jonas.");
 await s.waitForTimeout(300);
 await s.screenshot({ path: `${SHOTS}m4-02-partner-turn.png` });
 
 // Swap
 await s.getByRole("button", { name: "Ich übernehme diesmal" }).click();
-await s.getByRole("heading", { name: "Du bist dran!" }).waitFor({ timeout: 10000 });
+await s.getByRole("heading", { name: "du bist dran." }).waitFor({ timeout: 10000 });
 check("Sam can take over the round", true);
 await j.reload();
-check("…and Jonas now sees Sam's turn", (await heading(j)) === "Sam ist dran");
+check("…and Jonas now sees Sam's turn", (await heading(j)) === "kanne bei Sam.");
 await j.getByRole("button", { name: "Ich übernehme diesmal" }).click();
-await j.getByRole("heading", { name: "Du bist dran!" }).waitFor({ timeout: 10000 });
+await j.getByRole("heading", { name: "du bist dran." }).waitFor({ timeout: 10000 });
 
 // Cron endpoint
 const r0 = await fetch(`${BASE}/api/cron/tick`, { method: "POST" });
@@ -108,7 +108,7 @@ await j.goto(`${BASE}/settings?t=konto`);
 await j.getByRole("button", { name: "+1 Woche" }).click();
 await j.getByText(`verstellt um ${Math.round((offsetBefore + 7 * 24 * 60) / 60)} Std`).waitFor({ timeout: 10000 });
 await j.goto(`${BASE}/`);
-check(`round 2 is Sam's (${await heading(j)})`, (await heading(j)) === "Sam ist dran");
+check(`round 2 is Sam's (${await heading(j)})`, (await heading(j)) === "kanne bei Sam.");
 check("friendly note about the missed round, in the step card", (await j.getByText("Letztes Mal ist ausgefallen – passiert!").count()) === 1 && (await j.locator("[data-next-step]").filter({ visible: true }).getByText("Letztes Mal ist ausgefallen – passiert!").count()) === 1);
 await j.screenshot({ path: `${SHOTS}m4-skipped-note.png` });
 await j.goto(`${BASE}/dates`);
@@ -166,7 +166,7 @@ const first = await j.locator("[data-next-step] [data-suggestion] p.font-display
 check(`a suggestion with an idea is shown (${first})`, ["Picknick im Stadtwald", "Ramen kochen", "Wandern"].includes(first));
 await j.waitForTimeout(300);
 await j.screenshot({ path: `${SHOTS}m4-05-suggestion.png` });
-check("open proposal: the box first, swiping below it (card or one line)", (await j.locator("[data-swipe-teaser], [data-swipe-deck=\"start\"]").filter({ visible: true }).count()) === 1);
+check("open proposal: no swipe deck on the Beet (it has its own tab)", (await j.locator("[data-swipe-deck]").count()) === 0);
 check("the proposal state fits the screen", await fitsScreen(j));
 const before = (await db.query("SELECT starts_at, idea_id FROM suggestions WHERE status = 'pending'")).rows[0];
 await s.goto(`${BASE}/`);

@@ -18,22 +18,29 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - Google Calendar calls go through `calendarRequest()` (`src/server/google/calendar-api.ts`), which awaits `connection()` first so prefetch/prerender never hits Google. Call `connection()` before any try/catch around live Google data.
 - "Now" for a couple is `coupleNow(settings)` (`src/server/clock.ts`), never `new Date()` in round/slot logic – the dev clock shifts it.
 - Pages that use time or write round state call `await connection()` right after `requireCouple()`.
-- Design tokens are in `src/app/globals.css` (`sticker`, `press` utilities); bright fills use `text-tinte`.
-  In dark mode the light fills (`bg-zitrone-soft`, `bg-himbeere` …) reset the color tokens to light values,
-  so `text-ink`/`text-muted` on them stay readable – new light fills go into that list.
-- **Navigation (M37):** `BottomNav` in the `(app)` layout (Ideen · logo = new date · Dates); the page header (`AppHeader`) holds only the name and settings. `Panel` is a plain page body (no drop-down).
-- **Design (M29, direction A):** the sticker look (`sticker`, thick outline + hard shadow) is only for
-  what you tap next – primary buttons and the next date. Lists, infos and secondary buttons are `flat`
-  (outline only, `tap` feedback). Color roles: pink = action, the person colors = whose turn,
-  minze = it stands/confirmed, yellow = hints and warnings only, everything else neutral. Controls use
-  the icons in `components/icons.tsx`; emoji stay for content (ideas, confetti, match, choices).
-  Small labels are normal case, not uppercase. Empty and loading states show the `Mascot`.
+- **Design (M40, "Pastell & rund"):** spec and mockups in `docs/design/` (DESIGN.md + `screens/*.html`).
+  Tokens in `src/app/globals.css` (salbei `bg`, white `surface`, `soft`, `ink`, `muted`, leaf/pot/bud,
+  `rose`, the `tile-*` pastels); fonts Bricolage Grotesque + DM Mono (`font-mono`, `meta`). One background
+  for every screen; person colors (`PERSON_HEX`: himmel = blue, mandarine = rosé) are accents only
+  (avatar ring, watering can, "Gießen & senden"). Page titles are lowercase with a period (`headline`
+  utility: "ideen.", "swipen."). White cards, no borders, no shadows (except the swipe card); pills
+  (`Button`: primary = ink, `send` = blue, secondary = outline). `sticker`/`flat` are kept as no-op names.
+  In dark mode the pastel fills (`bg-zitrone-soft`, `bg-rose`, `bg-tile-*` …) reset the color tokens to
+  light values, so `text-ink`/`text-muted` on them stay readable – new light fills go into that list.
+  Empty and loading states show the `Mascot` (a small plant).
+- **Navigation (M40):** `BottomNav` in the `(app)` layout: Beet (`/plan`) · Ideen · **Swipen** (big circle,
+  `/ideas/entdecken`) · Archiv (`/dates`) · Einstellungen. `AppHeader` is the small name plus the page's
+  own thing on the right (avatars, "36 Ideen", matches pill).
+- **The Beet (start):** `src/app/(app)/beet.tsx` – headline per step ("du bist dran.", "kanne bei Sam.",
+  "Jonas hat gegossen.", "neues blatt!"), the `Plant` (`components/plant.tsx`, geometry in
+  `core/plant.ts`: a leaf per lived date, a wilted one per skipped round, from `server/plant.ts`) with the
+  watering can of whoever is on, and one action ("Date planen", "Anstupsen" → `nudgeAction`, "Zusagen").
 - Slot ranking stays pure: `scoreSlot`/`findSlots` get daylight and the hourly forecast as
   parameters (`core/outdoor.ts`, `core/sun.ts`); the one forecast request per search lives in
   `server/weather.ts`. Outdoor ideas (`ideas.setting`) use the outdoor ranking, see `core/slot-modes.ts`.
 - Lists of ideas/events filter with the one shared filter (`useIdeaFilter()`, `matchesIdeaFilter()`),
   never with their own chips (the chips row above the wishlist only drives that filter's `category`
-  plus the local views Matches/Geswipt). Ideas without `ideas.category` use `categoryOf()`.
+  plus the local views Matches/Geswipt and the tiles of `/ideas`, see `idea-board.tsx` `inView`). Ideas without `ideas.category` use `categoryOf()`.
   New extras go behind `extraOn(settings, …)` and show up only when they fit.
 
 ## Checks before pushing
@@ -55,10 +62,10 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - **No scrolling (M27):** every screen fits 390×844 – only lists scroll (wishlist, events, sheets,
   long settings topics). Long content becomes steps, pages or tabs (`Tabs`, `?t=` topics, paging);
   check new screens with `fitsScreen(page)` from `e2e/flow.mjs`. Settings links are `/settings?t=<topic>`.
-- **Planning in e2e:** `/plan` is the start (step card + swipe deck); "Date planen" opens the
-  two-step flow at `/plan?pick=1`. Use `e2e/flow.mjs` (`openFlow`, `pickIdea`, `openTimes`,
+- **Planning in e2e:** `/plan` is the start (the Beet); "Date planen" opens the one planning
+  screen at `/plan?pick=1` ("wann?" above "was?", the send button is `SEND` in `flow.mjs`). Use `e2e/flow.mjs` (`openFlow`, `pickIdea`, `openTimes`,
   `customIdea`, `backAtStart`) instead of expecting the wishlist or the times (`ol li button`) right away.
-  The next date sits in the step card (`[data-next-step] [data-date-card]`); its checklist,
+  The next date sits on the Beet (`[data-next-step] [data-date-card]`); its checklist,
   "Zeit ändern" and "Absagen" are on `/dates/<id>` ("Details ›").
 - **Hidden pages in e2e:** Next keeps the last visited pages mounted but hidden, so `getByText` can match
   twice – prefer `getByRole` (ignores hidden elements) or `{ exact: true }` / `.filter({ visible: true })`.

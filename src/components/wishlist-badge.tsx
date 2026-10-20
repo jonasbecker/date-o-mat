@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 export const WISHLIST_ADDED_EVENT = "dom-wishlist-added";
 
 /**
- * The number of ideas on the wishlist, on the 💡 icon. The server count is the truth; between two
+ * The number of ideas on the wishlist, on the Ideen tab. The server count is the truth; between two
  * refreshes the badge adds what was just liked here, and pops.
  */
 export function WishlistBadge({ count }: { count: number }) {
@@ -26,7 +26,7 @@ export function WishlistBadge({ count }: { count: number }) {
     <span
       key={shown}
       aria-hidden="true"
-      className="animate-pop-in pointer-events-none absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-line bg-himbeere px-1 text-[11px] font-extrabold leading-none text-tinte"
+      className="animate-pop-in pointer-events-none absolute -right-2.5 -top-2 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose px-1 font-mono text-[10px] leading-none text-partner-ink"
     >
       {shown}
     </span>

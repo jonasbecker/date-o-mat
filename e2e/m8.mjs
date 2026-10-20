@@ -150,8 +150,8 @@ await s.goto(`${BASE}/`);
 const reviewBox = s.locator("[data-review-start]").filter({ visible: true });
 await reviewBox.waitFor({ timeout: 15000 });
 check("the start page asks for the review", s.url() === `${BASE}/plan`);
-check("\"Wie war's?\" shows title, date, first photo and five hearts", (await reviewBox.getByText("„Picknick im Stadtwald“").isVisible()) && (await reviewBox.locator(`img[src^="/api/photos/${photo.id}"]`).count()) === 1 && (await reviewBox.getByRole("link", { name: /Herz/ }).count()) === 5);
-check("…and swiping below it (card or one line)", (await s.locator("[data-swipe-teaser], [data-swipe-deck=\"start\"]").filter({ visible: true }).count()) === 1);
+check("\"Wie war's?\" shows title, date, first photo and five hearts", (await reviewBox.getByText("Picknick im Stadtwald", { exact: true }).isVisible()) && (await reviewBox.locator(`img[src^="/api/photos/${photo.id}"]`).count()) === 1 && (await reviewBox.getByRole("link", { name: /Herz/ }).count()) === 5);
+check("…on the Beet (its own line when another step heads it)", (await s.locator('[data-next-step] [data-leaf="fresh"], [data-review-card]').count()) >= 1);
 check("the review state fits the screen", await fitsScreen(s));
 await s.screenshot({ path: `${OUT}m8-01-home-prompt.png` });
 await reviewBox.getByRole("link", { name: "4 Herzen" }).click();
@@ -180,7 +180,8 @@ check(`stats do not reveal Sam's hidden hearts (${hiddenStats.replace(/\n/g, " "
 await j.getByRole("link", { name: /Picknick im Stadtwald/ }).last().click();
 await j.getByText("Sam hat schon bewertet").waitFor({ timeout: 10000 });
 check("detail: note not visible yet", !(await j.getByText("Das Eis am Weiher!").isVisible()));
-await j.getByLabel("5 Herzen").check({ force: true });
+// Tap the heart itself (the radio is visually hidden inside the label).
+await j.getByLabel("5 Herzen").locator("xpath=..").click();
 await j.getByRole("button", { name: "Bewertung abschicken" }).click();
 await j.getByText("Deine Herzen", { exact: true }).waitFor({ timeout: 10000 });
 await j.getByRole("tab", { name: "Sam" }).click();

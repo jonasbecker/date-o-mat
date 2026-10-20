@@ -144,15 +144,18 @@ export type DeckState = {
   generating: boolean;
   matches: number;
   ai: boolean;
+  /** How many cards the partner has swiped so far ("S. hat 12 geswiped"). */
+  partnerSwiped: number;
 };
 
 export async function deckFor(ctx: CoupleContext, now: Date): Promise<DeckState> {
-  const [{ cards, partner }, lastSuper, settings, matches, maybes] = await Promise.all([
+  const [{ cards, partner }, lastSuper, settings, matches, maybes, partnerSwiped] = await Promise.all([
     openCardsFor(ctx, now),
     lastSuperLike(ctx.user.id),
     getCoupleSettings(ctx.coupleId),
     db.$count(deckCards, and(eq(deckCards.coupleId, ctx.coupleId), eq(deckCards.status, "matched"), ne(deckCards.kind, "revisit"))),
     maybeCount(ctx, now),
+    db.$count(deckSwipes, eq(deckSwipes.userId, ctx.partner.id)),
   ]);
   const since = await waitingSinceLabels(cards, now);
   const views = cards.map((card) => ({ ...cardView(card, partner.get(card.id)), waitingSince: since.get(card.id) ?? null }));
@@ -173,6 +176,7 @@ export async function deckFor(ctx: CoupleContext, now: Date): Promise<DeckState>
     generating: Boolean(refillAt && Date.now() - refillAt.getTime() < STALE_REFILL_MS),
     matches,
     ai: env().ai,
+    partnerSwiped,
   };
 }
 

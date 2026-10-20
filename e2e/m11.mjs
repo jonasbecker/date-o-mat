@@ -102,7 +102,7 @@ await new Promise((r) => claude.listen(4030, r));
 // 1) Plan → "Was anderes" → "✨ 3 Ideen von der KI": follows the shared filter, knows slot, size and weather
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/plan?pick=1`);
-await j.getByRole("heading", { name: "Was wollt ihr machen?" }).waitFor({ timeout: 20000 });
+await j.getByRole("heading", { name: "was?", exact: true }).waitFor({ timeout: 20000 });
 await j.waitForTimeout(800);
 await j.getByRole("button", { name: "Filter", exact: true }).click();
 await j.locator("dialog[open]").getByRole("button", { name: "🆓 Gratis" }).click();
@@ -128,7 +128,7 @@ const weatherLine = await sheet.getByText(/Wetter:/).innerText();
 check(`weather for the slot shown (${weatherLine})`, /°C/.test(weatherLine) && weatherCalls.length - weatherBefore === 1);
 await j.screenshot({ path: `${OUT}m11-02-plan.png` });
 await sheet.locator("article", { hasText: "Tee-Verkostung 1" }).getByRole("button", { name: "Nehmen" }).click();
-await j.locator("div", { hasText: "Ihr macht" }).getByText("Tee-Verkostung 1", { exact: true }).first().waitFor({ timeout: 10000 });
+await j.locator("[data-plan-summary]", { hasText: "Tee-Verkostung 1" }).first().waitFor({ timeout: 10000 });
 const { rows: aiIdeas } = await db.query("SELECT title, source, cost_eur FROM ideas WHERE source = 'ai'");
 check(`"Nehmen" saves it as AI idea and selects it (${JSON.stringify(aiIdeas[0])})`, aiIdeas.length === 1 && aiIdeas[0].title === "Tee-Verkostung 1");
 await j.screenshot({ path: `${OUT}m11-01-wishlist.png` });
@@ -137,7 +137,7 @@ await j.screenshot({ path: `${OUT}m11-01-wishlist.png` });
 const { rows: [usage] } = await db.query("SELECT count(*)::int AS c, sum(input_tokens)::int AS t FROM ai_requests WHERE kind = 'ideas'");
 check(`usage logged (${usage.c} requests, ${usage.t} input tokens)`, usage.c === 1 && usage.t === 800);
 await db.query(`INSERT INTO ai_requests (couple_id, kind, model) SELECT $1, 'ideas', 'claude-haiku-5-5' FROM generate_series(1, 19)`, [couple.id]);
-await j.getByRole("button", { name: "← Andere Idee" }).click();
+// (one screen: the ideas stay right below the times)
 await j.getByRole("button", { name: "Was anderes" }).click();
 await j.locator("dialog[open]").getByRole("button", { name: "✨ 3 Ideen von der KI" }).click();
 await j.getByText("Für heute sind die KI-Vorschläge aufgebraucht").waitFor({ timeout: 10000 });

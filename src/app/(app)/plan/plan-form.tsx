@@ -8,7 +8,7 @@ import { useCelebrate } from "@/components/celebration";
 import { SIZE_LABEL } from "@/components/size-chip";
 import { categoryOf } from "@/core/categories";
 import { slotModeFor } from "@/core/slot-modes";
-import { orderSlots, type SlotMood } from "@/core/slots";
+import { orderSlots } from "@/core/slots";
 import { FilteredEmpty, FilterButton, useIdeaFilter } from "@/components/idea-filter";
 import { Sheet, type SheetHandle } from "@/components/sheet";
 import { SurpriseButton } from "@/components/surprise-button";
@@ -18,8 +18,8 @@ import { QuickAdd } from "@/components/quick-add";
 import { IdeaForm } from "@/components/idea-form";
 import { archiveIdeaAction, updateIdeaAction } from "../ideas/actions";
 import { Mascot } from "@/components/mascot";
-import { DiceIcon, MoreIcon } from "@/components/icons";
-import { IdeaCard, ideaFacts, type IdeaCardView } from "@/components/idea-card";
+import { BackIcon, DiceIcon, MoreIcon } from "@/components/icons";
+import { type IdeaCardView } from "@/components/idea-card";
 import { matchesIdeaFilter } from "@/core/filters";
 import type { EventView } from "../events/event-list";
 import { MoreIdeas } from "./more-ideas";
@@ -29,15 +29,6 @@ import { budgetHint } from "@/core/budget";
 import type { SlotView } from "@/lib/format";
 import { freeTimesAction, saveDateAction, type FreeTimes, type SaveDateState } from "./actions";
 
-const MOOD_LABEL: Record<SlotMood, string> = {
-  friday_evening: "Freitagabend",
-  evening: "Feierabend",
-  weekend_morning: "Brunch-Zeit",
-  weekend_afternoon: "Wochenende",
-  weekend_evening: "Wochenendabend",
-  weekend_day: "Wochenende",
-  daytime: "Tagsüber",
-};
 
 export type IdeaOption = IdeaCardView;
 
@@ -58,7 +49,7 @@ const SLOTS_PER_PAGE = 3;
 const NO_SLOTS: SlotView[] = [];
 
 const inputClass =
-  "h-12 w-full rounded-2xl border-[2.5px] border-line bg-surface px-4 font-bold text-ink placeholder:font-semibold placeholder:text-muted/70 focus:shadow-[0_0_0_4px_var(--color-himbeere-soft)] focus:outline-none";
+  "h-12 w-full rounded-2xl bg-soft px-4 font-medium text-ink placeholder:text-muted/70 focus:shadow-[0_0_0_3px_var(--color-himmel)] focus:outline-none";
 
 /** Free times older than this are fetched again when step 2 opens. */
 const TIMES_FRESH_MS = 60_000;
@@ -81,6 +72,7 @@ export function PlanFlow({
   budget = null,
   budgetLine,
   intro,
+  hoursLeft,
 }: {
   mode: FlowMode;
   /** "Auch nach dem Rundenende suchen": the whole horizon instead of the round. */
@@ -103,12 +95,13 @@ export function PlanFlow({
   budget?: { left: number; pot: number } | null;
   /** "Oktober: 50 von 80 € · noch 30 €" – next to "Date festlegen". */
   budgetLine?: ReactNode;
-  /** What sits above step 1 (the state of the round) – the times get the whole screen. */
+  /** What sits below the top bar (the state of the round). */
   intro?: ReactNode;
+  /** "54 h" – time left until the deadline, top right. */
+  hoursLeft?: string;
 }) {
   const router = useRouter();
   const preselected = mode.kind === "new" && preselectIdeaId ? ideas.find((i) => i.id === preselectIdeaId) : undefined;
-  const [step, setStep] = useState<"idea" | "time">(mode.kind === "reschedule" || preselected ? "time" : "idea");
   const [pick, setPick] = useState<IdeaPick | null>(preselected ? { kind: "idea", id: preselected.id } : null);
   const [size, setSize] = useState<IdeaSize>(mode.kind === "reschedule" ? mode.date.size : (preselected?.size ?? preselectSize ?? "small"));
   // The free times are loaded here, not by the page: the start page itself never waits for Google.
@@ -150,6 +143,7 @@ export function PlanFlow({
   const celebrate = useCelebrate();
   const [leaving, setLeaving] = useState(false);
   const [surprise, setSurprise] = useState(false);
+  const [moreKey, setMoreKey] = useState(0);
 
   const [state, formAction, pending] = useActionState<SaveDateState, FormData>(async (prev, formData) => {
     const result = await saveDateAction(prev, formData);
@@ -169,7 +163,6 @@ export function PlanFlow({
   }
 
   function toTimes() {
-    setStep("time");
     if (!loadingTimes && (!times || isStale(times.at))) loadTimes();
   }
 
@@ -199,7 +192,6 @@ export function PlanFlow({
   const title = mode.kind === "reschedule" ? mode.date.title : pick?.kind === "custom" ? customTitle.trim() : (idea?.title ?? "");
   const ready = Boolean(slot && title);
   const pickedCost = idea?.costEur ?? null;
-  const facts = idea ? ideaFacts(idea) : customLocation && `📍 ${customLocation}`;
   const budgetWarning = budget ? budgetHint(pickedCost, budget.left) : null;
   // Swapping: the date's own idea is not an alternative to itself.
   const wishlist = ideas.filter((i) => matchesIdeaFilter({ size: i.size, costEur: i.costEur, setting: i.setting, category: categoryOf(i) }, filter) && !(mode.kind === "swap" && i.id === mode.next.ideaId));
@@ -209,358 +201,394 @@ export function PlanFlow({
   // The AI plans for your next free time (weather, length) – the Top-Tipp of the filtered length.
   const aiSlot = (filter.size === "large" ? large : small)[0];
 
-  if (step === "idea") {
-    return (
-      <div key="idea" className="animate-slide-in flex min-h-0 flex-1 flex-col gap-3">
-        {intro}
+  const slotsBlock =
+    !times || (loadingTimes && !ok) ? (
+      <div className="flex items-center gap-3 rounded-2xl bg-surface px-4 py-3" aria-busy="true" aria-label="Sucht freie Zeiten …">
+        <Mascot id="times" size={40} busy />
+        <p className="text-sm text-muted">Eure freien Abende kommen gleich …</p>
+      </div>
+    ) : times.result.status === "google_error" ? (
+      <p role="alert" className="rounded-2xl bg-rose px-4 py-3 text-sm font-medium text-tinte">
+        Google Kalender antwortet gerade nicht.{" "}
+        <button type="button" onClick={loadTimes} className="font-bold underline">
+          Nochmal versuchen
+        </button>
+      </p>
+    ) : times.result.status === "not_connected" ? (
+      <p role="alert" className="rounded-2xl bg-zitrone-soft px-4 py-3 text-sm font-medium text-tinte">
+        Ein Kalender ist nicht mehr verbunden.{" "}
+        <Link href="/settings?t=kalender" className="font-bold underline">
+          In den Einstellungen verbinden
+        </Link>
+      </p>
+    ) : slots.length === 0 ? (
+      <NoSlots size={size} />
+    ) : (
+      <ol className="flex flex-col gap-1.5" aria-label="Freie Zeiten">
+        {shownSlots.map((option, i) => {
+          const index = slotPage * SLOTS_PER_PAGE + i;
+          const selected = option.key === slotKey;
+          return (
+            <li key={option.key} className="animate-pop-in">
+              <button
+                type="button"
+                aria-pressed={selected}
+                aria-label={`${option.dateLabel}, ${option.timeLabel}${index === 0 ? " · Top-Tipp" : ""}`}
+                data-weekday={option.weekday}
+                data-day={option.day}
+                data-time={option.timeLabel}
+                onClick={() => setSlotKey(option.key)}
+                className={cn(
+                  "tap grid min-h-[52px] w-full grid-cols-[78px_minmax(0,1fr)_auto] items-center rounded-2xl px-4 py-1.5 text-left",
+                  selected ? "bg-tinte text-white dark:bg-leaf" : "bg-surface text-ink",
+                )}
+              >
+                <span className="font-mono text-xs">{option.shortLabel}</span>
+                <span className="flex min-w-0 flex-col">
+                  <span className="text-xl font-bold tracking-[-0.02em]">{option.timeLabel.replace(" – ", "–")}</span>
+                  {option.note && <span className={cn("truncate text-[11px]", selected ? "opacity-80" : "text-muted")}>{option.note}</span>}
+                </span>
+                <span className="flex flex-col items-end font-mono text-[11px]">
+                  {index === 0 && <span aria-hidden="true">★ Tipp</span>}
+                  <span className={cn(!selected && "text-muted")}>{option.durationLabel}</span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    );
 
-        {/* The wishlist itself: add, edit and choose all happen here. */}
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between gap-2">
-            {mode.kind === "swap" ? <p className="text-[12px] font-extrabold text-muted">Lieber was anderes?</p> : <StepDots step={1} of={2} />}
-            <span className="flex items-center gap-2">
-              <FilterButton />
-              <QuickAdd />
-            </span>
-          </div>
-          <h2 className="text-[22px] font-semibold leading-tight">Was wollt ihr machen?</h2>
-        </div>
-        {mode.kind === "swap" && (
-          <p className="-mt-1 text-sm font-bold text-muted">
-            Statt „{mode.next.title}“ ({mode.next.when}) – tipp an, was ihr lieber machen wollt. Der Termin bleibt.
-          </p>
+  const pager = ok && slots.length > 0 && (
+    <div className="flex items-center justify-between gap-2 text-[13px] font-semibold">
+      <button type="button" disabled={slotPage === 0} onClick={() => setSlotPage((p) => p - 1)} className={cn("underline", slotPage === 0 && "invisible")}>
+        ← Frühere
+      </button>
+      <span className="font-mono text-[11px] text-muted">{ok && `Gesucht bis ${ok.untilLabel}`}</span>
+      <button type="button" disabled={slotPage >= pageCount - 1} onClick={() => setSlotPage((p) => p + 1)} className={cn("underline", slotPage >= pageCount - 1 && "invisible")}>
+        Weitere Zeiten →
+      </button>
+    </div>
+  );
+
+  const sizeToggle = (
+    <div role="group" aria-label="Wie lang soll das Date sein?" className="flex gap-0.5 rounded-full bg-soft p-0.5">
+      {IDEA_SIZES.map((option) => (
+        <button
+          key={option}
+          type="button"
+          aria-pressed={size === option}
+          onClick={() => selectSize(option)}
+          className={cn("rounded-full px-3 py-1 font-mono text-[11px]", size === option ? "bg-ink text-bg" : "text-muted")}
+        >
+          {SIZE_LABEL[option].label}
+        </button>
+      ))}
+    </div>
+  );
+
+  // The ideas of "was?": matches first (DESIGN.md), then the order the page gave (longest waiting first).
+  const sortedWishlist = [...wishlist].sort((a, b) => Number(Boolean(b.matched)) - Number(Boolean(a.matched)));
+  const chosenId = mode.kind === "swap" ? null : pick?.kind === "idea" ? pick.id : null;
+  const ideaList =
+    ideas.length === 0 ? (
+      <p className="rounded-2xl border-2 border-dashed border-line px-4 py-4 text-sm text-muted">Eure Wunschliste ist noch leer. Swipt ein paar Ideen – oder tragt eure eigene ein.</p>
+    ) : wishlist.length === 0 ? (
+      <FilteredEmpty what="Ideen" />
+    ) : (
+      <ul data-scroll className="-mx-1 flex min-h-[7rem] flex-1 flex-col gap-1.5 overflow-y-auto overscroll-contain px-1 pb-1" aria-label="Eure Wunschliste">
+        {pick?.kind === "custom" && (
+          <li>
+            <div className="flex min-h-[52px] items-center gap-2.5 rounded-2xl bg-tinte px-4 text-white dark:bg-leaf">
+              <span className="min-w-0 flex-1 truncate font-semibold">{customTitle}</span>
+              <span className="rounded-full bg-white/15 px-2.5 py-1 font-mono text-[11px]">eigene</span>
+            </div>
+          </li>
         )}
+        {sortedWishlist.map((option) => {
+          const selected = option.id === chosenId;
+          return (
+            <li key={option.id} className="relative">
+              <button
+                type="button"
+                aria-pressed={mode.kind === "swap" ? undefined : selected}
+                aria-label={option.title}
+                onClick={() => chooseIdea({ id: option.id })}
+                className={cn(
+                  "tap flex min-h-[52px] w-full items-center gap-2.5 rounded-2xl py-1.5 pl-4 pr-11 text-left",
+                  selected ? "bg-tinte text-white dark:bg-leaf" : "bg-surface text-ink",
+                )}
+              >
+                <span className="min-w-0 flex-1 truncate font-semibold">{option.title}</span>
+                <span
+                  className={cn(
+                    "shrink-0 rounded-full px-2.5 py-1 font-mono text-[11px]",
+                    selected ? "bg-white/15" : option.matched ? "bg-rose text-partner-ink" : option.overBudget ? "bg-zitrone-soft text-tinte" : "bg-soft",
+                  )}
+                >
+                  {option.matched ? "♥ match" : option.overBudget ? "⚠️ über Budget" : SIZE_LABEL[option.size].label.toLowerCase()}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => editIdea(option)}
+                aria-label={`${option.title} bearbeiten`}
+                className={cn("absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full", selected ? "text-white/80" : "text-muted")}
+              >
+                <MoreIcon width={18} height={18} />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    );
 
-        {/* The wishlist is the one part that scrolls. */}
-        {ideas.length === 0 ? (
-          <p className="rounded-[20px] border-2 border-dashed border-line px-4 py-4 font-bold text-muted">
-            Eure Wunschliste ist noch leer. Holt euch unten etwas Neues – oder schreibt eure eigene Idee auf.
-          </p>
-        ) : wishlist.length === 0 ? (
-          <FilteredEmpty what="Ideen" />
-        ) : (
-          <ul data-scroll className="-mx-1 flex min-h-[7.5rem] flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-1 pb-1" aria-label="Eure Wunschliste">
-            {wishlist.map((option) => (
-              <li key={option.id}>
-                <IdeaCard idea={option} onOpen={() => chooseIdea({ id: option.id })} onMore={() => editIdea(option)} />
-              </li>
-            ))}
-          </ul>
-        )}
+  const ideaTools = (
+    <div className="flex items-center justify-center gap-5 text-[13px] font-semibold">
+      <SurpriseButton look="link" label={<><DiceIcon width={15} height={15} /> Zufall</>} ideaSize={filter.size} onChoose={(chosen) => chooseIdea(chosen)} />
+      <button
+        type="button"
+        className="tap flex items-center gap-1.5 underline"
+        onClick={() => {
+          // A fresh sheet each time (no suggestions left over from before).
+          setMoreKey((k) => k + 1);
+          moreSheet.current?.open();
+        }}
+      >
+        <MoreIcon width={15} height={15} /> Was anderes
+      </button>
+    </div>
+  );
 
-        <div className="mt-auto grid grid-cols-2 gap-2">
-          <SurpriseButton size="sm" label={<><DiceIcon width={17} height={17} /> Zufall</>} ideaSize={filter.size} className="gap-1.5 whitespace-nowrap px-1.5 text-[14px]" onChoose={(chosen) => chooseIdea(chosen)} />
-          <Button variant="secondary" size="sm" className="w-full gap-1.5 whitespace-nowrap px-1.5 text-[14px]" onClick={() => moreSheet.current?.open()}>
-            <MoreIcon width={17} height={17} /> Was anderes
-          </Button>
-        </div>
-
-        <Sheet ref={moreSheet} title="Was anderes?">
-          {mode.kind === "new" && (
-            <form
-              className="flex flex-col gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!customTitle.trim()) return;
-                moreSheet.current?.close();
-                chooseCustom();
-              }}
-            >
-              <label htmlFor="custom-title" className="text-[13px] font-extrabold text-muted">
-                Eure eigene Idee
-              </label>
-              <input
-                id="custom-title"
-                value={customTitle}
-                onChange={(e) => setCustomTitle(e.target.value)}
-                maxLength={120}
-                placeholder="z. B. Eis essen und Rhein gucken"
-                className={inputClass}
-              />
-              {customTitle.trim() !== "" && (
-                <>
-                  <label htmlFor="custom-location" className="text-[13px] font-extrabold text-muted">
-                    Ort (optional)
-                  </label>
-                  <input
-                    id="custom-location"
-                    value={customLocation}
-                    onChange={(e) => setCustomLocation(e.target.value)}
-                    maxLength={120}
-                    placeholder="z. B. Rheinufer"
-                    className={inputClass}
-                  />
-                </>
-              )}
-              <Button type="submit" size="sm" variant="secondary" disabled={!customTitle.trim()}>
-                Weiter →
-              </Button>
-            </form>
-          )}
-          <MoreIdeas
-            events={mode.kind === "new" ? events : null}
-            aiEnabled={aiEnabled}
-            slot={aiSlot ? { startIso: aiSlot.startIso, endIso: aiSlot.endIso, label: `${aiSlot.dateLabel}, ${aiSlot.timeLabel}`, size: aiSlot.size } : null}
-            onChoose={(chosen) => {
+  const sheets = (
+    <>
+      <Sheet ref={moreSheet} title="Was anderes?">
+        {mode.kind === "new" && (
+          <form
+            className="flex flex-col gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!customTitle.trim()) return;
               moreSheet.current?.close();
-              chooseIdea(chosen);
+              chooseCustom();
             }}
-            onEventPlanned={() => setTimeout(() => router.replace("/plan"), 1000)}
-          />
-        </Sheet>
+          >
+            <label htmlFor="custom-title" className="text-[13px] font-medium text-muted">
+              Eure eigene Idee
+            </label>
+            <input id="custom-title" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} maxLength={120} placeholder="z. B. Eis essen und Rhein gucken" className={inputClass} />
+            {customTitle.trim() !== "" && (
+              <>
+                <label htmlFor="custom-location" className="text-[13px] font-medium text-muted">
+                  Ort (optional)
+                </label>
+                <input id="custom-location" value={customLocation} onChange={(e) => setCustomLocation(e.target.value)} maxLength={120} placeholder="z. B. Rheinufer" className={inputClass} />
+              </>
+            )}
+            <Button type="submit" size="sm" variant="secondary" disabled={!customTitle.trim()}>
+              Weiter →
+            </Button>
+          </form>
+        )}
+        <MoreIdeas
+          key={moreKey}
+          events={mode.kind === "new" ? events : null}
+          aiEnabled={aiEnabled}
+          slot={aiSlot ? { startIso: aiSlot.startIso, endIso: aiSlot.endIso, label: `${aiSlot.dateLabel}, ${aiSlot.timeLabel}`, size: aiSlot.size } : null}
+          onChoose={(chosen) => {
+            moreSheet.current?.close();
+            chooseIdea(chosen);
+          }}
+          onEventPlanned={() => setTimeout(() => router.replace("/plan"), 1000)}
+        />
+      </Sheet>
 
-        <Sheet ref={editSheet} title="Idee bearbeiten" onClose={() => setEditing(null)}>
-          {editing && (
-            <IdeaForm
-              key={editing.id}
-              action={updateIdeaAction}
-              idea={{ id: editing.id, title: editing.title, size: editing.size, note: editing.note ?? null, url: editing.url ?? null, costEur: editing.costEur, location: editing.location }}
-              onSaved={() => editSheet.current?.close()}
-              onDelete={async () => {
-                await archiveIdeaAction(editing.id);
-                editSheet.current?.close();
+      <Sheet ref={editSheet} title="Idee bearbeiten" onClose={() => setEditing(null)}>
+        {editing && (
+          <IdeaForm
+            key={editing.id}
+            action={updateIdeaAction}
+            idea={{ id: editing.id, title: editing.title, size: editing.size, note: editing.note ?? null, url: editing.url ?? null, costEur: editing.costEur, location: editing.location }}
+            onSaved={() => editSheet.current?.close()}
+            onDelete={async () => {
+              await archiveIdeaAction(editing.id);
+              editSheet.current?.close();
+            }}
+          />
+        )}
+      </Sheet>
+
+      {mode.kind === "swap" && (
+        <Sheet ref={swapSheet} title="Date ändern?" onClose={() => setSwapping(null)}>
+          {swapping && (
+            <SwapConfirm
+              next={mode.next}
+              idea={swapping}
+              onCancel={() => swapSheet.current?.close()}
+              onDone={() => {
+                swapSheet.current?.close();
+                celebrate();
+                router.replace("/plan");
               }}
             />
           )}
         </Sheet>
+      )}
+    </>
+  );
 
-        {mode.kind === "swap" && (
-          <Sheet ref={swapSheet} title="Date ändern?" onClose={() => setSwapping(null)}>
-            {swapping && (
-              <SwapConfirm
-                next={mode.next}
-                idea={swapping}
-                onCancel={() => swapSheet.current?.close()}
-                onDone={() => {
-                  swapSheet.current?.close();
-                  celebrate();
-                  router.replace("/plan");
-                }}
-              />
-            )}
-          </Sheet>
-        )}
+  const top = (
+    <div className="flex items-center justify-between">
+      <Link href="/plan" aria-label="Zurück" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
+        <BackIcon width={20} height={20} />
+      </Link>
+      <StepDots step={1} of={4} />
+      <span className="w-11 text-right font-mono text-[11px]">{hoursLeft ?? ""}</span>
+    </div>
+  );
+
+  // Swapping the idea of a planned date: only "was?" – the time stays.
+  if (mode.kind === "swap") {
+    return (
+      <div className="animate-slide-in flex min-h-0 flex-1 flex-col gap-3">
+        {top}
+        {intro}
+        <div className="flex items-baseline justify-between gap-2 pt-2">
+          <h2 className="headline text-[40px]">was anderes?</h2>
+          <span className="flex items-center gap-2">
+            <FilterButton />
+            <QuickAdd look="link" />
+          </span>
+        </div>
+        <p className="-mt-1 text-sm text-muted">
+          Statt „{mode.next.title}“ ({mode.next.when}) – tipp an, was ihr lieber machen wollt. Der Termin bleibt.
+        </p>
+        {ideaList}
+        {ideaTools}
+        {sheets}
       </div>
     );
   }
 
   return (
-    <form key="time" action={formAction} className="animate-slide-in flex min-h-0 flex-1 flex-col gap-3">
-      {slot && (
-        <>
-          <input type="hidden" name="start" value={slot.startIso} />
-          <input type="hidden" name="end" value={slot.endIso} />
-        </>
-      )}
-      <input type="hidden" name="size" value={size} />
-      <input type="hidden" name="ideaId" value={idea?.id ?? ""} />
-      {pick?.kind === "custom" && (
-        <>
-          <input type="hidden" name="customTitle" value={customTitle} />
-          <input type="hidden" name="customLocation" value={customLocation} />
-        </>
-      )}
+    <div className="animate-slide-in flex min-h-0 flex-1 flex-col gap-2.5">
+      <form id="plan-form" action={formAction} className="contents">
+        {slot && (
+          <>
+            <input type="hidden" name="start" value={slot.startIso} />
+            <input type="hidden" name="end" value={slot.endIso} />
+          </>
+        )}
+        <input type="hidden" name="size" value={size} />
+        <input type="hidden" name="ideaId" value={idea?.id ?? ""} />
+        {pick?.kind === "custom" && (
+          <>
+            <input type="hidden" name="customTitle" value={customTitle} />
+            <input type="hidden" name="customLocation" value={customLocation} />
+          </>
+        )}
+        {mode.kind === "reschedule" && (
+          <>
+            <input type="hidden" name="dateId" value={mode.date.dateId} />
+            <input type="hidden" name="keepDetails" value="1" />
+          </>
+        )}
+      </form>
+      {top}
+      {intro}
+
+      <div className="flex items-end justify-between gap-3 pt-1.5">
+        <h2 className="headline text-[40px]">wann?</h2>
+        {sizeToggle}
+      </div>
       {mode.kind === "reschedule" && (
-        <>
-          <input type="hidden" name="dateId" value={mode.date.dateId} />
-          <input type="hidden" name="keepDetails" value="1" />
-        </>
-      )}
-
-      {mode.kind === "reschedule" ? (
-        <div>
-          <p className="text-[12px] font-extrabold text-muted">Termin ändern</p>
-          <h2 className="text-[22px] font-semibold leading-tight">Wann passt es besser?</h2>
-          <p className="text-sm font-bold text-muted">
-            {mode.date.keepSecret ? "🤫 Das ist eine Überraschung – du kannst nur die Zeit ändern, der Rest bleibt geheim." : `„${mode.date.title}“ bleibt, nur die Zeit ändert sich.`}
-          </p>
-        </div>
-      ) : (
-        <>
-          <button type="button" onClick={() => setStep("idea")} className="self-start text-sm font-extrabold text-muted underline">
-            ← Andere Idee
-          </button>
-          <div className="flex flex-col rounded-[18px] border-[2.5px] border-line bg-surface px-4 py-2.5">
-            <span className="text-[12px] font-extrabold text-muted">Ihr macht</span>
-            <span className="font-display text-lg font-semibold leading-snug">{title}</span>
-            {facts && <span className="text-xs font-extrabold text-muted">{facts}</span>}
-          </div>
-        </>
-      )}
-
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          {mode.kind !== "reschedule" && <StepDots step={2} of={2} />}
-          <h2 className="text-[22px] font-semibold leading-tight">Wann?</h2>
-        </div>
-        <div role="group" aria-label="Wie lang soll das Date sein?" className="flex gap-1 rounded-full border-2 border-line bg-surface p-1">
-          {IDEA_SIZES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              aria-pressed={size === option}
-              onClick={() => selectSize(option)}
-              className={cn(
-                "rounded-full px-3 py-1 text-sm font-extrabold",
-                size === option ? "bg-ink text-bg" : "text-muted",
-              )}
-            >
-              {SIZE_LABEL[option].emoji} {SIZE_LABEL[option].label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {!times || (loadingTimes && !ok) ? (
-        <div className="flex flex-col items-center gap-2 py-6" aria-busy="true" aria-label="Sucht freie Zeiten …">
-          <Mascot id="times" size={72} busy />
-          <p className="text-sm font-extrabold text-muted">Der Date-O-Mat kurbelt … eure freien Zeiten kommen gleich.</p>
-        </div>
-      ) : times.result.status === "google_error" ? (
-        <p role="alert" className="rounded-[18px] border-2 border-line bg-himbeere-soft px-4 py-3 font-bold text-tinte">
-          Google Kalender antwortet gerade nicht.{" "}
-          <button type="button" onClick={loadTimes} className="underline">
-            Nochmal versuchen
-          </button>
+        <p className="-mt-1 text-sm text-muted">
+          {mode.date.keepSecret ? "🤫 Das ist eine Überraschung – du kannst nur die Zeit ändern, der Rest bleibt geheim." : `„${mode.date.title}“ bleibt, nur die Zeit ändert sich.`}
         </p>
-      ) : times.result.status === "not_connected" ? (
-        <p role="alert" className="rounded-[18px] border-2 border-line bg-zitrone-soft px-4 py-3 font-bold text-tinte">
-          Ein Kalender ist nicht mehr verbunden.{" "}
-          <Link href="/settings?t=kalender" className="underline">
-            In den Einstellungen verbinden
-          </Link>
-        </p>
-      ) : slots.length === 0 ? (
-        <NoSlots size={size} />
-      ) : (
-        <ol className="flex flex-col gap-2">
-          {shownSlots.map((option, i) => {
-            const index = slotPage * SLOTS_PER_PAGE + i;
-            const selected = option.key === slotKey;
-            return (
-              <li key={option.key} className="animate-pop-in">
-                <button
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => setSlotKey(option.key)}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-[18px] border-[2.5px] border-line p-2 pr-3 text-left transition-shadow",
-                    selected ? "bg-himbeere-soft text-tinte shadow-[4px_4px_0_var(--line)]" : "bg-surface",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex size-[48px] shrink-0 flex-col items-center justify-center rounded-[13px] border-2 border-line leading-none",
-                      selected ? "bg-himbeere" : "bg-bg",
-                    )}
-                  >
-                    <span className="text-xs font-extrabold">{option.weekday}</span>
-                    <span className="font-display text-[22px] font-bold">{option.day}</span>
-                  </span>
-                  <span className="flex min-w-0 flex-1 flex-col gap-1">
-                    <span className="font-display text-lg font-semibold">{option.timeLabel}</span>
-                    {option.note && <span className={cn("text-xs font-bold", selected ? "" : "text-muted")}>{option.note}</span>}
-                    <span className="flex flex-wrap items-center gap-1.5 text-xs font-extrabold">
-                      {index === 0 && (
-                        <span className="rounded-full border-[1.5px] border-line bg-bg px-2 py-px text-ink">★ Top-Tipp</span>
-                      )}
-                      <span className={selected ? "" : "text-muted"}>
-                        {option.dateLabel} · {MOOD_LABEL[option.mood]}
-                        {option.size === "large" && ` · ${option.durationLabel}`}
-                      </span>
-                    </span>
-                  </span>
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "flex size-7 shrink-0 items-center justify-center rounded-full border-[2.5px]",
-                      selected ? "border-line bg-himbeere text-tinte" : "border-muted/50",
-                    )}
-                  >
-                    {selected && "✓"}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
       )}
-      <div className="flex items-center justify-between gap-2 text-[13px] font-extrabold">
-        <button type="button" disabled={slotPage === 0} onClick={() => setSlotPage((p) => p - 1)} className={cn("underline", slotPage === 0 && "invisible")}>
-          ← Frühere
-        </button>
-        <span className="text-muted">{ok && `Gesucht bis ${ok.untilLabel}`}</span>
-        <button type="button" disabled={slotPage >= pageCount - 1} onClick={() => setSlotPage((p) => p + 1)} className={cn("underline", slotPage >= pageCount - 1 && "invisible")}>
-          Weitere Zeiten →
-        </button>
-      </div>
+      {slotsBlock}
+      {pager}
       {searchScopeLink}
       {ok && ok.failedCalendars > 0 && (
-        <p className="text-center text-xs font-bold text-muted">
+        <p className="text-center text-xs text-muted">
           {ok.failedCalendars === 1 ? "Ein Kalender konnte" : `${ok.failedCalendars} Kalender konnten`} nicht gelesen werden – prüft die Auswahl in den Einstellungen.
         </p>
       )}
 
+      {mode.kind === "new" && (
+        <>
+          <div className="flex items-baseline justify-between gap-2 pt-2">
+            <h2 className="headline text-[40px]">was?</h2>
+            <span className="flex items-center gap-2">
+              <FilterButton />
+              <QuickAdd look="link" />
+            </span>
+          </div>
+          {ideaList}
+          {ideaTools}
+        </>
+      )}
+      {mode.kind === "reschedule" && <div className="flex-1" />}
+
       {mode.kind === "new" && surpriseEnabled && (
-        <div className="flex flex-col gap-2">
-          <label className="flex items-center gap-2.5 text-sm font-extrabold">
-            <input type="checkbox" name="surprise" value="1" checked={surprise} onChange={(e) => setSurprise(e.target.checked)} className="size-5 accent-himbeere" />
+        <div className="flex flex-col gap-1.5">
+          <label className="flex items-center gap-2.5 text-sm font-semibold">
+            <input form="plan-form" type="checkbox" name="surprise" value="1" checked={surprise} onChange={(e) => setSurprise(e.target.checked)} className="size-5 accent-himmel" />
             🎁 Als Überraschung planen
-            {surprise && <span className="font-semibold text-muted">({partnerName} sieht nur die Zeit)</span>}
+            {surprise && <span className="font-normal text-muted">({partnerName} sieht nur die Zeit)</span>}
           </label>
           {surprise && (
             <>
               <label htmlFor="surprise-hint" className="sr-only">
                 Hinweis für {partnerName} (optional)
               </label>
-              <input id="surprise-hint" name="surpriseHint" maxLength={120} placeholder={`Hinweis für ${partnerName}, z. B. Bequeme Schuhe`} className={cn(inputClass, "h-10")} />
+              <input form="plan-form" id="surprise-hint" name="surpriseHint" maxLength={120} placeholder={`Hinweis für ${partnerName}, z. B. Bequeme Schuhe`} className={cn(inputClass, "h-10")} />
             </>
           )}
         </div>
       )}
 
       {slots.length > 0 && (
-        <div className="-mx-5 mt-auto flex flex-col gap-2 border-t-[2.5px] border-line bg-surface px-5 pb-1 pt-3">
+        <div className="flex shrink-0 flex-col gap-3 rounded-[22px] bg-surface p-3.5">
           {state.status === "error" && (
-            <p role="alert" className="rounded-xl bg-himbeere-soft px-3 py-2 text-sm font-bold text-tinte">
+            <p role="alert" className="rounded-xl bg-rose px-3 py-2 text-sm font-medium text-tinte">
               {state.message}
             </p>
           )}
-          <p className="truncate text-sm font-bold">
-            {slot ? `${slot.dateLabel} · ${slot.timeLabel}` : "Wähl eine Zeit"} {title && `· ${title}`}
-          </p>
+          <div className="flex items-center gap-2.5">
+            <span aria-hidden="true" className="h-5 w-[34px] shrink-0 -rotate-[24deg] rounded-[50%] bg-leaf-light" />
+            <p data-plan-summary className="line-clamp-2 text-base font-bold leading-tight">
+              {slot ? `${slot.weekday} ${slot.timeLabel.split(" – ")[0]}` : "Wähl eine Zeit"}
+              {title ? ` · ${title}` : mode.kind === "new" ? " · und eine Idee" : ""}
+            </p>
+          </div>
           {mode.kind === "new" && (budgetLine || budgetWarning || (budget && budget.pot > 0)) && (
-            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm font-bold">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[13px]">
               {budgetLine}
-              {budgetWarning && <span className="rounded-full bg-zitrone px-2.5 py-0.5 text-tinte">⚠️ {budgetWarning}</span>}
+              {budgetWarning && <span className="rounded-full bg-zitrone-soft px-2.5 py-0.5 text-tinte">⚠️ {budgetWarning}</span>}
               {budget && budget.pot > 0 && (
                 <label className="flex items-center gap-2">
-                  <input type="checkbox" name="fromPot" value="1" className="size-5 accent-himbeere" />
+                  <input form="plan-form" type="checkbox" name="fromPot" value="1" className="size-5 accent-himmel" />
                   🎁 Aus dem Spartopf ({budget.pot} €)
                 </label>
               )}
             </div>
           )}
-          <Button type="submit" disabled={!ready || pending || leaving} className="h-14 w-full text-xl">
-            {pending ? "Wird eingetragen …" : mode.kind === "reschedule" ? "Termin ändern" : "Date festlegen 🎉"}
+          <Button form="plan-form" type="submit" variant={mode.kind === "reschedule" ? "primary" : "send"} size="lg" disabled={!ready || pending || leaving} className="w-full">
+            {pending ? "Wird eingetragen …" : mode.kind === "reschedule" ? "Termin ändern" : `Gießen & an ${partnerName} senden`}
           </Button>
-          <p className="text-center text-xs font-bold text-muted">
-            {mode.kind === "reschedule"
-              ? `${partnerName} bekommt die Änderung über Google Kalender.`
-              : `Du wirst Organisator:in, ${partnerName} bekommt die Kalender-Einladung.`}
-          </p>
         </div>
       )}
-    </form>
+      {sheets}
+    </div>
   );
 }
 
 function NoSlots({ size }: { size: IdeaSize }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-[24px] border-[2.5px] border-dashed border-line px-6 py-8 text-center">
-      <Mascot id="no-slots" size={56} />
-      <h3 className="text-xl font-bold">Keine gemeinsame Lücke gefunden</h3>
-      <p className="font-semibold text-muted">
+    <div className="flex flex-col items-center gap-1.5 rounded-[22px] border-2 border-dashed border-line px-5 py-4 text-center">
+      <h3 className="text-lg font-bold">Keine gemeinsame Lücke gefunden</h3>
+      <p className="text-sm text-muted">
         {size === "large"
           ? "Für ein langes Date braucht ihr einen halben Tag am Stück. Vielleicht passt ein kurzes Date?"
           : "Eure Kalender sind gerade richtig voll."}{" "}

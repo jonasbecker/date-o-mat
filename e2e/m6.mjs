@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 import { DateTime } from "luxon";
 import pg from "pg";
 import { chromium, devices } from "playwright";
-import { backAtStart, openTimes } from "./flow.mjs";
+import { backAtStart, openTimes, SEND } from "./flow.mjs";
 import { startMock } from "./google-mock.mjs";
 import { resetDb } from "./db.mjs";
 
@@ -129,7 +129,7 @@ async function pageFor(token, options = {}) {
 }
 const j = await pageFor(jonas.token);
 await openTimes(j, BASE);
-await j.getByRole("button", { name: "Date festlegen 🎉" }).click();
+await j.getByRole("button", { name: SEND }).click();
 await backAtStart(j, BASE);
 await new Promise((r) => setTimeout(r, 1500));
 check(`Sam: "Jonas hat ein Date geplant 🎉" (${titles("sam-phone")})`, titles("sam-phone").includes("Jonas hat ein Date geplant 🎉"));
@@ -141,8 +141,8 @@ check("subscription answered with 410 is removed", gone === 0);
 // 4) Sam confirms → Jonas is told
 const s = await pageFor(sam.token);
 await s.goto(`${BASE}/`);
-await s.getByRole("button", { name: "Passt! 💚" }).click();
-await s.getByRole("heading", { name: "Date steht! 🎉" }).waitFor({ timeout: 10000 });
+await s.getByRole("button", { name: "Zusagen" }).click();
+await s.getByRole("heading", { name: "neues blatt!" }).waitFor({ timeout: 10000 });
 await new Promise((r) => setTimeout(r, 1500));
 check(`Jonas: "Sam sagt: Passt! 💚"`, titles("jonas-phone").includes("Sam sagt: Passt! 💚"));
 

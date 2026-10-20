@@ -47,7 +47,7 @@ export function WelcomeSlides({ slides, publicKey }: { slides: Slide[]; publicKe
   return (
     <div className="flex flex-1 flex-col gap-5">
       <div className="flex items-center justify-between">
-        <LogoLockup clipId="welcome-logo" />
+        <LogoLockup />
         <form action={finishOnboardingAction}>
           <button type="submit" className="text-sm font-extrabold text-muted underline">
             Überspringen

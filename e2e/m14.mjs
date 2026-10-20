@@ -125,7 +125,7 @@ async function pasteInto(locator, text) {
 
 // 1) Paste a TikTok share text into the title → Claude makes the idea
 const j = await pageFor(jonas.token);
-await j.goto(`${BASE}/ideas`);
+await j.goto(`${BASE}/ideas?ansicht=alle`);
 await j.getByText("Picknick im Stadtwald").first().waitFor({ timeout: 15000 });
 await j.waitForTimeout(1000); // hydration
 await openQuickAdd(j);
@@ -216,7 +216,7 @@ check("share without link: text as title", (await j.getByLabel("Was wollt ihr ma
 // 8) Daily limit: Claude is not asked, the caption becomes the title
 await db.query("INSERT INTO ai_requests (couple_id, kind, model) SELECT $1, 'links', 'claude-haiku-5-5' FROM generate_series(1, 30)", [couple.id]);
 const beforeLimit = claudeCalls.length;
-await j.goto(`${BASE}/ideas`);
+await j.goto(`${BASE}/ideas?ansicht=alle`);
 await j.waitForTimeout(1000);
 await openQuickAdd(j);
 await sheet(j).getByLabel("Was wollt ihr machen?").fill("");

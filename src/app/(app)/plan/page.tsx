@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { after, connection } from "next/server";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { ConnectCalendarCard } from "@/components/connect-calendar";
 import { formatShortDate, formatTimeRange } from "@/lib/format";
@@ -15,24 +15,17 @@ import { countDoneDates, dateForViewer, getDate } from "@/server/dates";
 import { listIdeas, matchedIdeaIds } from "@/server/ideas";
 import { PlanFlow, type IdeaOption, type RescheduleInfo } from "./plan-form";
 import { AppHeader } from "@/components/app-header";
-import { loadOverview, StartSection } from "../overview";
+import { loadOverview, StartNotices } from "../overview";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { SwipeDeck } from "../ideas/entdecken/swipe-deck";
-import { DECK_REFILL_BELOW } from "@/core/deck";
-import { deckSize } from "@/core/start-layout";
-import { SwipeTeaser } from "@/components/swipe-teaser";
-import { refillDeck } from "@/server/deck";
+import { Beet, BeetAvatars } from "../beet";
+import { plantRounds } from "@/server/plant";
 import type { NextDateInfo } from "@/components/swap-confirm";
-
-// "Neue Ideen holen" in the swipe deck waits for Claude (about half a minute).
-export const maxDuration = 90;
 
 export default function PlanPage({ searchParams }: PageProps<"/plan">) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       {/* The step card says what's up – the page title is for screen readers. */}
       <h1 className="sr-only">Date planen</h1>
-      <AppHeader />
       <Suspense fallback={<SlotsSkeleton />}>
         <Plan searchParams={searchParams} />
       </Suspense>
@@ -80,35 +73,30 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
   // "Date planen", a match, a special day, "Auch danach suchen": the flow. Otherwise the start.
   const flow = Boolean(reschedule) || params.pick === "1" || self || later || typeof params.idea === "string" || params.size === "large";
   if (!flow || (roundDate && !swappable)) {
-    const deck = overview.deck;
-    // Running low: the next batch is made in the background, AutoRefresh brings it in.
-    if (!deck.generating && deck.cards.length < DECK_REFILL_BELOW) after(() => refillDeck(ctx.coupleId, now));
+    const rounds = await plantRounds(ctx.coupleId);
+    const step = overview.step;
+    const onTurn = step?.kind === "plan" || step?.kind === "confirm" ? "me" : step?.kind === "partner_turn" || step?.kind === "wait_confirm" ? "partner" : null;
+    const calendarStep = step?.kind === "connect_calendar" || step?.kind === "partner_calendar";
     return (
       <>
-        <AutoRefresh intervalMs={deck.generating ? 6_000 : undefined} />
-        <StartSection o={overview} ctx={ctx} now={now} swappable={swappable} />
-        {/* Something pending: the box comes first. The swipe card takes what is left of the screen
-            and shrinks to one line only when that is too little (deck-fit, globals.css). */}
-        {deckSize(overview.step?.kind ?? null, overview.suggestion?.status === "ok", Boolean(overview.toReview)) === "teaser" ? (
-          <div className="deck-fit">
-            <div className="deck-full">
-              <SwipeDeck {...deck} partnerName={ctx.partner.name} compact />
-            </div>
-            <div className="deck-teaser">
-              <SwipeTeaser count={deck.cards.length} />
-            </div>
-          </div>
-        ) : (
-          <SwipeDeck {...deck} partnerName={ctx.partner.name} compact />
-        )}
+        <AutoRefresh />
+        <AppHeader action={<BeetAvatars me={ctx.user} partner={ctx.partner} onTurn={onTurn} />} />
+        <Beet
+          o={overview}
+          ctx={ctx}
+          now={now}
+          rounds={rounds}
+          swappable={swappable}
+          notices={
+            <>
+              {calendarStep && <ConnectCalendarCard people={overview.calendars} next="/plan" />}
+              <StartNotices o={overview} ctx={ctx} />
+            </>
+          }
+        />
       </>
     );
   }
-  const back = (
-    <Link href="/plan" className="self-start text-sm font-extrabold text-muted underline">
-      {reschedule || roundDate ? "← Doch nicht" : "← Zurück"}
-    </Link>
-  );
 
   const [budget, doneDates] = await Promise.all([budgetState(ctx.coupleId, now), countDoneDates(ctx.coupleId)]);
   // The same cards as on the wishlist; longest waiting first – the order the suggestion mode uses.
@@ -132,14 +120,14 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
     }));
 
   if (roundDate && nextInfo) {
-    return <PlanFlow mode={{ kind: "swap", next: { ...nextInfo, ideaId: roundDate.ideaId } }} ideas={ideas} partnerName={ctx.partner.name} aiEnabled={env().ai} intro={back} />;
+    return <PlanFlow mode={{ kind: "swap", next: { ...nextInfo, ideaId: roundDate.ideaId } }} ideas={ideas} partnerName={ctx.partner.name} aiEnabled={env().ai} />;
   }
   // Whose turn it is stands in the step card; only the suggestion mode says so here.
-  const roundInfo = cycle && cycle.mode === "suggestion" && <p className="text-sm font-extrabold text-muted">{periodLabel(cycle.startsAt, cycle.endsAt)} · der Date-O-Mat schlägt vor</p>;
+  const roundInfo = cycle && cycle.mode === "suggestion" && <p className="text-sm text-muted">{periodLabel(cycle.startsAt, cycle.endsAt)} · der Date-O-Mat schlägt vor</p>;
   const scopeLink = cycle && (
     <Link
       href={`/plan?${new URLSearchParams({ ...(later ? {} : { later: "1" }), ...(reschedule ? { reschedule: reschedule.dateId } : {}), ...(typeof params.idea === "string" ? { idea: params.idea } : {}), ...(self ? { self: "1" } : {}) })}`}
-      className="self-center text-sm font-extrabold underline"
+      className="self-center text-[13px] font-semibold text-muted underline"
     >
       {later ? `Nur ${periodLabel(cycle.startsAt, cycle.endsAt).toLowerCase()} suchen` : "Auch danach suchen"}
     </Link>
@@ -149,7 +137,9 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
   if (overview.calendars.some((p) => p.state !== "connected")) {
     return (
       <>
-        {back}
+        <Link href="/plan" className="self-start text-sm font-semibold text-muted underline">
+          ← Zurück
+        </Link>
         <ConnectCalendarCard people={overview.calendars} next="/plan" />
       </>
     );
@@ -160,15 +150,12 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
       {budget.label}: {budget.spending.spent + budget.spending.planned} von {budget.budget} € · noch {budget.left} €
     </Link>
   );
+  const hoursLeft = cycle && cycle.status === "open" && cycle.deadlineAt > now ? `${Math.round((cycle.deadlineAt.getTime() - now.getTime()) / 3_600_000)} h` : undefined;
   return (
     <PlanFlow
+      hoursLeft={hoursLeft}
       mode={reschedule ? { kind: "reschedule", date: reschedule } : { kind: "new" }}
-      intro={
-        <>
-          {back}
-          {!reschedule && roundInfo}
-        </>
-      }
+      intro={!reschedule && roundInfo}
       budget={budget && !reschedule ? { left: budget.left, pot: budget.pot } : null}
       budgetLine={budgetLine || undefined}
       later={later}

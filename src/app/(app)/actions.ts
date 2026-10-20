@@ -10,7 +10,7 @@ import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
 import { applySettingsToOpenCycle, ensureCurrentCycle } from "@/server/cycles";
 import { cancelDate, confirmDate, getDate, markNotHappened, saveDate } from "@/server/dates";
-import { notifyPartner, type PartnerEvent } from "@/server/notifications";
+import { notifyPartner, nudgePartner, type PartnerEvent } from "@/server/notifications";
 import type { CoupleContext } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { suggestions } from "@/server/db/schema";
@@ -142,4 +142,18 @@ export async function deleteTaskAction(taskId: string): Promise<void> {
   const { coupleId } = await requireCouple();
   if (dateIdSchema.safeParse(taskId).success) await deleteTask(coupleId, taskId);
   refresh();
+}
+
+/** "Anstupsen": a push to the one who has the watering can – to plan, or to say yes to the plan. */
+export async function nudgeAction(): Promise<ActionResult> {
+  const ctx = await requireCouple();
+  const now = coupleNow(await getCoupleSettings(ctx.coupleId));
+  const cycle = await ensureCurrentCycle(ctx.coupleId, now);
+  if (!cycle) return { ok: false, message: "Gerade läuft keine Runde." };
+  const text =
+    cycle.status === "planned"
+      ? { title: `${ctx.user.name} stupst dich an 👋`, body: "Euer Date wartet auf dein „Zusagen“." }
+      : { title: `${ctx.user.name} stupst dich an 👋`, body: "Die Gießkanne ist bei dir – plant ihr was?" };
+  const sent = await nudgePartner(ctx, cycle.id, now, text);
+  return sent ? { ok: true, message: `${ctx.partner.name} ist angestupst.` } : { ok: false, message: `Schon angestupst – ${ctx.partner.name} hat Bescheid.` };
 }

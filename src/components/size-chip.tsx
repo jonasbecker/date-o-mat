@@ -13,8 +13,8 @@ export function SizeChip({ size, className }: { size: IdeaSize; className?: stri
   const { label } = SIZE_LABEL[size];
   const Icon = size === "small" ? ClockIcon : SunIcon;
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full border-[1.5px] border-line bg-bg px-2 py-px text-[12px] font-extrabold text-ink", className)}>
-      <Icon width={13} height={13} strokeWidth={2.8} />
+    <span className={cn("inline-flex h-6 items-center gap-1 rounded-full bg-soft px-2 font-mono text-[11px] text-ink", className)}>
+      <Icon width={12} height={12} strokeWidth={2.4} />
       {label}
     </span>
   );

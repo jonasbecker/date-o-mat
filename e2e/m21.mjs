@@ -5,7 +5,7 @@ import { createServer } from "node:http";
 import { DateTime } from "luxon";
 import pg from "pg";
 import { chromium } from "playwright";
-import { backAtStart, fitsScreen, openTimes } from "./flow.mjs";
+import { backAtStart, fitsScreen, openTimes, SEND } from "./flow.mjs";
 import { tuesdayMorningOffset } from "./clock.mjs";
 import { events as googleEvents, startMock } from "./google-mock.mjs";
 import { resetDb } from "./db.mjs";
@@ -118,7 +118,7 @@ await j.waitForTimeout(800);
 await j.getByLabel("🎁 Als Überraschung planen").check();
 await j.getByLabel("Hinweis für Sam (optional)").fill("Hunger mitbringen!");
 await j.screenshot({ path: `${OUT}m21-01-plan-surprise.png` });
-await j.getByRole("button", { name: "Date festlegen 🎉" }).click();
+await j.getByRole("button", { name: SEND }).click();
 await backAtStart(j, BASE);
 const { rows: [date] } = await db.query("SELECT * FROM date_plans WHERE couple_id = $1 ORDER BY created_at DESC LIMIT 1", [couple.id]);
 check(`surprise saved (${date.title}, ${date.surprise_hint})`, date.surprise === true && date.surprise_hint === "Hunger mitbringen!" && date.title === "Sushi-Abend");
@@ -176,7 +176,7 @@ const { rows: [moved] } = await db.query("SELECT title, location, surprise, star
 check(`moved, still the same secret (${moved.title})`, moved.title === "Sushi-Abend" && moved.location === "Belgisches Viertel" && moved.surprise === true && moved.starts_at.getTime() !== date.starts_at.getTime());
 
 // Sam on the wishlist: tapping an idea cannot touch Jonas' surprise – and does not give it away
-await s.goto(`${BASE}/ideas`);
+await s.goto(`${BASE}/ideas?ansicht=alle`);
 await s.getByRole("button", { name: "Sushi-Abend" }).click();
 const samMenu = s.locator("dialog[open]");
 await samMenu.getByText("das kann nur Jonas ändern", { exact: false }).waitFor({ timeout: 10000 });
@@ -199,7 +199,7 @@ check("revealed in the database", revealed.surprise_revealed_at !== null);
 const event2 = [...googleEvents["token-jonas"].values()].at(-1);
 check(`Google event now says what it is (${event2?.summary})`, event2?.summary === "💞 Date: Sushi-Abend" && event2.location === "Belgisches Viertel");
 await s.goto(`${BASE}/`);
-await s.locator("[data-next-step] [data-date-card]").filter({ visible: true }).getByText("„Sushi-Abend“").waitFor({ timeout: 15000 });
+await s.locator("[data-next-step] [data-date-card]").filter({ visible: true }).getByText("Sushi-Abend", { exact: true }).waitFor({ timeout: 15000 });
 check("on the day: the start links the conversation cards", (await s.getByRole("link", { name: "💬 Gesprächskarten" }).getAttribute("href")) === "/fragen");
 await s.getByRole("link", { name: "Details ›" }).click();
 await s.getByText("Euer nächstes Date", { exact: true }).waitFor({ timeout: 15000 });
@@ -231,7 +231,7 @@ await j.waitForTimeout(800);
 check("deleted key → 401", (await share(shareKey, { text: "https://www.tiktok.com/@a/video/1" })).status === 401);
 
 // 7b) Tapping an idea: do it instead of the next date – after a question; the time stays
-await j.goto(`${BASE}/ideas`);
+await j.goto(`${BASE}/ideas?ansicht=alle`);
 await j.getByRole("button", { name: "Kino: Dune" }).click();
 const menu = j.locator("dialog[open]");
 await menu.getByRole("button", { name: "Statt „Sushi-Abend“ machen" }).click();
@@ -244,8 +244,8 @@ check(`idea swapped, same time (${swapped.title})`, swapped.title === "Kino: Dun
 // Back before the day, so it is Jonas' secret again: the Google event is updated but still hides it.
 const event3 = [...googleEvents["token-jonas"].values()].at(-1);
 check(`Google event updated, surprise kept (${event3?.summary})`, event3?.summary === "💞 Date: 🎁 Überraschung von Jonas" && !JSON.stringify(event3).includes("Sushi") && !JSON.stringify(event3).includes("Dune"));
-await j.locator("[data-next-step] [data-date-card]").filter({ visible: true }).getByText("„Kino: Dune“").waitFor({ timeout: 10000 });
-await j.goto(`${BASE}/ideas`);
+await j.locator("[data-next-step] [data-date-card]").filter({ visible: true }).getByText("Kino: Dune", { exact: true }).waitFor({ timeout: 10000 });
+await j.goto(`${BASE}/ideas?ansicht=alle`);
 await j.getByRole("button", { name: "Kino: Dune" }).click();
 await menu.getByText("📅 Das ist euer nächstes Date", { exact: false }).waitFor({ timeout: 10000 });
 check("the date's own idea offers no swap", (await menu.getByRole("button", { name: /Statt/ }).count()) === 0);

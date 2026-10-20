@@ -38,13 +38,13 @@ export function ideaFacts(idea: Pick<IdeaCardView, "costEur" | "location">): str
 export function IdeaCard({ idea, onOpen, onMore }: { idea: IdeaCardView; onOpen: () => void; /** ⋯ – edit or delete (where tapping does something else). */ onMore?: () => void }) {
   const cost = formatCost(idea.costEur);
   return (
-    <div className="flat tap relative flex flex-col gap-1.5 rounded-[18px] bg-surface px-3.5 py-3">
+    <div className="tap relative flex flex-col gap-1.5 rounded-[18px] bg-surface px-4 py-3">
       <div className="flex items-start justify-between gap-3">
         {/* Stretched button: the whole card reacts, the link stays clickable. */}
         <button
           type="button"
           onClick={onOpen}
-          className="text-left font-display text-[17px] font-semibold leading-snug after:absolute after:inset-0 after:rounded-[18px] after:content-['']"
+          className="text-left text-[17px] font-semibold leading-snug after:absolute after:inset-0 after:rounded-[18px] after:content-['']"
         >
           {idea.title}
         </button>
@@ -62,7 +62,7 @@ export function IdeaCard({ idea, onOpen, onMore }: { idea: IdeaCardView; onOpen:
           )}
         </span>
       </div>
-      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] font-extrabold text-muted">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] text-muted">
         <SizeChip size={idea.size} />
         <span title={CATEGORY_LABEL[categoryOf(idea)].label} aria-label={CATEGORY_LABEL[categoryOf(idea)].label} role="img">
           {CATEGORY_LABEL[categoryOf(idea)].emoji}

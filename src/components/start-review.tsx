@@ -8,17 +8,17 @@ import { HeartShape } from "./hearts";
  * "Wie war's?" inside the step card: the date (with its first photo, if there is one) and
  * five hearts. A tap on a heart opens the review with that number already chosen.
  */
-export function StartReview({ date, photoId }: { date: Pick<DatePlan, "id" | "title" | "startsAt" | "endsAt" | "location">; photoId?: string }) {
+export function StartReview({ date, photoId, small = false }: { date: Pick<DatePlan, "id" | "title" | "startsAt" | "endsAt" | "location">; photoId?: string; small?: boolean }) {
   return (
     <div data-review-start={date.id} className="flex items-center gap-3">
       {photoId && (
         // eslint-disable-next-line @next/next/no-img-element -- thumbnails come from our own photo route
-        <img src={`/api/photos/${photoId}?size=thumb`} alt="" className="size-[72px] shrink-0 rounded-[16px] border-2 border-line object-cover" />
+        <img src={`/api/photos/${photoId}?size=thumb`} alt="" className={small ? "size-12 shrink-0 rounded-xl object-cover" : "size-[72px] shrink-0 rounded-[16px] object-cover"} />
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="font-bold leading-tight">
-          <p className="truncate font-display text-[19px] font-semibold">„{date.title}“</p>
-          <p className="text-sm">
+        <div className="leading-tight">
+          <p className={small ? "truncate font-semibold" : "truncate text-[19px] font-bold"}>{date.title}</p>
+          <p className="text-sm text-muted">
             {formatShortDate(date.startsAt)} · {formatTimeRange(date.startsAt, date.endsAt)} Uhr
           </p>
         </div>
@@ -27,7 +27,7 @@ export function StartReview({ date, photoId }: { date: Pick<DatePlan, "id" | "ti
             const value = i + 1;
             return (
               <Link key={value} href={`/dates/${date.id}?herzen=${value}`} aria-label={`${value} ${value === 1 ? "Herz" : "Herzen"}`} className="press rounded-full p-0.5">
-                <HeartShape filled={false} size={34} />
+                <HeartShape filled={false} size={small ? 26 : 34} />
               </Link>
             );
           })}

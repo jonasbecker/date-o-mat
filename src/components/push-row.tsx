@@ -41,7 +41,7 @@ export function PushRow({ publicKey, myDevices, partnerDevices, partnerName }: {
 
   if (row === "partner") {
     return (
-      <p role="note" className="flex items-center gap-2.5 rounded-[18px] border-2 border-dashed border-line px-3.5 py-2 text-sm font-bold">
+      <p role="note" className="flex items-center gap-2.5 rounded-[18px] border-2 border-dashed border-line px-3.5 py-2 text-sm">
         <BellIcon width={18} height={18} className="shrink-0" />
         <span className="min-w-0 flex-1">{partnerName} bekommt keine Erinnerungen – sag Bescheid.</span>
         <button
@@ -55,7 +55,7 @@ export function PushRow({ publicKey, myDevices, partnerDevices, partnerName }: {
             }
             setClock({ snoozedAt: Date.now(), now: Date.now() });
           }}
-          className="shrink-0 text-base font-extrabold text-muted"
+          className="shrink-0 text-base font-bold text-muted"
         >
           ×
         </button>
@@ -69,22 +69,22 @@ export function PushRow({ publicKey, myDevices, partnerDevices, partnerName }: {
   if (unsupported) return null;
   return (
     <>
-      <div role="note" className="flex items-center gap-2.5 rounded-[18px] border-2 border-line bg-zitrone-soft px-3.5 py-2 text-sm font-bold text-tinte">
+      <div role="note" className="flex items-center gap-2.5 rounded-[18px] bg-surface px-3.5 py-2 text-sm font-medium">
         <BellIcon width={18} height={18} className="shrink-0" />
         <span className="min-w-0 flex-1 leading-tight">
           {denied ? "Erinnerungen sind blockiert." : needsInstall ? "Erinnerungen gehen erst als App." : "Damit ihr kein Date vergesst: Erinnerungen an."}
           {push.message && !denied && (
-            <span role="status" className="block text-[13px] font-semibold">
+            <span role="status" className="block text-[13px] text-muted">
               {push.message}
             </span>
           )}
         </span>
         {denied || needsInstall ? (
-          <button type="button" onClick={() => sheet.current?.open()} className="shrink-0 rounded-full border-2 border-line bg-surface px-3 py-1 font-extrabold text-ink">
+          <button type="button" onClick={() => sheet.current?.open()} className="shrink-0 rounded-full border-2 border-ink px-3 py-1 font-bold text-ink">
             {denied ? "So erlaubst du sie" : "So geht's"}
           </button>
         ) : (
-          <button type="button" onClick={push.enable} disabled={push.pending} className="shrink-0 rounded-full border-2 border-line bg-himbeere px-3 py-1 font-extrabold text-tinte disabled:opacity-60">
+          <button type="button" onClick={push.enable} disabled={push.pending} className="press shrink-0 rounded-full bg-ink px-3.5 py-1.5 font-bold text-bg disabled:opacity-60">
             Aktivieren
           </button>
         )}

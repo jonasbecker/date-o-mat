@@ -50,6 +50,7 @@ gemeinsame Ideen-Wunschliste.
 | M36 | Swipen, das man sieht: Kategorien als Chips über der Wunschliste, Herkunft („von dir geswipt“), Fortschritt, Stapel, Flug zum 💡 mit wachsendem Zähler, `ideas.category` | ✅ |
 | M37 | Untere Leiste: das Logo groß in der Mitte (startet „Date planen“), links 💡 Ideen, rechts ♥ Dates; oben nur Name und Einstellungen, die Seiten klappen nicht mehr herunter | ✅ |
 | M38 | Der Start ist nie leer: steht etwas an, bekommt die Swipe-Karte trotzdem den Rest des Bildschirms; nur bei zu wenig Platz bleibt die eine Zeile | ✅ |
+| M40 | Neues Design „Pastell & rund“ (`docs/design/`): Salbei, Bricolage + DM Mono, Leiste Beet · Ideen · Swipen · Archiv · Einstellungen; Start = euer Beet (Pflanze: ein Blatt pro Date, welk bei Ausfall; Gießkanne = wer dran ist; Anstupsen); Planen auf einem Screen („wann?“ / „was?“, „Gießen & an … senden“); Swipen mit Match-Vollbild; Ideen als Kacheln | 🚧 |
 
 ## Tech-Stack
 

@@ -57,7 +57,8 @@ const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/ideas/koeln`);
 await j.waitForURL(/\/ideas\/entdecken/, { timeout: 15000 });
 check("/ideas/koeln redirects to the swipe deck", true);
-check("no tabs on the ideas pages any more", (await j.getByRole("navigation", { name: "Ideen" }).count()) === 0 && (await j.getByRole("heading", { name: "Ideen swipen" }).isVisible()));
+await j.getByRole("heading", { name: "swipen." }).waitFor({ timeout: 15000 });
+check("no tabs on the ideas pages any more", (await j.getByRole("navigation", { name: "Ideen" }).count()) === 0);
 let koelnCards = 0;
 for (let i = 0; i < 20 && koelnCards === 0; i++) {
   await j.waitForTimeout(500);
@@ -94,14 +95,14 @@ await j.locator("dialog[open]").last().getByRole("button", { name: "Zurücksetze
 await j.locator("dialog[open]").last().getByRole("button", { name: "Fertig" }).click();
 const picnic = more.locator("li", { hasText: "Picknick im Rheinpark" });
 await picnic.getByRole("button", { name: "Nehmen" }).click();
-await j.locator("div", { hasText: "Ihr macht" }).getByText("Picknick im Rheinpark", { exact: true }).first().waitFor({ timeout: 10000 });
+await j.locator("[data-plan-summary]", { hasText: "Picknick im Rheinpark" }).first().waitFor({ timeout: 10000 });
 const { rows: saved } = await db.query("SELECT title, source, external_ref FROM ideas WHERE source = 'curated'");
 check(`"Nehmen" saves it (curated) and selects it (${JSON.stringify(saved[0])})`, saved.length === 1 && saved[0].external_ref === "rheinpark-picknick");
 
 // 3) Plan → "Zufall": draws without repeats, Köln tips too, "Nehmen" selects
 await j.goto(`${BASE}/plan?pick=1`);
 await j.getByRole("button", { name: "Zufall" }).click();
-await j.getByText("Kurbel dreht sich").waitFor({ timeout: 5000 }).then(() => check("draw animation", true), () => check("draw animation", false));
+await j.getByText("Wird gezogen").waitFor({ timeout: 5000 }).then(() => check("draw animation", true), () => check("draw animation", false));
 await j.locator("dialog[open]").getByRole("button", { name: "Nehmen" }).waitFor({ timeout: 10000 });
 await j.screenshot({ path: `${OUT}m10-02-surprise.png` });
 const titles = new Set();
@@ -115,12 +116,12 @@ let label = "";
 for (let i = 0; i < 20 && !/köln-tipp/i.test(label); i++) {
   await j.getByRole("button", { name: "Nochmal ziehen" }).click();
   await j.locator("dialog[open]").getByRole("button", { name: "Nehmen" }).waitFor({ timeout: 10000 });
-  label = await j.locator("dialog[open] p.uppercase").innerText();
+  label = await j.locator("dialog[open] [data-draw-source]").innerText();
 }
 const drawn = await j.locator("dialog[open] h3").innerText();
 check(`a Köln tip came up (${drawn})`, /köln-tipp/i.test(label));
 await j.locator("dialog[open]").getByRole("button", { name: "Nehmen" }).click();
-const chosen = j.locator("div", { hasText: "Ihr macht" }).getByText(drawn, { exact: true }).first();
+const chosen = j.locator("[data-plan-summary]", { hasText: drawn }).first();
 await chosen.waitFor({ timeout: 10000 }).catch(() => {});
 await j.screenshot({ path: `${OUT}m10-06-plan-zufall.png` });
 check(`Zufall picks "${drawn}" and goes on to the times`, (await chosen.isVisible()) && /\/plan(\?pick=1)?$/.test(j.url()));

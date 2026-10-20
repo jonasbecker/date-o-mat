@@ -62,7 +62,7 @@ export function FilterButton({ className }: { className?: string }) {
         onClick={() => sheet.current?.open()}
         aria-label={count ? `Filter: ${filterSummary(filter)}` : "Filter"}
         className={cn(
-          "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border-2 border-line px-3.5 text-sm font-extrabold",
+          "tap inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold",
           count ? "bg-ink text-bg" : "bg-surface text-ink",
           className,
         )}
@@ -73,10 +73,10 @@ export function FilterButton({ className }: { className?: string }) {
         {count ? <span className="max-w-[11rem] truncate">{filterSummary(filter)}</span> : "Filter"}
       </button>
       <Sheet ref={sheet} title="Filter">
-        <p className="-mt-2 text-sm font-semibold text-muted">Gilt überall: Wunschliste, Swipen, Was läuft und beim Planen.</p>
+        <p className="-mt-2 text-sm text-muted">Gilt überall: Wunschliste, Swipen, Was läuft und beim Planen.</p>
         {FILTER_GROUPS.map((group) => (
           <fieldset key={group.key} className="flex flex-col gap-2">
-            <legend className="mb-2 text-[13px] font-extrabold text-muted">{group.question}</legend>
+            <legend className="mb-2 text-[13px] font-medium text-muted">{group.question}</legend>
             <div className="flex flex-wrap gap-2">
               {[{ value: undefined, label: "Egal" }, ...group.options].map((option) => {
                 const selected = filter[group.key] === option.value;
@@ -86,7 +86,7 @@ export function FilterButton({ className }: { className?: string }) {
                     type="button"
                     aria-pressed={selected}
                     onClick={() => setFilter({ ...filter, [group.key]: option.value })}
-                    className={cn("h-10 rounded-full border-2 border-line px-4 font-extrabold", selected ? "bg-ink text-bg" : "bg-surface text-ink")}
+                    className={cn("tap h-10 rounded-full px-4 font-semibold", selected ? "bg-ink text-bg" : "bg-soft text-ink")}
                   >
                     {option.label}
                   </button>
@@ -110,9 +110,9 @@ export function FilterButton({ className }: { className?: string }) {
 export function FilteredEmpty({ what }: { what: string }) {
   const [filter, setFilter] = useIdeaFilter();
   return (
-    <div className="flex flex-col items-center gap-2 rounded-[20px] border-[2.5px] border-dashed border-line px-5 py-6 text-center">
+    <div className="flex flex-col items-center gap-2 rounded-[20px] border-2 border-dashed border-line px-5 py-6 text-center">
       <p className="font-bold">Keine {what} für „{filterSummary(filter)}“.</p>
-      <button type="button" onClick={() => setFilter({})} className="text-sm font-extrabold underline">
+      <button type="button" onClick={() => setFilter({})} className="text-sm font-semibold underline">
         Filter zurücksetzen
       </button>
     </div>

@@ -65,7 +65,7 @@ const ZONE = "Europe/Berlin";
 async function readSlots(page) {
   // The free times are step 2 – without a wishlist, your own idea leads there.
   // On the start page "Date planen" opens step 1.
-  const stepOne = page.getByRole("heading", { name: "Was wollt ihr machen?" });
+  const stepOne = page.getByRole("heading", { name: "was?", exact: true });
   const start = page.getByRole("link", { name: "Date planen", exact: true });
   await page.locator("ol li").or(stepOne).or(start).first().waitFor({ timeout: 15000 });
   if (!(await page.locator("ol li").first().isVisible())) await customIdea(page, "Spazieren gehen");
@@ -75,9 +75,8 @@ async function readSlots(page) {
     slots.push(
       ...(await page.locator("ol li").evaluateAll((items) =>
         items.map((li) => {
-          const spans = li.querySelectorAll("span span");
-          const time = li.querySelector(".font-display.text-lg")?.textContent ?? "";
-          return { weekday: spans[0]?.textContent, day: spans[1]?.textContent, time, text: li.textContent };
+          const b = li.querySelector("button");
+          return { weekday: b?.dataset.weekday, day: b?.dataset.day, time: b?.dataset.time ?? "", text: `${li.textContent} ${b?.getAttribute("aria-label") ?? ""}` };
         }),
       )),
     );

@@ -201,3 +201,70 @@ export const AlertIcon = (p: SVGProps<SVGSVGElement>) => (
     <path d="M12 10v4M12 17h.01" />
   </Icon>
 );
+
+// Tab bar (DESIGN.md §4): thinner strokes, as in the mockups.
+export const SproutIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon strokeWidth={1.8} {...p}>
+    <path d="M12 21V9" />
+    <path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6zM12 11C12 7 9 5 5 5c0 4 3 6 7 6z" />
+  </Icon>
+);
+
+export const GridIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon strokeWidth={1.8} {...p}>
+    <rect x="3" y="3" width="8" height="8" rx="2" />
+    <rect x="13" y="3" width="8" height="8" rx="2" />
+    <rect x="3" y="13" width="8" height="8" rx="2" />
+    <rect x="13" y="13" width="8" height="8" rx="2" />
+  </Icon>
+);
+
+export const SwipeIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon strokeWidth={1.8} {...p}>
+    <rect x="7" y="3" width="12" height="16" rx="2.5" transform="rotate(8 13 11)" />
+    <path d="M5.5 6.5L4 17.5a2 2 0 0 0 1.7 2.3l7.3 1" />
+    <path d="M13.2 9.6c.8-.8 2.1-.8 2.9 0 .8.8.8 2.1 0 2.9l-2.9 2.9-2.9-2.9c-.8-.8-.8-2.1 0-2.9.8-.8 2.1-.8 2.9 0z" />
+  </Icon>
+);
+
+export const PhotoIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon strokeWidth={1.8} {...p}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <circle cx="9" cy="10" r="1.6" />
+    <path d="M21 16l-5-5-7 8" />
+  </Icon>
+);
+
+export const TuneIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon strokeWidth={1.8} {...p}>
+    <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+    <circle cx="16" cy="7" r="2" />
+    <circle cx="10" cy="17" r="2" />
+  </Icon>
+);
+
+export const CameraIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon strokeWidth={1.8} {...p}>
+    <path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />
+    <circle cx="12" cy="13.5" r="3.5" />
+  </Icon>
+);
+
+export const CloseIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M6 6l12 12M18 6L6 18" />
+  </Icon>
+);
+
+export const BackIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon strokeWidth={2} {...p}>
+    <path d="M15 6l-6 6 6 6" />
+  </Icon>
+);
+
+export const UndoIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon strokeWidth={2} {...p}>
+    <path d="M9 14L4 9l5-5" />
+    <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+  </Icon>
+);

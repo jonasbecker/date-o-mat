@@ -7,46 +7,65 @@
    --------------------------------------------------------------------------- */
 
 @theme {
-  --color-himbeere: #ff4f8b;
-  --color-himbeere-soft: #ffe3ec;
-  --color-zitrone: #ffd93d;
-  --color-zitrone-soft: #fff1b8;
-  --color-lavendel: #a98bff;
-  --color-minze: #3ddc97;
-  --color-minze-soft: #e9f9f1;
-  --color-mandarine: #ff9f43;
-  --color-himmel: #4cc3f5;
-  --color-tinte: #2a1b3d;
+  /* "Pastell & rund" (docs/design/DESIGN.md). The old color names stay as roles:
+     himbeere = like / match accent, zitrone = hints, minze = it stands, tinte = dark text
+     on light fills. Person colors: himmel = blue, mandarine = rosé. */
+  --color-himbeere: #e58fa6;
+  --color-himbeere-soft: #f6dfd3;
+  --color-zitrone: #ebd58f;
+  --color-zitrone-soft: #f7ebc4;
+  --color-lavendel: #cbbfe6;
+  --color-minze: #8fc79a;
+  --color-minze-soft: #dcebd9;
+  --color-mandarine: #e58fa6;
+  --color-himmel: #2f5bff;
+  --color-tinte: #163a22;
 
-  --font-display: var(--font-fredoka), ui-rounded, system-ui, sans-serif;
-  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  --color-leaf: #2e7d46;
+  --color-leaf-light: #5bae6a;
+  --color-pot: #d97b52;
+  --color-pot-rim: #c9693f;
+  --color-bud: #f2a7bb;
+  --color-rose: #f6dfd3;
+  --color-partner-ink: #5a2416;
+  --color-tile-green: #dcebd9;
+  --color-tile-butter: #f7ebc4;
+  --color-tile-sky: #dce7f5;
+  --color-tile-lilac: #e6e0f2;
 
-  --radius-sticker: 1.5rem;
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), ui-monospace, monospace;
+
+  --radius-sticker: 22px;
 }
 
 :root {
-  --bg: #fff6ec;
+  --bg: #eef2e6;
   --surface: #ffffff;
-  --ink: #2a1b3d;
-  --muted: #5e4f70;
-  --line: #2a1b3d;
-  --track: #d9cbbb;
+  --soft: #edf3ea;
+  --ink: #163a22;
+  --muted: #56604f;
+  /* Hairlines only where a field needs an edge – cards have none. */
+  --line: #d5dfce;
+  --track: #dde6d6;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1e1530;
-    --surface: #2b2040;
-    --ink: #fff6ec;
-    --muted: #cbbfdd;
-    --line: #0f0a18;
-    --track: #4a3d5e;
+    --bg: #121c16;
+    --surface: #1c2a21;
+    --soft: #25362b;
+    --ink: #e4eddc;
+    --muted: #a3b09b;
+    --line: #2f4237;
+    --track: #2a3a30;
     color-scheme: dark;
   }
 }
 
-/* Bright and pastel fills keep their light color in dark mode – so everything on them
+/* Pastel fills keep their light color in dark mode – so everything on them
    (text, muted text, chips, inputs) uses the light tokens too. `~=` matches whole class
    names only, so `hover:bg-zitrone` or `bg-zitrone/30` do not count. */
 @media (prefers-color-scheme: dark) {
@@ -58,14 +77,21 @@
       [class~="bg-minze"],
       [class~="bg-minze-soft"],
       [class~="bg-mandarine"],
-      [class~="bg-himmel"],
-      [class~="bg-lavendel"]
+      [class~="bg-lavendel"],
+      [class~="bg-rose"],
+      [class~="bg-bud"],
+      [class~="bg-tile-green"],
+      [class~="bg-tile-butter"],
+      [class~="bg-tile-sky"],
+      [class~="bg-tile-lilac"]
     ) {
-    --bg: #fff6ec;
+    --bg: #eef2e6;
     --surface: #ffffff;
-    --ink: #2a1b3d;
-    --muted: #5e4f70;
-    --track: #d9cbbb;
+    --soft: #edf3ea;
+    --ink: #163a22;
+    --muted: #56604f;
+    --line: #d5dfce;
+    --track: #dde6d6;
     color-scheme: light;
   }
 }
@@ -73,25 +99,25 @@
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
+  --color-soft: var(--soft);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-track: var(--track);
 }
 
-/* Sticker look: thick outline + hard offset shadow */
+/* What you tap next: a plain shape – white card or ink pill, no outline, no shadow.
+   (The name stays from the sticker look so every call site keeps working.) */
 @utility sticker {
-  border: 2.5px solid var(--line);
-  box-shadow: 4px 4px 0 var(--line);
+  border: 0;
 }
 
-/* The quiet sibling: outline only. Lists, infos, secondary buttons – the shadow is
-   kept for what you should tap next (main button, the next date). */
+/* Lists, infos: flat white shapes as well. */
 @utility flat {
-  border: 2px solid var(--line);
+  border: 0;
 }
 
-/* Flat things give way a little when tapped */
+/* Things give way a little when tapped */
 @utility tap {
   transition: transform 120ms ease-out;
   &:active:not(:disabled) {
@@ -99,15 +125,27 @@
   }
 }
 
-/* Buttons sink into their shadow when pressed */
 @utility press {
-  transition:
-    transform 120ms ease-out,
-    box-shadow 120ms ease-out;
+  transition: transform 120ms ease-out;
   &:active:not(:disabled) {
-    transform: translate(4px, 4px);
-    box-shadow: 0 0 0 var(--line);
+    transform: scale(0.97);
   }
+}
+
+/* Big lowercase page titles ("ideen.") */
+@utility headline {
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.045em;
+}
+
+/* Meta info in DM Mono ("Nº15 · Do 22.10.") */
+@utility meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 @layer base {
@@ -125,7 +163,7 @@
   }
 
   :focus-visible {
-    outline: 3px solid var(--color-himbeere);
+    outline: 3px solid var(--color-himmel);
     outline-offset: 2px;
   }
 }
@@ -259,25 +297,79 @@
   }
 }
 
-/* The start's swipe card: it takes the space the status box leaves; with less than 15rem it is one line. */
-.deck-fit {
-  container-type: size;
-  flex: 1 1 0%;
-  min-height: 3.5rem;
-}
-.deck-fit > .deck-full {
-  display: flex;
-  height: 100%;
-  flex-direction: column;
-}
-.deck-fit > .deck-teaser {
-  display: none;
-}
-@container (max-height: 14.99rem) {
-  .deck-fit > .deck-full {
-    display: none;
+/* The plant (components/plant.tsx) */
+@keyframes drip {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
   }
-  .deck-fit > .deck-teaser {
-    display: block;
+  20% {
+    opacity: 1;
   }
+  100% {
+    opacity: 0;
+    transform: translateY(34px);
+  }
+}
+@utility animate-drip {
+  animation: drip 1.4s ease-in infinite both;
+}
+@keyframes can-pour {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  50% {
+    rotate: -5deg;
+  }
+}
+@utility animate-can-pour {
+  animation: can-pour 2.8s ease-in-out infinite;
+}
+@keyframes can-sway {
+  0%,
+  100% {
+    rotate: -3deg;
+  }
+  50% {
+    rotate: 3deg;
+  }
+}
+@utility animate-can-sway {
+  animation: can-sway 3.2s ease-in-out infinite;
+}
+@keyframes bud-breathe {
+  0%,
+  100% {
+    scale: 1;
+  }
+  50% {
+    scale: 1.08;
+  }
+}
+@utility animate-bud-breathe {
+  animation: bud-breathe 2.6s ease-in-out infinite;
+}
+@keyframes leaf-grow {
+  from {
+    scale: 0;
+  }
+  to {
+    scale: 1;
+  }
+}
+@utility animate-leaf-grow {
+  animation: leaf-grow 600ms cubic-bezier(0.2, 0.9, 0.3, 1.3) 100ms both;
+}
+@keyframes leaf-glow {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+@utility animate-leaf-glow {
+  animation: leaf-glow 2.4s ease-in-out infinite;
 }

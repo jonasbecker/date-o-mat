@@ -1,17 +1,20 @@
-// The planning flow: the start page (/plan) has "Date planen" in the step card,
-// which opens step 1 "Was wollt ihr machen?" (tap an idea), then step 2 "Wann?"
-// (the free times, an <ol> of buttons).
+// The planning flow: the start page (/plan, the Beet) has "Date planen", which opens one
+// screen (MPlan): "wann?" (the free times, an <ol> of buttons) above "was?" (the wishlist).
+// "Gießen & an … senden" saves the date.
 
-/** On the start page: "Date planen" opens step 1 (the wishlist). Does nothing when it is open already. */
+/** The send button of the flow. */
+export const SEND = /^(Gießen & an .+ senden|Termin ändern)$/;
+
+/** On the start page: "Date planen" opens the flow. Does nothing when it is open already. */
 export async function openFlow(page, { timeout = 20000 } = {}) {
-  const step1 = page.getByRole("heading", { name: "Was wollt ihr machen?" });
+  const step1 = page.getByRole("heading", { name: "was?", exact: true });
   const button = page.getByRole("link", { name: "Date planen", exact: true });
   await step1.or(button).first().waitFor({ timeout });
   if (!(await step1.isVisible())) await button.click();
   await step1.waitFor({ timeout });
 }
 
-/** Taps an idea on the wishlist of step 1 and waits for the free times. */
+/** Taps an idea under "was?" and waits for the free times. */
 export async function pickIdea(page, title, { timeout = 15000 } = {}) {
   await openFlow(page);
   // exact: each card also has an "… bearbeiten" button (⋯).
@@ -29,7 +32,7 @@ export async function openTimes(page, base, query = "") {
   await page.locator("ol li button").first().waitFor({ timeout: 20000 });
 }
 
-/** Step 1 with your own idea: "Was anderes" → type it → "Weiter →". */
+/** Your own idea: "Was anderes" → type it → "Weiter →". */
 export async function customIdea(page, title, location) {
   await openFlow(page);
   await page.getByRole("button", { name: "Was anderes" }).click();
@@ -40,7 +43,7 @@ export async function customIdea(page, title, location) {
   await page.locator("ol li button").first().waitFor({ timeout: 15000 });
 }
 
-/** All free times of step 2 – three per page, "Weitere Zeiten →" turns the page. */
+/** All free times – three per page, "Weitere Zeiten →" turns the page. */
 export async function allSlotItems(page) {
   const items = [];
   for (let i = 0; i < 10; i++) {
@@ -57,9 +60,9 @@ export async function fitsScreen(page) {
   return page.locator("main[data-screen]").evaluate((main) => main.scrollHeight <= main.clientHeight + 1);
 }
 
-/** After "Date festlegen" / "Termin ändern": back on the start page, which shows the date. */
+/** After "Gießen & an … senden" / "Termin ändern": back on the start page, which shows the date. */
 export async function backAtStart(page, base) {
   await page.waitForURL(`${base}/plan`, { timeout: 20000 });
-  await page.getByRole("button", { name: /^(Date festlegen 🎉|Termin ändern)$/ }).waitFor({ state: "hidden", timeout: 20000 });
+  await page.getByRole("button", { name: SEND }).waitFor({ state: "hidden", timeout: 20000 });
   await page.locator("[data-date-card]").filter({ visible: true }).first().waitFor({ timeout: 20000 });
 }

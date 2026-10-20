@@ -191,12 +191,12 @@ await s.screenshot({ path: `${OUT}m17-02-super.png` });
 
 // 5) Match: Sam likes Jonas' like → match overlay, wishlist idea
 await s.getByRole("button", { name: "Gefällt mir" }).click();
-await s.getByRole("dialog").getByText("Match!").waitFor({ timeout: 10000 });
+await s.getByRole("dialog").getByText("match!").waitFor({ timeout: 10000 });
 check("match dialog names the idea", await s.getByRole("dialog").getByText(liked).isVisible());
 await s.screenshot({ path: `${OUT}m17-03-match.png` });
 let { rows: matched } = await db.query("SELECT i.id, i.title, i.source, c.status FROM deck_cards c JOIN ideas i ON i.id = c.idea_id WHERE c.title = $1", [liked]);
 check(`wishlist idea from the match (${JSON.stringify(matched[0])})`, matched[0]?.source === "deck" && matched[0].status === "matched");
-const planHref = await s.getByRole("link", { name: "📅 Jetzt planen" }).getAttribute("href");
+const planHref = await s.getByRole("link", { name: "Direkt planen" }).getAttribute("href");
 check(`"Jetzt planen" opens the plan page with the idea (${planHref})`, planHref === `/plan?idea=${matched[0]?.id}`);
 
 check("the match reuses Jonas' wishlist idea", (await db.query("SELECT 1 FROM ideas WHERE title = $1", [liked])).rowCount === 1);
@@ -209,12 +209,12 @@ const { rows: [undone] } = await db.query("SELECT c.status, c.idea_id FROM deck_
 check(`undo of a match keeps Jonas' idea (${undone.status})`, undone.status === "open" && undone.idea_id === matched[0].id);
 check("…and the card is back on top", (await topTitle(s)) === liked);
 await s.getByRole("button", { name: "Gefällt mir" }).click();
-await s.getByRole("dialog").getByText("Match!").waitFor({ timeout: 10000 });
+await s.getByRole("dialog").getByText("match!").waitFor({ timeout: 10000 });
 check("matched again – still one idea", (await db.query("SELECT 1 FROM ideas WHERE title = $1", [liked])).rowCount === 1);
-await s.getByRole("link", { name: "📅 Jetzt planen" }).click();
+await s.getByRole("link", { name: "Direkt planen" }).click();
 await s.waitForURL(/\/plan\?idea=/, { timeout: 10000 });
 check("plan page opened from the match", new URL(s.url()).pathname === "/plan");
-await s.goto(`${BASE}/ideas`);
+await s.goto(`${BASE}/ideas?ansicht=alle`);
 const other = (await deckIdeas()).find((t) => t !== liked);
 const matchedCard = s.locator("li").filter({ has: s.getByRole("button", { name: liked }) });
 await matchedCard.waitFor({ timeout: 10000 });

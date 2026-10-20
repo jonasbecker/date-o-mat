@@ -1,18 +1,13 @@
-// The start page: the step card (what's up, the one thing to do) and the swipe
-// deck below it. "Date planen" leads into the flow (idea → time → done).
+// What the start page (the Beet) needs: the round, the next step, the next date and the small
+// lines around the plant. "Date planen" leads into the flow.
 import Link from "next/link";
 import { DateTime } from "luxon";
 import { notHappenedAction } from "./actions";
 import { BudgetBar } from "@/components/budget-bar";
-import { Card } from "@/components/card";
-import { ConnectCalendarCard } from "@/components/connect-calendar";
 import type { DateCardExtras } from "@/components/date-card";
-import { StartDate } from "@/components/start-date";
 import { StartReview } from "@/components/start-review";
-import { NextStepCard } from "@/components/next-step";
 import { PushRow } from "@/components/push-row";
 import { SetupChecklist } from "@/components/setup-checklist";
-import { SuggestionCard } from "@/components/suggestion-card";
 import { isSurpriseHidden, suggestTasks } from "@/core/date-extras";
 import { nextStep } from "@/core/next-step";
 import { inDaysLabel, SHOW_DAYS_BEFORE } from "@/core/special-days";
@@ -34,7 +29,6 @@ import { extraOn } from "@/server/settings";
 import { upcomingForHome } from "@/server/special-days";
 import { currentSuggestion } from "@/server/suggestions";
 import { lastTick } from "@/server/system-status";
-import { deckFor } from "@/server/deck";
 import { coverPhotos } from "@/server/photos";
 
 /** Checklist, conversation cards and surprise notes for an upcoming date. */
@@ -65,7 +59,6 @@ export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings,
     budgetState(coupleId, now),
     upcomingForHome(ctx, now, SHOW_DAYS_BEFORE),
   ]);
-  const deck = await deckFor(ctx, now);
   // "Wie war's?" shows the date's first photo.
   const reviewPhoto = toReview ? (await coverPhotos(coupleId, [toReview.id])).get(toReview.id) : undefined;
   // A surprise stays one: the partner sees time and hint only.
@@ -107,111 +100,73 @@ export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings,
     storyYear: extraOn(settings, "story") ? storyYearToShow(now) : null,
     roundDate,
     suggestion,
-    deck,
   };
 }
 
 export type Overview = Awaited<ReturnType<typeof loadOverview>>;
 
-/** Steps that are about the next date – it sits right inside the step card. */
-const DATE_STEPS: string[] = ["confirm", "wait_confirm", "date_ahead"];
-
 /**
- * The start page: one box that says what's up and holds the one thing to do
- * ("Date planen", "Passt!", "Jetzt bewerten", the proposal) – and below it the
- * swipe deck, which fills the rest of the screen.
+ * The small lines on the Beet around the plant: the cron warning, the story, a skipped round,
+ * special days, a tight budget, reminders, the setup checklist – only what applies right now.
  */
-export function StartSection({
-  o,
-  ctx,
-  now,
-  swappable = false,
-}: {
-  o: Overview;
-  ctx: CoupleContext;
-  now: Date;
-  /** The round's date can get another idea ("Lieber was anderes?"). */
-  swappable?: boolean;
-}) {
-  const { user, partner } = ctx;
-  // Last round fell through: said in the step card's own box, not in a card of its own.
-  const skippedNote = o.cycle?.status === "open" && o.previous?.status === "skipped" && (
-    <>
-      🌦️ <strong className="font-extrabold">Letztes Mal ist ausgefallen – passiert!</strong> Diesmal holt ihr&apos;s nach.
-    </>
-  );
+export function StartNotices({ o, ctx }: { o: Overview; ctx: CoupleContext }) {
+  const { partner } = ctx;
   const step = o.cycle ? o.step : null;
-  const calendarStep = step?.kind === "connect_calendar" || step?.kind === "partner_calendar";
-  const inBox =
-    step && DATE_STEPS.includes(step.kind) && o.shownDate ? (
-      <StartDate date={o.shownDate} me={user} partner={partner} surprise={o.dateExtras?.surprise ?? null} swappable={swappable} isToday={o.dateExtras?.isToday} />
-    ) : step?.kind === "review" && o.toReview ? (
-      <StartReview date={o.toReview} photoId={o.reviewPhoto} />
-    ) : step?.kind === "suggestion" && o.suggestion?.status === "ok" ? (
-      <SuggestionCard suggestion={o.suggestion.suggestion} idea={o.suggestion.idea} />
-    ) : null;
+  const line = "flex items-center gap-2.5 rounded-[18px] px-3.5 py-2 text-sm font-medium";
   return (
     <>
       {o.cronStale && o.tick && (
-        <Link href="/settings?t=status" role="alert" className="sticker block rounded-[20px] bg-zitrone px-4 py-3 font-bold text-tinte">
-          ⚠️ Die Automatik ist zuletzt {agoLabel(o.realNow, o.tick.at)} gelaufen – Erinnerungen kommen gerade nicht.{" "}
-          <span className="underline">Läuft alles?</span>
+        <Link href="/settings?t=status" role="alert" className={`${line} bg-zitrone-soft text-tinte`}>
+          <span className="min-w-0 flex-1">
+            ⚠️ Die Automatik ist zuletzt {agoLabel(o.realNow, o.tick.at)} gelaufen – Erinnerungen kommen gerade nicht. <span className="underline">Läuft alles?</span>
+          </span>
         </Link>
       )}
 
       {o.storyYear !== null && (
-        <Link href={`/story?year=${o.storyYear}`} className="flat tap flex items-center gap-3 rounded-[18px] bg-himbeere-soft px-4 py-2 text-tinte">
-          <span className="text-xl" aria-hidden="true">
-            📖
-          </span>
-          <span className="font-display text-base font-semibold leading-tight">Eure Date-Story {o.storyYear} ist da – tipp rein!</span>
+        <Link href={`/story?year=${o.storyYear}`} className={`tap ${line} bg-rose text-tinte`}>
+          <span aria-hidden="true">📖</span>
+          <span className="min-w-0 flex-1 font-semibold">Eure Date-Story {o.storyYear} ist da – tipp rein!</span>
         </Link>
       )}
 
-      {calendarStep ? (
-        <ConnectCalendarCard people={o.calendars} next="/plan" />
-      ) : (
-        step && (
-          <NextStepCard step={step} cycle={o.cycle!} me={user} partner={partner} now={now} date={o.shownDate} onPlanPage note={skippedNote}>
-            {inBox}
-          </NextStepCard>
-        )
-      )}
-      {skippedNote && (!step || calendarStep) && (
-        <p className="rounded-[18px] border-2 border-line bg-zitrone-soft px-3.5 py-2 text-sm font-bold text-tinte">{skippedNote}</p>
+      {o.cycle?.status === "open" && o.previous?.status === "skipped" && (
+        <p className={`${line} bg-surface`}>
+          <span className="min-w-0 flex-1">
+            🌦️ <strong className="font-bold">Letztes Mal ist ausgefallen – passiert!</strong> Diesmal holt ihr&apos;s nach.
+          </span>
+        </p>
       )}
 
-      {/* Another step heads the page (e.g. my turn to plan): the review still gets its own card, hearts and all. */}
+      {/* Another step heads the page (e.g. my turn to plan): the review still gets its own line, hearts and all. */}
       {o.toReview && step?.kind !== "review" && (
-        <Card tone="lavendel" flat size="sm" data-review-card className="flex flex-col gap-2 text-sm">
-          <h2 className="text-[20px] font-bold leading-tight">Wie war&apos;s?</h2>
-          <StartReview date={o.toReview} photoId={o.reviewPhoto} />
-        </Card>
+        <div data-review-card className="flex flex-col gap-1.5 rounded-[18px] bg-surface px-3.5 py-2.5 text-sm">
+          <h3 className="text-base font-bold leading-tight">Wie war&apos;s?</h3>
+          <StartReview date={o.toReview} photoId={o.reviewPhoto} small />
+        </div>
       )}
 
       {o.roundDate?.status === "done" && (
-        <form action={notHappenedAction.bind(null, o.roundDate.id)} className="-mt-1 self-center">
-          <button type="submit" className="text-sm font-extrabold text-muted underline">
+        <form action={notHappenedAction.bind(null, o.roundDate.id)} className="self-center">
+          <button type="submit" className="text-sm font-semibold text-muted underline">
             „{o.roundDate.title}“ hat doch nicht geklappt?
           </button>
         </form>
       )}
 
       {o.suggestion?.status === "no_slots" && (
-        <p className="rounded-[18px] border-2 border-dashed border-line px-3.5 py-2 text-sm font-bold">
-          Bis zum Ende findet der Date-O-Mat keine gemeinsame Lücke mehr – sucht beim Planen auch danach.
-        </p>
+        <p className={`${line} border-2 border-dashed border-line`}>Bis zum Ende findet der Date-O-Mat keine gemeinsame Lücke mehr – sucht beim Planen auch danach.</p>
       )}
 
       {/* At most two special days – the start page is one screen. */}
       {!o.shownDate &&
         o.specialDays.slice(0, 2).map((day) => (
-          <Link key={day.id} href="/plan?size=large" className="press flex items-center gap-2.5 rounded-[18px] border-2 border-line bg-himbeere-soft px-3.5 py-2 text-sm font-bold text-tinte">
+          <Link key={day.id} href="/plan?size=large" className={`press ${line} bg-rose text-tinte`}>
             <span className="min-w-0 flex-1">
               {day.emoji} {day.label} {inDaysLabel(day.days)}
               {o.budget && o.budget.pot > 0 ? ` · Spartopf ${o.budget.pot} € 🎁` : ""}
             </span>
-            <span className="shrink-0 underline">{day.kind === "birthday" ? "Überraschung planen →" : "Großes Date planen →"}</span>
+            <span className="shrink-0 font-semibold underline">{day.kind === "birthday" ? "Überraschung planen →" : "Großes Date planen →"}</span>
           </Link>
         ))}
 

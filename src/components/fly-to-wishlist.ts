@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * A liked card sends a 💚 up to the 💡 in the header, which gives a little jump when it lands:
+ * A liked card sends a pink ♥ to the Ideen tab, which gives a little jump when it lands:
  * the wishlist visibly grows. Nothing happens with reduced motion; the vibration (Android only)
  * is a short double tap.
  */
@@ -20,9 +20,9 @@ export function flyToWishlist(from: DOMRect): void {
   const x1 = target.left + target.width / 2;
   const y1 = target.top + target.height / 2;
   const heart = document.createElement("div");
-  heart.textContent = "💚";
+  heart.textContent = "♥";
   heart.setAttribute("aria-hidden", "true");
-  Object.assign(heart.style, { position: "fixed", left: `${x0}px`, top: `${y0}px`, fontSize: "44px", lineHeight: "1", pointerEvents: "none", zIndex: "60", willChange: "transform, opacity" });
+  Object.assign(heart.style, { position: "fixed", left: `${x0}px`, top: `${y0}px`, fontSize: "48px", lineHeight: "1", color: "#E58FA6", pointerEvents: "none", zIndex: "60", willChange: "transform, opacity" });
   document.body.appendChild(heart);
   const flight = heart.animate(
     [

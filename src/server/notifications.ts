@@ -125,3 +125,23 @@ export async function notifyPartnerReviewed(ctx: CoupleContext, date: Pick<DateP
     console.warn("[push] partner notification failed", error);
   }
 }
+
+/**
+ * "Anstupsen" on the Beet: the one waiting reminds the one with the watering can. At most once an
+ * hour per round (notification_log). Returns false when it was too soon.
+ */
+export async function nudgePartner(ctx: CoupleContext, cycleId: string, now: Date, text: { title: string; body: string }): Promise<boolean> {
+  const hour = new Date(Math.floor(now.getTime() / 3_600_000) * 3_600_000);
+  const [claimed] = await db
+    .insert(notificationLog)
+    .values({ userId: ctx.partner.id, type: "nudge", refId: cycleId, dueAt: hour })
+    .onConflictDoNothing()
+    .returning({ id: notificationLog.id });
+  if (!claimed) return false;
+  try {
+    await sendToUser(ctx.partner.id, { ...text, url: "/plan", tag: "turn" }, "nudge");
+  } catch (error) {
+    console.warn("[push] nudge failed", error);
+  }
+  return true;
+}

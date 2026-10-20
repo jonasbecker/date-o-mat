@@ -51,9 +51,24 @@ async function pageFor(token, scheme = "light") {
   return page;
 }
 
-// 1) The wishlist: chips with counts, origin tags, category emoji
+// 0) The ideas page (MIdeen): the field, the matches tile, the kinds as tiles
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/ideas`);
+await j.getByRole("heading", { name: "ideen." }).waitFor({ timeout: 20000 });
+check("tiles: matches + six kinds", (await j.getByRole("button", { name: /^Eure Matches: \d+$/ }).isVisible()) && (await j.getByRole("button", { name: /^(Kurz|Lang|Draußen|Drinnen|Mit Ort|Eigene): \d+$/ }).count()) === 6);
+check("the field for your own idea", await j.getByRole("textbox", { name: "Neue Idee" }).isVisible());
+await j.screenshot({ path: `${OUT}m23-00-tiles.png` });
+check("the ideas page fits the screen", await fitsScreen(j));
+const shortTile = j.getByRole("button", { name: /^Kurz: \d+$/ });
+const shortCount = Number((await shortTile.getAttribute("aria-label")).replace(/\D/g, ""));
+await shortTile.click();
+await j.getByRole("heading", { name: "kurz." }).waitFor({ timeout: 10000 });
+check(`a tile opens its list (${shortCount} kurze)`, (await j.locator("li.animate-pop-in").filter({ visible: true }).count()) === shortCount);
+await j.getByRole("button", { name: "Zurück zu den Kacheln" }).click();
+await j.getByRole("heading", { name: "ideen." }).waitFor({ timeout: 10000 });
+
+// 1) The wishlist: chips with counts, origin tags, category emoji
+await j.goto(`${BASE}/ideas?ansicht=alle`);
 const items = j.locator("li.animate-pop-in").filter({ visible: true });
 await items.first().waitFor({ timeout: 20000 });
 const chips = j.getByRole("group", { name: "Ideen ansehen nach" });
@@ -86,19 +101,19 @@ for (let i = 0; i < 20 && (await badge()) !== "5"; i++) {
 }
 check(`the 💡 counts up to 5 after a like (${await badge()})`, (await badge()) === "5");
 await j.locator("[data-swipe-progress]").waitFor({ timeout: 10000 }).catch(() => {});
-check("progress after a swipe: 1 geswipt · 1 💚", /^1 geswipt · 1 💚 · \d+ übrig$/.test(((await j.locator("[data-swipe-progress]").innerText().catch(() => "")) || "").trim()));
+check("progress after a swipe: 1 geswipt · 1 ♥", /^1 geswipt · 1 ♥ · \d+ übrig$/.test(((await j.locator("[data-swipe-progress]").innerText().catch(() => "")) || "").trim()));
 await j.screenshot({ path: `${OUT}m23-02-liked.png` });
 
 // 5) The deck page fits the screen and links to "Meine Likes"
 check("deck page fits the screen", await fitsScreen(j));
-await j.getByRole("link", { name: "💚 Meine Likes" }).click();
+await j.getByRole("link", { name: "Meine Likes" }).click();
 await items.first().waitFor({ timeout: 20000 });
 check("Meine Likes opens the wishlist on Geswipt", await j.getByRole("button", { name: /Geswipt/, pressed: true }).isVisible());
 await j.screenshot({ path: `${OUT}m23-03-my-likes.png` });
 
 // 6) Dark mode
 const jd = await pageFor(jonas.token, "dark");
-await jd.goto(`${BASE}/ideas`);
+await jd.goto(`${BASE}/ideas?ansicht=alle`);
 await jd.locator("li.animate-pop-in").filter({ visible: true }).first().waitFor({ timeout: 20000 });
 await jd.screenshot({ path: `${OUT}m23-04-wishlist-dark.png` });
 

@@ -85,7 +85,10 @@ async function pageFor(token, scheme = "light") {
   return page;
 }
 /** The first free time of step 2 as text, e.g. "So 25 14:00 – 16:00 ★ Top-Tipp Sonntag, 25. Oktober · Wochenende ☀️ 13°, trocken · hell bis 18:24". */
-const topSlot = async (page) => (await page.locator("ol li").first().innerText()).replace(/\s+/g, " ");
+const topSlot = async (page) => {
+  const li = page.locator("ol li").first();
+  return `${await li.locator("button").getAttribute("aria-label")} ${await li.innerText()}`.replace(/\s+/g, " ");
+};
 const startHour = (text) => Number(/(\d\d):\d\d – \d\d:\d\d/.exec(text)?.[1]);
 const isWeekend = (text) => /Samstag|Sonntag/.test(text);
 
@@ -103,13 +106,13 @@ check("step 2 with the reason fits the screen", await fitsScreen(j));
 check("one forecast request per search", rain.calls >= 1 && rain.calls <= 2);
 
 // 2) An indoor idea: the plain ranking, no note
-await j.getByRole("button", { name: "← Andere Idee" }).click();
+// (one screen: the ideas stay right below the times)
 await pickIdea(j, "Sushi-Abend");
 const sushi = await topSlot(j);
 check(`Sushi-Abend: an evening, nothing about weather (${sushi})`, startHour(sushi) >= 17 && !/hell bis|trocken|°/.test(sushi));
 
 // 3) Outdoor, but the dark is the point: no penalty after sunset, weather still shown
-await j.getByRole("button", { name: "← Andere Idee" }).click();
+// (one screen: the ideas stay right below the times)
 await pickIdea(j, "Sterne gucken am Rhein");
 const stars = await topSlot(j);
 check(`Sterne gucken: evening is fine (${stars})`, startHour(stars) >= 17 && !/hell bis/.test(stars) && /13°, trocken/.test(stars));
@@ -137,7 +140,7 @@ check("the proposal state fits the screen", await fitsScreen(j));
 
 // 6) The idea form has "Wo?" and saves it
 await db.query("UPDATE couple_settings SET mode = 'alternating' WHERE couple_id = $1", [couple.id]);
-await j.goto(`${BASE}/ideas`);
+await j.goto(`${BASE}/ideas?ansicht=alle`);
 await j.getByRole("button", { name: "Idee hinzufügen" }).click();
 await j.getByLabel("Was wollt ihr machen?").first().fill("Schlittschuhlaufen im Park");
 await j.locator("dialog[open] summary").click();

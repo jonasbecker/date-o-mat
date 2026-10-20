@@ -4,7 +4,8 @@ import { CATEGORY_LABEL, type IdeaCategory } from "@/core/categories";
 import { cn } from "@/lib/cn";
 import { useIdeaFilter } from "./idea-filter";
 
-export type ListView = "all" | "match" | "swiped";
+/** Views of the wishlist: everything, the matches, the swiped – and the tiles of the ideas page. */
+export type ListView = "all" | "match" | "swiped" | "small" | "large" | "outdoor" | "indoor" | "local" | "own";
 
 function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
@@ -12,7 +13,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={cn("h-9 shrink-0 whitespace-nowrap rounded-full border-2 border-line px-3.5 text-sm font-extrabold", active ? "bg-ink text-bg" : "bg-surface text-ink")}
+      className={cn("tap h-8 shrink-0 whitespace-nowrap rounded-full px-3 text-[13px] font-semibold", active ? "bg-ink text-bg" : "bg-surface text-ink")}
     >
       {children}
     </button>
@@ -52,12 +53,12 @@ export function CategoryChips({
       </Chip>
       {matches > 0 && (
         <Chip active={view === "match"} onClick={() => onView(view === "match" ? "all" : "match")}>
-          💞 Matches {matches}
+          ♥ Matches {matches}
         </Chip>
       )}
       {swiped > 0 && (
         <Chip active={view === "swiped"} onClick={() => onView(view === "swiped" ? "all" : "swiped")}>
-          💚 Geswipt {swiped}
+          Geswipt {swiped}
         </Chip>
       )}
       {counts.map(({ category, count }) => (

@@ -29,6 +29,8 @@ export type SlotView = {
   weekday: string;
   day: string;
   dateLabel: string;
+  /** "Mi 21.10." – the short day in the slot list. */
+  shortLabel: string;
   timeLabel: string;
   durationLabel: string;
   mood: SlotMood;
@@ -47,6 +49,7 @@ export function slotView(slot: Slot): SlotView {
     weekday: start.toFormat("ccc").replace(".", ""),
     day: start.toFormat("d"),
     dateLabel: start.toFormat("cccc, d. LLLL"),
+    shortLabel: `${start.toFormat("ccc").replace(".", "")} ${start.toFormat("dd.LL.")}`,
     timeLabel: `${start.toFormat("HH:mm")} – ${end.toFormat("HH:mm")}`,
     durationLabel: formatHours((slot.end.getTime() - slot.start.getTime()) / 60_000),
     mood: slot.mood,

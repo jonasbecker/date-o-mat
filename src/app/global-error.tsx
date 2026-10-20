@@ -16,8 +16,8 @@ export default function GlobalError({ retry }: { error: Error & { digest?: strin
           padding: 24,
           textAlign: "center",
           fontFamily: "system-ui, sans-serif",
-          background: "#fff6ec",
-          color: "#2a1b3d",
+          background: "#eef2e6",
+          color: "#163a22",
         }}
       >
         <title>Date-O-Mat</title>
@@ -31,11 +31,10 @@ export default function GlobalError({ retry }: { error: Error & { digest?: strin
             font: "inherit",
             fontWeight: 700,
             padding: "14px 24px",
-            borderRadius: 18,
-            border: "2.5px solid #2a1b3d",
-            boxShadow: "3px 3px 0 #2a1b3d",
-            background: "#ff4f8b",
-            color: "#2a1b3d",
+            border: "0",
+            borderRadius: 999,
+            background: "#163a22",
+            color: "#ffffff",
           }}
         >
           Nochmal versuchen

@@ -60,6 +60,7 @@ export function IdeaForm({
   onDelete,
   footnote,
   initialLink,
+  initialTitle,
 }: {
   action: Action;
   idea?: IdeaFormDefaults;
@@ -68,6 +69,8 @@ export function IdeaForm({
   footnote?: string;
   /** Shared into the app: analyze this link right away. */
   initialLink?: string;
+  /** Typed into the field on the ideas page: a new idea starts with this title. */
+  initialTitle?: string;
 }) {
   const [state, formAction, pending] = useActionState<IdeaFormState, FormData>(async (prev, formData) => {
     const result = await action(prev, formData);
@@ -123,7 +126,7 @@ export function IdeaForm({
   }
 
   // After a failed submit, show what was typed; otherwise the draft, the idea (or empty).
-  const base = draft ?? idea;
+  const base = draft ?? idea ?? (initialTitle ? { title: initialTitle, size: "small" as IdeaSize, note: null, url: null, costEur: null, location: null } : undefined);
   const typed = state.status === "error" ? state.values : undefined;
   const value = (field: keyof IdeaFormDefaults) => typed?.[field] ?? (base?.[field] == null ? "" : String(base[field]));
   const size = (typed?.size as IdeaSize | undefined) ?? base?.size ?? "small";
