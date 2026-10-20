@@ -1,7 +1,7 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import type { SlotRules } from "@/core/slots";
-import type { EventMix, Extra } from "@/lib/domain";
+import type { EventMix, Extra, FlowerPot } from "@/lib/domain";
 import type { SlotSettingsValues } from "@/lib/slot-settings";
 import { db } from "@/server/db";
 import { coupleSettings, cycles, datePhotos, type CoupleSettings } from "@/server/db/schema";
@@ -44,6 +44,12 @@ export async function updateCycleSettings(coupleId: string, values: CycleSetting
 
 export async function setFirstPlanner(coupleId: string, userId: string): Promise<void> {
   await db.update(coupleSettings).set({ firstPlannerId: userId }).where(eq(coupleSettings.coupleId, coupleId));
+}
+
+/** The flower's name and pot (Setup → "Eure Blume heißt …"). */
+export async function setFlower(coupleId: string, values: { flowerName?: string; flowerPot?: FlowerPot }): Promise<void> {
+  await getCoupleSettings(coupleId);
+  await db.update(coupleSettings).set(values).where(eq(coupleSettings.coupleId, coupleId));
 }
 
 export async function setDeckEventMix(coupleId: string, mix: EventMix): Promise<void> {

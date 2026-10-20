@@ -4,7 +4,9 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isPushEndpointAllowed } from "@/lib/allowlist";
-import { EVENT_MIXES, EXTRAS, NOTIFICATION_TYPES, PLAN_MODES, RHYTHMS } from "@/lib/domain";
+import { EVENT_MIXES, EXTRAS, FLOWER_NAME_MAX, FLOWER_POTS, NOTIFICATION_TYPES, PLAN_MODES, RHYTHMS } from "@/lib/domain";
+import { unlockedPots } from "@/core/bloom";
+import { countDoneDates } from "@/server/dates";
 import { parseSlotSettings, type SlotSettingsErrors } from "@/lib/slot-settings";
 import { parseBudget } from "@/core/budget";
 import { parseSpecialDay } from "@/core/special-days";
@@ -18,7 +20,7 @@ import { disconnect, setBusyCalendars } from "@/server/google/connection";
 import { coupleNow } from "@/server/clock";
 import { applySettingsToOpenCycle } from "@/server/cycles";
 import { env } from "@/server/env";
-import { getCoupleSettings, resetDevClock, setDeckEventMix, setDevClockOffset, setExtraShown, updateCycleSettings, updateSlotSettings } from "@/server/settings";
+import { getCoupleSettings, resetDevClock, setDeckEventMix, setDevClockOffset, setExtraShown, setFlower, updateCycleSettings, updateSlotSettings } from "@/server/settings";
 import { removeSubscription, saveSubscription, sendToUser, setPref } from "@/server/push";
 import { tickCouple } from "@/server/tick";
 
@@ -142,6 +144,27 @@ export async function setEventMixAction(mix: string): Promise<void> {
   if (!parsed.success) return;
   await setDeckEventMix(coupleId, parsed.data);
   refresh();
+}
+
+/** "Eure Blume heißt …": a new name (1–20 characters). */
+export async function renameFlowerAction(name: string): Promise<{ ok: boolean }> {
+  const { coupleId } = await requireCouple();
+  const parsed = z.string().trim().min(1).max(FLOWER_NAME_MAX).safeParse(name);
+  if (!parsed.success) return { ok: false };
+  await setFlower(coupleId, { flowerName: parsed.data });
+  refresh();
+  return { ok: true };
+}
+
+/** A pot for the flower – only one you have unlocked with your lived dates. */
+export async function choosePotAction(pot: string): Promise<{ ok: boolean }> {
+  const { coupleId } = await requireCouple();
+  const parsed = z.enum(FLOWER_POTS).safeParse(pot);
+  if (!parsed.success) return { ok: false };
+  if (!unlockedPots(await countDoneDates(coupleId)).includes(parsed.data)) return { ok: false };
+  await setFlower(coupleId, { flowerPot: parsed.data });
+  refresh();
+  return { ok: true };
 }
 
 export async function setExtraAction(extra: string, shown: boolean): Promise<void> {

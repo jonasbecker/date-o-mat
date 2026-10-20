@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { AppHeader, PageSkeleton } from "@/components/app-header";
+import { AppHeader, HeaderMeta, PageSkeleton } from "@/components/app-header";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
@@ -33,7 +33,9 @@ import { ExtrasForm } from "./extras-form";
 import { PageTitle } from "@/components/page-title";
 import { MoreList, Topic, type TopicTile } from "./fold";
 import { CycleQuick, EveningFrom, PushToggle } from "./setup-main";
-import { AlertIcon } from "@/components/icons";
+import { FlowerCard } from "./flower-card";
+import { GardenBanner } from "./garden-banner";
+import { countDoneDates } from "@/server/dates";
 import { overallLevel } from "@/core/system-status";
 import { upcomingDaysFor } from "@/server/special-days";
 import { inDaysLabel } from "@/core/special-days";
@@ -69,7 +71,7 @@ const rowClass = "flex min-h-11 items-center justify-between gap-3";
 export default function SettingsPage({ searchParams }: PageProps<"/settings">) {
   return (
     <div className="flex flex-col gap-4">
-      <AppHeader />
+      <AppHeader action={<HeaderMeta>der gartenschuppen</HeaderMeta>} />
       <Suspense fallback={<PageSkeleton />}>
         <Settings searchParams={searchParams} />
       </Suspense>
@@ -94,7 +96,7 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
     listSources(coupleId),
   ]);
   const now = coupleNow(settings);
-  const [status, sourcePages] = await Promise.all([systemStatus(ctx, now), listSourcePages(sources.map((s) => s.id))]);
+  const [status, sourcePages, lived] = await Promise.all([systemStatus(ctx, now), listSourcePages(sources.map((s) => s.id)), countDoneDates(coupleId)]);
   const specialDayViews: SpecialDayView[] = (await upcomingDaysFor(coupleId, now, 366)).map((d) => ({
     id: d.id,
     emoji: d.emoji,
@@ -297,25 +299,17 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
       </>
     );
   }
-  // The main page, as in MSetup.
+  // The main page: the garden shed (ThSetup.html).
+  const calendarsReady = people.every((person) => person.state === "connected");
   return (
     <div className="flex flex-col gap-2.5">
       <PageTitle title="setup." />
-      {!statusOk && (
-        <Link href="/settings?t=status" className="tap flex items-center gap-2 rounded-[20px] bg-zitrone-soft px-4 py-3 text-tinte">
-          <AlertIcon width={18} height={18} />
-          <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-semibold">Läuft alles?</span>
-            <span className="block text-xs">{statusTile.hint}</span>
-          </span>
-          <span aria-hidden="true">›</span>
-        </Link>
-      )}
-      <Card size="md">
+      <GardenBanner publicKey={pushPublicKey()} calendarsMissing={!calendarsReady} otherProblem={!statusOk} />
+      <Card size="md" className="flex flex-col gap-1">
         <CycleQuick values={{ rhythm: settings.rhythm, mode: settings.mode, deadlineDaysBeforeEnd: settings.deadlineDaysBeforeEnd }} />
-      </Card>
-      <Card size="md">
-        <PushToggle publicKey={pushPublicKey()} partnerName={partner.name} />
+        <div className="border-t border-divider pt-2.5">
+          <PushToggle publicKey={pushPublicKey()} partnerName={partner.name} />
+        </div>
       </Card>
       <Card size="md" className="flex flex-col gap-1">
         <div className="flex items-center justify-between">
@@ -324,7 +318,16 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
             verwalten
           </Link>
         </div>
-        {people.map((person) => {
+        {calendarsReady ? (
+          <div className={rowClass}>
+            <span className="flex items-center gap-2">
+              <Avatar person={user} size={26} />
+              <Avatar person={partner} size={26} className="-ml-3" />
+              <span className="text-[15px] font-bold">beide verbunden</span>
+            </span>
+            <span className="text-[13px] text-[#6DBA74]">✓</span>
+          </div>
+        ) : people.map((person) => {
           const who = person.isMe ? user : partner;
           return (
             <div key={person.userId} className={rowClass}>
@@ -358,6 +361,9 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
             horizonDays: settings.horizonDays,
           }}
         />
+      </Card>
+      <Card size="md">
+        <FlowerCard name={settings.flowerName} pot={settings.flowerPot} lived={lived} />
       </Card>
       <Link href="/settings?t=mehr" className="tap flex min-h-12 items-center justify-between rounded-[22px] bg-surface px-5 text-base font-semibold">
         Mehr

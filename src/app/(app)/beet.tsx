@@ -15,7 +15,7 @@ import { StartReview } from "@/components/start-review";
 import { SuggestionCard } from "@/components/suggestion-card";
 import { ArrowIcon, SwapIcon } from "@/components/icons";
 import { Info } from "@/components/info";
-import { bloomLeaves, bloomSaying, bloomStimmung, type BloomRound } from "@/core/bloom";
+import { bloomLeaves, bloomSaying, bloomStimmung, type BloomRound, type FlowerPot } from "@/core/bloom";
 import { periodLabel, type NextStep } from "@/core/next-step";
 import { APP_TIMEZONE } from "@/lib/domain";
 import { formatShortDate, formatTimeRange, shortDeadline } from "@/lib/format";
@@ -85,6 +85,7 @@ export function Beet({
   rounds,
   swappable,
   notices,
+  pot = "terrakotta",
 }: {
   o: Overview;
   ctx: CoupleContext;
@@ -93,6 +94,8 @@ export function Beet({
   swappable: boolean;
   /** Small lines that belong on the start (reminders, setup, special days …). */
   notices?: React.ReactNode;
+  /** The pot chosen in Setup (already checked against the unlocked ones). */
+  pot?: FlowerPot;
 }) {
   const { user: me, partner } = ctx;
   const step = o.step;
@@ -142,7 +145,7 @@ export function Beet({
         <div className="relative min-h-28 flex-1" data-onturn={onTurn ?? undefined}>
           {/* The flower box keeps the mockup's 300×420 proportions; the bubble sits by its head. */}
           <div className="absolute inset-y-0 left-1/2 aspect-[300/420] max-w-full -translate-x-1/2 [container-type:size]">
-            <Bloom stimmung={stimmung} blaetter={blaetter} welk={welk} className="absolute inset-0 size-full" />
+            <Bloom stimmung={stimmung} blaetter={blaetter} welk={welk} topf={pot} className="absolute inset-0 size-full" />
             <ThoughtBubble text={saying} />
           </div>
         </div>

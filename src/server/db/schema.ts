@@ -44,6 +44,7 @@ import {
   SYNC_STATUSES,
   USER_COLORS,
   AGAIN_ANSWERS,
+  FLOWER_POTS,
 } from "@/lib/domain";
 
 const timestamptz = () => timestamp({ withTimezone: true });
@@ -152,6 +153,9 @@ export const coupleSettings = pgTable("couple_settings", {
   // Monthly date budget in euros (null = none) and the first month it counted ("2026-10").
   monthlyBudgetEur: integer(),
   budgetSinceMonth: text(),
+  // The flower on the Beet (Garten): its name and the pot you chose (only unlocked pots show).
+  flowerName: text().notNull().default("Rosi"),
+  flowerPot: text({ enum: FLOWER_POTS }).notNull().default("terrakotta"),
   updatedAt: updatedAt(),
 });
 

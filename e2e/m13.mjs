@@ -153,7 +153,7 @@ check("after Zusagen: date steht. – the flower is happy", (await s.locator('[d
 
 // 6) Settings: a list of topics, each its own screen; intro again
 await j.goto(`${BASE}/settings`);
-await j.getByRole("radiogroup", { name: "Wer plant?" }).waitFor({ timeout: 15000 });
+await j.getByRole("radiogroup", { name: "Wer gießt?" }).waitFor({ timeout: 15000 });
 await j.waitForTimeout(500);
 check("setup: the essentials and a Mehr row (the page may scroll a little when the status warning shows)", await j.getByRole("link", { name: /^Mehr/ }).isVisible());
 await j.screenshot({ path: `${OUT}m13-06-settings-main.png` });

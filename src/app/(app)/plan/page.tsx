@@ -19,6 +19,7 @@ import { loadOverview, StartNotices } from "../overview";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { Beet, BeetAvatars, RoundDots } from "../beet";
 import { plantRounds } from "@/server/plant";
+import { shownPot } from "@/core/bloom";
 import type { NextDateInfo } from "@/components/swap-confirm";
 
 export default function PlanPage({ searchParams }: PageProps<"/plan">) {
@@ -95,6 +96,7 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
           now={now}
           rounds={rounds}
           swappable={swappable}
+          pot={shownPot(settings.flowerPot, rounds.filter((r) => r === "done").length)}
           notices={
             <>
               {calendarStep && <ConnectCalendarCard people={overview.calendars} next="/plan" />}

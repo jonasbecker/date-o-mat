@@ -9,6 +9,11 @@ export type UserColor = (typeof USER_COLORS)[number];
 /** The person colors as accents (DESIGN.md §2): himmel = blue, mandarine = rosé. */
 export const PERSON_HEX: Record<UserColor, string> = { himmel: "#4D63E8", mandarine: "#E58FA6" };
 
+/** The flower's pots (Setup, DESIGN-GARTEN.md §5.5); more unlock with lived dates (core/bloom.ts). */
+export const FLOWER_POTS = ["terrakotta", "blau", "gelb"] as const;
+export type FlowerPot = (typeof FLOWER_POTS)[number];
+export const FLOWER_NAME_MAX = 20;
+
 export const IDEA_SIZES = ["small", "large"] as const;
 export type IdeaSize = (typeof IDEA_SIZES)[number];
 

@@ -1,6 +1,7 @@
 "use client";
 
-// The setup page as in MSetup: who plans, rhythm, deadline; reminders; the calendars and "Freie Abende ab".
+// The setup page, the garden shed (ThSetup.html): who waters (plans), rhythm, deadline; reminders; the
+// calendars and "Freie Abende ab".
 // Every control saves on its own (no "Speichern") and says so with a small ✓.
 import Link from "next/link";
 import { useActionState, useRef } from "react";
@@ -23,7 +24,7 @@ const MODES: Array<{ value: PlanMode; label: string }> = [
 ];
 
 const rowClass = "flex min-h-11 items-center justify-between gap-3";
-const selectClass = "max-w-[60%] cursor-pointer appearance-none bg-transparent text-right text-base text-muted outline-none focus-visible:text-ink";
+const selectClass = "max-w-[55%] cursor-pointer appearance-none bg-transparent text-right text-[15px] text-text-soft outline-none focus-visible:text-ink";
 
 function Saved({ show, className }: { show: boolean; className?: string }) {
   return (
@@ -41,21 +42,24 @@ export function CycleQuick({ values }: { values: { rhythm: Rhythm; mode: PlanMod
   const submit = () => form.current?.requestSubmit();
 
   return (
-    <form key={JSON.stringify(values)} ref={form} action={action} className="relative flex flex-col gap-3">
-      <p className="text-[13px] text-muted">Wer plant?</p>
-      <div role="radiogroup" aria-label="Wer plant?" className="grid grid-cols-2 gap-1 rounded-full bg-soft p-1">
+    <form key={JSON.stringify(values)} ref={form} action={action} className="relative flex flex-col gap-2.5">
+      <p className="text-[13px] text-muted">Wer gießt?</p>
+      <div role="radiogroup" aria-label="Wer gießt?" className="grid grid-cols-2 rounded-full bg-bg p-1">
         {MODES.map((mode) => (
           <label key={mode.value} className="cursor-pointer">
             <input type="radio" name="mode" value={mode.value} defaultChecked={values.mode === mode.value} onChange={submit} className="peer sr-only" />
-            <span className="flex h-10 items-center justify-center rounded-full text-[15px] font-semibold text-ink peer-checked:bg-tinte peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-himmel dark:peer-checked:bg-leaf">
+            <span className="flex h-[38px] items-center justify-center rounded-full text-[15px] font-semibold text-ink peer-checked:bg-green peer-checked:font-bold peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-himmel">
               {mode.label}
             </span>
           </label>
         ))}
       </div>
-      <div className="flex flex-col border-t border-soft pt-1">
+      <div className="flex flex-col border-t border-divider pt-1">
         <label className={rowClass}>
-          <span className="text-base font-semibold">Rhythmus</span>
+          <span className="flex flex-col">
+            <span className="text-base font-bold">Gießrhythmus</span>
+            <span className="text-xs text-muted">wie oft ein Date</span>
+          </span>
           <select
             name="rhythm"
             aria-label="Rhythmus"
@@ -75,7 +79,10 @@ export function CycleQuick({ values }: { values: { rhythm: Rhythm; mode: PlanMod
           </select>
         </label>
         <label className={rowClass}>
-          <span className="text-base font-semibold">Frist</span>
+          <span className="flex flex-col">
+            <span className="text-base font-bold">Gießzeit</span>
+            <span className="text-xs text-muted">Frist zum Planen</span>
+          </span>
           <select ref={deadline} name="deadlineDaysBeforeEnd" aria-label="Plan bis … (Frist)" defaultValue={values.deadlineDaysBeforeEnd} onChange={submit} className={selectClass}>
             {Array.from({ length: 11 }, (_, days) => (
               <option key={days} value={days}>
@@ -100,8 +107,8 @@ export function PushToggle({ publicKey, partnerName }: { publicKey: string | nul
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-3">
         <span className="flex flex-col gap-0.5">
-          <span className="text-base font-semibold">Push-Erinnerung</span>
-          <span className="text-[13px] leading-snug text-muted">Wenn du dran bist · wenn’s knapp wird · wenn {partnerName} etwas plant</span>
+          <span className="text-base font-bold">Push-Erinnerung</span>
+          <span className="text-xs leading-snug text-muted">wenn du dran bist · wenn’s knapp wird · wenn {partnerName} gießt</span>
         </span>
         <button
           type="button"
@@ -110,7 +117,7 @@ export function PushToggle({ publicKey, partnerName }: { publicKey: string | nul
           aria-label="Push-Erinnerung"
           disabled={push.support === null || push.pending || (!on && unavailable)}
           onClick={() => (on ? push.disable() : push.enable())}
-          className={cn("relative h-[30px] w-[50px] shrink-0 rounded-full transition-colors disabled:opacity-50", on ? "bg-leaf" : "bg-track")}
+          className={cn("relative h-[30px] w-[50px] shrink-0 rounded-full transition-colors disabled:opacity-50", on ? "bg-green" : "bg-bg")}
         >
           <span className={cn("absolute top-[3px] left-[3px] size-6 rounded-full bg-white shadow transition-transform duration-200 ease-out", on && "translate-x-5")} />
         </button>
@@ -136,14 +143,14 @@ export function EveningFrom({ values }: { values: SlotSettingsValues }) {
   const form = useRef<HTMLFormElement>(null);
   const options = EVENING_OPTIONS.includes(values.smallStartFromMinute) ? EVENING_OPTIONS : [...EVENING_OPTIONS, values.smallStartFromMinute].sort((a, b) => a - b);
   return (
-    <form key={JSON.stringify(values)} ref={form} action={action} className="border-t border-soft pt-1">
+    <form key={JSON.stringify(values)} ref={form} action={action} className="border-t border-divider pt-1">
       {(Object.keys(values) as Array<keyof SlotSettingsValues>)
         .filter((key) => key !== "smallStartFromMinute")
         .map((key) => (
           <input key={key} type="hidden" name={key} value={key.endsWith("Minute") ? minutesToTime(values[key]) : String(values[key])} />
         ))}
       <label className={rowClass}>
-        <span className="text-base font-semibold">Freie Abende ab</span>
+        <span className="text-base font-bold">Freie Abende ab</span>
         <span className="flex items-center gap-2">
           <select name="smallStartFromMinute" aria-label="Freie Abende ab" defaultValue={minutesToTime(values.smallStartFromMinute)} onChange={() => form.current?.requestSubmit()} className={selectClass}>
             {options.map((minutes) => (

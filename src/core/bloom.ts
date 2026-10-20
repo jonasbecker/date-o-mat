@@ -166,8 +166,8 @@ export function bloomSaying(stimmung: Stimmung, seed: number, words: { partner: 
 }
 
 /** The pots of the flower (Setup, DESIGN-GARTEN.md §5.5): a small reward for the streak. */
-export const FLOWER_POTS = ["terrakotta", "blau", "gelb"] as const;
-export type FlowerPot = (typeof FLOWER_POTS)[number];
+export { FLOWER_POTS, type FlowerPot } from "@/lib/domain";
+import { FLOWER_POTS, type FlowerPot } from "@/lib/domain";
 export const POT_UNLOCK: Record<FlowerPot, number> = { terrakotta: 0, blau: 10, gelb: 25 };
 export const POT_COLORS: Record<FlowerPot, { body: string; rim: string }> = {
   terrakotta: { body: "#D68456", rim: "#C26A3F" },

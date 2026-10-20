@@ -18,25 +18,26 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - Google Calendar calls go through `calendarRequest()` (`src/server/google/calendar-api.ts`), which awaits `connection()` first so prefetch/prerender never hits Google. Call `connection()` before any try/catch around live Google data.
 - "Now" for a couple is `coupleNow(settings)` (`src/server/clock.ts`), never `new Date()` in round/slot logic – the dev clock shifts it.
 - Pages that use time or write round state call `await connection()` right after `requireCouple()`.
-- **Design (M40, "Pastell & rund"):** spec and mockups in `docs/design/` (DESIGN.md + `screens/*.html`).
-  Tokens in `src/app/globals.css` (salbei `bg`, white `surface`, `soft`, `ink`, `muted`, leaf/pot/bud,
-  `rose`, the `tile-*` pastels); fonts Bricolage Grotesque + DM Mono (`font-mono`, `meta`). One background
-  for every screen; person colors (`PERSON_HEX`: himmel = blue, mandarine = rosé) are accents only
-  (avatar ring, watering can, "Gießen & senden"). Page titles are lowercase with a period (`headline`
-  utility: "ideen.", "swipen."). White cards, no borders, no shadows (except the swipe card); pills
-  (`Button`: primary = ink, `send` = blue, secondary = outline). `sticker`/`flat` are kept as no-op names.
-  In dark mode the pastel fills (`bg-zitrone-soft`, `bg-rose`, `bg-tile-*` …) reset the color tokens to
-  light values, so `text-ink`/`text-muted` on them stay readable – new light fills go into that list.
-  Empty and loading states show the `Mascot` (a small plant).
+- **Design ("Garten", dark only):** spec and mockups in `docs/design/garten/` (DESIGN-GARTEN.md + `screens/*.html`,
+  `components/Bloom.html`) – it replaces the older DESIGN.md / main-b for these pages. The whole app is dark:
+  `<html data-theme="dark">` is fixed in `layout.tsx`, one token set in `globals.css` (`bg`, `surface`, `ink`, `muted`,
+  `track` + Garten: `butter`, `green`, `like`, `divider`, `text-soft`, `muted-2`, `cta`, `soil`, `seed`, `tile-*`).
+  Fonts Bricolage Grotesque, DM Mono (`meta`), Caveat (`font-hand`, only the flower's voice). Person colors
+  (`PERSON_HEX`: himmel = #4D63E8, mandarine = rosé) are accents only. Primary pill = `bg-cta text-bg`. Light fills
+  (`bg-tile-*`, `bg-rose`, `bg-zitrone-soft` …) reset the tokens to light values, so `text-ink` on them stays readable
+  – `bg-cta`/`bg-butter` are NOT in that list (their text is dark by design). Garden words: Ideen = Samen, Like =
+  einpflanzen, Nein = Kompost, Match = keimt / Keimlinge, Frist = Gießzeit, Rhythmus = Gießrhythmus, Planen = gießen.
 - **Navigation (M40):** `BottomNav` in the `(app)` layout: Beet (`/plan`) · Ideen · **Swipen** (big circle,
   `/ideas/entdecken`) · Archiv (`/dates`) · Einstellungen. `AppHeader` is the small name plus the page's
   own thing on the right (avatars, "36 Ideen", matches pill). The four round dots sit right under the name
   on the Beet and never move. `/ideas` shows tiles; a tile opens `/ideas?ansicht=<kind>` (URL-driven, so the
   Ideen tab brings you back); the one Filter button (incl. category) is the only filter.
-- **Setup (M40):** `/settings` is the MSetup page (`setup-main.tsx`: who plans, rhythm, deadline, push switch,
-  calendars, "Freie Abende ab" – every control saves by itself); "Mehr" (`?t=mehr`) lists the other topics.
-  Theme: Hell/Dunkel/Automatisch (`theme-switch.tsx`, `data-theme` on `<html>` set before paint in `layout.tsx`;
-  the `dark:` variant follows it).
+- **Setup (Garten):** `/settings` is the garden shed (`setup-main.tsx`: "Wer gießt?", Gießrhythmus, Gießzeit, push
+  switch; calendars + "Freie Abende ab"; `flower-card.tsx`: the flower's name and pot – `couple_settings.flower_name`,
+  `flower_pot`, pots unlock at 10/25 lived dates, `core/bloom.ts`). `garden-banner.tsx` shows only when something is
+  missing (push off, calendar, status). "Mehr" (`?t=mehr`) lists the other topics.
+- **Swipen / Ideen / Archiv (Garten):** seed packets (`swipe-deck.tsx`, "kompost"/"einpflanzen", "keimt!"), the seed
+  shelf (`idea-tiles.tsx`, Keimlinge in pots), the stem (`/dates`, `?ansicht=raster` is the old grid).
 - **The Beet (start, Main B – `docs/design/main-b/`):** `src/app/(app)/beet.tsx` – headline per step ("du bist dran.",
   "kanne bei Sam." …) at 70 px, the time left big on the right (`TimeLeft`, `--accent-time`), the round as a bar with the
   deadline marker (`WeekBar`), the flower (`components/bloom.tsx`, geometry and mood in `core/bloom.ts`: `bloomGeometry`
