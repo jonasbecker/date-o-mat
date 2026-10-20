@@ -2,12 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { AppHeader, PageSkeleton } from "@/components/app-header";
-import { PageTitle } from "@/components/page-title";
+import { PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { Avatar } from "@/components/avatar";
 import { Hearts } from "@/components/hearts";
-import { CloseIcon } from "@/components/icons";
+import { BackIcon, CloseIcon } from "@/components/icons";
 import { AGAIN_LABEL } from "@/lib/domain";
 import { visibleReviews, type ReviewView } from "@/core/reviews";
 import { formatShortDate, formatTimeRange, genitive } from "@/lib/format";
@@ -54,8 +53,14 @@ async function DateDetail({ params, searchParams }: { params: PageProps<"/dates/
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         <AutoRefresh />
-        <AppHeader />
-        <PageTitle title="euer date." back="/plan" backLabel="Zum Beet" />
+        {/* Like "euer blatt.": the round arrow on top, the card carries the title. */}
+        <div className="flex items-center justify-between">
+          <Link href="/plan" aria-label="Zum Beet" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
+            <BackIcon width={20} height={20} />
+          </Link>
+          <span className="meta">Details</span>
+        </div>
+        <h1 className="sr-only">Euer Date</h1>
         <DateCard date={shown} me={user} partner={partner} extras={await dateExtrasFor(ctx, settings, upcoming, now)} />
       </div>
     );
