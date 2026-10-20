@@ -199,32 +199,32 @@ function TimeLeft({ cycle, now }: { cycle: NonNullable<Overview["cycle"]>; now: 
   );
 }
 
-/** MO–SO with today lit, the part of the round that is gone, and the deadline as a marker. Longer rounds show dates. */
+/**
+ * MO–SO with today lit, the days already gone pale and a dot under the deadline day – no bar, so nothing
+ * looks like a slider. Longer rounds show dates.
+ */
 function WeekBar({ cycle, now }: { cycle: NonNullable<Overview["cycle"]>; now: Date }) {
   const start = DateTime.fromJSDate(cycle.startsAt, { zone: APP_TIMEZONE }).setLocale("de");
   const span = cycle.endsAt.getTime() - cycle.startsAt.getTime();
-  const at = (d: Date) => Math.min(100, Math.max(0, ((d.getTime() - cycle.startsAt.getTime()) / span) * 100));
   const days = Math.round(span / 86_400_000);
   const today = DateTime.fromJSDate(now, { zone: APP_TIMEZONE });
+  const deadline = DateTime.fromJSDate(cycle.deadlineAt, { zone: APP_TIMEZONE });
   const labels =
     days <= 8
       ? Array.from({ length: days }, (_, i) => {
           const d = start.plus({ days: i });
-          return { text: d.toFormat("ccc").replace(".", "").slice(0, 2).toUpperCase(), now: d.hasSame(today, "day") };
+          return { text: d.toFormat("ccc").replace(".", "").slice(0, 2).toUpperCase(), now: d.hasSame(today, "day"), gone: d < today.startOf("day"), deadline: d.hasSame(deadline, "day") };
         })
-      : Array.from({ length: 5 }, (_, i) => ({ text: start.plus({ days: Math.round((i * (days - 1)) / 4) }).toFormat("d.M."), now: false }));
+      : Array.from({ length: 5 }, (_, i) => ({ text: start.plus({ days: Math.round((i * (days - 1)) / 4) }).toFormat("d.M."), now: false, gone: false, deadline: false }));
   return (
     <div data-week-bar className="mt-5" aria-label={`${periodLabel(cycle.startsAt, cycle.endsAt)}: Frist ${shortDeadline(cycle.deadlineAt)}`} role="img">
-      <div className="grid font-mono text-[10px] text-muted" style={{ gridTemplateColumns: `repeat(${labels.length}, minmax(0, 1fr))` }}>
+      <div className="grid font-mono text-[11px] text-muted" style={{ gridTemplateColumns: `repeat(${labels.length}, minmax(0, 1fr))` }}>
         {labels.map((l, i) => (
-          <span key={i} className={l.now ? "text-accent-time" : undefined}>
+          <span key={i} className={cn("flex flex-col items-start gap-1", l.now ? "font-bold text-accent-time" : l.gone && "opacity-45")}>
             {l.text}
+            <span aria-hidden="true" className={cn("ml-[5px] size-1.5 rounded-full", l.deadline ? "bg-accent-time" : "bg-transparent")} />
           </span>
         ))}
-      </div>
-      <div className="relative mt-2 h-1.5 rounded-[3px] bg-track">
-        <div aria-hidden="true" className="absolute inset-y-0 left-0 rounded-[3px] bg-ink opacity-85" style={{ width: `${at(now)}%` }} />
-        <div aria-hidden="true" className="absolute -top-[5px] h-4 w-[3px] rounded-[2px] bg-accent-time" style={{ left: `${at(cycle.deadlineAt)}%` }} />
       </div>
     </div>
   );
@@ -232,14 +232,15 @@ function WeekBar({ cycle, now }: { cycle: NonNullable<Overview["cycle"]>; now: D
 
 /**
  * What the flower thinks (Caveat, a tilted oval) and two dots leading to its head – positions from
- * HomeB.html in the flower's 300×420 box; sizes in container units (cqw), so it scales with the flower.
+ * HomeB.html in the flower's 300×420 box; sizes in container units (cqw), so it scales with the flower –
+ * but never below 16 px text: on a small phone the bubble keeps 150 px and grows to the left.
  */
 function ThoughtBubble({ text }: { text: string }) {
   return (
     <>
       <p
         data-speech
-        className="animate-pop-in absolute left-[-9.7%] top-[1.9%] z-10 w-[58.7%] -rotate-[4deg] rounded-[40px/34px] bg-ink px-[5.3cqw] pb-[5.3cqw] pt-[4.7cqw] text-center font-hand text-[7.67cqw] font-semibold leading-[1.02] text-bg"
+        className="animate-pop-in absolute left-[-9.7%] top-[1.9%] z-10 w-[max(58.7%,150px)] -translate-x-[max(0px,calc(150px-58.7cqw))] -rotate-[4deg] rounded-[40px/34px] bg-ink px-[max(5.3cqw,12px)] pb-[max(5.3cqw,12px)] pt-[max(4.7cqw,10px)] text-center font-hand text-[max(7.67cqw,16px)] font-semibold leading-[1.02] text-bg"
       >
         {text}
       </p>

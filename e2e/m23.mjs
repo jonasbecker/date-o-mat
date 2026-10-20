@@ -55,7 +55,7 @@ async function pageFor(token, scheme = "light") {
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/ideas`);
 await j.getByRole("heading", { name: "ideen." }).waitFor({ timeout: 20000 });
-check("tiles: Keimlinge + six kinds", (await j.getByRole("button", { name: /^Keimlinge: \d+$/ }).isVisible()) && (await j.getByRole("button", { name: /^(Kurz|Lang|Draußen|Drinnen|Mit Ort|Eigene): \d+$/ }).count()) === 6);
+check("tiles: Matchlinge + six kinds", (await j.getByRole("button", { name: /^Matchlinge: \d+$/ }).isVisible()) && (await j.getByRole("button", { name: /^(Kurz|Lang|Draußen|Drinnen|Mit Ort|Eigene): \d+$/ }).count()) === 6);
 check("the field for your own idea", await j.getByRole("textbox", { name: "Neue Idee" }).isVisible());
 await j.screenshot({ path: `${OUT}m23-00-tiles.png` });
 check("the ideas page fits the screen", await fitsScreen(j));

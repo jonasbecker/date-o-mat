@@ -1,6 +1,7 @@
-// M24: design tour – every page and sub page in light and dark, so a screen that does not
-// belong to the "Pastell & rund" look stands out in e2e/shots/m24-*.png. Checks that nothing
-// errors or overflows sideways.
+// M24: design tour – every page and sub page (dark, the Garten look) on a 390×844 phone and on a
+// small one (360×640), so a screen that does not fit stands out in e2e/shots/m24-*.png. Checks that
+// nothing errors or overflows sideways, nothing overlaps (flower, bubble, tab bar, buttons) and no
+// text is cut off (layout-audit.mjs).
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { DateTime } from "luxon";
@@ -8,6 +9,8 @@ import pg from "pg";
 import { chromium } from "playwright";
 import { mondayMorningOffset } from "./clock.mjs";
 import { resetDb } from "./db.mjs";
+import { passFilter, pickIdea } from "./flow.mjs";
+import { layoutAudit } from "./layout-audit.mjs";
 import { startMock } from "./google-mock.mjs";
 
 const BASE = "http://localhost:3000";
@@ -97,18 +100,40 @@ const ROUTES = [
   ["s-status", "/settings?t=status"],
   ["welcome", "/welcome"],
 ];
-for (const scheme of ["dark"]) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, locale: "de-DE", colorScheme: scheme });
+const audit = async (page, label) => {
+  const { issues } = await layoutAudit(page);
+  check(`${label}: nothing overlaps or is cut off${issues.length ? ` (${issues.join("; ")})` : ""}`, issues.length === 0);
+};
+for (const [size, viewport] of [["", { width: 390, height: 844 }], ["small-", { width: 360, height: 640 }]]) {
+  const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, locale: "de-DE", colorScheme: "dark" });
   await ctx.addCookies([{ name: "dom_session", value: jonas.token, url: BASE }]);
   const page = await ctx.newPage();
   page.on("pageerror", (e) => console.log("PAGEERROR", e.message));
+  const tag = `${viewport.width}×${viewport.height}`;
   for (const [name, path] of ROUTES) {
     const res = await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded", timeout: 20000 }).catch((e) => console.log("GOTO", path, e.message.split("\n")[0]));
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${OUT}m24-${scheme}-${name}.png` });
+    await page.screenshot({ path: `${OUT}m24-${size}dark-${name}.png` });
     const wide = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
-    check(`${scheme} ${path}: ok, no sideways scroll`, (res?.status() ?? 0) < 400 && !wide);
+    check(`${tag} ${path}: ok, no sideways scroll`, (res?.status() ?? 0) < 400 && !wide);
+    await audit(page, `${tag} ${path}`);
   }
+  // The planning flow, step by step (dots 2–4)
+  await page.goto(`${BASE}/plan`);
+  await page.getByRole("link", { name: "Date planen", exact: true }).click();
+  await page.getByRole("heading", { name: "worauf lust?", exact: true }).waitFor({ timeout: 20000 });
+  check(`${tag} flow: the filter is dot 2`, (await page.getByRole("img", { name: "Schritt 2 von 4" }).count()) > 0);
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: `${OUT}m24-${size}dark-flow-1.png` });
+  await audit(page, `${tag} flow: filter`);
+  await passFilter(page);
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: `${OUT}m24-${size}dark-flow-2.png` });
+  await audit(page, `${tag} flow: was?`);
+  await pickIdea(page, "Sushi-Abend");
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: `${OUT}m24-${size}dark-flow-3.png` });
+  await audit(page, `${tag} flow: wann?`);
   await ctx.close();
 }
 // The five moods of the flower side by side (/dev/blume), to compare with BloomStates.html

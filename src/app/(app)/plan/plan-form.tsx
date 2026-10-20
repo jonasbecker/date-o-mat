@@ -513,7 +513,7 @@ export function PlanFlow({
   if (step === "filter" && mode.kind === "new") {
     return (
       <div key="filter" className="animate-slide-in flex min-h-0 flex-1 flex-col gap-2.5">
-        {flowTop(1, backHome)}
+        {flowTop(2, backHome)}
         {intro}
         <h2 className="headline pt-2 text-[40px]">worauf lust?</h2>
         <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-1 pb-1">
@@ -540,7 +540,7 @@ export function PlanFlow({
     return (
       <div key="idea" className="animate-slide-in flex min-h-0 flex-1 flex-col gap-2.5">
         {hiddenForm}
-        {flowTop(2, backTo("filter", "Zurück zum Filter"))}
+        {flowTop(3, backTo("filter", "Zurück zum Filter"))}
         {intro}
         <div className="flex items-baseline justify-between gap-2 pt-2">
           <h2 className="headline text-[40px]">was?</h2>
@@ -563,7 +563,7 @@ export function PlanFlow({
   return (
     <div key="time" className="animate-slide-in flex min-h-0 flex-1 flex-col gap-2.5">
       {hiddenForm}
-      {mode.kind === "new" ? flowTop(3, backTo("idea", "Andere Idee")) : flowTop(3, backHome)}
+      {mode.kind === "new" ? flowTop(4, backTo("idea", "Andere Idee")) : flowTop(4, backHome)}
       {intro}
 
       <div className="flex items-end justify-between gap-3 pt-1.5">

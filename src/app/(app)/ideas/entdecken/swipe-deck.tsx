@@ -65,7 +65,7 @@ function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: str
           <span>SAATGUT FÜR ZWEI</span>
           {pos && <span>Nº {pos}</span>}
         </div>
-        <div className="relative mx-3.5 h-[190px] min-h-[90px] shrink overflow-hidden rounded-[14px]" style={{ background: tile.bg }}>
+        <div className="relative mx-3.5 h-[190px] min-h-[44px] shrink overflow-hidden rounded-[14px]" style={{ background: tile.bg }}>
           <span aria-hidden="true" className="absolute left-[70px] top-10 h-[90px] w-[150px] -rotate-[18deg] rounded-[50%]" style={{ background: tile.shape }} />
           <span aria-hidden="true" className="absolute left-[190px] top-[112px] h-[42px] w-[74px] rounded-[50%] opacity-60" style={{ background: tile.shape }} />
           {card.emoji && (
@@ -75,7 +75,7 @@ function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: str
           )}
           <span className="absolute bottom-3 left-3 inline-flex h-[26px] items-center rounded-full bg-white/85 px-2.5 font-mono text-[10px]">Sorte: {sorte}</span>
         </div>
-        <div className="flex min-h-0 flex-col gap-2 px-[18px] pt-3.5">
+        <div className="flex shrink-0 flex-col gap-2 px-[18px] pt-3.5">
           {(card.partnerSuper || card.kind === "revisit" || card.wildcard) && (
             <div className="flex flex-wrap gap-1.5 font-mono text-[10px]">
               {card.partnerSuper && <span className="rounded-full bg-tile-rose px-2.5 py-1 text-partner-ink">★ {partnerName} findet das super</span>}
@@ -84,7 +84,7 @@ function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: str
             </div>
           )}
           <h2 className="line-clamp-2 text-[27px] font-extrabold leading-none tracking-[-0.035em]">{card.title}</h2>
-          {card.note && <p className="line-clamp-3 min-h-0 text-sm leading-[1.35] text-[#4A5547]">{card.note}</p>}
+          {card.note && <p className="line-clamp-3 text-sm leading-[1.35] [@media(max-height:700px)]:line-clamp-1 text-[#4A5547]">{card.note}</p>}
           {card.event && (
             <div className="shrink-0 rounded-2xl bg-white/60 px-3 py-2 text-[13px]">
               <p className="font-bold">🎟️ {card.event.title}</p>
@@ -322,7 +322,7 @@ export function SwipeDeck({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3" data-swipe-deck="page">
       {/* The card takes what the screen has left – no scrolling. A stack: the next one peeks out, tilted. */}
-      <div className="relative mx-1 min-h-[300px] flex-1">
+      <div className="relative mx-1 min-h-[250px] flex-1">
         {next && (
           <div aria-hidden="true" className={cn("absolute inset-x-3.5 bottom-0 top-2 rotate-[5deg] transition-transform duration-200", flying && "inset-x-0 top-0 rotate-[-2deg]")}>
             <div className="h-full rounded-2xl bg-[#2A3830]" />

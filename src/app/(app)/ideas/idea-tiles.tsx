@@ -1,6 +1,6 @@
 "use client";
 
-// ThIdeen (DESIGN-GARTEN.md §5.3), the seed shelf: the matches as "Keimlinge" in little pots, the kinds
+// ThIdeen (DESIGN-GARTEN.md §5.3), the seed shelf: the matches as "Matchlinge" in little pots, the kinds
 // of dates as tiles with a small plant each. A tap opens the list of that kind (a local view of the
 // wishlist, like Matches and Geswipt).
 import type { ListView } from "@/components/category-chips";
@@ -22,16 +22,16 @@ const TILES: Array<{ view: keyof TileCounts; label: string; sub: string; classNa
 export function IdeaTiles({ counts, matches, onView }: { counts: TileCounts; matches: Array<{ id: string; title: string }>; onView: (view: ListView) => void }) {
   const sprouted = Math.min(matches.length, POTS);
   return (
-    <div className="grid min-h-0 grid-cols-2 gap-2.5">
+    <div className="grid shrink-0 grid-cols-2 gap-2.5">
       <button
         type="button"
         onClick={() => onView("match")}
-        aria-label={`Keimlinge: ${matches.length}`}
-        className="tap relative col-span-2 h-[clamp(120px,18vh,148px)] overflow-hidden rounded-[24px] bg-tile-rose p-4 text-left text-[#5A2416]"
+        aria-label={`Matchlinge: ${matches.length}`}
+        className="tap relative col-span-2 h-[clamp(140px,18vh,148px)] overflow-hidden rounded-[24px] bg-tile-rose p-4 text-left text-[#5A2416]"
       >
         <span className="flex items-start justify-between">
           <span className="flex flex-col gap-0.5">
-            <span className="text-xl font-extrabold tracking-[-0.02em]">Keimlinge</span>
+            <span className="text-xl font-extrabold tracking-[-0.02em]">Matchlinge</span>
             <span className="text-[13px]">eure Matches vom Swipen</span>
           </span>
           <span className="text-[44px] font-extrabold leading-none tracking-[-0.04em]">{matches.length}</span>
@@ -60,7 +60,7 @@ export function IdeaTiles({ counts, matches, onView }: { counts: TileCounts; mat
           type="button"
           onClick={() => onView(t.view)}
           aria-label={`${t.label}: ${counts[t.view]}`}
-          className={cn("tap relative flex h-[clamp(92px,13.3vh,112px)] flex-col justify-between overflow-hidden rounded-[22px] p-3.5 text-left", t.className)}
+          className={cn("tap relative flex min-h-[clamp(92px,13.3vh,112px)] flex-col justify-between gap-2 overflow-hidden rounded-[22px] p-3.5 text-left", t.className)}
         >
           <span aria-hidden="true" className="absolute right-3.5 top-2.5 h-12 w-11">
             {t.art}
@@ -68,7 +68,7 @@ export function IdeaTiles({ counts, matches, onView }: { counts: TileCounts; mat
           <span className="relative text-[30px] font-extrabold leading-none tracking-[-0.04em]">{counts[t.view]}</span>
           <span className="relative flex flex-col gap-px">
             <span className="text-base font-bold">{t.label}</span>
-            <span className={cn("text-xs", t.subClass)}>{t.sub}</span>
+            <span className={cn("text-xs leading-tight", t.subClass)}>{t.sub}</span>
           </span>
         </button>
       ))}

@@ -53,7 +53,7 @@ async function Discover() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6DBA74" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
               <path d="M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 14c0-3-2-5-6-5 0 3 2 5 6 5z" />
             </svg>
-            {deck.matches} {deck.matches === 1 ? "Keimling" : "Keimlinge"}
+            {deck.matches} {deck.matches === 1 ? "Matchling" : "Matchlinge"}
           </Link>
         }
       />

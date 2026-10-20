@@ -195,7 +195,7 @@ export function StoryViewer({ slides }: { slides: Slide[] }) {
   }, []);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex gap-1" aria-hidden="true">
         {slides.map((s, i) => (
           <span key={i} className={cn("h-1.5 flex-1 rounded-full", i <= index ? "bg-ink" : "bg-track")} />
@@ -211,11 +211,11 @@ export function StoryViewer({ slides }: { slides: Slide[] }) {
           if (e.clientX - box.left < box.width / 3) prev();
           else next();
         }}
-        className={cn("sticker relative flex min-h-[520px] cursor-pointer select-none flex-col items-center justify-center gap-4 rounded-[28px] px-6 py-10 text-center text-tinte", TONE[slide.kind])}
+        className={cn("sticker relative flex min-h-[300px] flex-1 cursor-pointer select-none flex-col items-center justify-center gap-4 rounded-[28px] px-6 py-10 text-center text-tinte", TONE[slide.kind])}
       >
         <SlideBody slide={slide} />
       </section>
-      <div className="flex items-center justify-between">
+      <div className="flex shrink-0 items-center justify-between">
         <button type="button" onClick={prev} disabled={index === 0} className="tap flex h-10 items-center rounded-full bg-surface px-4 text-sm font-semibold disabled:opacity-30">
           ← Zurück
         </button>

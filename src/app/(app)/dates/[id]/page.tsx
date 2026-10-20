@@ -106,7 +106,7 @@ async function DateDetail({ params, searchParams }: { params: PageProps<"/dates/
         tabs={[
           {
             key: "mine",
-            label: mine ? "💗 Deine Herzen" : "💗 Bewerten",
+            label: mine ? "💗 Herzen" : "💗 Bewerten",
             content: (
               <>
               <section aria-labelledby="review-heading" className="flex flex-col gap-3 rounded-[22px] bg-surface p-4">

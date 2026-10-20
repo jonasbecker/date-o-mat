@@ -78,7 +78,7 @@ check("'Date planen' is the one big button", await j.locator("[data-next-step]")
 const bloom = j.locator("[data-next-step] [data-bloom]");
 check(`the flower grows from the done rounds and has a mood (${await bloom.getAttribute("data-bloom")})`, (await bloom.count()) === 1 && /^(schlaeft|traurig)$/.test((await bloom.getAttribute("data-bloom")) ?? ""));
 check("the flower thinks out loud (thought bubble)", (await j.locator("[data-next-step] [data-speech]").innerText()).length > 10);
-check("the round as a bar with the deadline", (await j.locator("[data-next-step] [data-week-bar]").count()) === 1);
+check("the round as its weekdays with the deadline", (await j.locator("[data-next-step] [data-week-bar]").count()) === 1);
 check("handing over is the round button next to Date planen", await j.getByRole("button", { name: "Diesmal an Sam abgeben" }).isVisible());
 check("Jonas' avatar has the ring", (await j.getByRole("img", { name: "Jonas ist dran" }).count()) === 1);
 check("no swipe deck on the start any more", (await j.locator("[data-swipe-deck]").count()) === 0);

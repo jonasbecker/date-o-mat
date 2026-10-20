@@ -26,21 +26,21 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   (`PERSON_HEX`: himmel = #4D63E8, mandarine = rosé) are accents only. Primary pill = `bg-cta text-bg`. Light fills
   (`bg-tile-*`, `bg-rose`, `bg-zitrone-soft` …) reset the tokens to light values, so `text-ink` on them stays readable
   – `bg-cta`/`bg-butter` are NOT in that list (their text is dark by design). Garden words: Ideen = Samen, Like =
-  einpflanzen, Nein = Kompost, Match = keimt / Keimlinge, Frist = Gießzeit, Rhythmus = Gießrhythmus, Planen = gießen.
+  einpflanzen, Nein = Kompost, Match = keimt / Matchlinge, Frist = Gießzeit, Rhythmus = Gießrhythmus, Planen = gießen.
 - **Navigation (M40):** `BottomNav` in the `(app)` layout: Beet (`/plan`) · Ideen · **Swipen** (big circle,
   `/ideas/entdecken`) · Archiv (`/dates`) · Einstellungen. `AppHeader` is the small name plus the page's
-  own thing on the right (avatars, "36 Ideen", matches pill). The four round dots sit right under the name
-  on the Beet and never move. `/ideas` shows tiles; a tile opens `/ideas?ansicht=<kind>` (URL-driven, so the
+  own thing on the right (avatars, "36 Ideen", matches pill). The four dots are one path: the Beet is dot 1, the
+  planning flow's filter / "was?" / "wann?" are dots 2–4 (`flowTop` in `plan-form.tsx`). `/ideas` shows tiles; a tile opens `/ideas?ansicht=<kind>` (URL-driven, so the
   Ideen tab brings you back); the one Filter button (incl. category) is the only filter.
 - **Setup (Garten):** `/settings` is the garden shed (`setup-main.tsx`: "Wer gießt?", Gießrhythmus, Gießzeit, push
   switch; calendars + "Freie Abende ab"; `flower-card.tsx`: the flower's name and pot – `couple_settings.flower_name`,
   `flower_pot`, pots unlock at 10/25 lived dates, `core/bloom.ts`). `garden-banner.tsx` shows only when something is
   missing (push off, calendar, status). "Mehr" (`?t=mehr`) lists the other topics.
 - **Swipen / Ideen / Archiv (Garten):** seed packets (`swipe-deck.tsx`, "kompost"/"einpflanzen", "keimt!"), the seed
-  shelf (`idea-tiles.tsx`, Keimlinge in pots), the stem (`/dates`, `?ansicht=raster` is the old grid).
+  shelf (`idea-tiles.tsx`, Matchlinge in pots), the stem (`/dates`, `?ansicht=raster` is the old grid).
 - **The Beet (start, Main B – `docs/design/main-b/`):** `src/app/(app)/beet.tsx` – headline per step ("du bist dran.",
-  "sam ist dran.", "date steht." …) at 70 px, the time left big on the right (`TimeLeft`, `--accent-time`), the round as a bar with the
-  deadline marker (`WeekBar`), the flower (`components/bloom.tsx`, geometry and mood in `core/bloom.ts`: `bloomGeometry`
+  "sam ist dran.", "date steht." …) at 70 px, the time left big on the right (`TimeLeft`, `--accent-time`), the round as its weekdays
+  (`WeekBar`: today lit, past days pale, a dot under the deadline day – no bar, it looked like a slider), the flower (`components/bloom.tsx`, geometry and mood in `core/bloom.ts`: `bloomGeometry`
   is renderVals() of Bloom.html 1:1, `bloomStimmung` = §3, `bloomLeaves` = the last 5 rounds from `server/plant.ts`)
   with its thought bubble in Caveat (`font-hand`), and one action ("Date planen" + the round hand-over button,
   "Anstupsen", "Zusagen"). The pot has no face. All five moods side by side: `/dev/blume`. The old `Plant`
@@ -71,7 +71,8 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   decks/lists that a test empties → seed spare rows. A test that only fails on some days is a test bug.
 - **No scrolling (M27):** every screen fits 390×844 – only lists scroll (wishlist, events, sheets,
   long settings topics). Long content becomes steps, pages or tabs (`Tabs`, `?t=` topics, paging);
-  check new screens with `fitsScreen(page)` from `e2e/flow.mjs`. Settings links are `/settings?t=<topic>`.
+  check new screens with `fitsScreen(page)` from `e2e/flow.mjs`. Small phones (360×640) may scroll, but nothing
+  may overlap or be cut off: m24 runs `layoutAudit()` (`e2e/layout-audit.mjs`) on every page at both sizes. Settings links are `/settings?t=<topic>`.
 - **Planning in e2e:** `/plan` is the start (the Beet); "Date planen" opens the one planning
   flow at `/plan?pick=1`: "was?" (tap an idea, "Weiter") then "wann?" (the send button is `SEND` in
   `flow.mjs`; `backToIdeas()` is the arrow at the top). Use `e2e/flow.mjs` (`openFlow`, `pickIdea`, `openTimes`,

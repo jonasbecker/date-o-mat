@@ -14,7 +14,7 @@ import { StoryViewer } from "./story-viewer";
 
 export default function StoryPage({ searchParams }: PageProps<"/story">) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       <AppHeader />
       <PageTitle title="story." back="/dates" backLabel="Zum Archiv" />
       <Suspense fallback={<PageSkeleton />}>

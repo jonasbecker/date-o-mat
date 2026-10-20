@@ -195,7 +195,7 @@ check(`Sam is told both are in (${titles("sam-phone")})`, titles("sam-phone").so
 
 // 4) Change the review: no new push
 const before = inbox.length;
-await j.getByRole("tab", { name: /Deine Herzen/ }).click();
+await j.getByRole("tab", { name: /Herzen/ }).click();
 await j.getByText("Meine Bewertung ändern").click();
 await j.locator("label", { has: j.locator('input[value="3"]') }).click();
 await j.getByRole("button", { name: "Speichern" }).click();

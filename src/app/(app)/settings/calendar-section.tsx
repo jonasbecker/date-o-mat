@@ -72,7 +72,7 @@ export function CalendarSection({
                             disabled={calendar.primary}
                             className="size-5 accent-ink"
                           />
-                          <span className="min-w-0 truncate">
+                          <span className="min-w-0 break-words">
                             {calendar.summary}
                             {calendar.primary && <span className="text-sm text-muted"> (Hauptkalender)</span>}
                             {isInformationalCalendar(calendar.id) && <span className="text-sm text-muted"> (nur Info)</span>}
