@@ -41,8 +41,11 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - **Swipen (C2 card, `docs/design/garten/swipe-karte/`):** `swipe-deck.tsx` – the light card with a picture strip
   (`components/illustrations.tsx`, all of them on `/dev/illustrationen`), the day big (combo: the event; else the next
   free evening / half day from one FreeBusy query per page, `core/card-when.ts`), WO · DAUER · KOSTEN; swiping only,
-  with the EINPFLANZEN / KOMPOST stamp; the flower (tap = next quip) reacts happy / sad. The two choices are also the
-  ends of the hint line ("Einpflanzen", "Auf den Kompost"). Look and quips are stored on `deck_cards` and `ideas`
+  with the EINPFLANZEN / KOMPOST stamp; the flower (tap = next quip) reacts happy / sad and also says what a swipe
+  changed or what went wrong – no small text under the card. ⓘ next to the Matchlinge (how it works, "n geswipt · n
+  übrig", Mehr Ideen, Euer Ding) and ↺ next to the filter live in `deck-chrome.tsx`. For keyboard / screen readers the
+  two choices are sr-only buttons on the card ("Einpflanzen", "Auf den Kompost" – e2e presses them with
+  `dispatchEvent("click")`). Look and quips are stored on `deck_cards` and `ideas`
   (`color`, `illustrations`, `quips`): Claude writes them in the batch call, `server/card-art.ts` in one small call
   after an idea is created (kind `art`); empty → `core/card-art.ts` (category + cost/place/size). e2e fakes answer
   that call via `e2e/claude-art.mjs` (outside their call counts). "keimt!" for a match.

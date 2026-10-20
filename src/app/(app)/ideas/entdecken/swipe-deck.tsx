@@ -16,6 +16,7 @@ import { activeFilterCount, filterSummary } from "@/core/filters";
 import { useIdeaFilter } from "@/components/idea-filter";
 import { cn } from "@/lib/cn";
 import { moreCardsAction, swipeAction, undoSwipeAction } from "./actions";
+import { useShareDeck } from "./deck-chrome";
 
 type Verdict = "like" | "nope";
 
@@ -24,8 +25,8 @@ const THRESHOLD = 0.3;
 const FLY_MS = 220;
 /** The flower is sad (or happy) for a moment, then waits again. */
 const REACTION_MS = 1600;
-/** "← kompost · wischen · einpflanzen →" until you have got the hang of it. */
-const HINT_SWIPES = 5;
+/** A note in the flower's bubble stays this long. */
+const MESSAGE_MS = 4000;
 
 const DAUER = { small: { v: "ein Abend", s: "ca. 2–3 Stunden" }, large: { v: "halber Tag", s: "ca. 5 Stunden" } } as const;
 const SETTING = { indoor: "drinnen", outdoor: "draußen" } as const;
@@ -136,7 +137,14 @@ export function SwipeDeck({
   const [filter, setFilter] = useIdeaFilter();
   const filtered = activeFilterCount(filter) > 0;
   const [match, setMatch] = useState<{ title: string; ideaId: string } | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  // What went wrong or what a swipe changed – the flower says it in its bubble (no text under the card).
+  const [message, setMessageState] = useState<string | null>(null);
+  const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function setMessage(text: string | null) {
+    setMessageState(text);
+    if (messageTimer.current) clearTimeout(messageTimer.current);
+    if (text) messageTimer.current = setTimeout(() => setMessageState(null), MESSAGE_MS);
+  }
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const [flying, setFlying] = useState<{ id: string; verdict: Verdict } | null>(null);
   const [busy, startBusy] = useTransition();
@@ -203,11 +211,11 @@ export function SwipeDeck({
           copy.delete(card.id);
           return copy;
         });
-        setMessage("Das hat nicht geklappt – bist du offline?");
+        setMessage("hoppla – bist du offline?");
         return;
       }
       if (!result.ok) {
-        setMessage(`Diese Karte ist schon weg – vielleicht hat ${partnerName} gerade entschieden.`);
+        setMessage(`die ist schon weg – ${partnerName.toLowerCase()} war schneller.`);
         return;
       }
       if (result.ok && result.match) {
@@ -215,14 +223,14 @@ export function SwipeDeck({
         setMatch(result.match);
       } else if (result.ok) {
         const notes: Partial<Record<string, string>> = {
-          keep: "Bleibt auf eurer Wunschliste 💚",
-          archive: "Von der Wunschliste genommen – ihr wart euch einig.",
+          keep: "bleibt auf eurer liste 💚",
+          archive: "von der liste – ihr wart euch einig.",
         };
         // A new idea on the wishlist (not one the other already put there): the 💡 counts up.
         if (result.saved) window.dispatchEvent(new Event(WISHLIST_ADDED_EVENT));
-        if (result.saved) setMessage(`Steht auf eurer Wunschliste ♥ Will ${partnerName} auch, ist's ein Match.`);
-        else if (notes[result.outcome]) setMessage(notes[result.outcome]!);
-        else if (card.kind === "revisit" && verdict === "nope") setMessage(`Wenn ${partnerName} auch ✕ sagt, fliegt sie von der Liste.`);
+        // A plain like needs no words: the flower's like quip says it (the ⓘ explains the wishlist).
+        if (notes[result.outcome]) setMessage(notes[result.outcome]!);
+        else if (card.kind === "revisit" && verdict === "nope") setMessage(`sagt ${partnerName.toLowerCase()} auch nein, fliegt sie raus.`);
       }
     });
   }
@@ -243,9 +251,9 @@ export function SwipeDeck({
     setMessage(null);
     startUndo(async () => {
       const result = await undoSwipeAction().catch(() => null);
-      if (!result) return setMessage("Das hat nicht geklappt – bist du offline?");
+      if (!result) return setMessage("hoppla – bist du offline?");
       if (!result.ok) {
-        setMessage(result.error === "planned" ? "Das ist schon als Date geplant – die Idee bleibt 💞" : "Da gibt's nichts mehr rückgängig zu machen.");
+        setMessage(result.error === "planned" ? "ist schon als date geplant – bleibt 💞" : "da gibt's nix mehr zurück.");
         return;
       }
       // The undo answer has no day on it – the card had one when it was shown.
@@ -266,7 +274,7 @@ export function SwipeDeck({
     setMessage(null);
     startLoading(async () => {
       const result = await moreCardsAction(filter).catch(() => null);
-      if (!result) return setMessage("Das hat nicht geklappt – bist du offline?");
+      if (!result) return setMessage("hoppla – bist du offline?");
       if (result.message) setMessage(result.message);
     });
   }
@@ -316,6 +324,8 @@ export function SwipeDeck({
     else setDrag(null);
   }
 
+  useShareDeck({ swiped: stats.swiped, left: cards.length, canUndo: stats.swiped > 0 && !busy && !undoing, undo, more: ai ? more : null, loading });
+
   const flyTransform = (verdict: Verdict) =>
     verdict === "like"
       ? "translate(140%, 0) rotate(18deg)"
@@ -328,7 +338,7 @@ export function SwipeDeck({
         : { transform: "none", transition: "transform 180ms ease-out" };
   const stamp = drag ? (drag.x > width.current * THRESHOLD ? "like" : drag.x < -width.current * THRESHOLD ? "nope" : null) : (flying?.verdict ?? null);
   // What the flower says: its reaction, or about the top card (another one with every tap).
-  const quip = reaction?.quip ?? (top ? pickQuip(top.art.quips.neutral, top.id, tap) : "");
+  const quip = message ?? reaction?.quip ?? (top ? pickQuip(top.art.quips.neutral, top.id, tap) : "");
   const mood = reaction ? (reaction.verdict === "like" ? "froh" : "traurig") : "wartet";
 
   return (
@@ -357,6 +367,21 @@ export function SwipeDeck({
           >
             <Card card={top} partnerName={partnerName} pos={`${position} / ${position + cards.length - 1}`} />
             {stamp && <Stamp verdict={stamp} />}
+            {/* Swiping only – for the keyboard and screen readers the two choices stay as buttons, seen when focused. */}
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2">
+              {(["nope", "like"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  aria-label={v === "like" ? "Einpflanzen" : "Auf den Kompost"}
+                  onClick={() => decide(v)}
+                  disabled={undoing}
+                  className="sr-only whitespace-nowrap rounded-full bg-[#1B2620] text-sm font-bold text-[#E7EEDF] focus-visible:not-sr-only focus-visible:px-4 focus-visible:py-2"
+                >
+                  {v === "like" ? "einpflanzen →" : "← kompost"}
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-4 rounded-[28px] border-[1.5px] border-dashed border-line px-6 text-center">
@@ -385,13 +410,13 @@ export function SwipeDeck({
         )}
       </div>
 
-      {/* The flower (tap: another quip) with its speech bubble; the hint, the count and ↺ zurück. */}
-      <div className="grid shrink-0 grid-cols-[76px_minmax(0,1fr)] items-start gap-x-2">
+      {/* Under the card only the flower (tap: another quip) and its bubble – ⓘ and ↺ sit at the top. */}
+      <div className="grid shrink-0 grid-cols-[76px_minmax(0,1fr)] items-center gap-x-2">
         <button
           type="button"
           onClick={() => setTap((n) => n + 1)}
           aria-label="Blume antippen für einen neuen Spruch"
-          className="relative row-span-3 h-[106px] w-[76px] overflow-hidden [@media(max-height:700px)]:h-[84px]"
+          className="relative h-[106px] w-[76px] overflow-hidden [@media(max-height:700px)]:h-[84px]"
         >
           <Bloom stimmung={mood} blaetter={2} className="absolute -left-1 top-0 h-[106px] w-[76px] [@media(max-height:700px)]:h-[84px]" />
         </button>
@@ -402,46 +427,6 @@ export function SwipeDeck({
         >
           {quip || "na, was meinst du?"}
         </p>
-        {message && (
-          <p role="status" className="mt-2 text-[13px] leading-snug text-text-soft">
-            {message}
-          </p>
-        )}
-        {/* Swiping is the way – the hint's two ends are also buttons (keyboard, screen readers, a stuck finger).
-            After the first swipes the hint fades out; the buttons stay, invisible until focused. */}
-        <div className={cn("mt-2 flex items-center justify-between font-mono text-[10px] text-muted-2", !top && "hidden")}>
-          {(["nope", "like"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              aria-label={v === "like" ? "Einpflanzen" : "Auf den Kompost"}
-              onClick={() => decide(v)}
-              disabled={!top || undoing}
-              className={cn("-my-2 py-2 transition-opacity focus-visible:opacity-100", v === "like" && "order-3", stats.swiped >= HINT_SWIPES && "opacity-0")}
-            >
-              {v === "like" ? "einpflanzen →" : "← kompost"}
-            </button>
-          ))}
-          <span aria-hidden="true" className={cn("order-2 transition-opacity", stats.swiped >= HINT_SWIPES && "opacity-0")}>
-            wischen
-          </span>
-        </div>
-        <div className="mt-1.5 flex items-center justify-between gap-2 whitespace-nowrap font-mono text-[11px] text-muted">
-          <span data-swipe-progress className="min-w-0 truncate">
-            {stats.swiped} geswipt · {cards.length} übrig
-            {top && ai && cards.length < 8 && !generating && (
-              <>
-                {" · "}
-                <button type="button" onClick={more} disabled={loading} className="underline disabled:opacity-60">
-                  {loading ? "mische …" : "mehr"}
-                </button>
-              </>
-            )}
-          </span>
-          <button type="button" aria-label="Rückgängig" onClick={undo} disabled={busy || undoing} className="py-1.5 disabled:opacity-40">
-            ↺ zurück
-          </button>
-        </div>
       </div>
 
       {match && (

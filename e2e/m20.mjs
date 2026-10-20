@@ -146,7 +146,8 @@ check("last year: 1 date", await slide.getByText(/Ihr hattet/).waitFor({ timeout
 await j.goto(`${BASE}/dates`);
 check("the Archiv is only tiles now (no story link)", (await j.getByRole("link", { name: /Euer Jahr zum Durchtippen/ }).count()) === 0);
 await j.goto(`${BASE}/ideas/entdecken`);
-await j.getByText(/Euer Ding: Essen & Trinken/).waitFor({ timeout: 15000 }).then(() => check("swipe page: Euer Ding", true), () => check("swipe page: Euer Ding", false));
+await j.getByRole("button", { name: "So geht Swipen" }).click({ timeout: 15000 });
+await j.locator("dialog[open]").getByText(/Euer Ding: Essen & Trinken/).waitFor({ timeout: 15000 }).then(() => check("swipe page: Euer Ding", true), () => check("swipe page: Euer Ding", false));
 
 // 5) Push "Eure Date-Story ist fertig" once for both
 await fetch(`${BASE}/api/cron/tick`, CRON);

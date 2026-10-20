@@ -102,13 +102,19 @@ const badge = async () => ((await bulb.innerText().catch(() => "")) || "").repla
 await bulb.waitFor({ timeout: 10000 });
 check("the 💡 starts at 4", (await badge()) === "4");
 for (let i = 0; i < 20 && (await badge()) !== "5"; i++) {
-  await deck.getByRole("button", { name: "Einpflanzen" }).click();
+  await deck.getByRole("button", { name: "Einpflanzen" }).dispatchEvent("click");
   await j.waitForTimeout(700);
 }
 check(`the 💡 counts up to 5 after a like (${await badge()})`, (await badge()) === "5");
-await j.locator("[data-swipe-progress]").waitFor({ timeout: 10000 }).catch(() => {});
-check("progress after a swipe: 1 geswipt", /^1 geswipt · \d+ übrig/.test(((await j.locator("[data-swipe-progress]").innerText().catch(() => "")) || "").trim()));
 await j.screenshot({ path: `${OUT}m23-02-liked.png` });
+// The count sits behind ⓘ next to the Matchlinge (nothing small under the card)
+await j.getByRole("button", { name: "So geht Swipen" }).click();
+const progress = j.locator("dialog[open] [data-swipe-progress]");
+await progress.waitFor({ timeout: 10000 }).catch(() => {});
+check(`ⓘ: how it works and the progress (${await progress.innerText().catch(() => "")})`, /^1 geswipt · \d+ übrig$/.test(((await progress.innerText().catch(() => "")) || "").trim()) && (await j.locator("dialog[open]").getByText(/Rechts wischen = einpflanzen/).isVisible()));
+await j.screenshot({ path: `${OUT}m23-02b-info.png` });
+await j.keyboard.press("Escape");
+await j.locator("dialog[open]").waitFor({ state: "detached", timeout: 5000 }).catch(() => {});
 
 // 5) The deck page fits the screen and links to "Meine Likes"
 check("deck page fits the screen", await fitsScreen(j));

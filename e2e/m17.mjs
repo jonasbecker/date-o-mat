@@ -142,18 +142,18 @@ const { rows: [painted] } = await db.query("SELECT color, illustrations, quips F
 check(`card art stored and cleaned (${JSON.stringify(painted)})`, painted?.color === "rose" && painted.illustrations.join(",") === "crepes,mikro" && painted.quips.neutral.length === 1 && painted.quips.like[0] === "spruch 0 fürs beet");
 // SWIPE-KARTE.md §2: picture strip, the day, no ✕/♥ buttons to see – only the flower and its quip
 check("card: picture strip, a day and the quip", (await topCard(j).locator("[data-illustrations]").count()) === 1 && (await topCard(j).locator("[data-card-when]").count()) === 1 && /\S/.test(await j.locator("[data-quip]").innerText()));
-check("no ✕/♥ buttons – the choice is in the swipe hint", (await j.getByRole("button", { name: "Einpflanzen" }).innerText()) === "einpflanzen →");
+check("no ✕/♥ buttons – swiping only (the two stay for the keyboard)", (await j.getByRole("button", { name: "Einpflanzen" }).evaluate((b) => b.offsetWidth <= 1)) && (await j.getByText("wischen", { exact: true }).count()) === 0);
 await j.screenshot({ path: `${OUT}m17-01-deck.png` });
 check("swipe deck fits the screen", await fitsScreen(j));
 
 // 2) Swipe with buttons, keyboard and a drag
 await j.waitForTimeout(800); // hydration
 const first = await topTitle(j);
-await j.getByRole("button", { name: "Einpflanzen" }).click();
+await j.getByRole("button", { name: "Einpflanzen" }).dispatchEvent("click");
 const second = await nextTop(j, first);
 await j.keyboard.press("ArrowLeft");
 const third = await nextTop(j, second);
-await j.getByRole("button", { name: "Einpflanzen" }).click();
+await j.getByRole("button", { name: "Einpflanzen" }).dispatchEvent("click");
 const fourth = await nextTop(j, third);
 const box = await topCard(j).boundingBox();
 await j.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -191,11 +191,11 @@ check(`undoing a like takes it off the wishlist (${saved.join(", ")})`, saved.jo
 await j.reload();
 await topCard(j).waitFor({ timeout: 15000 });
 await j.waitForTimeout(800);
-await j.getByRole("button", { name: "Einpflanzen" }).click();
+await j.getByRole("button", { name: "Einpflanzen" }).dispatchEvent("click");
 await j.waitForTimeout(600);
 for (let i = 0; i < 3; i++) {
   const before = await topTitle(j);
-  await j.getByRole("button", { name: "Einpflanzen" }).click();
+  await j.getByRole("button", { name: "Einpflanzen" }).dispatchEvent("click");
   await nextTop(j, before);
 }
 await j.waitForTimeout(500);
@@ -212,7 +212,7 @@ check("the passed card is gone for Sam", samTitles !== second);
 await s.screenshot({ path: `${OUT}m17-02-super.png` });
 
 // 5) Match: Sam likes Jonas' like → match overlay, wishlist idea
-await s.getByRole("button", { name: "Einpflanzen" }).click();
+await s.getByRole("button", { name: "Einpflanzen" }).dispatchEvent("click");
 await s.getByRole("dialog").getByText("keimt!").waitFor({ timeout: 10000 });
 check("match dialog names the idea", await s.getByRole("dialog").getByText(liked).isVisible());
 await s.screenshot({ path: `${OUT}m17-03-match.png` });
@@ -230,7 +230,7 @@ await s.waitForTimeout(800);
 const { rows: [undone] } = await db.query("SELECT c.status, c.idea_id FROM deck_cards c WHERE c.title = $1", [liked]);
 check(`undo of a match keeps Jonas' idea (${undone.status})`, undone.status === "open" && undone.idea_id === matched[0].id);
 check("…and the card is back on top", (await topTitle(s)) === liked);
-await s.getByRole("button", { name: "Einpflanzen" }).click();
+await s.getByRole("button", { name: "Einpflanzen" }).dispatchEvent("click");
 await s.getByRole("dialog").getByText("keimt!").waitFor({ timeout: 10000 });
 check("matched again – still one idea", (await db.query("SELECT 1 FROM ideas WHERE title = $1", [liked])).rowCount === 1);
 await s.getByRole("link", { name: "Direkt planen" }).click();
