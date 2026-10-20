@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* `dark:` follows the theme chosen in setup (data-theme on <html>, set before paint in layout.tsx). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /* ---------------------------------------------------------------------------
    Date-O-Mat design tokens
    Fixed brand colors keep their value in dark mode; the semantic colors
@@ -52,8 +55,9 @@
   color-scheme: light;
 }
 
+/* Dark: the system setting, unless the person chose Hell/Dunkel (data-theme on <html>, see setup → Darstellung). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #121c16;
     --surface: #1c2a21;
     --soft: #25362b;
@@ -64,12 +68,22 @@
     color-scheme: dark;
   }
 }
+:root[data-theme="dark"] {
+    --bg: #121c16;
+    --surface: #1c2a21;
+    --soft: #25362b;
+    --ink: #e4eddc;
+    --muted: #a3b09b;
+    --line: #2f4237;
+    --track: #2a3a30;
+    color-scheme: dark;
+}
 
 /* Pastel fills keep their light color in dark mode – so everything on them
    (text, muted text, chips, inputs) uses the light tokens too. `~=` matches whole class
    names only, so `hover:bg-zitrone` or `bg-zitrone/30` do not count. */
 @media (prefers-color-scheme: dark) {
-  :is(
+  :root:not([data-theme="light"]) :is(
       [class~="bg-himbeere"],
       [class~="bg-himbeere-soft"],
       [class~="bg-zitrone"],
@@ -95,6 +109,31 @@
     color-scheme: light;
   }
 }
+:root[data-theme="dark"] :is(
+      [class~="bg-himbeere"],
+      [class~="bg-himbeere-soft"],
+      [class~="bg-zitrone"],
+      [class~="bg-zitrone-soft"],
+      [class~="bg-minze"],
+      [class~="bg-minze-soft"],
+      [class~="bg-mandarine"],
+      [class~="bg-lavendel"],
+      [class~="bg-rose"],
+      [class~="bg-bud"],
+      [class~="bg-tile-green"],
+      [class~="bg-tile-butter"],
+      [class~="bg-tile-sky"],
+      [class~="bg-tile-lilac"]
+    ) {
+    --bg: #eef2e6;
+    --surface: #ffffff;
+    --soft: #edf3ea;
+    --ink: #163a22;
+    --muted: #56604f;
+    --line: #d5dfce;
+    --track: #dde6d6;
+    color-scheme: light;
+  }
 
 @theme inline {
   --color-bg: var(--bg);

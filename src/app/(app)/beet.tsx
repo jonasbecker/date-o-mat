@@ -106,11 +106,10 @@ export function Beet({
 
   return (
     <div data-next-step={step.kind} className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-start justify-between">
-        <h2 className="headline whitespace-pre-line text-[clamp(44px,15vw,62px)]">{view.headline}</h2>
-      </div>
-      <StepDots step={roundDot(step.kind)} of={4} className="mt-4" />
-      {view.sub && <div className="mt-2.5 text-base text-muted">{view.sub}</div>}
+      {/* The four dots always sit right under the name – only the active one moves. */}
+      <StepDots step={roundDot(step.kind)} of={4} className="mt-1 h-1.5" />
+      <h2 className="headline mt-3 min-h-[2lh] whitespace-pre-line text-[clamp(44px,15vw,62px)]">{view.headline}</h2>
+      {view.sub && <div className="mt-3 text-base text-muted">{view.sub}</div>}
       {view.pill && (
         <p data-date-pill data-date-card={date?.id} className="mt-3.5 inline-flex h-[34px] max-w-full items-center self-start truncate rounded-full bg-surface px-3.5 text-sm font-medium">
           <span className="shrink-0">{view.pill.when}&nbsp;·&nbsp;</span>

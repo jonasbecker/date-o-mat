@@ -54,6 +54,7 @@ async function pageFor(token, scheme = "light") {
 
 import { createServer } from "node:http";
 import { DateTime } from "luxon";
+import { backToIdeas } from "./flow.mjs";
 
 // --- fake Open-Meteo -----------------------------------------------------------------------
 const weatherCalls = [];
@@ -137,7 +138,7 @@ await j.screenshot({ path: `${OUT}m11-01-wishlist.png` });
 const { rows: [usage] } = await db.query("SELECT count(*)::int AS c, sum(input_tokens)::int AS t FROM ai_requests WHERE kind = 'ideas'");
 check(`usage logged (${usage.c} requests, ${usage.t} input tokens)`, usage.c === 1 && usage.t === 800);
 await db.query(`INSERT INTO ai_requests (couple_id, kind, model) SELECT $1, 'ideas', 'claude-haiku-5-5' FROM generate_series(1, 19)`, [couple.id]);
-// (one screen: the ideas stay right below the times)
+await backToIdeas(j);
 await j.getByRole("button", { name: "Was anderes" }).click();
 await j.locator("dialog[open]").getByRole("button", { name: "✨ 3 Ideen von der KI" }).click();
 await j.getByText("Für heute sind die KI-Vorschläge aufgebraucht").waitFor({ timeout: 10000 });

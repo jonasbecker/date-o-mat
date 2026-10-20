@@ -9,7 +9,7 @@ export default function QuestionsPage() {
         <Link href="/plan" className="self-start text-sm font-extrabold text-muted underline">
           ← Zurück
         </Link>
-        <h1 className="text-[30px] font-bold">Gesprächskarten</h1>
+        <h1 className="headline lowercase text-[clamp(34px,10vw,46px)] after:content-['.']">Gesprächskarten</h1>
         <p className="font-semibold text-muted">Für ruhige Momente beim Date: eine Karte ziehen, abwechselnd antworten.</p>
       </div>
       <ConversationCards />

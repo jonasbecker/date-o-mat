@@ -64,28 +64,34 @@ const shortCount = Number((await shortTile.getAttribute("aria-label")).replace(/
 await shortTile.click();
 await j.getByRole("heading", { name: "kurz." }).waitFor({ timeout: 10000 });
 check(`a tile opens its list (${shortCount} kurze)`, (await j.locator("li.animate-pop-in").filter({ visible: true }).count()) === shortCount);
-await j.getByRole("button", { name: "Zurück zu den Kacheln" }).click();
+await j.getByRole("link", { name: "Zurück zu den Kacheln" }).click();
 await j.getByRole("heading", { name: "ideen." }).waitFor({ timeout: 10000 });
 
 // 1) The wishlist: chips with counts, origin tags, category emoji
 await j.goto(`${BASE}/ideas?ansicht=alle`);
 const items = j.locator("li.animate-pop-in").filter({ visible: true });
 await items.first().waitFor({ timeout: 20000 });
-const chips = j.getByRole("group", { name: "Ideen ansehen nach" });
-check("chips: Alle, Geswipt, categories", (await chips.getByRole("button", { name: "Alle" }).isVisible()) && (await chips.getByRole("button", { name: /Geswipt 2/ }).isVisible()) && (await chips.getByRole("button", { name: /Kreativ/ }).isVisible()));
+check("no chip row above the list any more (only the Filter button)", (await j.getByRole("group", { name: "Ideen ansehen nach" }).count()) === 0 && (await j.getByRole("button", { name: "Filter", exact: true }).isVisible()));
 check("origin tags: von dir geswipt / Sam hat's geliked", (await items.filter({ hasText: "💚 von dir geswipt" }).count()) === 1 && (await items.filter({ hasText: "💚 Sam hat's geliked" }).count()) === 1);
 await j.screenshot({ path: `${OUT}m23-01-wishlist.png` });
 
-// 2) Geswipt shows exactly the swiped ones
-await chips.getByRole("button", { name: /Geswipt/ }).click();
+// 2) Geswipt (a tile / ?ansicht=geswipt) shows exactly the swiped ones
+await j.goto(`${BASE}/ideas?ansicht=geswipt`);
+await items.first().waitFor({ timeout: 20000 });
 check("Geswipt: only the two swiped ideas", (await items.count()) === 2);
-await chips.getByRole("button", { name: /Geswipt/ }).click();
 
-// 3) A category narrows the list; the same chip again clears it
-await chips.getByRole("button", { name: /Kreativ/ }).click();
-check("category Kreativ: only the Töpferkurs", (await items.count()) === 1 && (await items.filter({ hasText: "Töpferkurs" }).count()) === 1);
-await chips.getByRole("button", { name: "Alle" }).click();
-check("Alle clears the category", (await items.count()) === 4);
+// 3) The category is a question in the one Filter
+await j.goto(`${BASE}/ideas?ansicht=alle`);
+await items.first().waitFor({ timeout: 20000 });
+await j.waitForTimeout(800);
+await j.getByRole("button", { name: "Filter", exact: true }).click();
+await j.locator("dialog[open]").getByRole("button", { name: /Kreativ/ }).click();
+await j.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
+check("category Kreativ (in the Filter): only the Töpferkurs", (await items.count()) === 1 && (await items.filter({ hasText: "Töpferkurs" }).count()) === 1);
+await j.getByRole("button", { name: /^Filter: / }).click();
+await j.locator("dialog[open]").getByRole("button", { name: "Zurücksetzen" }).click();
+await j.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
+check("Zurücksetzen clears the category", (await items.count()) === 4);
 
 // 4) The deck page: the 💡 counts up with a like, the progress line follows
 await j.goto(`${BASE}/ideas/entdecken`);
@@ -108,7 +114,7 @@ await j.screenshot({ path: `${OUT}m23-02-liked.png` });
 check("deck page fits the screen", await fitsScreen(j));
 await j.getByRole("link", { name: "Meine Likes" }).click();
 await items.first().waitFor({ timeout: 20000 });
-check("Meine Likes opens the wishlist on Geswipt", await j.getByRole("button", { name: /Geswipt/, pressed: true }).isVisible());
+check("Meine Likes opens the wishlist on Geswipt", (await j.getByRole("heading", { name: "geswipt." }).isVisible()) && (await items.count()) === 3);
 await j.screenshot({ path: `${OUT}m23-03-my-likes.png` });
 
 // 6) Dark mode

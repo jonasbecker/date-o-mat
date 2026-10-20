@@ -30,7 +30,13 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   Empty and loading states show the `Mascot` (a small plant).
 - **Navigation (M40):** `BottomNav` in the `(app)` layout: Beet (`/plan`) · Ideen · **Swipen** (big circle,
   `/ideas/entdecken`) · Archiv (`/dates`) · Einstellungen. `AppHeader` is the small name plus the page's
-  own thing on the right (avatars, "36 Ideen", matches pill).
+  own thing on the right (avatars, "36 Ideen", matches pill). The four round dots sit right under the name
+  on the Beet and never move. `/ideas` shows tiles; a tile opens `/ideas?ansicht=<kind>` (URL-driven, so the
+  Ideen tab brings you back); the one Filter button (incl. category) is the only filter.
+- **Setup (M40):** `/settings` is the MSetup page (`setup-main.tsx`: who plans, rhythm, deadline, push switch,
+  calendars, "Freie Abende ab" – every control saves by itself); "Mehr" (`?t=mehr`) lists the other topics.
+  Theme: Hell/Dunkel/Automatisch (`theme-switch.tsx`, `data-theme` on `<html>` set before paint in `layout.tsx`;
+  the `dark:` variant follows it).
 - **The Beet (start):** `src/app/(app)/beet.tsx` – headline per step ("du bist dran.", "kanne bei Sam.",
   "Jonas hat gegossen.", "neues blatt!"), the `Plant` (`components/plant.tsx`, geometry in
   `core/plant.ts`: a leaf per lived date, a wilted one per skipped round, from `server/plant.ts`) with the
@@ -63,7 +69,8 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   long settings topics). Long content becomes steps, pages or tabs (`Tabs`, `?t=` topics, paging);
   check new screens with `fitsScreen(page)` from `e2e/flow.mjs`. Settings links are `/settings?t=<topic>`.
 - **Planning in e2e:** `/plan` is the start (the Beet); "Date planen" opens the one planning
-  screen at `/plan?pick=1` ("wann?" above "was?", the send button is `SEND` in `flow.mjs`). Use `e2e/flow.mjs` (`openFlow`, `pickIdea`, `openTimes`,
+  flow at `/plan?pick=1`: "was?" (tap an idea, "Weiter") then "wann?" (the send button is `SEND` in
+  `flow.mjs`; `backToIdeas()` is the arrow at the top). Use `e2e/flow.mjs` (`openFlow`, `pickIdea`, `openTimes`,
   `customIdea`, `backAtStart`) instead of expecting the wishlist or the times (`ol li button`) right away.
   The next date sits on the Beet (`[data-next-step] [data-date-card]`); its checklist,
   "Zeit ändern" and "Absagen" are on `/dates/<id>` ("Details ›").

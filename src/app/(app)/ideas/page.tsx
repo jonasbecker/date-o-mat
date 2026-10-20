@@ -35,7 +35,8 @@ async function Ideas({ searchParams }: { searchParams: PageProps<"/ideas">["sear
   await connection();
   // "Meine Likes" on the swipe page lands here with the swiped ideas selected.
   const { ansicht } = await searchParams;
-  const initialView = ansicht === "geswipt" ? "swiped" : ansicht === "match" ? "match" : ansicht === "alle" ? "all" : "tiles";
+  const VIEWS = { geswipt: "swiped", match: "match", alle: "all", small: "small", large: "large", outdoor: "outdoor", indoor: "indoor", local: "local", own: "own" } as const;
+  const view = typeof ansicht === "string" && ansicht in VIEWS ? VIEWS[ansicht as keyof typeof VIEWS] : "tiles";
   const now = coupleNow(await getCoupleSettings(coupleId));
   const [ideas, matched, cycle, upcoming] = await Promise.all([listIdeas(coupleId), matchedIdeaIds(coupleId), ensureCurrentCycle(coupleId, now), upcomingDate(coupleId, now)]);
   // Tapping an idea offers to plan it – or, with a date ahead, to do this instead.
@@ -75,7 +76,7 @@ async function Ideas({ searchParams }: { searchParams: PageProps<"/ideas">["sear
     <>
       <AutoRefresh />
       <AppHeader action={<HeaderMeta>{ideas.length} Ideen</HeaderMeta>} />
-      <IdeaBoard ideas={boardIdeas} people={people} next={next} canPlanNew={!next || cycle?.status === "open"} partnerName={partner.name} meId={user.id} initialView={initialView} />
+      <IdeaBoard ideas={boardIdeas} people={people} next={next} canPlanNew={!next || cycle?.status === "open"} partnerName={partner.name} meId={user.id} view={view} />
     </>
   );
 }

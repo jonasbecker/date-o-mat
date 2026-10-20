@@ -130,11 +130,13 @@ check("turns alternate J, S, J, S", rows.map((r) => (r.planner_id === jonas.id ?
 check("rounds are seamless (end = next start)", rows.slice(1).every((r, i) => r.starts_at.getTime() === rows[i].ends_at.getTime()));
 
 // Rhythm → every 2 weeks: current round unchanged, next one 2 weeks
-await j.goto(`${BASE}/settings?t=rhythmus`);
+await j.goto(`${BASE}/settings`);
+await j.getByLabel("Rhythmus", { exact: true }).waitFor({ timeout: 15000 });
+await j.waitForTimeout(800);
 await j.getByLabel("Rhythmus", { exact: true }).selectOption("biweekly");
 check("deadline suggestion follows the rhythm (5 days)", (await j.getByLabel("Plan bis … (Frist)").inputValue()) === "5");
-await j.locator("form").filter({ has: j.getByLabel("Rhythmus", { exact: true }) }).getByRole("button", { name: "Speichern" }).click();
-await j.locator("form").filter({ has: j.getByLabel("Rhythmus", { exact: true }) }).getByText("Gespeichert ✓").waitFor({ timeout: 10000 });
+// Every control saves by itself.
+await j.locator("form").filter({ has: j.getByLabel("Rhythmus", { exact: true }) }).getByText("✓").waitFor({ timeout: 10000 });
 await j.screenshot({ path: `${SHOTS}m4-04-settings.png` });
 rows = await cyclesInDb();
 check("current round keeps its end after a rhythm change", Math.round((rows[3].ends_at - rows[3].starts_at) / 86_400_000) === 7);
@@ -146,7 +148,7 @@ check(`next round is two weeks long (${Math.round((rows[4].ends_at - rows[4].sta
 check("round 5 belongs to Jonas", rows[4].planner_id === jonas.id);
 
 // Suggestion mode – applies to the open round right away
-await j.goto(`${BASE}/settings?t=rhythmus`);
+await j.goto(`${BASE}/settings`);
 // CI once never showed the form here – say what was on screen, then load once more.
 const modeChoice = j.getByText("Vorschlag", { exact: true });
 if (!(await modeChoice.waitFor({ timeout: 15000 }).then(() => true, () => false))) {
@@ -154,9 +156,9 @@ if (!(await modeChoice.waitFor({ timeout: 15000 }).then(() => true, () => false)
   await j.screenshot({ path: `${SHOTS}m4-debug-settings.png` });
   await j.reload();
 }
+await j.waitForTimeout(800);
 await modeChoice.click();
-await j.locator("form").filter({ has: j.getByLabel("Rhythmus", { exact: true }) }).getByRole("button", { name: "Speichern" }).click();
-await j.locator("form").filter({ has: j.getByLabel("Rhythmus", { exact: true }) }).getByText("Gespeichert ✓").waitFor({ timeout: 10000 });
+await j.locator("form").filter({ has: j.getByLabel("Rhythmus", { exact: true }) }).getByText("✓").waitFor({ timeout: 10000 });
 rows = await cyclesInDb();
 check("open round switched to suggestion mode immediately", rows.at(-1).mode === "suggestion" && rows.at(-1).planner_id === null);
 await j.goto(`${BASE}/`);

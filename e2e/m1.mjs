@@ -166,8 +166,14 @@ await dark.screenshot({ path: `${SHOTS}06-home-dark.png` });
 
 // Settings + logout
 await a.goto(`${BASE}/settings`);
+await a.getByRole("heading", { name: /setup/ }).waitFor();
+await a.getByRole("radiogroup", { name: "Wer plant?" }).waitFor({ timeout: 15000 });
+await a.waitForTimeout(500);
+await a.screenshot({ path: `${SHOTS}07-setup.png` });
+check("setup shows the essentials: who plans, rhythm, deadline, reminders, calendars", (await a.getByRole("radiogroup", { name: "Wer plant?" }).isVisible()) && (await a.getByLabel("Rhythmus", { exact: true }).isVisible()) && (await a.getByRole("switch", { name: "Push-Erinnerung" }).isVisible()) && (await a.getByText("Freie Abende ab").isVisible()));
+await a.getByRole("link", { name: /^Mehr/ }).click();
 await a.getByRole("navigation", { name: "Themen" }).waitFor();
-check("settings start as a list of topics", (await a.getByRole("navigation", { name: "Themen" }).getByRole("link").count()) >= 10);
+check("\"Mehr\" is a list of the other topics", (await a.getByRole("navigation", { name: "Themen" }).getByRole("link").count()) >= 8);
 await a.screenshot({ path: `${SHOTS}07-settings-menu.png` });
 await a.getByRole("link", { name: /Ihr zwei & Konto/ }).click();
 await a.getByRole("button", { name: "Abmelden" }).waitFor();

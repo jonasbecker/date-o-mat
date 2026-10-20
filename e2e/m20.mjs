@@ -144,7 +144,7 @@ check("last year: 1 date", await slide.getByText(/Ihr hattet/).waitFor({ timeout
 
 // 4) Dates page links to the story; the swipe page shows "Euer Ding"
 await j.goto(`${BASE}/dates`);
-check("dates page link", (await j.getByRole("link", { name: /Euer Jahr zum Durchtippen/ }).getAttribute("href")) === "/story");
+check("the Archiv is only tiles now (no story link)", (await j.getByRole("link", { name: /Euer Jahr zum Durchtippen/ }).count()) === 0);
 await j.goto(`${BASE}/ideas/entdecken`);
 await j.getByText(/Euer Ding: Essen & Trinken/).waitFor({ timeout: 15000 }).then(() => check("swipe page: Euer Ding", true), () => check("swipe page: Euer Ding", false));
 

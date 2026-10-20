@@ -4,10 +4,9 @@ import { Suspense } from "react";
 import { DateTime } from "luxon";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { Mascot } from "@/components/mascot";
-import { CardsIcon, HeartIcon, SparkleIcon } from "@/components/icons";
 import { AppHeader, HeaderMeta, PageSkeleton } from "@/components/app-header";
 import { dateForViewer, upcomingDate } from "@/server/dates";
-import { reviewStats, visibleRatings, visibleReviews } from "@/core/reviews";
+import { visibleReviews } from "@/core/reviews";
 import { APP_TIMEZONE, PERSON_HEX } from "@/lib/domain";
 import { formatShortDate } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
@@ -16,8 +15,7 @@ import type { User } from "@/server/db/schema";
 import { pastDates, type PastDate } from "@/server/reviews";
 import { coverPhotos } from "@/server/photos";
 import { skippedRounds, type SkippedRound } from "@/server/plant";
-import { extraOn, getCoupleSettings } from "@/server/settings";
-import { STORY_MIN_DATES } from "@/core/story";
+import { getCoupleSettings } from "@/server/settings";
 
 /** Tiles per page – the Archiv is paged instead of scrolled. */
 const PAGE_SIZE = 4;
@@ -67,10 +65,6 @@ async function Dates({ searchParams }: { searchParams: PageProps<"/dates">["sear
   const { page: pageParam } = await searchParams;
   const page = Math.min(pages, Math.max(1, Number(typeof pageParam === "string" ? pageParam : 1) || 1));
   const shown = tiles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const stats = reviewStats(
-    dates.map((d) => ({ id: d.id, title: d.title, startsAt: d.startsAt, ratings: visibleRatings(d.reviews, user.id) })),
-    now,
-  );
   const first = dates.at(-1);
   const since = first && DateTime.fromJSDate(first.startsAt, { zone: APP_TIMEZONE }).setLocale("de").toFormat("LLLL");
   const people = new Map([user, partner].map((p) => [p.id, p]));
@@ -98,39 +92,6 @@ async function Dates({ searchParams }: { searchParams: PageProps<"/dates">["sear
         </div>
       ) : (
         <>
-          {dates.length > 0 && (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] font-semibold">
-              <dl className="flex gap-3 font-mono text-[11px] font-normal text-muted">
-                <div className="flex gap-1">
-                  <dt>Dates</dt>
-                  <dd className="text-ink">{stats.count}</dd>
-                </div>
-                <div className="flex gap-1">
-                  <dt>Ø Herzen</dt>
-                  <dd className="text-ink">{stats.averageRating?.toLocaleString("de-DE") ?? "–"}</dd>
-                </div>
-                <div className="flex gap-1">
-                  <dt>dieses Jahr</dt>
-                  <dd className="text-ink">{stats.thisYear}</dd>
-                </div>
-              </dl>
-              {extraOn(settings, "story") && dates.length >= STORY_MIN_DATES && (
-                <Link href="/story" aria-label="Eure Date-Story: Euer Jahr zum Durchtippen" className="flex items-center gap-1 underline">
-                  <SparkleIcon width={14} height={14} /> Story
-                </Link>
-              )}
-              {stats.favorite && (
-                <Link href={`/dates/${stats.favorite.id}`} aria-label={`Euer Lieblingsdate: ${stats.favorite.title}`} className="flex items-center gap-1 underline">
-                  <HeartIcon width={14} height={14} /> Liebling
-                </Link>
-              )}
-              {extraOn(settings, "cards") && (
-                <Link href="/fragen" aria-label="Gesprächskarten" className="flex items-center gap-1 underline">
-                  <CardsIcon width={14} height={14} /> Karten
-                </Link>
-              )}
-            </div>
-          )}
           <ul className="grid min-h-0 flex-1 grid-cols-2 content-start gap-x-2.5 gap-y-3">
             {shown.map((tile, i) =>
               tile.kind === "date" ? (

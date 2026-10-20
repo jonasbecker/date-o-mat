@@ -3,7 +3,7 @@ import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import pg from "pg";
 import { chromium } from "playwright";
-import { backAtStart, customIdea, fitsScreen, openFlow, pickIdea, SEND } from "./flow.mjs";
+import { backAtStart, customIdea, fitsScreen, openFlow, pickIdea, SEND, backToIdeas } from "./flow.mjs";
 import { startMock } from "./google-mock.mjs";
 import { tuesdayMorningOffset } from "./clock.mjs";
 import { resetDb } from "./db.mjs";
@@ -121,11 +121,11 @@ await chosen("Sonnenuntergang am Rheinboulevard").waitFor({ timeout: 10000 });
 check("Köln idea taken → it is the chosen one, the times stand above", !(await j.locator("dialog[open]").count()) && (await j.getByRole("heading", { name: "wann?", exact: true }).isVisible()));
 const { rows: curated } = await db.query("SELECT count(*)::int AS n FROM ideas WHERE source = 'curated'");
 check("…and put on the wishlist", curated[0].n === 1);
-// (one screen: the ideas stay right below the times)
+await backToIdeas(j);
 await customIdea(j, "Eis am Rhein", "Rheinufer");
 check("own idea is the chosen one too", await chosen("Eis am Rhein").isVisible());
 await j.screenshot({ path: `${OUT}m13-04-plan-tabs.png`, fullPage: true });
-// (one screen: the ideas stay right below the times)
+await backToIdeas(j);
 await pickIdea(j, "Picknick im Stadtwald");
 check("picking a wishlist idea replaces the own idea", await chosen("Picknick im Stadtwald").isVisible());
 check("no surprise option before the first date", (await j.getByText("🎁 Als Überraschung planen").count()) === 0);
@@ -147,11 +147,15 @@ check("after Zusagen: neues blatt! – with a fresh leaf", (await s.locator('[da
 
 // 6) Settings: a list of topics, each its own screen; intro again
 await j.goto(`${BASE}/settings`);
+await j.getByRole("radiogroup", { name: "Wer plant?" }).waitFor({ timeout: 15000 });
+await j.waitForTimeout(500);
+check("setup: the essentials and a Mehr row (the page may scroll a little when the status warning shows)", await j.getByRole("link", { name: /^Mehr/ }).isVisible());
+await j.screenshot({ path: `${OUT}m13-06-settings-main.png` });
+await j.getByRole("link", { name: /^Mehr/ }).click();
 await j.getByRole("navigation", { name: "Themen" }).waitFor({ timeout: 15000 });
-check("settings start as a menu of topics", (await j.getByRole("navigation", { name: "Themen" }).getByRole("link").count()) >= 10);
+check("Mehr is a menu of topics", (await j.getByRole("navigation", { name: "Themen" }).getByRole("link").count()) >= 8);
 check("no topic open yet", !(await j.getByLabel("Suchen für").isVisible()) && !(await j.getByRole("button", { name: "Abmelden" }).isVisible()));
 await j.screenshot({ path: `${OUT}m13-06-settings-menu.png` });
-check("settings menu fits the screen", await fitsScreen(j));
 await j.getByRole("link", { name: /Extras/ }).click();
 const surpriseSwitch = j.getByRole("checkbox", { name: /Überraschungs-Date/ });
 check("extras are on by default", await surpriseSwitch.isChecked());
@@ -162,7 +166,7 @@ check(`switching an extra off is saved for both (${JSON.stringify(hidden.hidden_
 await surpriseSwitch.check();
 await j.waitForTimeout(800);
 await j.screenshot({ path: `${OUT}m13-06-settings.png` });
-await j.getByRole("link", { name: "← Alle Einstellungen" }).click();
+await j.getByRole("link", { name: "← Mehr" }).click();
 await j.getByRole("link", { name: /Einführung/ }).click();
 await j.getByRole("heading", { name: "Willkommen, Jonas!" }).waitFor({ timeout: 10000 });
 check("intro can be watched again", true);

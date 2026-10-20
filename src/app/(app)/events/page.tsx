@@ -18,7 +18,7 @@ export default function EventsPage({ searchParams }: PageProps<"/events">) {
   return (
     <div className="flex flex-col gap-4">
       <AppHeader />
-      <h1 className="text-[26px] font-bold leading-tight">Was läuft</h1>
+      <h1 className="headline lowercase text-[clamp(34px,10vw,46px)] after:content-['.']">Was läuft</h1>
       <Suspense fallback={<PageSkeleton />}>
         <Events searchParams={searchParams} />
       </Suspense>

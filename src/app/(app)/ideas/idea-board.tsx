@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { FilteredEmpty, FilterButton, useIdeaFilter } from "@/components/idea-filter";
-import { categoryCounts, categoryOf } from "@/core/categories";
+import { categoryOf } from "@/core/categories";
 import { matchesIdeaFilter } from "@/core/filters";
-import { CategoryChips, type ListView } from "@/components/category-chips";
+import type { ListView } from "@/components/category-chips";
 import { Button, buttonClass } from "@/components/button";
 import { SwapConfirm, type NextDateInfo } from "@/components/swap-confirm";
 import { IdeaForm, type IdeaFormDefaults } from "@/components/idea-form";
@@ -31,7 +31,7 @@ export function IdeaBoard({
   canPlanNew,
   partnerName,
   meId,
-  initialView = "tiles",
+  view,
 }: {
   ideas: BoardIdea[];
   people: Record<string, BoardPerson>;
@@ -40,18 +40,17 @@ export function IdeaBoard({
   /** The round has no date yet – "Date damit planen" works. */
   canPlanNew: boolean;
   meId: string;
-  /** "tiles": the overview of MIdeen; a view: its list. */
-  initialView?: ListView | "tiles";
+  /** "tiles": the overview of MIdeen; a view: its list (the page URL decides, so the Ideen tab brings you back). */
+  view: ListView | "tiles";
 }) {
+  const router = useRouter();
   const [filter] = useIdeaFilter();
   const [open, setOpen] = useState<{ idea: BoardIdea; view: "menu" | "edit" } | null>(null);
   const sheet = useRef<SheetHandle>(null);
 
-  const [view, setView] = useState<ListView | "tiles">(initialView);
   // Ideas that came from swiping say who liked them.
   const tagOf = (idea: BoardIdea): string | null =>
     idea.source !== "deck" ? null : idea.createdById === meId ? "💚 von dir geswipt" : `💚 ${people[idea.createdById ?? ""]?.name ?? "Ihr"} hat's geliked`;
-  const swiped = ideas.filter((idea) => idea.source === "deck");
   const matches = ideas.filter((idea) => idea.matched);
   const visible = ideas
     .filter((idea) => matchesIdeaFilter({ size: idea.size, costEur: idea.costEur, setting: idea.setting, category: categoryOf(idea) }, filter))
@@ -72,13 +71,13 @@ export function IdeaBoard({
             <Link href="/events" className="tap">
               Was läuft ›
             </Link>
-            <button type="button" onClick={() => setView("all")} className="tap">
+            <Link href="/ideas?ansicht=alle" className="tap">
               Alle {ideas.length} ›
-            </button>
+            </Link>
           </span>
         </div>
         <QuickAdd look="field" />
-        <IdeaTiles counts={counts} matches={matches} onView={setView} />
+        <IdeaTiles counts={counts} matches={matches} onView={(v) => router.push(`/ideas?ansicht=${v}`)} />
       </div>
     );
   }
@@ -87,9 +86,9 @@ export function IdeaBoard({
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <span className="flex min-w-0 items-center gap-3">
-          <button type="button" onClick={() => setView("tiles")} aria-label="Zurück zu den Kacheln" className="tap flex size-10 shrink-0 items-center justify-center rounded-full bg-surface">
+          <Link href="/ideas" aria-label="Zurück zu den Kacheln" className="tap flex size-10 shrink-0 items-center justify-center rounded-full bg-surface">
             <BackIcon width={18} height={18} />
-          </button>
+          </Link>
           <h1 className="headline truncate text-[40px]">{VIEW_TITLE[view]}</h1>
         </span>
         <span className="flex shrink-0 items-center gap-2">
@@ -98,8 +97,6 @@ export function IdeaBoard({
         </span>
       </div>
       <span className="sr-only">Wunschliste · {ideas.length}</span>
-
-      {ideas.length > 0 && <CategoryChips counts={categoryCounts(ideas)} view={view} onView={setView} matches={matches.length} swiped={swiped.length} />}
 
       {ideas.length === 0 ? (
         <EmptyState />

@@ -157,7 +157,7 @@ const { rows: [conn] } = await db.query("SELECT busy_calendar_ids FROM google_co
 check("calendar selection saved (only primary)", JSON.stringify(conn.busy_calendar_ids) === '["primary"]');
 
 // 5) Slot settings (a topic of their own)
-await j.goto(`${BASE}/settings`);
+await j.goto(`${BASE}/settings?t=mehr`);
 await j.getByRole("navigation", { name: "Themen" }).waitFor({ timeout: 10000 });
 check("advanced slot settings are a screen of their own", !(await j.getByLabel("Suchen für").isVisible()));
 await j.getByRole("link", { name: /Freie Zeiten finden/ }).click();

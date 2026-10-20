@@ -1,6 +1,6 @@
-// The planning flow: the start page (/plan, the Beet) has "Date planen", which opens one
-// screen (MPlan): "wann?" (the free times, an <ol> of buttons) above "was?" (the wishlist).
-// "Gießen & an … senden" saves the date.
+// The planning flow: the start page (/plan, the Beet) has "Date planen", which opens "was?"
+// (the wishlist: tap an idea, "Weiter"), then "wann?" (the free times, an <ol> of buttons).
+// "Gießen & an … senden" saves the date. The arrow at the top goes back to "was?".
 
 /** The send button of the flow. */
 export const SEND = /^(Gießen & an .+ senden|Termin ändern)$/;
@@ -14,11 +14,18 @@ export async function openFlow(page, { timeout = 20000 } = {}) {
   await step1.waitFor({ timeout });
 }
 
-/** Taps an idea under "was?" and waits for the free times. */
+/** From "wann?" back to "was?" (the arrow at the top). */
+export async function backToIdeas(page) {
+  await page.getByRole("button", { name: "Andere Idee" }).click();
+  await page.getByRole("heading", { name: "was?", exact: true }).waitFor({ timeout: 10000 });
+}
+
+/** Taps an idea under "was?", "Weiter", and waits for the free times. */
 export async function pickIdea(page, title, { timeout = 15000 } = {}) {
   await openFlow(page);
   // exact: each card also has an "… bearbeiten" button (⋯).
   await page.getByRole("list", { name: "Eure Wunschliste" }).getByRole("button", { name: title, exact: true }).click({ timeout });
+  await page.getByRole("button", { name: "Weiter", exact: true }).click();
   await page.locator("ol li button").first().waitFor({ timeout });
 }
 
@@ -29,6 +36,7 @@ export async function openTimes(page, base, query = "") {
   await page.goto(`${base}/plan?${params}`);
   const first = page.getByRole("list", { name: "Eure Wunschliste" }).getByRole("button", { name: /^(?!.* bearbeiten$)/ }).first();
   await first.click({ timeout: 20000 });
+  await page.getByRole("button", { name: "Weiter", exact: true }).click();
   await page.locator("ol li button").first().waitFor({ timeout: 20000 });
 }
 

@@ -102,6 +102,8 @@ export function PlanFlow({
 }) {
   const router = useRouter();
   const preselected = mode.kind === "new" && preselectIdeaId ? ideas.find((i) => i.id === preselectIdeaId) : undefined;
+  // "was?" first, then "wann?" – a match or a reschedule starts at the time.
+  const [step, setStep] = useState<"idea" | "time">(mode.kind === "reschedule" || preselected ? "time" : "idea");
   const [pick, setPick] = useState<IdeaPick | null>(preselected ? { kind: "idea", id: preselected.id } : null);
   const [size, setSize] = useState<IdeaSize>(mode.kind === "reschedule" ? mode.date.size : (preselected?.size ?? preselectSize ?? "small"));
   // The free times are loaded here, not by the page: the start page itself never waits for Google.
@@ -163,11 +165,15 @@ export function PlanFlow({
   }
 
   function toTimes() {
+    setStep("time");
     if (!loadingTimes && (!times || isStale(times.at))) loadTimes();
   }
 
-  /** Step 1 → 2 (or, with a date planned, the question whether to swap). */
-  function chooseIdea(chosen: { id: string; title?: string; size?: IdeaSize }) {
+  /**
+   * Picks an idea. A tap in the list only selects it ("Weiter" goes on); an explicit choice (Zufall,
+   * an event, a suggestion) goes on right away. With a date planned: the question whether to swap.
+   */
+  function chooseIdea(chosen: { id: string; title?: string; size?: IdeaSize }, advance = true) {
     const known = ideas.find((i) => i.id === chosen.id);
     if (mode.kind === "swap") {
       setSwapping({ id: chosen.id, title: chosen.title ?? known?.title ?? "", size: chosen.size ?? known?.size });
@@ -178,7 +184,7 @@ export function PlanFlow({
     setCustomTitle("");
     setCustomLocation("");
     selectSize(chosen.size ?? known?.size ?? filter.size ?? size);
-    toTimes();
+    if (advance) toTimes();
   }
 
   function chooseCustom() {
@@ -313,7 +319,7 @@ export function PlanFlow({
                 type="button"
                 aria-pressed={mode.kind === "swap" ? undefined : selected}
                 aria-label={option.title}
-                onClick={() => chooseIdea({ id: option.id })}
+                onClick={() => chooseIdea({ id: option.id }, false)}
                 className={cn(
                   "tap flex min-h-[52px] w-full items-center gap-2.5 rounded-2xl py-1.5 pl-4 pr-11 text-left",
                   selected ? "bg-tinte text-white dark:bg-leaf" : "bg-surface text-ink",
@@ -446,6 +452,18 @@ export function PlanFlow({
       <span className="w-11 text-right font-mono text-[11px]">{hoursLeft ?? ""}</span>
     </div>
   );
+  const topWithBack =
+    step === "time" && mode.kind === "new" ? (
+      <div className="flex items-center justify-between">
+        <button type="button" onClick={() => setStep("idea")} aria-label="Andere Idee" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
+          <BackIcon width={20} height={20} />
+        </button>
+        <StepDots step={1} of={4} />
+        <span className="w-11 text-right font-mono text-[11px]">{hoursLeft ?? ""}</span>
+      </div>
+    ) : (
+      top
+    );
 
   // Swapping the idea of a planned date: only "was?" – the time stays.
   if (mode.kind === "swap") {
@@ -470,9 +488,8 @@ export function PlanFlow({
     );
   }
 
-  return (
-    <div className="animate-slide-in flex min-h-0 flex-1 flex-col gap-2.5">
-      <form id="plan-form" action={formAction} className="contents">
+  const hiddenForm = (
+    <form id="plan-form" action={formAction} className="contents">
         {slot && (
           <>
             <input type="hidden" name="start" value={slot.startIso} />
@@ -493,8 +510,38 @@ export function PlanFlow({
             <input type="hidden" name="keepDetails" value="1" />
           </>
         )}
-      </form>
-      {top}
+    </form>
+  );
+
+  // Step "was?": pick the idea, "Weiter" goes on.
+  if (step === "idea" && mode.kind === "new") {
+    return (
+      <div key="idea" className="animate-slide-in flex min-h-0 flex-1 flex-col gap-2.5">
+        {hiddenForm}
+        {top}
+        {intro}
+        <div className="flex items-baseline justify-between gap-2 pt-2">
+          <h2 className="headline text-[40px]">was?</h2>
+          <span className="flex items-center gap-2">
+            <FilterButton />
+            <QuickAdd look="link" />
+          </span>
+        </div>
+        {ideaList}
+        {ideaTools}
+        <Button type="button" size="lg" className="w-full shrink-0" disabled={!title} onClick={toTimes}>
+          Weiter
+        </Button>
+        {sheets}
+      </div>
+    );
+  }
+
+  // Step "wann?": the times, then "Gießen & senden".
+  return (
+    <div key="time" className="animate-slide-in flex min-h-0 flex-1 flex-col gap-2.5">
+      {hiddenForm}
+      {topWithBack}
       {intro}
 
       <div className="flex items-end justify-between gap-3 pt-1.5">
@@ -514,22 +561,7 @@ export function PlanFlow({
           {ok.failedCalendars === 1 ? "Ein Kalender konnte" : `${ok.failedCalendars} Kalender konnten`} nicht gelesen werden – prüft die Auswahl in den Einstellungen.
         </p>
       )}
-
-      {mode.kind === "new" && (
-        <>
-          <div className="flex items-baseline justify-between gap-2 pt-2">
-            <h2 className="headline text-[40px]">was?</h2>
-            <span className="flex items-center gap-2">
-              <FilterButton />
-              <QuickAdd look="link" />
-            </span>
-          </div>
-          {ideaList}
-          {ideaTools}
-        </>
-      )}
-      {mode.kind === "reschedule" && <div className="flex-1" />}
-
+      <div className="flex-1" />
       {mode.kind === "new" && surpriseEnabled && (
         <div className="flex flex-col gap-1.5">
           <label className="flex items-center gap-2.5 text-sm font-semibold">

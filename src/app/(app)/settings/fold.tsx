@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
-import { AlertIcon, BellIcon, BulbIcon, CalendarIcon, CheckIcon, ClockIcon, CompassIcon, GiftIcon, HeartIcon, RepeatIcon, SparkleIcon, TicketIcon, UserIcon, WalletIcon } from "@/components/icons";
+import { AlertIcon, BellIcon, BulbIcon, CalendarIcon, CheckIcon, ClockIcon, CompassIcon, GiftIcon, HeartIcon, CardsIcon, RepeatIcon, SlidersIcon, SparkleIcon, SunIcon, TicketIcon, UserIcon, WalletIcon } from "@/components/icons";
 
 // Settings as screens: a menu of topics, each topic its own screen (/settings?t=budget).
 
@@ -22,6 +22,10 @@ const ICONS = {
   compass: CompassIcon,
   user: UserIcon,
   intro: BulbIcon,
+  theme: SunIcon,
+  story: SparkleIcon,
+  cards: CardsIcon,
+  sliders: SlidersIcon,
 } as const;
 
 export type TopicTile = { id: string; icon: keyof typeof ICONS; title: string; hint?: string; href?: string };
@@ -34,6 +38,41 @@ export function Topic({ id, title, hint, children }: { id: string; title?: strin
       {hint && <p className="-mt-2 text-sm text-muted">{hint}</p>}
       {children}
     </section>
+  );
+}
+
+/** "Mehr": everything that is not on the main setup page, as one calm list of rows. */
+export function MoreList({ groups, status }: { groups: Array<{ title: string; tiles: TopicTile[] }>; status: { ok: boolean; tile: TopicTile } }) {
+  return (
+    <nav aria-label="Themen" className="flex flex-col gap-3">
+      <HashToTopic />
+      {!status.ok && <Tile tile={status.tile} warn />}
+      {groups.map((group) => (
+        <section key={group.title} aria-label={group.title} className="flex flex-col gap-1.5">
+          <h2 className="text-[13px] text-muted">{group.title}</h2>
+          <div className="flex flex-col overflow-hidden rounded-[22px] bg-surface">
+            {group.tiles.map((tile, i) => {
+              const Icon = ICONS[tile.icon];
+              return (
+                <Link key={tile.id} href={tile.href ?? `/settings?t=${tile.id}`} className={`tap flex min-h-12 items-center gap-3 px-4 py-2 ${i > 0 ? "border-t border-soft" : ""}`}>
+                  <Icon width={18} height={18} className="shrink-0 text-muted" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-semibold leading-tight">{tile.title}</span>
+                    {tile.hint && <span className="block truncate text-xs text-muted">{tile.hint}</span>}
+                  </span>
+                  <span aria-hidden="true" className="text-muted">›</span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+      {status.ok && (
+        <Link href={`/settings?t=${status.tile.id}`} className="flex items-center justify-center gap-1 text-sm font-semibold underline">
+          <CheckIcon width={15} height={15} /> Alles läuft
+        </Link>
+      )}
+    </nav>
   );
 }
 

@@ -10,7 +10,7 @@ import { requireCouple } from "@/server/auth/dal";
 import { calendarStates } from "@/server/availability";
 import { listCalendars } from "@/server/google/calendar-api";
 import { getConnection } from "@/server/google/connection";
-import { getCoupleSettings } from "@/server/settings";
+import { extraOn, getCoupleSettings } from "@/server/settings";
 import { formatDateTime, formatLongDate } from "@/lib/format";
 import { coupleNow } from "@/server/clock";
 import { env } from "@/server/env";
@@ -32,7 +32,10 @@ import { BudgetForm } from "./budget-form";
 import { ShareShortcut, StartLocationForm } from "./on-the-go";
 import { SpecialDays, type SpecialDayView } from "./special-days";
 import { ExtrasForm } from "./extras-form";
-import { Topic, TopicMenu, type TopicTile } from "./fold";
+import { MoreList, Topic, type TopicTile } from "./fold";
+import { CycleQuick, EveningFrom, PushToggle } from "./setup-main";
+import { ThemeSwitch } from "./theme-switch";
+import { AlertIcon } from "@/components/icons";
 import { overallLevel } from "@/core/system-status";
 import { upcomingDaysFor } from "@/server/special-days";
 import { inDaysLabel } from "@/core/special-days";
@@ -62,6 +65,8 @@ function sourceView(source: EventSource, now: Date, pages: EventSourcePage[]): S
   const count = source.lastCount ?? 0;
   return { ...base, status: `✓ ${count} ${count === 1 ? "Eintrag" : "Einträge"} · ${ago}`, tone: "ok" };
 }
+
+const rowClass = "flex min-h-11 items-center justify-between gap-3";
 
 export default function SettingsPage({ searchParams }: PageProps<"/settings">) {
   return (
@@ -116,28 +121,44 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
   const statusOk = overallLevel(status) === "ok";
   const problems = status.filter((row) => row.level === "warn").length;
   const statusTile: TopicTile = { id: "status", icon: statusOk ? "status" : "warn", title: "Läuft alles?", hint: statusOk ? "Alles läuft" : `${problems === 1 ? "Eine Sache braucht" : `${problems} Dinge brauchen`} euch` };
-  const shared: TopicTile[] = [
-    { id: "rhythmus", icon: "repeat", title: "Rhythmus & Modus", hint: "Wie oft, wer plant" },
-    { id: "zeiten", icon: "clock", title: "Freie Zeiten finden", hint: "Zeitfenster, Puffer" },
-    { id: "events", icon: "ticket", title: "Event-Quellen", hint: sources.length ? `${sources.length} ${sources.length === 1 ? "Seite" : "Seiten"}` : "Für „Was läuft“" },
-    { id: "entdecken", icon: "heart", title: "Swipen", hint: "Events im Stapel" },
-    { id: "budget", icon: "wallet", title: "Budget & Spartopf", hint: settings.monthlyBudgetEur ? `${settings.monthlyBudgetEur} € im Monat` : "Aus" },
-    { id: "besondere-tage", icon: "gift", title: "Besondere Tage", hint: specialDayViews.length ? `${specialDayViews.length} eingetragen` : "Geburtstage, Jahrestag" },
-    { id: "extras", icon: "sparkle", title: "Extras", hint: "An- und ausschalten" },
+  // "Mehr": everything that is not on the main page (MSetup shows only the essentials).
+  const moreGroups = [
+    {
+      title: "Für euch beide",
+      tiles: [
+        { id: "zeiten", icon: "clock", title: "Freie Zeiten finden", hint: "Zeitfenster, Puffer" },
+        { id: "events", icon: "ticket", title: "Event-Quellen", hint: sources.length ? `${sources.length} ${sources.length === 1 ? "Seite" : "Seiten"}` : "Für „Was läuft“" },
+        { id: "entdecken", icon: "heart", title: "Swipen", hint: "Events im Stapel" },
+        { id: "budget", icon: "wallet", title: "Budget & Spartopf", hint: settings.monthlyBudgetEur ? `${settings.monthlyBudgetEur} € im Monat` : "Aus" },
+        { id: "besondere-tage", icon: "gift", title: "Besondere Tage", hint: specialDayViews.length ? `${specialDayViews.length} eingetragen` : "Geburtstage, Jahrestag" },
+        { id: "extras", icon: "sparkle", title: "Extras", hint: "An- und ausschalten" },
+        ...(extraOn(settings, "story") ? [{ id: "story", icon: "story", title: "Date-Story", hint: "Euer Jahr zum Durchtippen", href: "/story" } as TopicTile] : []),
+        ...(extraOn(settings, "cards") ? [{ id: "cards", icon: "cards", title: "Gesprächskarten", hint: "Fragen für unterwegs", href: "/fragen" } as TopicTile] : []),
+      ] satisfies TopicTile[],
+    },
+    {
+      title: "Nur für dich",
+      tiles: [
+        { id: "push", icon: "bell", title: "Erinnerungen im Detail", hint: "Was aufs Handy kommt" },
+        { id: "unterwegs", icon: "compass", title: "Unterwegs & Teilen", hint: "Startort, iPhone-Kurzbefehl" },
+        { id: "darstellung", icon: "theme", title: "Darstellung", hint: "Hell, dunkel oder automatisch" },
+        { id: "konto", icon: "user", title: "Ihr zwei & Konto", hint: "Abmelden" },
+        { id: "welcome", icon: "intro", title: "Einführung", href: "/welcome" },
+      ] satisfies TopicTile[],
+    },
   ];
-  const personal: TopicTile[] = [
-    { id: "kalender", icon: "calendar", title: "Kalender", hint: me.state === "connected" ? "Verbunden" : "Noch nicht verbunden" },
-    { id: "push", icon: "bell", title: "Erinnerungen", hint: "Was aufs Handy kommt" },
-    { id: "unterwegs", icon: "compass", title: "Unterwegs & Teilen", hint: "Startort, iPhone-Kurzbefehl" },
-    { id: "konto", icon: "user", title: "Ihr zwei & Konto", hint: "Abmelden" },
-  ];
-  const extra: TopicTile[] = [{ id: "welcome", icon: "intro", title: "Einführung", href: "/welcome" }];
-
 
   const topics: Record<string, React.ReactNode> = {
     status: (
       <Topic id="status" title="Läuft alles?">
         <SystemStatusCard rows={status} />
+      </Topic>
+    ),
+    darstellung: (
+      <Topic id="darstellung" title="Darstellung" hint="Gilt nur auf diesem Gerät.">
+        <Card>
+          <ThemeSwitch />
+        </Card>
       </Topic>
     ),
     kalender: (
@@ -275,15 +296,92 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
     ),
   };
 
-  if (topic && topics[topic]) {
+  if (topic === "mehr") {
     return (
       <>
-        <Link href="/settings" className="-mt-1 self-start text-sm font-extrabold text-muted underline">
+        <Link href="/settings" className="-mt-1 self-start text-sm font-semibold text-muted underline">
           ← Alle Einstellungen
+        </Link>
+        <MoreList groups={moreGroups} status={{ ok: statusOk, tile: statusTile }} />
+      </>
+    );
+  }
+  if (topic && topics[topic]) {
+    const home = topic === "kalender";
+    return (
+      <>
+        <Link href={home ? "/settings" : "/settings?t=mehr"} className="-mt-1 self-start text-sm font-semibold text-muted underline">
+          {home ? "← Alle Einstellungen" : "← Mehr"}
         </Link>
         {topics[topic]}
       </>
     );
   }
-  return <TopicMenu shared={shared} personal={personal} status={{ ok: statusOk, tile: statusTile }} extra={extra} />;
+  // The main page, as in MSetup.
+  return (
+    <div className="flex flex-col gap-2.5">
+      {!statusOk && (
+        <Link href="/settings?t=status" className="tap flex items-center gap-2 rounded-[20px] bg-zitrone-soft px-4 py-3 text-tinte">
+          <AlertIcon width={18} height={18} />
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-semibold">Läuft alles?</span>
+            <span className="block text-xs">{statusTile.hint}</span>
+          </span>
+          <span aria-hidden="true">›</span>
+        </Link>
+      )}
+      <Card size="md">
+        <CycleQuick values={{ rhythm: settings.rhythm, mode: settings.mode, deadlineDaysBeforeEnd: settings.deadlineDaysBeforeEnd }} />
+      </Card>
+      <Card size="md">
+        <PushToggle publicKey={pushPublicKey()} partnerName={partner.name} />
+      </Card>
+      <Card size="md" className="flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <p className="text-[13px] text-muted">Kalender für freie Abende</p>
+          <Link href="/settings?t=kalender" className="text-[13px] font-semibold text-muted underline">
+            verwalten
+          </Link>
+        </div>
+        {people.map((person) => {
+          const who = person.isMe ? user : partner;
+          return (
+            <div key={person.userId} className={rowClass}>
+              <span className="flex items-center gap-2.5">
+                <Avatar person={who} size={30} />
+                <span className="text-base font-semibold">Google Kalender</span>
+              </span>
+              {person.state === "connected" ? (
+                <span className="text-sm font-semibold text-leaf">✓ verbunden</span>
+              ) : person.isMe ? (
+                <Link href="/settings?t=kalender" className="text-sm font-semibold underline">
+                  {person.state === "reauth" ? "neu verbinden" : "verbinden"}
+                </Link>
+              ) : (
+                <span className="text-sm text-muted">{person.name} fehlt noch</span>
+              )}
+            </div>
+          );
+        })}
+        <EveningFrom
+          values={{
+            smallDurationMinutes: settings.smallDurationMinutes,
+            smallStartFromMinute: settings.smallStartFromMinute,
+            smallStartUntilMinute: settings.smallStartUntilMinute,
+            largeMinDurationMinutes: settings.largeMinDurationMinutes,
+            largeStartFromMinute: settings.largeStartFromMinute,
+            largeStartUntilMinute: settings.largeStartUntilMinute,
+            latestEndMinute: settings.latestEndMinute,
+            minLeadHours: settings.minLeadHours,
+            bufferMinutes: settings.bufferMinutes,
+            horizonDays: settings.horizonDays,
+          }}
+        />
+      </Card>
+      <Link href="/settings?t=mehr" className="tap flex min-h-12 items-center justify-between rounded-[22px] bg-surface px-5 text-base font-semibold">
+        Mehr
+        <span aria-hidden="true" className="text-muted">›</span>
+      </Link>
+    </div>
+  );
 }

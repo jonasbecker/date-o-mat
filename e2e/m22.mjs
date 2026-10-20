@@ -8,7 +8,7 @@ import pg from "pg";
 import { chromium } from "playwright";
 import { mondayMorningOffset } from "./clock.mjs";
 import { resetDb } from "./db.mjs";
-import { fitsScreen, pickIdea } from "./flow.mjs";
+import { fitsScreen, pickIdea, backToIdeas } from "./flow.mjs";
 import { startMock } from "./google-mock.mjs";
 
 const BASE = "http://localhost:3000";
@@ -106,13 +106,13 @@ check("step 2 with the reason fits the screen", await fitsScreen(j));
 check("one forecast request per search", rain.calls >= 1 && rain.calls <= 2);
 
 // 2) An indoor idea: the plain ranking, no note
-// (one screen: the ideas stay right below the times)
+await backToIdeas(j);
 await pickIdea(j, "Sushi-Abend");
 const sushi = await topSlot(j);
 check(`Sushi-Abend: an evening, nothing about weather (${sushi})`, startHour(sushi) >= 17 && !/hell bis|trocken|°/.test(sushi));
 
 // 3) Outdoor, but the dark is the point: no penalty after sunset, weather still shown
-// (one screen: the ideas stay right below the times)
+await backToIdeas(j);
 await pickIdea(j, "Sterne gucken am Rhein");
 const stars = await topSlot(j);
 check(`Sterne gucken: evening is fine (${stars})`, startHour(stars) >= 17 && !/hell bis/.test(stars) && /13°, trocken/.test(stars));

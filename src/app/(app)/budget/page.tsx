@@ -21,7 +21,7 @@ export default function BudgetPage() {
         <Link href="/" className="self-start text-sm font-extrabold text-muted underline">
           ← Zurück
         </Link>
-        <h1 className="text-[30px] font-bold">Budget & Spartopf</h1>
+        <h1 className="headline lowercase text-[clamp(34px,10vw,46px)] after:content-['.']">Budget & Spartopf</h1>
       </div>
       <Suspense fallback={<PageSkeleton />}>
         <Budget />

@@ -10,7 +10,7 @@ export const maxDuration = 60;
 export default function SharePage({ searchParams }: PageProps<"/share">) {
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-[30px] font-bold">Neue Idee</h1>
+      <h1 className="headline lowercase text-[clamp(34px,10vw,46px)] after:content-['.']">Neue Idee</h1>
       <Suspense fallback={<PageSkeleton />}>
         <Share searchParams={searchParams} />
       </Suspense>

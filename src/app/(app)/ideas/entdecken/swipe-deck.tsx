@@ -263,7 +263,14 @@ export function SwipeDeck({
   }
   function onPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
     if (!start.current) return;
-    setDrag({ x: event.clientX - start.current.x, y: event.clientY - start.current.y });
+    const dx = event.clientX - start.current.x;
+    const dy = event.clientY - start.current.y;
+    // Only sideways counts: a mostly vertical move lets go (the page stays calm), the card never leaves its row.
+    if (!drag && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 12) {
+      start.current = null;
+      return;
+    }
+    setDrag({ x: dx, y: 0 });
   }
   function onPointerUp() {
     const d = drag;
@@ -282,7 +289,7 @@ export function SwipeDeck({
     flying && top && flying.id === top.id
       ? { transform: flyTransform(flying.verdict), transition: `transform ${FLY_MS}ms ease-in` }
       : drag
-        ? { transform: `translate(${drag.x}px, ${drag.y}px) rotate(${drag.x / 18}deg)` }
+        ? { transform: `translate(${drag.x}px, 0) rotate(${drag.x / 22}deg)` }
         : { transform: "none", transition: "transform 180ms ease-out" };
   const hint = drag ? (drag.x > 40 ? "like" : drag.x < -40 ? "nope" : null) : (flying?.verdict ?? null);
 
@@ -302,7 +309,7 @@ export function SwipeDeck({
             role="group"
             aria-roledescription="Karte"
             aria-label={top.title}
-            className="absolute inset-0 -rotate-2 cursor-grab touch-none select-none active:cursor-grabbing"
+            className="absolute inset-0 -rotate-2 cursor-grab touch-pan-y select-none active:cursor-grabbing"
             style={topStyle}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}

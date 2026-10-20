@@ -25,9 +25,15 @@ export const viewport: Viewport = {
   ],
 };
 
+// Sets the theme before the first paint: the stored choice (setup → Darstellung), else the system's.
+const THEME_SCRIPT = `(function(){try{var m=matchMedia('(prefers-color-scheme: dark)');function a(){var t=localStorage.getItem('dom_theme');var d=t==='dark'||(t!=='light'&&m.matches);document.documentElement.setAttribute('data-theme',d?'dark':'light')}a();m.addEventListener('change',a)}catch(e){}})()`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="de" className={`${bricolage.variable} ${dmMono.variable} antialiased`}>
+    <html lang="de" suppressHydrationWarning className={`${bricolage.variable} ${dmMono.variable} antialiased`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-dvh">
         {children}
         <ServiceWorkerRegistration />
