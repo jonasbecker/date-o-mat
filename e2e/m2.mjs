@@ -118,8 +118,13 @@ await b.locator("dialog[open]").getByRole("button", { name: "Idee löschen" }).c
 await b.locator("dialog[open]").getByRole("button", { name: "Ja, löschen" }).click();
 await card(b, "Picknick im Stadtwald mit Frisbee").waitFor({ state: "detached", timeout: 5000 }).catch(() => {});
 check("deleting removes the idea", (await card(b, "Picknick im Stadtwald mit Frisbee").count()) === 0);
-const { rows: archived } = await db.query("SELECT count(*)::int AS n FROM ideas WHERE archived_at IS NOT NULL");
-check("delete is a soft delete (archived_at set)", archived[0].n === 1);
+// The list updates at once (optimistic) – the server may still be on it.
+let archivedCount = 0;
+for (let i = 0; i < 40 && archivedCount === 0; i++) {
+  archivedCount = (await db.query("SELECT count(*)::int AS n FROM ideas WHERE archived_at IS NOT NULL")).rows[0].n;
+  if (archivedCount === 0) await new Promise((r) => setTimeout(r, 250));
+}
+check("delete is a soft delete (archived_at set)", archivedCount === 1);
 
 // Filter
 for (const [title, size] of [["Ramen selbst kochen", "Kurz"], ["Bouldern ausprobieren", "Kurz"]]) {
