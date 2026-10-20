@@ -1,45 +1,57 @@
 "use client";
 
-// MIdeen: the matches as one big rosé tile, the kinds of dates as pastel tiles below.
-// A tap opens the list of that kind (a local view of the wishlist, like Matches and Geswipt).
+// ThIdeen (DESIGN-GARTEN.md §5.3), the seed shelf: the matches as "Keimlinge" in little pots, the kinds
+// of dates as tiles with a small plant each. A tap opens the list of that kind (a local view of the
+// wishlist, like Matches and Geswipt).
 import type { ListView } from "@/components/category-chips";
 import { cn } from "@/lib/cn";
 
 export type TileCounts = Record<Exclude<ListView, "all" | "swiped" | "match">, number>;
 
-const TILES: Array<{ view: keyof TileCounts; label: string; sub: string; bg: string; shape: string; radius: string }> = [
-  { view: "small", label: "Kurz", sub: "ein Abend, ~2 Stunden", bg: "bg-tile-green", shape: "#BFDDB9", radius: "50%" },
-  { view: "large", label: "Lang", sub: "halber Tag & mehr", bg: "bg-tile-butter", shape: "#EBD58F", radius: "16px" },
-  { view: "outdoor", label: "Draußen", sub: "wenn’s Wetter passt", bg: "bg-tile-sky", shape: "#B9CDEB", radius: "50% 50% 0 50%" },
-  { view: "indoor", label: "Drinnen", sub: "für Regentage", bg: "bg-tile-lilac", shape: "#CBBFE6", radius: "50%" },
-  { view: "local", label: "Mit Ort", sub: "Veedel & Rhein", bg: "bg-white", shape: "#EDF3EA", radius: "16px" },
-  { view: "own", label: "Eigene", sub: "von euch eingetragen", bg: "bg-white", shape: "#F6DFD3", radius: "50% 0 50% 50%" },
+const POTS = 5;
+
+const TILES: Array<{ view: keyof TileCounts; label: string; sub: string; className: string; subClass: string; art: React.ReactNode }> = [
+  { view: "small", label: "Kurz", sub: "keimt an einem Abend", className: "bg-tile-green text-[#163A22]", subClass: "text-[#4A5A4C]", art: <Radish /> },
+  { view: "large", label: "Lang", sub: "wächst einen halben Tag", className: "bg-tile-butter text-[#3A2E10]", subClass: "text-[#6A5A30]", art: <Tree /> },
+  { view: "outdoor", label: "Draußen", sub: "braucht Sonne", className: "bg-tile-sky text-[#16283E]", subClass: "text-[#3E5470]", art: <Sunflower /> },
+  { view: "indoor", label: "Drinnen", sub: "Fensterbank-Sorten", className: "bg-tile-lilac text-[#2A1E44]", subClass: "text-[#4E4468]", art: <Cactus /> },
+  { view: "local", label: "Mit Ort", sub: "Veedel & Rhein", className: "bg-tile-light text-[#163A22]", subClass: "text-[#4A5A4C]", art: <Sign /> },
+  { view: "own", label: "Eigene", sub: "von euch gesät", className: "border-[1.5px] border-dashed border-[#3A4A40] bg-surface text-ink", subClass: "text-muted", art: <WateringCan /> },
 ];
 
 export function IdeaTiles({ counts, matches, onView }: { counts: TileCounts; matches: Array<{ id: string; title: string }>; onView: (view: ListView) => void }) {
+  const sprouted = Math.min(matches.length, POTS);
   return (
     <div className="grid min-h-0 grid-cols-2 gap-2.5">
       <button
         type="button"
         onClick={() => onView("match")}
-        aria-label={`Eure Matches: ${matches.length}`}
-        className="tap relative col-span-2 flex h-[clamp(112px,18vh,150px)] flex-col justify-between overflow-hidden rounded-[24px] bg-rose p-4 text-left text-partner-ink"
+        aria-label={`Keimlinge: ${matches.length}`}
+        className="tap relative col-span-2 h-[clamp(120px,18vh,148px)] overflow-hidden rounded-[24px] bg-tile-rose p-4 text-left text-[#5A2416]"
       >
         <span className="flex items-start justify-between">
           <span className="flex flex-col gap-0.5">
-            <span className="text-xl font-extrabold tracking-[-0.02em]">Eure Matches</span>
-            <span className="text-[13px]">vom Swipen · ihr wollt beide</span>
+            <span className="text-xl font-extrabold tracking-[-0.02em]">Keimlinge</span>
+            <span className="text-[13px]">eure Matches vom Swipen</span>
           </span>
           <span className="text-[44px] font-extrabold leading-none tracking-[-0.04em]">{matches.length}</span>
         </span>
-        <span className="flex gap-1.5 overflow-hidden">
-          {matches.slice(0, 2).map((m) => (
-            <span key={m.id} className="inline-flex h-[30px] max-w-[46%] shrink-0 items-center truncate rounded-full bg-white px-3 text-[13px] font-semibold">
-              <span className="truncate">{m.title}</span>
-            </span>
-          ))}
-          {matches.length > 2 && <span className="inline-flex h-[30px] shrink-0 items-center rounded-full bg-white px-3 text-[13px] font-semibold">+{matches.length - 2}</span>}
-          {matches.length === 0 && <span className="text-[13px]">Noch keins – swipt los!</span>}
+        {/* A row of pots: every match grows a seedling, empty ones are pale. */}
+        <span aria-hidden="true" className="absolute bottom-[30px] left-4 right-4 flex items-end gap-[22px]">
+          {Array.from({ length: POTS }, (_, i) => {
+            const growing = i < sprouted;
+            const opacity = growing || (sprouted === 0 && i === 0) ? 1 : 0.45;
+            return (
+              <span key={i} className="relative h-[22px] w-[34px]">
+                {growing && <Seedling />}
+                <span className="absolute bottom-0 left-0 h-4 w-[34px] bg-[#D68456]" style={{ opacity, clipPath: "polygon(0 0, 100% 0, 85% 100%, 15% 100%)" }} />
+                <span className="absolute bottom-3.5 left-0.5 h-[5px] w-[30px] rounded-[3px] bg-[#6B4A33]" style={{ opacity }} />
+              </span>
+            );
+          })}
+        </span>
+        <span className="absolute bottom-2 left-4 right-4 truncate font-hand text-[19px] font-semibold">
+          {matches.length === 0 ? "noch alles Erde – swipt los!" : `zuletzt gekeimt: ${matches[0].title}`}
         </span>
       </button>
       {TILES.map((t) => (
@@ -48,16 +60,82 @@ export function IdeaTiles({ counts, matches, onView }: { counts: TileCounts; mat
           type="button"
           onClick={() => onView(t.view)}
           aria-label={`${t.label}: ${counts[t.view]}`}
-          className={cn("tap relative flex h-[clamp(92px,13.3vh,112px)] flex-col justify-between overflow-hidden rounded-[22px] p-3.5 text-left text-tinte", t.bg)}
+          className={cn("tap relative flex h-[clamp(92px,13.3vh,112px)] flex-col justify-between overflow-hidden rounded-[22px] p-3.5 text-left", t.className)}
         >
-          <span aria-hidden="true" className="absolute -right-3 -top-3 size-[58px]" style={{ background: t.shape, borderRadius: t.radius }} />
+          <span aria-hidden="true" className="absolute right-3.5 top-2.5 h-12 w-11">
+            {t.art}
+          </span>
           <span className="relative text-[30px] font-extrabold leading-none tracking-[-0.04em]">{counts[t.view]}</span>
           <span className="relative flex flex-col gap-px">
             <span className="text-base font-bold">{t.label}</span>
-            <span className="text-xs text-[#56604F]">{t.sub}</span>
+            <span className={cn("text-xs", t.subClass)}>{t.sub}</span>
           </span>
         </button>
       ))}
     </div>
+  );
+}
+
+// The small plants (ThIdeen.html), positioned in a 44 × 48 box at the top right of a tile.
+function Seedling() {
+  return (
+    <span className="absolute -top-[18px] left-[13px] h-6 w-2">
+      <span className="absolute bottom-0 left-[3px] h-4 w-[3px] rounded-sm bg-[#4FA25E]" />
+      <span className="absolute left-1 top-0.5 h-2 w-3.5 origin-left -rotate-[25deg] rounded-[50%] bg-[#6DBA74]" />
+      <span className="absolute -left-2.5 top-1.5 h-2 w-3.5 origin-right rotate-[25deg] rounded-[50%] bg-[#4FA25E]" />
+    </span>
+  );
+}
+function Radish() {
+  return (
+    <span className="absolute right-0.5 top-1 h-10 w-8">
+      <span className="absolute left-1 top-3.5 size-6 rounded-full bg-[#E8708A]" />
+      <span className="absolute left-2 top-0 h-4 w-2.5 -rotate-[20deg] rounded-[50%] bg-[#4FA25E]" />
+      <span className="absolute left-[15px] top-0 h-4 w-2.5 rotate-[20deg] rounded-[50%] bg-[#6DBA74]" />
+    </span>
+  );
+}
+function Tree() {
+  return (
+    <span className="absolute inset-0">
+      <span className="absolute left-1 top-0 h-[30px] w-8 rounded-full bg-[#8FB46A]" />
+      <span className="absolute left-[17px] top-[26px] h-5 w-1.5 rounded-[3px] bg-[#8A6440]" />
+    </span>
+  );
+}
+function Sunflower() {
+  return (
+    <span className="absolute left-0 top-0.5 size-10">
+      <span className="absolute inset-0 rounded-full" style={{ background: "repeating-conic-gradient(#F5C84B 0 20deg, transparent 20deg 40deg)" }} />
+      <span className="absolute left-2.5 top-2.5 size-5 rounded-full bg-[#8A5A2B]" />
+    </span>
+  );
+}
+function Cactus() {
+  return (
+    <span className="absolute left-1 top-0 h-12 w-[34px]">
+      <span className="absolute left-[11px] top-0 h-[34px] w-3 rounded-md bg-[#5E9E6A]" />
+      <span className="absolute left-0 top-2.5 h-3.5 w-2 rounded bg-[#5E9E6A]" />
+      <span className="absolute left-[26px] top-1.5 h-3.5 w-2 rounded bg-[#5E9E6A]" />
+      <span className="absolute left-[5px] top-8 h-3.5 w-6 bg-[#D68456]" style={{ clipPath: "polygon(0 0, 100% 0, 85% 100%, 15% 100%)" }} />
+    </span>
+  );
+}
+function Sign() {
+  return (
+    <span className="absolute left-1 top-0 h-12 w-[34px]">
+      <span className="absolute left-0 top-0 h-[22px] w-[34px] rounded bg-[#B9875A]" />
+      <span className="absolute left-[15px] top-5 h-[26px] w-1 bg-[#8A6440]" />
+      <span className="absolute left-1.5 top-[7px] h-[3px] w-[22px] rounded-sm bg-[#F5EFC6]" />
+    </span>
+  );
+}
+function WateringCan() {
+  return (
+    <span className="absolute left-0 top-1 h-8 w-11">
+      <span className="absolute left-3 top-2 h-[22px] w-7 rounded-md bg-[#E58FA6]" />
+      <span className="absolute left-[18px] top-0 h-3 w-4 rounded-t-lg border-[3px] border-b-0 border-[#E58FA6]" />
+      <span className="absolute left-0 top-3.5 h-1 w-4 -rotate-[24deg] rounded-sm bg-[#E58FA6]" />
+    </span>
   );
 }

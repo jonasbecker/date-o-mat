@@ -75,7 +75,7 @@ async function Ideas({ searchParams }: { searchParams: PageProps<"/ideas">["sear
   return (
     <>
       <AutoRefresh />
-      <AppHeader action={<HeaderMeta>{ideas.length} Ideen</HeaderMeta>} />
+      <AppHeader action={<HeaderMeta>{ideas.length} Samen im Regal</HeaderMeta>} />
       <IdeaBoard ideas={boardIdeas} people={people} next={next} canPlanNew={!next || cycle?.status === "open"} partnerName={partner.name} meId={user.id} view={view} ideaId={typeof idee === "string" ? idee : undefined} listHref={typeof ansicht === "string" && ansicht in VIEWS ? `/ideas?ansicht=${ansicht}` : "/ideas?ansicht=alle"} />
     </>
   );

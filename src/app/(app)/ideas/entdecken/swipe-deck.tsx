@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition, type PointerEvent as ReactPointerEvent } from "react";
-import { Button } from "@/components/button";
+import { Bloom } from "@/components/bloom";
+import { Button, buttonClass } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
 import { flyToWishlist } from "@/components/fly-to-wishlist";
 import { Mascot } from "@/components/mascot";
@@ -46,50 +47,72 @@ function sourceOf(card: DeckCardView): string {
   return card.location && /köln/i.test(card.location) ? "Köln" : "Vorschlag";
 }
 
+/** KEIMZEIT on the packet: how long the date takes. */
+const KEIMZEIT = { small: "1 Abend", large: "halber Tag" } as const;
+const BEET_FALLBACK = { indoor: "drinnen", outdoor: "draußen" } as const;
+// The packet's top edge: 20 teeth of 10 px (ThSwipe.html).
+const ZIGZAG = `polygon(${Array.from({ length: 21 }, (_, i) => `${i * 5}% ${i % 2 === 0 ? "10px" : "0"}`).join(", ")}, 100% 100%, 0 100%)`;
+
+/** One idea as a seed packet (ThSwipe.html): "Saatgut für zwei", picture field with the sort, title, text, Keimzeit · Beet · Kosten. */
 function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: string; pos?: string }) {
-  const cost = formatCost(card.costEur);
   const tile = tileFor(card);
-  const tags = [card.size === "large" ? "groß" : "klein", card.setting === "indoor" ? "drinnen" : card.setting === "outdoor" ? "draußen" : null, cost, card.location].filter(Boolean) as string[];
+  const sorte = card.theme && THEME_LABEL[card.theme] ? THEME_LABEL[card.theme] : sourceOf(card);
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-[30px] bg-white text-tinte shadow-[0_18px_40px_rgba(22,58,34,0.14)]">
-      <div className="relative flex min-h-[96px] flex-[1.1] items-center justify-center overflow-hidden" style={{ background: tile.bg }}>
-        <span aria-hidden="true" className="absolute h-[66px] w-[120px] rounded-[50%]" style={{ background: tile.shape, transform: "translate(-30%, -20%) rotate(-24deg)" }} />
-        <span aria-hidden="true" className="absolute h-[38px] w-[70px] rounded-[50%] opacity-60" style={{ background: tile.shape, transform: "translate(70%, 110%) rotate(28deg)" }} />
-        <span aria-hidden="true" className="relative text-5xl drop-shadow-sm">
-          {card.emoji ?? "💡"}
-        </span>
-        <span className="absolute left-4 top-4 inline-flex h-7 items-center rounded-full bg-white/80 px-2.5 font-mono text-[11px]">{sourceOf(card)}</span>
-        {pos && <span className="absolute right-4 top-4 font-mono text-[11px]">{pos}</span>}
-      </div>
-      <div className="flex min-h-0 shrink flex-col gap-2.5 px-5 pb-5 pt-4">
-        {(card.partnerSuper || card.kind === "revisit" || card.wildcard || (card.theme && THEME_LABEL[card.theme])) && (
-          <div className="flex flex-wrap gap-1.5 font-mono text-[11px]">
-            {card.partnerSuper && <span className="rounded-full bg-rose px-2.5 py-1 text-partner-ink">★ {partnerName} findet das super</span>}
-            {card.kind === "revisit" && <span className="rounded-full bg-tile-lilac px-2.5 py-1">🕰️ Steht {card.waitingSince ?? "lange"} auf eurer Liste</span>}
-            {card.wildcard && <span className="rounded-full bg-tile-lilac px-2.5 py-1">Mal was anderes</span>}
-            {card.theme && THEME_LABEL[card.theme] && <span className="rounded-full bg-[#EDF3EA] px-2.5 py-1">{THEME_LABEL[card.theme]}</span>}
-          </div>
-        )}
-        <h2 className="line-clamp-2 text-[clamp(24px,7.5vw,30px)] font-extrabold leading-none tracking-[-0.035em]">{card.title}</h2>
-        {/* The description gives way when the card is short. */}
-        {card.note && <p className="line-clamp-3 min-h-0 text-[15px] leading-[1.35] text-[#56604F]">{card.note}</p>}
-        {card.event && (
-          <div className="shrink-0 rounded-2xl bg-[#EDF3EA] px-3 py-2 text-[13px]">
-            <p className="font-bold">🎟️ {card.event.title}</p>
-            <p className="text-[#56604F]">
-              {card.event.when}
-              {card.event.venue ? ` · ${card.event.venue}` : ""}
-            </p>
-            {card.bothFree === true && <p className="mt-0.5">✓ Ihr habt beide Zeit</p>}
-            {card.bothFree === false && <p className="mt-0.5">✗ Da hat jemand von euch schon was vor</p>}
-          </div>
-        )}
-        <div className="flex shrink-0 flex-wrap gap-1.5">
-          {tags.map((t) => (
-            <span key={t} className="inline-flex h-7 items-center rounded-full bg-[#EDF3EA] px-[11px] font-mono text-[11px]">
-              {t}
+    <div className="relative h-full drop-shadow-[0_18px_30px_rgba(0,0,0,0.45)]">
+      <div aria-hidden="true" className="absolute inset-0 rounded-b-[18px] bg-butter" style={{ clipPath: ZIGZAG }} />
+      <div className="relative flex h-full flex-col text-[#1B2620]">
+        <div className="flex justify-between px-[18px] pb-2 pt-5 font-mono text-[10px] tracking-[0.08em]">
+          <span>SAATGUT FÜR ZWEI</span>
+          {pos && <span>Nº {pos}</span>}
+        </div>
+        <div className="relative mx-3.5 h-[190px] min-h-[90px] shrink overflow-hidden rounded-[14px]" style={{ background: tile.bg }}>
+          <span aria-hidden="true" className="absolute left-[70px] top-10 h-[90px] w-[150px] -rotate-[18deg] rounded-[50%]" style={{ background: tile.shape }} />
+          <span aria-hidden="true" className="absolute left-[190px] top-[112px] h-[42px] w-[74px] rounded-[50%] opacity-60" style={{ background: tile.shape }} />
+          {card.emoji && (
+            <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center text-4xl">
+              {card.emoji}
             </span>
-          ))}
+          )}
+          <span className="absolute bottom-3 left-3 inline-flex h-[26px] items-center rounded-full bg-white/85 px-2.5 font-mono text-[10px]">Sorte: {sorte}</span>
+        </div>
+        <div className="flex min-h-0 flex-col gap-2 px-[18px] pt-3.5">
+          {(card.partnerSuper || card.kind === "revisit" || card.wildcard) && (
+            <div className="flex flex-wrap gap-1.5 font-mono text-[10px]">
+              {card.partnerSuper && <span className="rounded-full bg-tile-rose px-2.5 py-1 text-partner-ink">★ {partnerName} findet das super</span>}
+              {card.kind === "revisit" && <span className="rounded-full bg-tile-lilac px-2.5 py-1">🕰️ Liegt {card.waitingSince ?? "lange"} im Regal</span>}
+              {card.wildcard && <span className="rounded-full bg-tile-lilac px-2.5 py-1">Mal was anderes</span>}
+            </div>
+          )}
+          <h2 className="line-clamp-2 text-[27px] font-extrabold leading-none tracking-[-0.035em]">{card.title}</h2>
+          {card.note && <p className="line-clamp-3 min-h-0 text-sm leading-[1.35] text-[#4A5547]">{card.note}</p>}
+          {card.event && (
+            <div className="shrink-0 rounded-2xl bg-white/60 px-3 py-2 text-[13px]">
+              <p className="font-bold">🎟️ {card.event.title}</p>
+              <p className="text-[#4A5547]">
+                {card.event.when}
+                {card.event.venue ? ` · ${card.event.venue}` : ""}
+              </p>
+              {card.bothFree === true && <p className="mt-0.5">✓ Ihr habt beide Zeit</p>}
+              {card.bothFree === false && <p className="mt-0.5">✗ Da hat jemand von euch schon was vor</p>}
+            </div>
+          )}
+        </div>
+        <div className="mt-auto grid shrink-0 grid-cols-3 border-t-[1.5px] border-dashed border-[#C9C2A0] px-[18px] pb-3.5 pt-2.5 font-mono text-[10px] text-[#4A5547]">
+          <span>
+            KEIMZEIT
+            <br />
+            <b className="text-[#1B2620]">{KEIMZEIT[card.size]}</b>
+          </span>
+          <span className="min-w-0">
+            BEET
+            <br />
+            <b className="block truncate text-[#1B2620]">{card.location ?? (card.setting ? BEET_FALLBACK[card.setting] : "offen")}</b>
+          </span>
+          <span>
+            KOSTEN
+            <br />
+            <b className="text-[#1B2620]">{formatCost(card.costEur) ?? "?"}</b>
+          </span>
         </div>
       </div>
     </div>
@@ -128,6 +151,8 @@ export function SwipeDeck({
   const topEl = useRef<HTMLDivElement | null>(null);
   // What this visit has done so far – the deck shows its progress.
   const [stats, setStats] = useState({ swiped: 0, liked: 0 });
+  // The mini flower reacts to your last choice.
+  const [lastVerdict, setLastVerdict] = useState<Verdict | null>(null);
   const verdicts = useRef<Verdict[]>([]);
   // The fly-out of the last swipe; an undo right after must not be overtaken by it.
   const flyTimer = useRef<{ timer: ReturnType<typeof setTimeout>; id: string } | null>(null);
@@ -149,6 +174,7 @@ export function SwipeDeck({
     const card = top;
     setMessage(null);
     verdicts.current.push(verdict);
+    setLastVerdict(verdict);
     setStats((s) => ({ swiped: s.swiped + 1, liked: s.liked + (verdict === "like" ? 1 : 0) }));
     // A like is felt: the 💚 flies to the 💡 (Android also buzzes); a pass is a short tick.
     if (verdict === "like") {
@@ -298,8 +324,8 @@ export function SwipeDeck({
       {/* The card takes what the screen has left – no scrolling. A stack: the next one peeks out, tilted. */}
       <div className="relative mx-1 min-h-[300px] flex-1">
         {next && (
-          <div aria-hidden="true" className={cn("absolute inset-x-2.5 bottom-0 top-2.5 rotate-[4deg] opacity-70 transition-transform duration-200", flying && "inset-x-0 top-0 rotate-[-2deg] opacity-100")}>
-            <div className="h-full rounded-[30px]" style={{ background: tileFor(next).bg }} />
+          <div aria-hidden="true" className={cn("absolute inset-x-3.5 bottom-0 top-2 rotate-[5deg] transition-transform duration-200", flying && "inset-x-0 top-0 rotate-[-2deg]")}>
+            <div className="h-full rounded-2xl bg-[#2A3830]" />
           </div>
         )}
         {top ? (
@@ -325,16 +351,16 @@ export function SwipeDeck({
                 aria-hidden="true"
                 className={cn(
                   "absolute top-16 rounded-full px-4 py-1.5 text-2xl font-extrabold tracking-[-0.03em]",
-                  hint === "like" && "left-6 -rotate-12 bg-himbeere text-white",
-                  hint === "nope" && "right-6 rotate-12 bg-white text-tinte shadow-md",
+                  hint === "like" && "left-6 -rotate-12 bg-like text-white",
+                  hint === "nope" && "right-6 rotate-12 bg-ink text-bg shadow-md",
                 )}
               >
-                {hint === "like" ? "♥ will ich" : "✕ nö"}
+                {hint === "like" ? "♥ einpflanzen" : "✕ kompost"}
               </span>
             )}
           </div>
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-4 rounded-[30px] border-[1.5px] border-dashed border-line px-6 text-center">
+          <div className="flex h-full flex-col items-center justify-center gap-4 rounded-[22px] border-[1.5px] border-dashed border-line px-6 text-center">
             {generating || loading ? (
               <>
                 <Mascot id="deck" size={72} busy />
@@ -346,10 +372,10 @@ export function SwipeDeck({
                 <span className="text-5xl" aria-hidden="true">
                   {filtered ? "🔍" : "🎉"}
                 </span>
-                <p className="text-xl font-bold">{filtered ? "Gerade nichts Passendes" : "Alles durchgeswipt!"}</p>
+                <p className="text-xl font-bold">{filtered ? "Gerade keine passenden Samen" : "Alle Tüten durchgeswipt!"}</p>
                 {ai ? (
                   <Button onClick={more} disabled={loading}>
-                    {filtered ? `✨ Mehr „${filterSummary(filter)}“ holen` : "✨ Neue Ideen holen"}
+                    {filtered ? `✨ Mehr „${filterSummary(filter)}“ holen` : "✨ Neue Samen holen"}
                   </Button>
                 ) : (
                   <p className="text-sm text-muted">Neue Karten macht die KI – sie ist noch nicht eingerichtet.</p>
@@ -360,38 +386,49 @@ export function SwipeDeck({
         )}
       </div>
 
-      <div className="flex items-center justify-center gap-5 pt-1">
+      {/* ✕ kompost · ♥ einpflanzen; the mini flower bottom left comments on it (ThSwipe.html). */}
+      <div className="relative">
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-2 -left-3.5 h-[110px] w-[78px] overflow-hidden">
+          <Bloom stimmung={lastVerdict === "like" ? "froh" : "wartet"} blaetter={2} className="h-[110px] w-[78px]" />
+        </div>
+        <div className="flex items-start justify-center gap-[26px]">
+          <div className="flex flex-col items-center gap-1.5">
+            <button
+              type="button"
+              aria-label="Auf den Kompost"
+              onClick={() => decide("nope")}
+              disabled={!top || undoing}
+              className="press flex size-16 items-center justify-center rounded-full bg-ink text-bg disabled:opacity-40"
+            >
+              <CloseIcon width={24} height={24} />
+            </button>
+            <span className="font-mono text-[10px] text-muted">kompost</span>
+          </div>
+          <div className="flex flex-col items-center gap-1.5">
+            <button
+              type="button"
+              aria-label="Einpflanzen"
+              onClick={() => decide("like")}
+              disabled={!top || undoing}
+              className="press flex size-[76px] items-center justify-center rounded-full bg-like text-white shadow-[0_0_26px_rgba(229,143,166,0.45)] disabled:opacity-40"
+            >
+              <HeartFill width={30} height={30} />
+            </button>
+            <span className="font-mono text-[10px] text-muted">einpflanzen</span>
+          </div>
+        </div>
         <button
           type="button"
           aria-label="Rückgängig"
           onClick={undo}
           disabled={busy || undoing}
-          className="press flex size-11 items-center justify-center rounded-full bg-surface text-muted disabled:opacity-40"
+          className="press absolute right-0 top-2.5 flex size-11 items-center justify-center rounded-full bg-surface text-muted disabled:opacity-40"
         >
           <UndoIcon width={18} height={18} />
         </button>
-        <button
-          type="button"
-          aria-label="Nein"
-          onClick={() => decide("nope")}
-          disabled={!top || undoing}
-          className="press flex size-[66px] items-center justify-center rounded-full bg-white text-tinte shadow-[0_6px_16px_rgba(22,58,34,0.12)] disabled:opacity-40"
-        >
-          <CloseIcon width={26} height={26} />
-        </button>
-        <button
-          type="button"
-          aria-label="Gefällt mir"
-          onClick={() => decide("like")}
-          disabled={!top || undoing}
-          className="press flex size-[78px] items-center justify-center rounded-full bg-himbeere text-white shadow-[0_8px_20px_rgba(229,143,166,0.45)] disabled:opacity-40"
-        >
-          <HeartFill width={32} height={32} />
-        </button>
-        <span className="size-11" aria-hidden="true" />
       </div>
-      <p role="status" className="min-h-5 text-center text-[13px] text-muted">
-        {message ?? (top ? "Nur wenn ihr beide ♥ drückt, wird’s ein Match." : "")}
+      <p role="status" className="min-h-6 pl-[72px] font-hand text-[19px] font-semibold leading-tight text-butter -rotate-3">
+        {message ?? (top ? (lastVerdict === "like" ? "← die gefällt mir auch!" : "← na, was meinst du?") : "")}
       </p>
 
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[13px] font-semibold">
@@ -411,36 +448,39 @@ export function SwipeDeck({
       </div>
 
       {match && (
-        <div role="dialog" aria-modal="true" aria-labelledby="match-title" className="animate-pop-in fixed inset-0 z-40 flex flex-col items-center justify-center gap-[18px] bg-[rgba(22,58,34,0.94)] px-7 text-center text-white">
-          <div aria-hidden="true" className="flex items-center">
-            <span className="flex size-16 items-center justify-center rounded-full bg-tile-green text-2xl font-extrabold text-tinte">{initial(people[0].name)}</span>
-            <span className="-ml-3.5 flex size-16 items-center justify-center rounded-full bg-rose text-2xl font-extrabold text-partner-ink">{initial(people[1].name)}</span>
+        // "keimt!" (ThSwipe.html): you both want it – a seedling comes up.
+        <div role="dialog" aria-modal="true" aria-labelledby="match-title" className="animate-pop-in fixed inset-0 z-40 flex flex-col items-center justify-center gap-3.5 bg-[rgba(17,26,20,0.95)] px-7 text-center text-ink">
+          <div aria-hidden="true" className="relative size-[120px]">
+            <span className="absolute left-[58px] top-10 h-[60px] w-[5px] rounded-[3px] bg-[#4FA25E]" />
+            <span className="absolute left-[62px] top-10 h-6 w-11 origin-left -rotate-[30deg] rounded-[50%] bg-[#6DBA74]" />
+            <span className="absolute left-3.5 top-[52px] h-6 w-11 origin-right rotate-[30deg] rounded-[50%] bg-[#4FA25E]" />
+            <span className="absolute left-5 top-[98px] h-3.5 w-20 rounded-[7px] bg-[#6B4A33]" />
           </div>
-          <h2 id="match-title" className="text-[72px] font-extrabold leading-[0.9] tracking-[-0.05em]">
-            match!
+          <h2 id="match-title" className="text-[68px] font-extrabold leading-[0.9] tracking-[-0.05em]">
+            keimt!
           </h2>
-          <p className="text-lg leading-snug">
+          <p className="text-[17px] leading-snug text-text-soft">
             Ihr wollt beide:
             <br />
-            <b>{match.title}</b>
+            <b className="text-ink">{match.title}</b>
           </p>
-          <div className="mt-2.5 flex w-full max-w-sm flex-col gap-2">
-            <Link href={`/plan?idea=${match.ideaId}`} className="press flex h-14 items-center justify-center rounded-full bg-white text-[17px] font-bold text-tinte">
+          <div className="mt-2 flex w-full max-w-sm flex-col gap-2">
+            <Link href={`/plan?idea=${match.ideaId}`} className={buttonClass("primary", "lg", "w-full")}>
               Direkt planen
             </Link>
-            <button type="button" onClick={() => setMatch(null)} className="press h-[54px] rounded-full border-2 border-white text-base font-bold">
+            <button type="button" onClick={() => setMatch(null)} className="press h-[52px] rounded-full border-2 border-ink text-base font-bold">
               Weiter swipen
             </button>
           </div>
+          <span className="sr-only">
+            {people[0].name} und {people[1].name}
+          </span>
         </div>
       )}
     </div>
   );
 }
 
-function initial(name: string) {
-  return name.trim().charAt(0).toUpperCase() || "?";
-}
 
 function HeartFill(p: React.SVGProps<SVGSVGElement>) {
   return (

@@ -55,7 +55,7 @@ async function pageFor(token, scheme = "light") {
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/ideas`);
 await j.getByRole("heading", { name: "ideen." }).waitFor({ timeout: 20000 });
-check("tiles: matches + six kinds", (await j.getByRole("button", { name: /^Eure Matches: \d+$/ }).isVisible()) && (await j.getByRole("button", { name: /^(Kurz|Lang|Draußen|Drinnen|Mit Ort|Eigene): \d+$/ }).count()) === 6);
+check("tiles: Keimlinge + six kinds", (await j.getByRole("button", { name: /^Keimlinge: \d+$/ }).isVisible()) && (await j.getByRole("button", { name: /^(Kurz|Lang|Draußen|Drinnen|Mit Ort|Eigene): \d+$/ }).count()) === 6);
 check("the field for your own idea", await j.getByRole("textbox", { name: "Neue Idee" }).isVisible());
 await j.screenshot({ path: `${OUT}m23-00-tiles.png` });
 check("the ideas page fits the screen", await fitsScreen(j));
@@ -102,7 +102,7 @@ const badge = async () => ((await bulb.innerText().catch(() => "")) || "").repla
 await bulb.waitFor({ timeout: 10000 });
 check("the 💡 starts at 4", (await badge()) === "4");
 for (let i = 0; i < 20 && (await badge()) !== "5"; i++) {
-  await deck.getByRole("button", { name: "Gefällt mir" }).click();
+  await deck.getByRole("button", { name: "Einpflanzen" }).click();
   await j.waitForTimeout(700);
 }
 check(`the 💡 counts up to 5 after a like (${await badge()})`, (await badge()) === "5");

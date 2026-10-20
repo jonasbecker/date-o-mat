@@ -52,10 +52,10 @@ export function QuickAdd({ look = "pill" }: { look?: "pill" | "link" | "field" }
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
             maxLength={500}
-            placeholder="Eigene Idee eintragen …"
+            placeholder="Eigenen Samen einpflanzen …"
             className="min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted"
           />
-          <button type="submit" aria-label="Idee hinzufügen" className="press flex size-11 shrink-0 items-center justify-center rounded-full bg-ink text-bg">
+          <button type="submit" aria-label="Idee hinzufügen" className="press flex size-[42px] shrink-0 items-center justify-center rounded-full bg-cta text-bg">
             <PlusIcon width={20} height={20} />
           </button>
         </form>

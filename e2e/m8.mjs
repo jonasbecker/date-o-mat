@@ -206,7 +206,7 @@ check("editing works and does not push again", inbox.length === before);
 // 5) Stats + nav
 await j.goto(`${BASE}/dates`);
 await j.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 10000 });
-check("the Archiv counts its dates in the header", await j.locator("header").filter({ visible: true }).first().getByText(/1 Date/).isVisible());
+check("the Archiv counts its dates in the header", await j.locator("header").filter({ visible: true }).first().getByText(/1 Blatt/).isVisible());
 await j.screenshot({ path: `${OUT}m8-04-list.png`, fullPage: true });
 check("dates history fits the screen", await fitsScreen(j));
 const jd = await pageFor(jonas.token, { colorScheme: "dark" });

@@ -140,24 +140,24 @@ check("deck prompt mentions the anniversary", claudeCalls.some((c) => /their ann
 // 5) Old wishlist idea comes back as "noch Lust?" (the tick made one card today)
 await j.waitForTimeout(800);
 const revisitTitle = await topTitle(j);
-check(`a revisit card is in the deck (${revisitTitle})`, revisitTitle === "Töpferkurs" && (await topCard(j).getByText(/🕰️ Steht seit .+ auf eurer Liste/).isVisible()));
+check(`a revisit card is in the deck (${revisitTitle})`, revisitTitle === "Töpferkurs" && (await topCard(j).getByText(/🕰️ Liegt seit .+ im Regal/).isVisible()));
 await j.screenshot({ path: `${OUT}m19-03-revisit.png` });
-await j.getByRole("button", { name: "Nein" }).click();
+await j.getByRole("button", { name: "Auf den Kompost" }).click();
 await j.getByText("Wenn Sam auch ✕ sagt, fliegt sie von der Liste.").waitFor({ timeout: 10000 });
 check("one ✕ keeps the idea for now", (await db.query("SELECT archived_at FROM ideas WHERE id = $1", [pottery])).rows[0].archived_at === null);
 await s.goto(`${BASE}/ideas/entdecken`);
 await topCard(s).waitFor({ timeout: 15000 });
 await s.waitForTimeout(800);
 check("Sam gets the revisit card too", (await topTitle(s)) === "Töpferkurs");
-await s.getByRole("button", { name: "Nein" }).click();
+await s.getByRole("button", { name: "Auf den Kompost" }).click();
 await s.getByText("Von der Wunschliste genommen").waitFor({ timeout: 10000 });
 check("two ✕ remove it from the wishlist", (await db.query("SELECT archived_at FROM ideas WHERE id = $1", [pottery])).rows[0].archived_at !== null);
 await s.getByRole("button", { name: "Rückgängig" }).click();
 for (let i = 0; i < 50 && (await topTitle(s)) !== "Töpferkurs"; i++) await s.waitForTimeout(100);
-await s.getByRole("button", { name: "Nein" }).waitFor({ state: "visible" });
-await s.waitForFunction(() => !document.querySelector('button[aria-label="Nein"]')?.disabled, null, { timeout: 10000 });
+await s.getByRole("button", { name: "Auf den Kompost" }).waitFor({ state: "visible" });
+await s.waitForFunction(() => !document.querySelector('button[aria-label="Auf den Kompost"]')?.disabled, null, { timeout: 10000 });
 check("undo puts it back on the wishlist", (await db.query("SELECT archived_at FROM ideas WHERE id = $1", [pottery])).rows[0].archived_at === null);
-await s.getByRole("button", { name: "Nein" }).click();
+await s.getByRole("button", { name: "Auf den Kompost" }).click();
 await s.getByText("Von der Wunschliste genommen").waitFor({ timeout: 10000 });
 
 // second old idea the next day: one 💚 keeps it
@@ -167,7 +167,7 @@ await j.goto(`${BASE}/ideas/entdecken`);
 await topCard(j).waitFor({ timeout: 15000 });
 await j.waitForTimeout(800);
 check(`next day: the next old idea (${await topTitle(j)})`, (await topTitle(j)) === "Zoo besuchen");
-await j.getByRole("button", { name: "Gefällt mir" }).click();
+await j.getByRole("button", { name: "Einpflanzen" }).click();
 await j.getByText("Bleibt auf eurer Wunschliste 💚").waitFor({ timeout: 10000 });
 check("kept: card leaves the deck for both", (await db.query("SELECT status FROM deck_cards WHERE idea_id = $1", [zoo])).rows[0].status === "matched");
 

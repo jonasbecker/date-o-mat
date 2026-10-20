@@ -91,9 +91,7 @@
       [class~="bg-tile-sky"],
       [class~="bg-tile-lilac"],
       [class~="bg-tile-rose"],
-      [class~="bg-tile-light"],
-      [class~="bg-butter"],
-      [class~="bg-cta"]
+      [class~="bg-tile-light"]
     ) {
     --bg: #eef2e6;
     --surface: #ffffff;

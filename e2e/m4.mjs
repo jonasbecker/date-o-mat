@@ -115,7 +115,7 @@ check("the Beet has a wilted leaf for the missed round", (await j.locator('[data
 check("one week later: round 2", (await cyclesInDb()).at(-1).seq === 2);
 await j.goto(`${BASE}/dates`);
 await j.locator("[data-wilted]").first().waitFor({ timeout: 10000 }).catch(() => {});
-check("the Archiv shows the missed round as a wilted tile", (await j.locator("[data-wilted]").count()) === 1 && (await j.getByText("kein Date – das Blatt ist welk").isVisible()));
+check("the Archiv (stem) shows the missed round as a wilted leaf", (await j.locator("[data-wilted]").count()) === 1 && (await j.locator("[data-stem]").getByText("ausgefallen", { exact: true }).isVisible()));
 await j.goto(`${BASE}/`);
 await j.waitForTimeout(300);
 await j.screenshot({ path: `${SHOTS}m4-03-missed.png` });

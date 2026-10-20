@@ -164,7 +164,7 @@ await dark.goto(`${BASE}/ideas?ansicht=alle`);
 await card(dark, "Ramen selbst kochen").waitFor();
 await dark.waitForTimeout(400);
 await dark.screenshot({ path: `${SHOTS}m2-06-list-dark.png` });
-check("the header shows the count", (await dark.locator("header").filter({ visible: true }).first().innerText()).includes("3 Ideen"));
+check("the header shows the count", (await dark.locator("header").filter({ visible: true }).first().innerText()).includes("3 Samen im Regal"));
 await a.goto(`${BASE}/plan`);
 await a.getByRole("heading", { name: "Date planen" }).waitFor({ timeout: 10000 });
 await a.screenshot({ path: `${SHOTS}m2-07-home.png` });
