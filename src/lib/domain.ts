@@ -99,7 +99,7 @@ export type EventKind = (typeof EVENT_KINDS)[number];
 /** Photos after a date: resized in the browser, stored privately. */
 export const PHOTO_LIMITS = { perDate: 24, fullEdge: 1600, thumbEdge: 480, maxBytes: 3 * 1024 * 1024 } as const;
 
-export const AI_REQUEST_KINDS = ["ideas", "events", "links", "deck"] as const;
+export const AI_REQUEST_KINDS = ["ideas", "events", "links", "deck", "art"] as const;
 export type AiRequestKind = (typeof AI_REQUEST_KINDS)[number];
 
 // Swipe deck ("Entdecken"): cards made by Claude, each person swipes on their own.

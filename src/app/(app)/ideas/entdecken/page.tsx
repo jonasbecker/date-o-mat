@@ -57,16 +57,22 @@ async function Discover() {
           </Link>
         }
       />
-      <div className="flex items-end justify-between gap-3">
-        <h1 className="headline text-[54px]">swipen.</h1>
-        <div className="flex min-w-0 flex-col items-end gap-1 pb-1">
-          <FilterButton />
-          {deck.partnerSwiped > 0 && <span className="whitespace-nowrap text-[13px] text-muted">{ctx.partner.name} hat {deck.partnerSwiped} geswiped</span>}
+      {/* SwipeC.html: "swipen." with a mono line under it, the round filter on the right. */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="text-[40px] font-extrabold leading-[0.92] tracking-[-0.05em]">swipen.</h1>
+          <span className="truncate font-mono text-[11px] text-muted">
+            {deck.partnerSwiped > 0 && <>{ctx.partner.name} hat {deck.partnerSwiped} geswiped · </>}
+            <Link href="/ideas?ansicht=geswipt" className="underline">
+              Meine Likes
+            </Link>
+          </span>
         </div>
+        <FilterButton round />
       </div>
       <SwipeDeck {...deck} partnerName={ctx.partner.name} people={[ctx.user, ctx.partner]} />
       {taste.length > 0 && (
-        <Link href="/story" className="-mt-1 truncate text-center text-xs text-muted">
+        <Link href="/story" className="-mt-1 truncate text-center font-mono text-[10px] text-muted-2">
           Euer Ding: {taste.join(" · ")}
         </Link>
       )}

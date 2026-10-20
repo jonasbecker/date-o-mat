@@ -1,8 +1,10 @@
 import "server-only";
 import { and, desc, eq, isNotNull, isNull, ne } from "drizzle-orm";
+import { after } from "next/server";
 import type { IdeaInput } from "@/lib/idea-input";
 import { db } from "@/server/db";
 import { deckCards, ideas } from "@/server/db/schema";
+import { paintIdea } from "@/server/card-art";
 
 export type Idea = typeof ideas.$inferSelect;
 
@@ -34,6 +36,8 @@ export async function createIdea(coupleId: string, userId: string, input: IdeaIn
     .insert(ideas)
     .values({ ...input, coupleId, source: "wishlist", createdById: userId, updatedById: userId })
     .returning();
+  // Its look and quips for the swipe card – after the response, so saving stays instant.
+  after(() => paintIdea(coupleId, idea.id));
   return idea;
 }
 

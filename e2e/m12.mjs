@@ -7,6 +7,7 @@ import pg from "pg";
 import { chromium } from "playwright";
 import { DAYS, events as googleEvents, startMock } from "./google-mock.mjs";
 import { resetDb } from "./db.mjs";
+import { answerArt } from "./claude-art.mjs";
 
 const BASE = "http://localhost:3000";
 const ZONE = "Europe/Berlin";
@@ -94,6 +95,7 @@ const claude = createServer((req, res) => {
       const prompt = request.messages[0].content;
       return reply({ pages: prompt.includes("Website: http://localhost:4040/html") ? [{ url: "http://localhost:4040/html/konzerte", label: "Konzerte" }, { url: "https://evil.example/x", label: "Böse" }] : [] });
     }
+    if (answerArt(request, res)) return;
     if (!/extract date ideas/.test(request.system ?? "")) return res.writeHead(400).end(); // only event reads (the deck refill also asks)
     claudeCalls.push({ request, headers: req.headers });
     const text = request.messages[0].content;

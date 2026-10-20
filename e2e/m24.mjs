@@ -146,6 +146,12 @@ await bp.goto(`${BASE}/dev/blume`);
 await bp.waitForTimeout(600);
 await bp.screenshot({ path: `${OUT}m24-blume.png` });
 check("all five moods on /dev/blume", (await bp.locator("[data-bloom]").count()) === 5);
+// The picture strip's drawings on all pastels (SWIPE-KARTE.md §4)
+await bp.setViewportSize({ width: 1200, height: 900 });
+await bp.goto(`${BASE}/dev/illustrationen`);
+await bp.waitForTimeout(500);
+await bp.screenshot({ path: `${OUT}m24-illustrationen.png`, fullPage: true });
+check("every illustration on /dev/illustrationen", (await bp.locator("[data-dev-illustration]").count()) >= 20);
 await wide.close();
 
 // Logged out

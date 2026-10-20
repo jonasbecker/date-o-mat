@@ -123,6 +123,9 @@ sonst (neue Runde, nichts geplant) -> 'schlaeft'
 
 ### 5.2 Swipen = Samentütchen – `ThSwipe.html`
 
+> **Ersetzt:** Samentüte und ✕/♥-Buttons gelten nicht mehr – die Karte ist jetzt „C2“ mit Bildstreifen,
+> Bedienung nur per Wischen: `swipe-karte/SWIPE-KARTE.md`, `swipe-karte/screens/SwipeC.html` (Variante 2).
+
 - Kopf: Pille „🌱-Icon + n Keimlinge“ (`--surface`, verlinkt auf Ideen). Titel „swipen.“, rechts Filter-Pille `--cta` („Gratis · Draußen“).
 - **Samentüte** (330 × 446, −2° gedreht, Schatten): Hintergrund `--butter`, **gezackter oberer Rand** (clip-path mit 20 Zacken à 10 px), Text #1B2620.
   - Kopfzeile DM Mono 10, Sperrung 0.08em: „SAATGUT FÜR ZWEI“ links, „Nº 2 / 5“ rechts.

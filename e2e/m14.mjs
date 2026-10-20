@@ -6,6 +6,7 @@ import pg from "pg";
 import { chromium } from "playwright";
 import { startMock } from "./google-mock.mjs";
 import { resetDb } from "./db.mjs";
+import { answerArt, artCalls } from "./claude-art.mjs";
 
 const BASE = "http://localhost:3000";
 const OUT = new URL("./shots/", import.meta.url).pathname;
@@ -83,6 +84,7 @@ const claude = createServer((req, res) => {
   req.on("data", (c) => (body += c));
   req.on("end", () => {
     const request = JSON.parse(body);
+    if (answerArt(request, res)) return;
     claudeCalls.push(request);
     const text = request.messages[0].content.find((part) => part.type === "text")?.text ?? "";
     if (text.includes("kletterhalle")) {
@@ -155,6 +157,14 @@ const { rows: [saved] } = await db.query("SELECT title, url, location, cost_eur,
 check(`saved with link (${saved?.url})`, saved?.url?.startsWith(TIKTOK) && saved.cost_eur === 26);
 const { rows: [usage] } = await db.query("SELECT count(*)::int AS n, sum(input_tokens)::int AS t FROM ai_requests WHERE kind = 'links'");
 check(`usage logged (${usage.n} request, ${usage.t} tokens)`, usage.n === 1 && usage.t === 1500);
+// SWIPE-KARTE.md §4: right after saving, one small call gives the idea its look and quips (stored, not made again)
+let painted = null;
+for (let i = 0; i < 20 && !painted?.quips; i++) {
+  ({ rows: [painted] } = await db.query("SELECT color, illustrations, quips FROM ideas WHERE title = 'Kino: Dune'"));
+  if (!painted?.quips) await j.waitForTimeout(250);
+}
+check(`saved idea gets its card look and quips (${JSON.stringify(painted)})`, painted?.color === "lilac" && painted.illustrations.join(",") === "rahmen" && painted.quips.neutral[0] === "kino: dune? ich komm mit." && artCalls.length === 1);
+check("…its prompt is only the idea", /^Idea: Kino: Dune/.test(artCalls[0]?.messages[0].content ?? "") && !/Jonas|Sam|example\.com/.test(artCalls[0]?.messages[0].content ?? ""));
 
 // 2) "🔗 Link einfügen" reads the clipboard; Claude fails → title from the page itself
 await j.evaluate(() => navigator.clipboard.writeText("http://localhost:4060/kletterhalle"));

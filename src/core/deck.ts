@@ -4,6 +4,8 @@
 
 import type { CuratedIdea } from "./curated-ideas";
 import { categoryFromTheme, inferCategory, type IdeaCategory } from "./categories";
+import { cleanCardArt, illustrationPrompt, QUIP_MAX, type CardArt, type CardColor, type CardQuips, type Illustration } from "./card-art";
+import type { CardWhen } from "./card-when";
 import { filterPrompt, matchesIdeaFilter, type IdeaFilter } from "./filters";
 import { DateTime } from "luxon";
 import { APP_TIMEZONE, SEASON_KEYS, type DeckCardKind, type EventMix, type IdeaSize, type PlaceSetting, type SeasonKey, type SwipeVerdict } from "@/lib/domain";
@@ -137,6 +139,11 @@ export const DECK_SYSTEM_PROMPT = [
   "best_season: when the idea fits best (spring, summer, autumn, winter) or any.",
   "Combo cards build on one of the listed real events: event_index is its number, the idea adds something that fits before or after (e.g. dinner nearby, a walk, a drink). For normal ideas event_index is null.",
   "Never repeat an idea from the exclude list, not even reworded.",
+  "Each card also gets its look on the swipe card: color is one of rose, green, butter, sky, lilac (a pastel that suits it).",
+  `illustrations: one or two keys from this list that show what they do (two for a combination, e.g. crepes + mikro): ${illustrationPrompt()}.`,
+  `quips: what a cheeky little flower says about the card – German, all lower case, max ${QUIP_MAX - 3} characters each, playful.`,
+  "Every quip refers to a detail of this idea (the place, the cost, the time, the activity), never generic. neutral: 3 for just looking at it, like: 2 for when they plant it (swipe right), nope: 1–2 for the compost (swipe left).",
+  'Example for "Crêpes im Belgischen Viertel, dann ABBA": neutral "crêpes UND abba? ich wär dabei.", "40 € sind 8 säcke blumenerde. nur so."; like "dancing queen, young and … gegossen!"; nope "kompost? die crêpes weinen jetzt."',
 ].join("\n");
 
 export function buildDeckPrompt(input: DeckPromptInput, zone = APP_TIMEZONE): string {
@@ -181,6 +188,9 @@ export type RawDeckCard = {
   wildcard: boolean;
   event_index: number | null;
   best_season?: string | null;
+  color?: string | null;
+  illustrations?: string[] | null;
+  quips?: Partial<CardQuips> | null;
 };
 
 export type CardDraft = {
@@ -198,6 +208,9 @@ export type CardDraft = {
   dedupeKey: string;
   /** Index into the events given to the prompt (combo cards). */
   eventIndex: number | null;
+  color: CardColor | null;
+  illustrations: Illustration[] | null;
+  quips: CardQuips | null;
 };
 
 function clip(value: unknown, max: number): string | null {
@@ -229,6 +242,7 @@ export function cleanDeckCards(raw: RawDeckCard[], params: { existingKeys: strin
     keys.push(key);
     const cost = typeof item.cost_eur === "number" && Number.isFinite(item.cost_eur) ? Math.min(10_000, Math.max(0, Math.round(item.cost_eur))) : null;
     const emoji = clip(item.emoji, 8);
+    const art = cleanCardArt(item);
     result.push({
       kind: eventIndex === null ? "idea" : "combo",
       title,
@@ -243,6 +257,7 @@ export function cleanDeckCards(raw: RawDeckCard[], params: { existingKeys: strin
       bestSeason: (SEASON_KEYS as readonly string[]).includes(item.best_season ?? "") ? (item.best_season as SeasonKey) : null,
       dedupeKey: key,
       eventIndex,
+      ...art,
     });
   }
   return result;
@@ -278,6 +293,12 @@ export type DeckCardView = {
   bothFree?: boolean | null;
   /** Revisit cards: "seit März" (how long the idea has waited). */
   waitingSince?: string | null;
+  /** Picture strip and the flower's quips (stored, or the fallback). */
+  art: CardArt;
+  /** "Sorte: Gemütlich" – the category's name. */
+  sorte: string;
+  /** The day on the card: the event's, or the next free evening (set by the page; null = unknown). */
+  when?: CardWhen | null;
 };
 
 type CardForOrder = { id: string; createdAt: Date; eventStartsAt: Date | null; kind?: DeckCardKind };
@@ -335,6 +356,10 @@ export function curatedForDeck(curated: readonly CuratedIdea[], existingKeys: st
       bestSeason: null,
       dedupeKey: key,
       eventIndex: null,
+      // Look and quips come from the fallback (core/card-art.ts).
+      color: null,
+      illustrations: null,
+      quips: null,
     });
   }
   return result;

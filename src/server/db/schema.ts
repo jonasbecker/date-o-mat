@@ -18,6 +18,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { IDEA_CATEGORIES } from "@/core/categories";
+import { CARD_COLORS, type CardQuips } from "@/core/card-art";
 import {
   AI_REQUEST_KINDS,
   CONNECTION_STATUSES,
@@ -178,6 +179,11 @@ export const ideas = pgTable(
     setting: text({ enum: PLACE_SETTINGS }),
     // Essen, Natur, Kultur … – when empty the wishlist guesses from title and note (core/categories.ts).
     category: text({ enum: IDEA_CATEGORIES }),
+    // The swipe card's look and the flower's quips (SWIPE-KARTE.md §4) – written by Claude when it is
+    // made; empty = core/card-art.ts fills in from category and details.
+    color: text({ enum: CARD_COLORS }),
+    illustrations: text().array(),
+    quips: jsonb().$type<CardQuips>(),
     source: text({ enum: IDEA_SOURCES }).notNull().default("wishlist"),
     // V2: id of the idea in an external source (curated list, AI run)
     externalRef: text(),
@@ -489,6 +495,11 @@ export const deckCards = pgTable(
     setting: text({ enum: PLACE_SETTINGS }),
     theme: text(),
     emoji: text(),
+    // The swipe card's look and the flower's quips (SWIPE-KARTE.md §4) – written by Claude when it is
+    // made; empty = core/card-art.ts fills in from category and details.
+    color: text({ enum: CARD_COLORS }),
+    illustrations: text().array(),
+    quips: jsonb().$type<CardQuips>(),
     // Deliberately outside their usual taste ("Mal was anderes").
     wildcard: boolean().notNull().default(false),
     // When it fits best – a "maybe" comes back then.

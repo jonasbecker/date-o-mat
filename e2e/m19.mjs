@@ -7,6 +7,7 @@ import pg from "pg";
 import { chromium } from "playwright";
 import { startMock } from "./google-mock.mjs";
 import { resetDb } from "./db.mjs";
+import { answerArt } from "./claude-art.mjs";
 
 const BASE = "http://localhost:3000";
 const OUT = new URL("./shots/", import.meta.url).pathname;
@@ -63,10 +64,11 @@ const claude = createServer((req, res) => {
   req.on("data", (c) => (body += c));
   req.on("end", () => {
     const request = JSON.parse(body);
+    if (answerArt(request, res)) return;
     claudeCalls.push(request);
     const nouns = ["Eislaufen", "Freibad", "Glühweinmarkt", "Kürbisschnitzen", "Kino", "Bouldern", "Brunch", "Museum", "Karaoke", "Minigolf"];
     const seasons = ["winter", "summer", "winter", "autumn", "any", "any", "any", "any", "any", "any"];
-    const cards = nouns.map((n, i) => ({ title: `${n} Abend`, description: "…", emoji: "✨", size: "small", cost_eur: 10, location: null, setting: "indoor", theme: "cozy", wildcard: false, event_index: null, best_season: seasons[i] }));
+    const cards = nouns.map((n, i) => ({ title: `${n} Abend`, description: "…", emoji: "✨", size: "small", cost_eur: 10, location: null, setting: "indoor", theme: "cozy", wildcard: false, event_index: null, best_season: seasons[i], color: "sky", illustrations: ["tasse"], quips: { neutral: ["hm."], like: ["ja!"], nope: ["nö."] } }));
     res.setHeader("content-type", "application/json");
     res.end(JSON.stringify({
       id: "msg_test", type: "message", role: "assistant", model: request.model,

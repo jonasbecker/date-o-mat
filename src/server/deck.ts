@@ -32,7 +32,15 @@ import {
   type DeckCardView,
   type SwipeOutcome,
 } from "@/core/deck";
-import { APP_TIMEZONE, type SwipeVerdict } from "@/lib/domain";
+import { APP_TIMEZONE, type IdeaSize, type SwipeVerdict } from "@/lib/domain";
+import { CARD_COLORS, cardArt } from "@/core/card-art";
+import { eventWhen as eventWhenOnCard, firstFree, freeWhen } from "@/core/card-when";
+import { CATEGORY_LABEL } from "@/core/categories";
+import { eventSpan, fitsFreeTime } from "@/core/events";
+import { mergeRanges } from "@/core/ranges";
+import { findSlots, type Slot } from "@/core/slots";
+import { queryFreeBusy } from "@/server/google/calendar-api";
+import { getConnection } from "@/server/google/connection";
 import type { CoupleContext } from "@/server/auth/dal";
 import { aiRequestsToday, anthropic, recordAiUsage, reserveAiRequest } from "@/server/anthropic";
 import { budgetState } from "@/server/budget";
@@ -41,10 +49,10 @@ import { upcomingDaysFor } from "@/server/special-days";
 import { db } from "@/server/db";
 import { coupleSettings, datePlans, deckCards, deckSwipes, ideas, notificationLog, users, type DeckCard } from "@/server/db/schema";
 import { env } from "@/server/env";
-import { freeForEvents, upcomingEvents, type EventWithSource } from "@/server/events";
+import { upcomingEvents, type EventWithSource } from "@/server/events";
 import { CURATED_IDEAS } from "@/core/curated-ideas";
 import { sendToUser } from "@/server/push";
-import { getCoupleSettings } from "@/server/settings";
+import { getCoupleSettings, slotRulesFrom } from "@/server/settings";
 import { weatherFor } from "@/server/weather";
 
 export const DECK_MODEL = "claude-haiku-5-5";
@@ -67,6 +75,10 @@ const ResultSchema = z.object({
       wildcard: z.boolean(),
       event_index: z.number().int().nullable(),
       best_season: z.enum(["any", "spring", "summer", "autumn", "winter"]),
+      color: z.enum(CARD_COLORS),
+      // Checked against the library afterwards (cleanCardArt): one unknown key must not lose the whole batch.
+      illustrations: z.array(z.string()),
+      quips: z.object({ neutral: z.array(z.string()), like: z.array(z.string()), nope: z.array(z.string()) }),
     }),
   ),
 });
@@ -86,6 +98,7 @@ function eventWhen(startsAt: Date, allDay: boolean): string {
 }
 
 export function cardView(card: DeckCard, partnerVerdict: SwipeVerdict | undefined): DeckCardView {
+  const category = cardCategory(card);
   return {
     id: card.id,
     kind: card.kind,
@@ -111,6 +124,8 @@ export function cardView(card: DeckCard, partnerVerdict: SwipeVerdict | undefine
           }
         : null,
     partnerSuper: partnerVerdict === "super",
+    art: cardArt({ ...card, category }),
+    sorte: card.wildcard ? "Mal was anderes" : CATEGORY_LABEL[category].label,
   };
 }
 
@@ -159,14 +174,16 @@ export async function deckFor(ctx: CoupleContext, now: Date): Promise<DeckState>
   ]);
   const since = await waitingSinceLabels(cards, now);
   const views = cards.map((card) => ({ ...cardView(card, partner.get(card.id)), waitingSince: since.get(card.id) ?? null }));
-  // "✓ Ihr habt beide Zeit" for combo cards – one FreeBusy query per person.
-  const combos = cards.filter((c) => c.kind === "combo" && c.eventStartsAt);
-  if (combos.length) {
-    const free = await freeForEvents(
-      ctx,
-      combos.map((c) => ({ id: c.id, startsAt: c.eventStartsAt, endsAt: c.eventEndsAt, allDay: c.eventAllDay })),
-    );
-    for (const view of views) if (view.kind === "combo") view.bothFree = free?.get(view.id) ?? null;
+  // The day on every card: the event (and whether both are free then) or the next free evening.
+  const times = await deckTimes(ctx, now, cards);
+  for (const view of views) {
+    const card = cards.find((c) => c.id === view.id)!;
+    if (card.kind === "combo" && card.eventStartsAt) {
+      view.bothFree = times.calendars ? (times.eventFree.get(card.id) ?? null) : null;
+      view.when = eventWhenOnCard({ startsAt: card.eventStartsAt, allDay: card.eventAllDay }, view.bothFree);
+    } else {
+      view.when = freeWhen(times.free[card.size], now, times.calendars);
+    }
   }
   const refillAt = settings.deckRefillStartedAt;
   return {
@@ -194,6 +211,48 @@ export async function remainingCards(ctx: CoupleContext, now: Date): Promise<num
 }
 
 // --- Swiping -------------------------------------------------------------------------------------
+
+/** How far ahead the card looks for a free evening. */
+const FREE_LOOKAHEAD_DAYS = 14;
+
+/**
+ * One FreeBusy query per person for the whole deck: is each combo's event free for both, and the next
+ * free evening (small) and half day (large) for every other card. Calendars missing or failing → unknown.
+ */
+async function deckTimes(ctx: CoupleContext, now: Date, cards: DeckCard[]): Promise<{ calendars: boolean; eventFree: Map<string, boolean>; free: Record<IdeaSize, Slot | null> }> {
+  const none = { calendars: false, eventFree: new Map<string, boolean>(), free: { small: null, large: null } };
+  if (cards.length === 0) return none;
+  const settings = await getCoupleSettings(ctx.coupleId);
+  const spans = cards.flatMap((c) => {
+    const span = c.kind === "combo" ? eventSpan({ startsAt: c.eventStartsAt, endsAt: c.eventEndsAt, allDay: c.eventAllDay }) : null;
+    return span ? [{ id: c.id, span }] : [];
+  });
+  const buffer = settings.bufferMinutes * 60_000;
+  const until = new Date(Math.max(now.getTime() + FREE_LOOKAHEAD_DAYS * 86_400_000, ...spans.map((s) => s.span.end.getTime() + buffer)));
+  try {
+    const results = await Promise.all(
+      [ctx.user, ctx.partner].map(async (person) => {
+        const connection = await getConnection(person.id);
+        if (!connection || connection.status !== "ok") throw new CalendarMissing();
+        return queryFreeBusy(person.id, connection.busyCalendarIds ?? ["primary"], now, until);
+      }),
+    );
+    const raw = results.flatMap((r) => r.busy);
+    const busy = mergeRanges(raw);
+    const rules = slotRulesFrom(settings);
+    const free = (size: IdeaSize) => firstFree(findSlots({ now, until: new Date(now.getTime() + FREE_LOOKAHEAD_DAYS * 86_400_000), busy: raw, rules, size, limit: FREE_LOOKAHEAD_DAYS }), size);
+    return {
+      calendars: true,
+      eventFree: new Map(spans.map(({ id, span }) => [id, fitsFreeTime(span, busy, settings.bufferMinutes)])),
+      free: { small: free("small"), large: free("large") },
+    };
+  } catch (error) {
+    if (!(error instanceof CalendarMissing)) console.warn("[deck] free-time check failed", error instanceof Error ? error.message : error);
+    return none;
+  }
+}
+
+class CalendarMissing extends Error {}
 
 export type SwipeResult =
   | {
@@ -272,6 +331,9 @@ export async function swipe(ctx: CoupleContext, cardId: string, verdict: SwipeVe
           location: card.location ?? card.eventVenue,
           setting: card.setting,
           category: cardCategory({ theme: card.theme, title: card.title, note: card.note, kind: card.kind }),
+          color: card.color,
+          illustrations: card.illustrations,
+          quips: card.quips,
           source: "deck",
           externalRef: card.id,
           createdById: ctx.user.id,
@@ -550,6 +612,9 @@ async function insertCards(coupleId: string, drafts: CardDraft[], events: EventW
           setting: d.setting,
           theme: d.theme,
           emoji: d.emoji,
+          color: d.color,
+          illustrations: d.illustrations,
+          quips: d.quips,
           wildcard: d.wildcard,
           bestSeason: d.bestSeason,
           dedupeKey: d.dedupeKey,
@@ -600,6 +665,10 @@ export async function resurfaceOldIdea(coupleId: string, now: Date): Promise<voi
         size: idea.size,
         costEur: idea.costEur,
         location: idea.location,
+        setting: idea.setting,
+        color: idea.color,
+        illustrations: idea.illustrations,
+        quips: idea.quips,
         emoji: "🕰️",
         dedupeKey: `revisit:${idea.id}:${DateTime.fromJSDate(now, { zone: APP_TIMEZONE }).toISODate()}`,
         ideaId: idea.id,

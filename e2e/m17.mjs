@@ -8,6 +8,7 @@ import { chromium } from "playwright";
 import { eventEvenings, tuesdayMorningOffset } from "./clock.mjs";
 import { startMock } from "./google-mock.mjs";
 import { resetDb } from "./db.mjs";
+import { answerArt } from "./claude-art.mjs";
 
 const BASE = "http://localhost:3000";
 const OUT = new URL("./shots/", import.meta.url).pathname;
@@ -65,13 +66,20 @@ const claude = createServer((req, res) => {
   req.on("data", (c) => (body += c));
   req.on("end", () => {
     const request = JSON.parse(body);
+    if (answerArt(request, res)) return;
     claudeCalls.push(request);
     const n = claudeCalls.length;
     const prompt = request.messages[0].content;
     const ideas = Number(/Make (\d+) normal ideas/.exec(prompt)?.[1] ?? 0);
     const combos = Number(/Also make (\d+) combo cards/.exec(prompt)?.[1] ?? 0);
     const themes = ["food", "nature", "culture", "active", "creative", "cozy"];
-    const cards = [{ title: "Stadtwald: Picknick", description: "Schon auf der Liste.", emoji: "🧺", size: "small", cost_eur: 5, location: "Stadtwald", setting: "outdoor", theme: "nature", wildcard: false, event_index: null, best_season: "any" }];
+    // The card's look and quips (SWIPE-KARTE.md §4) – one unknown illustration and an overlong quip get dropped.
+    const art = (i) => ({
+      color: ["rose", "green", "butter", "sky", "lilac"][i % 5],
+      illustrations: i === 0 ? ["crepes", "mikro", "einhorn"] : [["teller", "baum", "rahmen", "ball", "pinsel", "tasse"][i % 6]],
+      quips: { neutral: [`spruch ${i} zum anschauen`, "x".repeat(80)], like: [`spruch ${i} fürs beet`], nope: [`spruch ${i} für den kompost`] },
+    });
+    const cards = [{ title: "Stadtwald: Picknick", description: "Schon auf der Liste.", emoji: "🧺", size: "small", cost_eur: 5, location: "Stadtwald", setting: "outdoor", theme: "nature", wildcard: false, event_index: null, best_season: "any", ...art(99) }];
     for (let i = 0; i < ideas; i++) {
       cards.push({
         title: `${NOUNS[i % NOUNS.length]} Runde${n}`,
@@ -85,10 +93,11 @@ const claude = createServer((req, res) => {
         wildcard: i % 4 === 3,
         event_index: null,
         best_season: "any",
+        ...art(i),
       });
     }
     for (let i = 0; i < combos; i++) {
-      cards.push({ title: `Kombi${n}x${i + 1}: Event und Burger`, description: "Vorher Burger um die Ecke.", emoji: "🎟️", size: "small", cost_eur: 60, location: "Mülheim", setting: "indoor", theme: "night", wildcard: false, event_index: i, best_season: "any" });
+      cards.push({ title: `Kombi${n}x${i + 1}: Event und Burger`, description: "Vorher Burger um die Ecke.", emoji: "🎟️", size: "small", cost_eur: 60, location: "Mülheim", setting: "indoor", theme: "night", wildcard: false, event_index: i, best_season: "any", ...art(i + 1) });
     }
     res.setHeader("content-type", "application/json");
     res.end(JSON.stringify({
@@ -128,6 +137,12 @@ const prompt = call?.messages[0].content ?? "";
 check(`model + schema (${call?.model})`, call?.model === "claude-haiku-5-5" && call?.output_config?.format?.type === "json_schema");
 check("prompt: season, events, exclude list, wildcards", /\((spring|summer|autumn|winter)\)/.test(prompt) && prompt.includes("0: Konzert: Annenmaykantereit") && prompt.includes("Exclude list (already seen or on their list): Picknick im Stadtwald") && prompt.includes("wildcards"));
 check("prompt: no names or e-mails", !/Jonas|Sam|example\.com/.test(prompt + call.system));
+check("system prompt asks for color, illustrations and detail quips", /illustrations: one or two keys/.test(call.system) && /crepes/.test(call.system) && /refers to a detail of this idea/.test(call.system));
+const { rows: [painted] } = await db.query("SELECT color, illustrations, quips FROM deck_cards WHERE title = 'Ramen Runde1'");
+check(`card art stored and cleaned (${JSON.stringify(painted)})`, painted?.color === "rose" && painted.illustrations.join(",") === "crepes,mikro" && painted.quips.neutral.length === 1 && painted.quips.like[0] === "spruch 0 fürs beet");
+// SWIPE-KARTE.md §2: picture strip, the day, no ✕/♥ buttons to see – only the flower and its quip
+check("card: picture strip, a day and the quip", (await topCard(j).locator("[data-illustrations]").count()) === 1 && (await topCard(j).locator("[data-card-when]").count()) === 1 && /\S/.test(await j.locator("[data-quip]").innerText()));
+check("no ✕/♥ buttons – the choice is in the swipe hint", (await j.getByRole("button", { name: "Einpflanzen" }).innerText()) === "einpflanzen →");
 await j.screenshot({ path: `${OUT}m17-01-deck.png` });
 check("swipe deck fits the screen", await fitsScreen(j));
 
@@ -145,7 +160,12 @@ await j.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
 await j.mouse.down();
 await j.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2, { steps: 4 });
 await j.mouse.move(box.x + box.width / 2 + 180, box.y + box.height / 2, { steps: 4 });
+check("dragging right shows the EINPFLANZEN stamp", await j.locator('[data-stamp="like"]').isVisible());
 await j.mouse.up();
+const answer = await j.locator("[data-quip]").innerText();
+const { rows: [dragged] } = await db.query("SELECT quips FROM deck_cards WHERE title = $1", [fourth]);
+// Köln ideas have no quips of their own – then the category's like quips answer.
+check(`the flower answers the like (${answer})`, dragged?.quips ? dragged.quips.like.includes(answer) : answer.length > 0);
 const fifth = await nextTop(j, fourth);
 await j.waitForTimeout(500);
 const swipes = async (userId) => (await db.query("SELECT c.title, s.verdict FROM deck_swipes s JOIN deck_cards c ON c.id = s.card_id WHERE s.user_id = $1 ORDER BY s.created_at", [userId])).rows;
@@ -155,6 +175,8 @@ check("nope passes the card for both", (await db.query("SELECT status FROM deck_
 const deckIdeas = async () => (await db.query("SELECT title FROM ideas WHERE source = 'deck' AND archived_at IS NULL ORDER BY title")).rows.map((r) => r.title);
 let saved = await deckIdeas();
 check(`a like alone puts the card on the wishlist (${saved.join(", ")})`, [...saved].sort().join("|") === [first, third, fourth].sort().join("|"));
+const { rows: [plantedIdea] } = await db.query("SELECT color, illustrations, quips FROM ideas WHERE title = $1", [first]);
+check("the idea keeps the card's look and quips", Boolean(plantedIdea?.color && plantedIdea.illustrations?.length && plantedIdea.quips?.like?.length));
 check("…and the card stays open for Sam", (await db.query("SELECT status FROM deck_cards WHERE title = $1", [first])).rows[0].status === "open");
 
 // 3) Undo – twice: the drag-like and the like before it come back
@@ -264,8 +286,8 @@ for (let attempt = 0; attempt < 5 && !comboTitle.startsWith("Kombi"); attempt++)
   comboTitle = await topTitle(s);
   if (!comboTitle.startsWith("Kombi")) await s.waitForTimeout(1500);
 }
-check(`combo card shows its event (${comboTitle})`, comboTitle.startsWith("Kombi") && (await topCard(s).getByText("🎟️ Konzert: Annenmaykantereit").isVisible()));
-check("combo knows you are both free", await topCard(s).getByText("✓ Ihr habt beide Zeit").isVisible());
+check(`combo card shows its event (${comboTitle})`, comboTitle.startsWith("Kombi") && (await topCard(s).getByText("Konzert: Annenmaykantereit", { exact: true }).isVisible()));
+check("combo knows you are both free", await topCard(s).getByText("✓ ihr habt beide Zeit").isVisible());
 await s.screenshot({ path: `${OUT}m17-04-combo.png` });
 await db.query("UPDATE deck_cards SET status = 'open' WHERE id = ANY($1::uuid[])", [others.map((r) => r.id)]);
 if (comboCopy) await db.query("DELETE FROM deck_cards WHERE id = $1", [comboCopy]);

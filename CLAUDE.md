@@ -38,8 +38,16 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   switch; calendars + "Freie Abende ab"; `flower-card.tsx`: the flower's name and pot – `couple_settings.flower_name`,
   `flower_pot`, pots unlock at 10/25 lived dates, `core/bloom.ts`). `garden-banner.tsx` shows only when something is
   missing (push off, calendar, status). "Mehr" (`?t=mehr`) lists the other topics.
-- **Swipen / Ideen / Archiv (Garten):** seed packets (`swipe-deck.tsx`, "kompost"/"einpflanzen", "keimt!"), the seed
-  shelf (`idea-tiles.tsx`, Matchlinge in pots), the stem (`/dates`, `?ansicht=raster` is the old grid).
+- **Swipen (C2 card, `docs/design/garten/swipe-karte/`):** `swipe-deck.tsx` – the light card with a picture strip
+  (`components/illustrations.tsx`, all of them on `/dev/illustrationen`), the day big (combo: the event; else the next
+  free evening / half day from one FreeBusy query per page, `core/card-when.ts`), WO · DAUER · KOSTEN; swiping only,
+  with the EINPFLANZEN / KOMPOST stamp; the flower (tap = next quip) reacts happy / sad. The two choices are also the
+  ends of the hint line ("Einpflanzen", "Auf den Kompost"). Look and quips are stored on `deck_cards` and `ideas`
+  (`color`, `illustrations`, `quips`): Claude writes them in the batch call, `server/card-art.ts` in one small call
+  after an idea is created (kind `art`); empty → `core/card-art.ts` (category + cost/place/size). e2e fakes answer
+  that call via `e2e/claude-art.mjs` (outside their call counts). "keimt!" for a match.
+- **Ideen / Archiv (Garten):** the seed shelf (`idea-tiles.tsx`, Matchlinge in pots), the stem (`/dates`,
+  `?ansicht=raster` is the old grid).
 - **The Beet (start, Main B – `docs/design/main-b/`):** `src/app/(app)/beet.tsx` – headline per step ("du bist dran.",
   "sam ist dran." – always the same size –, "date steht." …) at up to 70 px, the time left big on the right (`TimeLeft`, `--accent-time`), the round as its weekdays
   (`WeekBar`: today lit, the bar filled up to today – no deadline marker, it looked like a slider handle), the flower (`components/bloom.tsx`, geometry and mood in `core/bloom.ts`: `bloomGeometry`

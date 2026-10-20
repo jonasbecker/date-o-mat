@@ -107,7 +107,7 @@ for (let i = 0; i < 20 && (await badge()) !== "5"; i++) {
 }
 check(`the 💡 counts up to 5 after a like (${await badge()})`, (await badge()) === "5");
 await j.locator("[data-swipe-progress]").waitFor({ timeout: 10000 }).catch(() => {});
-check("progress after a swipe: 1 geswipt · 1 ♥", /^1 geswipt · 1 ♥ · \d+ übrig$/.test(((await j.locator("[data-swipe-progress]").innerText().catch(() => "")) || "").trim()));
+check("progress after a swipe: 1 geswipt", /^1 geswipt · \d+ übrig/.test(((await j.locator("[data-swipe-progress]").innerText().catch(() => "")) || "").trim()));
 await j.screenshot({ path: `${OUT}m23-02-liked.png` });
 
 // 5) The deck page fits the screen and links to "Meine Likes"

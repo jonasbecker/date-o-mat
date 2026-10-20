@@ -55,6 +55,7 @@ async function pageFor(token, scheme = "light") {
 import { createServer } from "node:http";
 import { DateTime } from "luxon";
 import { backToIdeas, passFilter } from "./flow.mjs";
+import { answerArt } from "./claude-art.mjs";
 
 // --- fake Open-Meteo -----------------------------------------------------------------------
 const weatherCalls = [];
@@ -82,6 +83,7 @@ const claude = createServer((req, res) => {
   req.on("data", (c) => (body += c));
   req.on("end", () => {
     const request = JSON.parse(body);
+    if (answerArt(request, res)) return;
     claudeCalls.push(request);
     const n = claudeCalls.length;
     const ideas = [

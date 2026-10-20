@@ -6,116 +6,112 @@ import { Bloom } from "@/components/bloom";
 import { Button, buttonClass } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
 import { flyToWishlist } from "@/components/fly-to-wishlist";
+import { IllustrationStrip } from "@/components/illustrations";
 import { Mascot } from "@/components/mascot";
-import { CloseIcon, UndoIcon } from "@/components/icons";
 import type { AvatarPerson } from "@/components/avatar";
 import { WISHLIST_ADDED_EVENT } from "@/components/wishlist-badge";
-import { DECK_THEMES, matchesFilter, type DeckCardView } from "@/core/deck";
+import { pickQuip } from "@/core/card-art";
+import { matchesFilter, type DeckCardView } from "@/core/deck";
 import { activeFilterCount, filterSummary } from "@/core/filters";
 import { useIdeaFilter } from "@/components/idea-filter";
 import { cn } from "@/lib/cn";
-import { formatCost } from "@/lib/idea-input";
 import { moreCardsAction, swipeAction, undoSwipeAction } from "./actions";
 
 type Verdict = "like" | "nope";
 
-const THRESHOLD_X = 100;
+/** How far (share of the card's width) a swipe has to go – the stamp shows from here on. */
+const THRESHOLD = 0.3;
 const FLY_MS = 220;
+/** The flower is sad (or happy) for a moment, then waits again. */
+const REACTION_MS = 1600;
+/** "← kompost · wischen · einpflanzen →" until you have got the hang of it. */
+const HINT_SWIPES = 5;
 
-const THEME_LABEL = Object.fromEntries(DECK_THEMES.map((t) => [t.key, t.label])) as Record<string, string>;
-// The picture area of a card: a pastel tile with two soft shapes (DESIGN.md §2) – fixed light
-// tones, so they stay the same in dark mode.
-const TILES = [
-  { bg: "#DCE7F5", shape: "#9DB8E3" },
-  { bg: "#F7EBC4", shape: "#E3C76E" },
-  { bg: "#E6E0F2", shape: "#B7A7DE" },
-  { bg: "#F6DFD3", shape: "#E8A58D" },
-  { bg: "#DCEBD9", shape: "#8FC79A" },
-];
-const THEME_TILE: Record<string, number> = { food: 1, nature: 4, culture: 2, active: 0, creative: 1, cozy: 3, new: 2, free: 4, romantic: 3, trip: 0, learn: 1, night: 2 };
+const DAUER = { small: { v: "ein Abend", s: "ca. 2–3 Stunden" }, large: { v: "halber Tag", s: "ca. 5 Stunden" } } as const;
+const SETTING = { indoor: "drinnen", outdoor: "draußen" } as const;
 
-function tileFor(card: DeckCardView) {
-  if (card.theme && card.theme in THEME_TILE) return TILES[THEME_TILE[card.theme]];
-  let h = 0;
-  for (const ch of card.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return TILES[h % TILES.length];
+function costRow(cost: number | null): { v: string; s: string } {
+  if (cost === null) return { v: "offen", s: "schätzt selbst" };
+  if (cost === 0) return { v: "gratis", s: "kostet nix" };
+  return { v: `~${cost} €`, s: "für euch zwei" };
 }
 
-function sourceOf(card: DeckCardView): string {
-  if (card.kind === "combo") return "Event";
-  if (card.kind === "revisit") return "Eure Liste";
-  return card.location && /köln/i.test(card.location) ? "Köln" : "Vorschlag";
+/** The rows of the white box at the bottom of the card: WO · (EVENT) · DAUER · KOSTEN. */
+function infoRows(card: DeckCardView) {
+  const where = card.location ?? card.event?.venue ?? (card.setting ? SETTING[card.setting] : "sucht's euch aus");
+  const rows = [{ icon: "⌖", bg: "#DCEBD9", k: "WO", v: where, s: card.setting && card.location ? SETTING[card.setting] : "" }];
+  if (card.event) rows.push({ icon: "♪", bg: "#F6DFD3", k: "EVENT", v: card.event.title, s: [card.event.venue, card.when?.time].filter(Boolean).join(", ") });
+  rows.push({ icon: "◷", bg: "#F7EBC4", k: "DAUER", ...DAUER[card.size] });
+  rows.push({ icon: "€", bg: "#DCE7F5", k: "KOSTEN", ...costRow(card.costEur) });
+  return rows;
 }
 
-/** KEIMZEIT on the packet: how long the date takes. */
-const KEIMZEIT = { small: "1 Abend", large: "halber Tag" } as const;
-const BEET_FALLBACK = { indoor: "drinnen", outdoor: "draußen" } as const;
-// The packet's top edge: 20 teeth of 10 px (ThSwipe.html).
-const ZIGZAG = `polygon(${Array.from({ length: 21 }, (_, i) => `${i * 5}% ${i % 2 === 0 ? "10px" : "0"}`).join(", ")}, 100% 100%, 0 100%)`;
-
-/** One idea as a seed packet (ThSwipe.html): "Saatgut für zwei", picture field with the sort, title, text, Keimzeit · Beet · Kosten. */
+/**
+ * One idea as a card (SWIPE-KARTE.md §2, SwipeC.html variant 2): the picture strip in its pastel, the sort
+ * and number, the day big (the event's or the next free evening), the title, and WO · DAUER · KOSTEN.
+ * The card is light in the dark app – its colors are fixed, not tokens.
+ */
 function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: string; pos?: string }) {
-  const tile = tileFor(card);
-  const sorte = card.theme && THEME_LABEL[card.theme] ? THEME_LABEL[card.theme] : sourceOf(card);
+  const when = card.when;
   return (
-    <div className="relative h-full drop-shadow-[0_18px_30px_rgba(0,0,0,0.45)]">
-      <div aria-hidden="true" className="absolute inset-0 rounded-b-[18px] bg-butter" style={{ clipPath: ZIGZAG }} />
-      <div className="relative flex h-full flex-col text-[#1B2620]">
-        <div className="flex justify-between px-[18px] pb-2 pt-5 font-mono text-[10px] tracking-[0.08em]">
-          <span>SAATGUT FÜR ZWEI</span>
-          {pos && <span>Nº {pos}</span>}
+    <div className="relative flex h-full flex-col overflow-hidden rounded-[28px] bg-[#E7EEDF] text-[#1B2620] shadow-[0_18px_30px_rgba(0,0,0,0.4)]">
+      <IllustrationStrip names={card.art.illustrations} hex={card.art.hex} className="-mb-2.5 h-[clamp(44px,13vh,110px)] shrink-0 overflow-hidden [@media(max-height:700px)]:h-12" />
+      <div className="relative flex min-h-0 flex-1 flex-col gap-3.5 p-5 [@media(max-height:700px)]:gap-2 [@media(max-height:700px)]:p-3.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="inline-flex h-[26px] items-center truncate rounded-full bg-white px-2.5 font-mono text-[11px]">Sorte: {card.sorte}</span>
+          {pos && <span className="shrink-0 font-mono text-[11px] text-[#6A7566]">Nº {pos}</span>}
         </div>
-        <div className="relative mx-3.5 h-[190px] min-h-[44px] shrink overflow-hidden rounded-[14px]" style={{ background: tile.bg }}>
-          <span aria-hidden="true" className="absolute left-[70px] top-10 h-[90px] w-[150px] -rotate-[18deg] rounded-[50%]" style={{ background: tile.shape }} />
-          <span aria-hidden="true" className="absolute left-[190px] top-[112px] h-[42px] w-[74px] rounded-[50%] opacity-60" style={{ background: tile.shape }} />
-          {card.emoji && (
-            <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center text-4xl">
-              {card.emoji}
+        {(card.partnerSuper || card.kind === "revisit") && (
+          <div className="-mt-1.5 flex flex-wrap gap-1.5 font-mono text-[10px]">
+            {card.partnerSuper && <span className="rounded-full bg-[#F6DFD3] px-2.5 py-1">★ {partnerName} findet das super</span>}
+            {card.kind === "revisit" && <span className="rounded-full bg-[#E6E0F2] px-2.5 py-1">🕰️ Liegt {card.waitingSince ?? "lange"} im Regal</span>}
+          </div>
+        )}
+        {when && (
+          <div className="flex flex-col gap-1 [@media(max-height:700px)]:gap-0.5" data-card-when>
+            <span className="text-[42px] font-extrabold leading-[0.92] tracking-[-0.055em] [@media(max-height:700px)]:text-[30px]">{when.day}</span>
+            <span className={cn("flex flex-wrap items-center gap-x-2 text-[17px] font-bold [@media(max-height:700px)]:text-[15px]", when.free === true ? "text-[#2E7D46]" : when.free === false ? "text-[#A0522D]" : "text-[#6A7566]")}>
+              <span>{when.time}</span>
+              <span aria-hidden="true">·</span>
+              <span>{when.note}</span>
             </span>
-          )}
-          <span className="absolute bottom-3 left-3 inline-flex h-[26px] items-center rounded-full bg-white/85 px-2.5 font-mono text-[10px]">Sorte: {sorte}</span>
+          </div>
+        )}
+        <div className="border-t-[1.5px] border-[#C9D4C4] pt-3 [@media(max-height:700px)]:pt-2">
+          <h2 className="line-clamp-2 text-2xl font-extrabold leading-[1.05] tracking-[-0.03em] [@media(max-height:700px)]:line-clamp-1 [@media(max-height:700px)]:text-xl">{card.title}</h2>
         </div>
-        <div className="flex shrink-0 flex-col gap-2 px-[18px] pt-3.5">
-          {(card.partnerSuper || card.kind === "revisit" || card.wildcard) && (
-            <div className="flex flex-wrap gap-1.5 font-mono text-[10px]">
-              {card.partnerSuper && <span className="rounded-full bg-tile-rose px-2.5 py-1 text-partner-ink">★ {partnerName} findet das super</span>}
-              {card.kind === "revisit" && <span className="rounded-full bg-tile-lilac px-2.5 py-1">🕰️ Liegt {card.waitingSince ?? "lange"} im Regal</span>}
-              {card.wildcard && <span className="rounded-full bg-tile-lilac px-2.5 py-1">Mal was anderes</span>}
+        <div className="mt-auto shrink-0 overflow-hidden rounded-[18px] bg-white">
+          {infoRows(card).map((r, i) => (
+            <div key={r.k} className={cn("grid grid-cols-[30px_minmax(0,1fr)_auto] items-center gap-2.5 px-3.5 py-[9px] [@media(max-height:700px)]:py-1", i > 0 && "border-t border-[#EDF3EA]")}>
+              <span aria-hidden="true" className="flex size-7 items-center justify-center rounded-[9px] text-[13px] font-extrabold [@media(max-height:700px)]:size-6" style={{ background: r.bg }}>
+                {r.icon}
+              </span>
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-[15px] font-bold leading-[1.15]">{r.v}</span>
+                {r.s && <span className="truncate text-xs text-[#6A7566] [@media(max-height:700px)]:hidden">{r.s}</span>}
+              </span>
+              <span className="font-mono text-[10px] text-[#6A7566]">{r.k}</span>
             </div>
-          )}
-          <h2 className="line-clamp-2 text-[27px] font-extrabold leading-none tracking-[-0.035em]">{card.title}</h2>
-          {card.note && <p className="line-clamp-3 text-sm leading-[1.35] [@media(max-height:700px)]:line-clamp-1 text-[#4A5547]">{card.note}</p>}
-          {card.event && (
-            <div className="shrink-0 rounded-2xl bg-white/60 px-3 py-2 text-[13px]">
-              <p className="font-bold">🎟️ {card.event.title}</p>
-              <p className="text-[#4A5547]">
-                {card.event.when}
-                {card.event.venue ? ` · ${card.event.venue}` : ""}
-              </p>
-              {card.bothFree === true && <p className="mt-0.5">✓ Ihr habt beide Zeit</p>}
-              {card.bothFree === false && <p className="mt-0.5">✗ Da hat jemand von euch schon was vor</p>}
-            </div>
-          )}
-        </div>
-        <div className="mt-auto grid shrink-0 grid-cols-3 border-t-[1.5px] border-dashed border-[#C9C2A0] px-[18px] pb-3.5 pt-2.5 font-mono text-[10px] text-[#4A5547]">
-          <span>
-            KEIMZEIT
-            <br />
-            <b className="text-[#1B2620]">{KEIMZEIT[card.size]}</b>
-          </span>
-          <span className="min-w-0">
-            BEET
-            <br />
-            <b className="block truncate text-[#1B2620]">{card.location ?? (card.setting ? BEET_FALLBACK[card.setting] : "offen")}</b>
-          </span>
-          <span>
-            KOSTEN
-            <br />
-            <b className="text-[#1B2620]">{formatCost(card.costEur) ?? "?"}</b>
-          </span>
+          ))}
         </div>
       </div>
     </div>
+  );
+}
+
+/** EINPFLANZEN (right, top left, green) / KOMPOST (left, top right, brown) – from 30 % of the way. */
+function Stamp({ verdict }: { verdict: Verdict }) {
+  return (
+    <span
+      aria-hidden="true"
+      data-stamp={verdict}
+      className={cn(
+        "pointer-events-none absolute top-[62px] z-10 rounded-xl border-4 bg-[rgba(231,238,223,0.85)] px-3 py-1.5 text-[28px] font-extrabold tracking-[0.02em]",
+        verdict === "like" ? "left-[22px] -rotate-[14deg] border-[#2E7D46] text-[#2E7D46]" : "right-[22px] rotate-[14deg] border-[#8A6440] text-[#8A6440]",
+      )}
+    >
+      {verdict === "like" ? "EINPFLANZEN" : "KOMPOST"}
+    </span>
   );
 }
 
@@ -151,8 +147,12 @@ export function SwipeDeck({
   const topEl = useRef<HTMLDivElement | null>(null);
   // What this visit has done so far – the deck shows its progress.
   const [stats, setStats] = useState({ swiped: 0, liked: 0 });
-  // The mini flower reacts to your last choice.
-  const [lastVerdict, setLastVerdict] = useState<Verdict | null>(null);
+  // The flower reacts to your last choice for a moment (happy / sad), then waits again.
+  const [reaction, setReaction] = useState<{ verdict: Verdict; quip: string } | null>(null);
+  const reactionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tapping the flower: the next quip about the top card.
+  const [tap, setTap] = useState(0);
+  const width = useRef(320);
   const verdicts = useRef<Verdict[]>([]);
   // The fly-out of the last swipe; an undo right after must not be overtaken by it.
   const flyTimer = useRef<{ timer: ReturnType<typeof setTimeout>; id: string } | null>(null);
@@ -164,6 +164,8 @@ export function SwipeDeck({
     return true;
   });
   const cards = all.filter((c) => matchesFilter(c, filter));
+  const shownWhen = useRef(new Map<string, DeckCardView["when"]>());
+  for (const c of serverCards) if (c.when) shownWhen.current.set(c.id, c.when);
   const top = cards[0];
   const next = cards[1];
   // "3 / 12": how far this visit got.
@@ -174,7 +176,11 @@ export function SwipeDeck({
     const card = top;
     setMessage(null);
     verdicts.current.push(verdict);
-    setLastVerdict(verdict);
+    const quips = verdict === "like" ? card.art.quips.like : card.art.quips.nope;
+    setReaction({ verdict, quip: pickQuip(quips, card.id) });
+    if (reactionTimer.current) clearTimeout(reactionTimer.current);
+    reactionTimer.current = setTimeout(() => setReaction(null), REACTION_MS);
+    setTap(0);
     setStats((s) => ({ swiped: s.swiped + 1, liked: s.liked + (verdict === "like" ? 1 : 0) }));
     // A like is felt: the 💚 flies to the 💡 (Android also buzzes); a pass is a short tick.
     if (verdict === "like") {
@@ -242,7 +248,8 @@ export function SwipeDeck({
         setMessage(result.error === "planned" ? "Das ist schon als Date geplant – die Idee bleibt 💞" : "Da gibt's nichts mehr rückgängig zu machen.");
         return;
       }
-      const card = result.card;
+      // The undo answer has no day on it – the card had one when it was shown.
+      const card = { ...result.card, when: result.card.when ?? shownWhen.current.get(result.card.id) ?? null };
       const undone = verdicts.current.pop();
       if (undone) setStats((s) => ({ swiped: Math.max(0, s.swiped - 1), liked: Math.max(0, s.liked - (undone === "like" ? 1 : 0)) }));
       setHandled((prev) => {
@@ -285,6 +292,7 @@ export function SwipeDeck({
   function onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
     if (flying) return;
     start.current = { x: event.clientX, y: event.clientY };
+    width.current = event.currentTarget.getBoundingClientRect().width || 320;
     event.currentTarget.setPointerCapture(event.pointerId);
   }
   function onPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
@@ -302,8 +310,9 @@ export function SwipeDeck({
     const d = drag;
     start.current = null;
     if (!d) return;
-    if (d.x > THRESHOLD_X) decide("like");
-    else if (d.x < -THRESHOLD_X) decide("nope");
+    const threshold = width.current * THRESHOLD;
+    if (d.x > threshold) decide("like");
+    else if (d.x < -threshold) decide("nope");
     else setDrag(null);
   }
 
@@ -315,18 +324,19 @@ export function SwipeDeck({
     flying && top && flying.id === top.id
       ? { transform: flyTransform(flying.verdict), transition: `transform ${FLY_MS}ms ease-in` }
       : drag
-        ? { transform: `translate(${drag.x}px, 0) rotate(${drag.x / 22}deg)` }
+        ? { transform: `translate(${drag.x}px, 0) rotate(${Math.max(-9, Math.min(9, (drag.x / width.current) * 18))}deg)` }
         : { transform: "none", transition: "transform 180ms ease-out" };
-  const hint = drag ? (drag.x > 40 ? "like" : drag.x < -40 ? "nope" : null) : (flying?.verdict ?? null);
+  const stamp = drag ? (drag.x > width.current * THRESHOLD ? "like" : drag.x < -width.current * THRESHOLD ? "nope" : null) : (flying?.verdict ?? null);
+  // What the flower says: its reaction, or about the top card (another one with every tap).
+  const quip = reaction?.quip ?? (top ? pickQuip(top.art.quips.neutral, top.id, tap) : "");
+  const mood = reaction ? (reaction.verdict === "like" ? "froh" : "traurig") : "wartet";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3" data-swipe-deck="page">
       {/* The card takes what the screen has left – no scrolling. A stack: the next one peeks out, tilted. */}
-      <div className="relative mx-1 min-h-[250px] flex-1">
+      <div className="relative min-h-[280px] flex-1">
         {next && (
-          <div aria-hidden="true" className={cn("absolute inset-x-3.5 bottom-0 top-2 rotate-[5deg] transition-transform duration-200", flying && "inset-x-0 top-0 rotate-[-2deg]")}>
-            <div className="h-full rounded-2xl bg-[#2A3830]" />
-          </div>
+          <div aria-hidden="true" className={cn("absolute inset-x-3 inset-y-0 rotate-[3deg] rounded-[28px] bg-[#2A3830] transition-transform duration-200", flying && "inset-x-0 rotate-0")} />
         )}
         {top ? (
           <div
@@ -335,7 +345,7 @@ export function SwipeDeck({
             role="group"
             aria-roledescription="Karte"
             aria-label={top.title}
-            className="absolute inset-0 -rotate-2 cursor-grab touch-pan-y select-none active:cursor-grabbing"
+            className="absolute inset-0 origin-bottom cursor-grab touch-pan-y select-none active:cursor-grabbing"
             style={topStyle}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
@@ -346,21 +356,10 @@ export function SwipeDeck({
             }}
           >
             <Card card={top} partnerName={partnerName} pos={`${position} / ${position + cards.length - 1}`} />
-            {hint && (
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "absolute top-16 rounded-full px-4 py-1.5 text-2xl font-extrabold tracking-[-0.03em]",
-                  hint === "like" && "left-6 -rotate-12 bg-like text-white",
-                  hint === "nope" && "right-6 rotate-12 bg-ink text-bg shadow-md",
-                )}
-              >
-                {hint === "like" ? "♥ einpflanzen" : "✕ kompost"}
-              </span>
-            )}
+            {stamp && <Stamp verdict={stamp} />}
           </div>
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-4 rounded-[22px] border-[1.5px] border-dashed border-line px-6 text-center">
+          <div className="flex h-full flex-col items-center justify-center gap-4 rounded-[28px] border-[1.5px] border-dashed border-line px-6 text-center">
             {generating || loading ? (
               <>
                 <Mascot id="deck" size={72} busy />
@@ -372,7 +371,7 @@ export function SwipeDeck({
                 <span className="text-5xl" aria-hidden="true">
                   {filtered ? "🔍" : "🎉"}
                 </span>
-                <p className="text-xl font-bold">{filtered ? "Gerade keine passenden Samen" : "Alle Tüten durchgeswipt!"}</p>
+                <p className="text-xl font-bold">{filtered ? "Gerade keine passenden Samen" : "Alles durchgeswipt!"}</p>
                 {ai ? (
                   <Button onClick={more} disabled={loading}>
                     {filtered ? `✨ Mehr „${filterSummary(filter)}“ holen` : "✨ Neue Samen holen"}
@@ -386,65 +385,63 @@ export function SwipeDeck({
         )}
       </div>
 
-      {/* ✕ kompost · ♥ einpflanzen; the mini flower bottom left comments on it (ThSwipe.html). */}
-      <div className="relative">
-        <div aria-hidden="true" className="pointer-events-none absolute -bottom-2 -left-3.5 h-[110px] w-[78px] overflow-hidden">
-          <Bloom stimmung={lastVerdict === "like" ? "froh" : "wartet"} blaetter={2} className="h-[110px] w-[78px]" />
-        </div>
-        <div className="flex items-start justify-center gap-[26px]">
-          <div className="flex flex-col items-center gap-1.5">
-            <button
-              type="button"
-              aria-label="Auf den Kompost"
-              onClick={() => decide("nope")}
-              disabled={!top || undoing}
-              className="press flex size-16 items-center justify-center rounded-full bg-ink text-bg disabled:opacity-40"
-            >
-              <CloseIcon width={24} height={24} />
-            </button>
-            <span className="font-mono text-[10px] text-muted">kompost</span>
-          </div>
-          <div className="flex flex-col items-center gap-1.5">
-            <button
-              type="button"
-              aria-label="Einpflanzen"
-              onClick={() => decide("like")}
-              disabled={!top || undoing}
-              className="press flex size-[76px] items-center justify-center rounded-full bg-like text-white shadow-[0_0_26px_rgba(229,143,166,0.45)] disabled:opacity-40"
-            >
-              <HeartFill width={30} height={30} />
-            </button>
-            <span className="font-mono text-[10px] text-muted">einpflanzen</span>
-          </div>
-        </div>
+      {/* The flower (tap: another quip) with its speech bubble; the hint, the count and ↺ zurück. */}
+      <div className="grid shrink-0 grid-cols-[76px_minmax(0,1fr)] items-start gap-x-2">
         <button
           type="button"
-          aria-label="Rückgängig"
-          onClick={undo}
-          disabled={busy || undoing}
-          className="press absolute right-0 top-2.5 flex size-11 items-center justify-center rounded-full bg-surface text-muted disabled:opacity-40"
+          onClick={() => setTap((n) => n + 1)}
+          aria-label="Blume antippen für einen neuen Spruch"
+          className="relative row-span-3 h-[106px] w-[76px] overflow-hidden [@media(max-height:700px)]:h-[84px]"
         >
-          <UndoIcon width={18} height={18} />
+          <Bloom stimmung={mood} blaetter={2} className="absolute -left-1 top-0 h-[106px] w-[76px] [@media(max-height:700px)]:h-[84px]" />
         </button>
-      </div>
-      <p role="status" className="min-h-6 pl-[72px] font-hand text-[19px] font-semibold leading-tight text-butter -rotate-3">
-        {message ?? (top ? (lastVerdict === "like" ? "← die gefällt mir auch!" : "← na, was meinst du?") : "")}
-      </p>
-
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[13px] font-semibold">
-        {stats.swiped > 0 && (
-          <span data-swipe-progress className="meta rounded-full bg-surface px-3 py-1 text-ink">
-            {stats.swiped} geswipt · {stats.liked} ♥ · {cards.length} übrig
+        <p
+          data-quip
+          aria-live="polite"
+          className="min-h-9 max-w-[250px] -rotate-2 justify-self-start rounded-[18px_18px_18px_4px] bg-butter px-3.5 pb-[11px] pt-[9px] font-hand text-xl font-semibold leading-[1.02] text-[#2B1D12]"
+        >
+          {quip || "na, was meinst du?"}
+        </p>
+        {message && (
+          <p role="status" className="mt-2 text-[13px] leading-snug text-text-soft">
+            {message}
+          </p>
+        )}
+        {/* Swiping is the way – the hint's two ends are also buttons (keyboard, screen readers, a stuck finger).
+            After the first swipes the hint fades out; the buttons stay, invisible until focused. */}
+        <div className={cn("mt-2 flex items-center justify-between font-mono text-[10px] text-muted-2", !top && "hidden")}>
+          {(["nope", "like"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-label={v === "like" ? "Einpflanzen" : "Auf den Kompost"}
+              onClick={() => decide(v)}
+              disabled={!top || undoing}
+              className={cn("-my-2 py-2 transition-opacity focus-visible:opacity-100", v === "like" && "order-3", stats.swiped >= HINT_SWIPES && "opacity-0")}
+            >
+              {v === "like" ? "einpflanzen →" : "← kompost"}
+            </button>
+          ))}
+          <span aria-hidden="true" className={cn("order-2 transition-opacity", stats.swiped >= HINT_SWIPES && "opacity-0")}>
+            wischen
           </span>
-        )}
-        <Link href="/ideas?ansicht=geswipt" className="text-muted underline">
-          Meine Likes
-        </Link>
-        {top && ai && cards.length < 8 && !generating && (
-          <button type="button" onClick={more} disabled={loading} className="text-muted underline disabled:opacity-60">
-            {loading ? "Mische neue Ideen …" : filtered ? `Mehr „${filterSummary(filter)}“` : "Mehr Ideen"}
+        </div>
+        <div className="mt-1.5 flex items-center justify-between gap-2 whitespace-nowrap font-mono text-[11px] text-muted">
+          <span data-swipe-progress className="min-w-0 truncate">
+            {stats.swiped} geswipt · {cards.length} übrig
+            {top && ai && cards.length < 8 && !generating && (
+              <>
+                {" · "}
+                <button type="button" onClick={more} disabled={loading} className="underline disabled:opacity-60">
+                  {loading ? "mische …" : "mehr"}
+                </button>
+              </>
+            )}
+          </span>
+          <button type="button" aria-label="Rückgängig" onClick={undo} disabled={busy || undoing} className="py-1.5 disabled:opacity-40">
+            ↺ zurück
           </button>
-        )}
+        </div>
       </div>
 
       {match && (
@@ -478,14 +475,5 @@ export function SwipeDeck({
         </div>
       )}
     </div>
-  );
-}
-
-
-function HeartFill(p: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...p}>
-      <path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.8 4.5c2.1 0 3.6 1.2 5.2 3 1.6-1.8 3.1-3 5.2-3 3.8 0 5.9 3.9 4.4 7.3C19.5 16.4 12 21 12 21z" />
-    </svg>
   );
 }

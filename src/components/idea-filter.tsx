@@ -51,7 +51,8 @@ export function useIdeaFilter(): [IdeaFilter, (filter: IdeaFilter) => void] {
 }
 
 /** The one "Filter" button: opens a sheet with three questions. */
-export function FilterButton({ className }: { className?: string }) {
+/** `round`: only the icon in a 44 px circle (the swipe page); the label stays for screen readers. */
+export function FilterButton({ className, round = false }: { className?: string; round?: boolean }) {
   const [filter, setFilter] = useIdeaFilter();
   const sheet = useRef<SheetHandle>(null);
   const count = activeFilterCount(filter);
@@ -62,15 +63,17 @@ export function FilterButton({ className }: { className?: string }) {
         onClick={() => sheet.current?.open()}
         aria-label={count ? `Filter: ${filterSummary(filter)}` : "Filter"}
         className={cn(
-          "tap inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold",
+          "tap inline-flex shrink-0 items-center rounded-full text-[13px] font-semibold",
+          round ? "relative size-11 justify-center" : "h-8 gap-1.5 px-3",
           count ? "bg-ink text-bg" : "bg-surface text-ink",
           className,
         )}
       >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+        <svg width={round ? 18 : 15} height={round ? 18 : 15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={round ? 2 : 2.6} strokeLinecap="round" aria-hidden="true">
           <path d="M4 6h16M7 12h10M10 18h4" />
         </svg>
-        {count ? <span className="max-w-[11rem] truncate">{filterSummary(filter)}</span> : "Filter"}
+        {!round && (count ? <span className="max-w-[11rem] truncate">{filterSummary(filter)}</span> : "Filter")}
+        {round && count > 0 && <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-like text-[10px] font-bold text-white">{count}</span>}
       </button>
       <Sheet ref={sheet} title="Filter">
         <p className="-mt-2 text-sm text-muted">Gilt überall: Wunschliste, Swipen, Was läuft und beim Planen.</p>
