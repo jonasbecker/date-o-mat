@@ -13,7 +13,7 @@ export type Slide = { emoji: string; title: string; text: string; tone: string; 
 /** The reminders card: one tap asks for permission and registers this device. */
 function PushSlideAction({ push }: { push: ReturnType<typeof usePush> }) {
   if (push.support === null) return <div className="h-12 w-full animate-pulse rounded-2xl bg-track/60" />;
-  if (push.subscription) return <p className="font-display text-xl font-semibold">🔔 Erinnerungen sind an</p>;
+  if (push.subscription) return <p className="text-xl font-bold">🔔 Erinnerungen sind an</p>;
   if (push.permission === "denied") return <PushDeniedHelp />;
   if (push.support === "ios-browser") return <IosInstallGuide />;
   if (push.support === "unsupported") return <p className="text-sm font-bold">Dieser Browser kann keine Erinnerungen schicken.</p>;
@@ -49,7 +49,7 @@ export function WelcomeSlides({ slides, publicKey }: { slides: Slide[]; publicKe
       <div className="flex items-center justify-between">
         <LogoLockup />
         <form action={finishOnboardingAction}>
-          <button type="submit" className="text-sm font-extrabold text-muted underline">
+          <button type="submit" className="text-sm font-semibold text-muted underline">
             Überspringen
           </button>
         </form>
@@ -71,12 +71,12 @@ export function WelcomeSlides({ slides, publicKey }: { slides: Slide[]; publicKe
             aria-hidden={i !== index}
             className="flex w-full shrink-0 snap-center px-5"
           >
-            <div className={cn("sticker flex flex-1 flex-col items-center justify-center gap-5 rounded-[32px] p-7 text-center text-ink", slide.tone)}>
+            <div className={cn("flex flex-1 flex-col items-center justify-center gap-5 rounded-[30px] p-7 text-center text-ink", slide.tone)}>
               <span className="text-7xl" aria-hidden="true">
                 {slide.emoji}
               </span>
-              <h1 className="text-[32px] font-bold leading-tight">{slide.title}</h1>
-              <p className="text-lg font-semibold">{slide.text}</p>
+              <h1 className="text-[32px] font-extrabold leading-[1.05] tracking-[-0.035em]">{slide.title}</h1>
+              <p className="text-lg">{slide.text}</p>
               {slide.push && publicKey && <PushSlideAction push={push} />}
             </div>
           </section>
@@ -90,7 +90,7 @@ export function WelcomeSlides({ slides, publicKey }: { slides: Slide[]; publicKe
             type="button"
             tabIndex={-1}
             onClick={() => goTo(i)}
-            className={cn("h-2.5 rounded-full border-2 border-line transition-all", i === index ? "w-7 bg-himbeere" : "w-2.5 bg-surface")}
+            className={cn("h-1.5 rounded-[3px] bg-ink transition-all", i === index ? "w-[22px]" : "w-1.5 opacity-35")}
           />
         ))}
       </div>
@@ -99,13 +99,13 @@ export function WelcomeSlides({ slides, publicKey }: { slides: Slide[]; publicKe
         // Without reminders the way out is a small "Später" – with them (or if there is nothing to turn on) the big button.
         slides[index].push && publicKey && !push.subscription && push.support !== "unsupported" ? (
           <form action={finishOnboardingAction} className="flex justify-center">
-            <button type="submit" className="text-sm font-extrabold text-muted underline">
+            <button type="submit" className="text-sm font-semibold text-muted underline">
               Später
             </button>
           </form>
         ) : (
           <form action={finishOnboardingAction}>
-            <Button type="submit" size="lg" className="w-full">
+            <Button type="submit" variant="send" size="lg" className="w-full">
               Los geht&apos;s 🎉
             </Button>
           </form>

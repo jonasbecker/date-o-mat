@@ -1,7 +1,7 @@
 // Dates ("date_plans"): plan, reschedule, confirm, cancel – and keep the
 // Google Calendar event in sync with the database.
 import "server-only";
-import { and, asc, eq, gt, inArray, isNull, lt, ne } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull, lt, lte, ne } from "drizzle-orm";
 import { parsePriceEur } from "@/core/budget";
 import { buildEventBody, eventIdFor } from "@/core/date-event";
 import { maskSurprise, surpriseRevealAt } from "@/core/date-extras";
@@ -59,6 +59,11 @@ export type SaveDateResult =
 /** How many dates they have had – some extras only show up after the first. */
 export async function countDoneDates(coupleId: string): Promise<number> {
   return db.$count(datePlans, and(eq(datePlans.coupleId, coupleId), eq(datePlans.status, "done")));
+}
+
+/** How many dates were lived up to (and including) this start – the Nº of its leaf. */
+export async function countDoneDatesUntil(coupleId: string, startsAt: Date): Promise<number> {
+  return db.$count(datePlans, and(eq(datePlans.coupleId, coupleId), eq(datePlans.status, "done"), lte(datePlans.startsAt, startsAt)));
 }
 
 export async function upcomingDate(coupleId: string, now: Date): Promise<DatePlan | undefined> {

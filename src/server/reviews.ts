@@ -43,10 +43,10 @@ export async function saveReview(ctx: CoupleContext, dateId: string, input: Revi
   if (!date) return false;
   await db
     .insert(dateReviews)
-    .values({ dateId, userId: ctx.user.id, rating: input.rating, note: input.note })
+    .values({ dateId, userId: ctx.user.id, rating: input.rating, note: input.note, again: input.again })
     .onConflictDoUpdate({
       target: [dateReviews.dateId, dateReviews.userId],
-      set: { rating: input.rating, note: input.note },
+      set: { rating: input.rating, note: input.note, again: input.again },
     });
   return true;
 }

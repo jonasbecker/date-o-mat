@@ -117,7 +117,7 @@ check(`cost prefilled with the estimate (${await cost.inputValue()})`, (await co
 await j.waitForTimeout(800); // hydration
 await j.locator("label").filter({ has: j.getByLabel("4 Herzen") }).click();
 await cost.fill("45");
-await j.getByRole("button", { name: "Bewertung abschicken" }).click();
+await j.getByRole("button", { name: "Blatt speichern" }).click();
 await j.getByText("Meine Bewertung ändern").waitFor({ timeout: 10000 });
 check("real amount saved", (await db.query("SELECT actual_cost_eur FROM date_plans WHERE id = $1", [kino])).rows[0].actual_cost_eur === 45);
 

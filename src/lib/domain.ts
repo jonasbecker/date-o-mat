@@ -72,6 +72,10 @@ export type ConnectionStatus = (typeof CONNECTION_STATUSES)[number];
 export const RATING_MIN = 1;
 export const RATING_MAX = 5;
 export const REVIEW_NOTE_MAX = 500;
+/** "Nochmal machen?" after a date (MFoto): nö / vielleicht / unbedingt. */
+export const AGAIN_ANSWERS = ["no", "maybe", "yes"] as const;
+export type AgainAnswer = (typeof AGAIN_ANSWERS)[number];
+export const AGAIN_LABEL: Record<AgainAnswer, string> = { no: "nö", maybe: "vielleicht", yes: "unbedingt" };
 
 // Event sources (websites the couple follows): a calendar lists dated events,
 // a tips page (magazine) lists ideas without a fixed date.

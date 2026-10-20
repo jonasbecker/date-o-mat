@@ -9,7 +9,7 @@ export function HeartShape({ filled, size = 20, className }: { filled: boolean; 
       <path
         d={HEART}
         fill={filled ? "var(--color-himbeere)" : "none"}
-        stroke={filled ? "#2a1b3d" : "currentColor"}
+        stroke={filled ? "var(--color-himbeere)" : "currentColor"}
         strokeWidth={filled ? 1.6 : 2}
         strokeLinejoin="round"
         className={filled ? undefined : "text-muted/60"}

@@ -43,6 +43,7 @@ import {
   SWIPE_VERDICTS,
   SYNC_STATUSES,
   USER_COLORS,
+  AGAIN_ANSWERS,
 } from "@/lib/domain";
 
 const timestamptz = () => timestamp({ withTimezone: true });
@@ -289,6 +290,8 @@ export const dateReviews = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     rating: smallint().notNull(),
     note: text(),
+    /** "Nochmal machen?" – nö / vielleicht / unbedingt (null = not answered). */
+    again: text({ enum: AGAIN_ANSWERS }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

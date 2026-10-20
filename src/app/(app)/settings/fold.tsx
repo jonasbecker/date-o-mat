@@ -30,8 +30,8 @@ export type TopicTile = { id: string; icon: keyof typeof ICONS; title: string; h
 export function Topic({ id, title, hint, children }: { id: string; title?: string; hint?: string; children: ReactNode }) {
   return (
     <section id={id} aria-label={title} className="flex flex-col gap-3">
-      {title && <h2 className="text-[22px] font-semibold leading-tight">{title}</h2>}
-      {hint && <p className="-mt-2 text-sm font-semibold text-muted">{hint}</p>}
+      {title && <h2 className="text-[22px] font-bold leading-tight tracking-[-0.02em]">{title}</h2>}
+      {hint && <p className="-mt-2 text-sm text-muted">{hint}</p>}
       {children}
     </section>
   );
@@ -45,7 +45,7 @@ export function TopicMenu({ shared, personal, status, extra }: { shared: TopicTi
       {!status.ok && <Tile tile={status.tile} warn />}
       <TileGroup title="Für euch beide" tiles={shared} />
       <TileGroup title="Nur für dich" tiles={personal} />
-      <p className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm font-extrabold">
+      <p className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm font-semibold">
         {status.ok && (
           <Link href={`/settings?t=${status.tile.id}`} className="flex items-center gap-1 underline">
             <CheckIcon width={15} height={15} /> Alles läuft
@@ -67,7 +67,7 @@ export function TopicMenu({ shared, personal, status, extra }: { shared: TopicTi
 function TileGroup({ title, tiles }: { title: string; tiles: TopicTile[] }) {
   return (
     <section className="flex flex-col gap-1.5" aria-label={title}>
-      <h2 className="text-[13px] font-extrabold text-muted">{title}</h2>
+      <h2 className="text-[13px] text-muted">{title}</h2>
       <div className="grid grid-cols-2 gap-2">
         {tiles.map((tile) => (
           <Tile key={tile.id} tile={tile} />
@@ -82,12 +82,12 @@ function Tile({ tile, warn = false }: { tile: TopicTile; warn?: boolean }) {
   return (
     <Link
       href={tile.href ?? `/settings?t=${tile.id}`}
-      className={`flat tap flex min-h-[58px] flex-col justify-center rounded-[18px] px-3 py-2 ${warn ? "bg-zitrone-soft text-tinte" : "bg-surface"}`}
+      className={`tap flex min-h-[58px] flex-col justify-center rounded-[20px] px-3.5 py-2 ${warn ? "bg-zitrone-soft text-tinte" : "bg-surface"}`}
     >
-      <span className="flex items-center gap-1.5 font-display text-[15px] font-semibold leading-tight">
+      <span className="flex items-center gap-1.5 text-[15px] font-semibold leading-tight">
         <Icon width={17} height={17} className="shrink-0" /> {tile.title}
       </span>
-      {tile.hint && <span className={`truncate pl-[23px] text-xs font-bold ${warn ? "" : "text-muted"}`}>{tile.hint}</span>}
+      {tile.hint && <span className={`truncate pl-[23px] text-xs ${warn ? "" : "text-muted"}`}>{tile.hint}</span>}
     </Link>
   );
 }

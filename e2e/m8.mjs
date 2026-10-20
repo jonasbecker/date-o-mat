@@ -160,20 +160,22 @@ await s.getByRole("heading", { name: "Wie war's für dich?" }).waitFor({ timeout
 check("a tap on a heart opens the review with that number chosen", await s.getByRole("radio", { name: "4 Herzen" }).isChecked());
 await s.getByText("Richtig schön 🥰").waitFor();
 await s.getByLabel("Was war besonders?").fill("Das Eis am Weiher!");
+await s.getByRole("button", { name: "unbedingt" }).click();
 await s.screenshot({ path: `${OUT}m8-02-review-form.png` });
-await s.getByRole("button", { name: "Bewertung abschicken" }).click();
+await s.getByRole("button", { name: "Blatt speichern" }).click();
 await s.getByRole("heading", { name: "Deine Herzen" }).waitFor({ timeout: 10000 });
-check("Sam's review saved", true);
+const { rows: [samReview] } = await db.query("SELECT again FROM date_reviews r JOIN users u ON u.id = r.user_id WHERE u.name = 'Sam'");
+check(`Sam's review saved, "Nochmal machen? unbedingt" too (${samReview?.again})`, samReview?.again === "yes");
 await new Promise((r) => setTimeout(r, 800));
 check(`Jonas is told (${titles("jonas-phone")})`, titles("jonas-phone").some((t) => t.startsWith("Sam hat verraten")));
 await s.goto(`${BASE}/dates`);
-await s.getByRole("heading", { name: "Eure Dates" }).waitFor({ timeout: 10000 });
+await s.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 10000 });
 check("review prompt gone after reviewing", (await s.getByRole("link", { name: /Wie war „Picknick/ }).count()) === 0);
 
 // 3) Jonas: Sam's hearts are hidden until he reviews
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/dates`);
-await j.getByRole("heading", { name: "Eure Dates" }).waitFor({ timeout: 15000 });
+await j.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 15000 });
 check("list: Sam's review is locked", await j.getByText("hat bewertet 🔒").isVisible());
 const hiddenStats = await j.locator("dl").innerText();
 check(`stats do not reveal Sam's hidden hearts (${hiddenStats.replace(/\n/g, " ")})`, !hiddenStats.includes("4") && (await j.getByRole("link", { name: /Euer Lieblingsdate/ }).count()) === 0);
@@ -182,7 +184,7 @@ await j.getByText("Sam hat schon bewertet").waitFor({ timeout: 10000 });
 check("detail: note not visible yet", !(await j.getByText("Das Eis am Weiher!").isVisible()));
 // Tap the heart itself (the radio is visually hidden inside the label).
 await j.getByLabel("5 Herzen").locator("xpath=..").click();
-await j.getByRole("button", { name: "Bewertung abschicken" }).click();
+await j.getByRole("button", { name: "Blatt speichern" }).click();
 await j.getByText("Deine Herzen", { exact: true }).waitFor({ timeout: 10000 });
 await j.getByRole("tab", { name: "Sam" }).click();
 await j.getByText("Das Eis am Weiher!").waitFor({ timeout: 10000 });
@@ -215,7 +217,7 @@ await jd.getByRole("link", { name: /Euer Lieblingsdate/ }).waitFor({ timeout: 10
 await jd.screenshot({ path: `${OUT}m8-05-list-dark.png`, fullPage: true });
 await j.goto(`${BASE}/`);
 await j.getByRole("link", { name: "Einstellungen" }).click();
-await j.getByRole("heading", { name: "Einstellungen" }).waitFor({ timeout: 10000 });
+await j.getByRole("heading", { name: /Einstellungen/ }).waitFor({ timeout: 10000 });
 check("settings reachable from the header", true);
 await j.getByRole("link", { name: /Erinnerungen/ }).click();
 await j.getByText("Welche Erinnerungen?").click();

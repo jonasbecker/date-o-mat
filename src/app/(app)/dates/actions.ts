@@ -16,7 +16,7 @@ export type ReviewFormState = { status: "idle" | "saved" | "error"; message?: st
 export async function saveReviewAction(_prev: ReviewFormState, formData: FormData): Promise<ReviewFormState> {
   const ctx = await requireCouple();
   const id = z.uuid().safeParse(formData.get("dateId"));
-  const input = parseReview({ rating: formData.get("rating"), note: formData.get("note") });
+  const input = parseReview({ rating: formData.get("rating"), note: formData.get("note"), again: formData.get("again") });
   if (!id.success) return { status: "error", message: "Dieses Date gibt es nicht mehr." };
   if (!input) return { status: "error", message: "Tipp auf 1 bis 5 Herzen." };
   const cost = parseCost(String(formData.get("cost") ?? ""));

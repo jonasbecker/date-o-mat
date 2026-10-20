@@ -17,9 +17,13 @@ import { JoinForm } from "./join-form";
 export default function PairPage({ searchParams }: PageProps<"/pair">) {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-5 py-8">
-      <div className="flex items-center gap-3">
-        <LogoMark size={48} clipId="pair-logo" />
-        <h1 className="text-[30px] font-bold leading-tight">Koppelt euch!</h1>
+      <div className="flex flex-col items-center gap-3 text-center">
+        <LogoMark size={88} />
+        <h1 className="headline text-[46px]">
+          euer beet
+          <br />
+          anlegen.
+        </h1>
       </div>
       <Suspense fallback={<PageSkeleton />}>
         <Pairing searchParams={searchParams} />
@@ -36,12 +40,12 @@ async function Pairing({ searchParams }: { searchParams: PageProps<"/pair">["sea
   if (!user.coupleId) {
     return (
       <>
-        <p className="text-[17px] font-bold text-muted">
-          Hey {user.name}! Einer von euch startet, der oder die andere tritt mit dem Code bei.
+        <p className="text-center text-[15px] text-muted">
+          Hey {user.name}! Einer von euch legt das Beet an, der oder die andere tritt mit dem Code bei.
         </p>
         <Card className="flex flex-col gap-3">
-          <h2 className="text-[21px] font-semibold">Neues Paar starten</h2>
-          <p className="font-semibold text-muted">Du bekommst einen Code, den du deinem Schatz schickst.</p>
+          <h2 className="text-[17px] font-bold">Neues Paar starten</h2>
+          <p className="text-muted">Du bekommst einen Code, den du deinem Schatz schickst.</p>
           <form action={createCoupleAction}>
             <Button type="submit" className="w-full">
               Paar starten
@@ -49,7 +53,7 @@ async function Pairing({ searchParams }: { searchParams: PageProps<"/pair">["sea
           </form>
         </Card>
         <Card className="flex flex-col gap-3">
-          <h2 className="text-[21px] font-semibold">Ich habe einen Code</h2>
+          <h2 className="text-[17px] font-bold">Ich habe einen Code</h2>
           <JoinForm defaultCode={prefill} />
         </Card>
       </>
@@ -65,7 +69,7 @@ async function Pairing({ searchParams }: { searchParams: PageProps<"/pair">["sea
     <>
       {/* Re-checks every few seconds whether the partner joined; the page then redirects home. */}
       <AutoRefresh intervalMs={4000} />
-      <Card tone="mandarine" size="lg" className="flex flex-col items-center gap-4 text-center">
+      <Card size="lg" className="flex flex-col items-center gap-4 text-center">
         {expired ? (
           <>
             <h2 className="text-[23px] font-bold">Der Code ist abgelaufen</h2>
@@ -77,11 +81,11 @@ async function Pairing({ searchParams }: { searchParams: PageProps<"/pair">["sea
           </>
         ) : (
           <>
-            <p className="font-extrabold">Euer Einladungscode</p>
-            <p className="rounded-2xl border-[2.5px] border-line bg-surface px-6 py-3 font-display text-[40px] font-bold tracking-[0.12em] text-ink">
+            <p className="text-[17px] font-bold">Euer Einladungscode</p>
+            <p className="rounded-2xl bg-soft px-6 py-3 font-mono text-[32px] tracking-[0.12em] text-ink">
               {formatInviteCode(couple.inviteCode!)}
             </p>
-            <p className="text-sm font-bold">Gültig bis {formatDateTime(couple.inviteExpiresAt!)}</p>
+            <p className="text-sm text-muted">Gültig bis {formatDateTime(couple.inviteExpiresAt!)}</p>
             <InviteShare
               code={formatInviteCode(couple.inviteCode!)}
               joinUrl={`${env().appUrl}/pair?code=${couple.inviteCode}`}
@@ -89,11 +93,11 @@ async function Pairing({ searchParams }: { searchParams: PageProps<"/pair">["sea
           </>
         )}
       </Card>
-      <p className="text-center font-bold text-muted">
+      <p className="text-center text-muted">
         Sobald dein Schatz beigetreten ist, geht&apos;s hier automatisch weiter.
       </p>
       <details className="rounded-[20px] border-2 border-dashed border-line px-4 py-3">
-        <summary className="cursor-pointer font-extrabold">Ich habe doch einen Code bekommen</summary>
+        <summary className="cursor-pointer font-semibold">Ich habe doch einen Code bekommen</summary>
         <div className="pt-3">
           <JoinForm defaultCode={prefill} />
         </div>

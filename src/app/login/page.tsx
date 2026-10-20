@@ -20,11 +20,11 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
       </Suspense>
 
       <div className="flex flex-col items-center gap-4 text-center">
-        <span className="sticker flex size-32 items-center justify-center rounded-[34px] bg-zitrone">
-          <LogoMark size={104} clipId="login-logo" title="Date-O-Mat Logo: Kaugummiautomat voller Herzen" />
+        <span className="flex size-32 items-center justify-center rounded-[34px] bg-surface">
+          <LogoMark size={96} title="Date-O-Mat Logo: eine kleine Pflanze im Topf" />
         </span>
-        <h1 className="text-5xl font-bold">Date-O-Mat</h1>
-        <p className="text-lg font-bold text-muted">Damit aus „wir sollten mal wieder …“ ein echtes Date wird.</p>
+        <h1 className="headline text-[62px]">date-o-mat.</h1>
+        <p className="text-lg text-muted">Damit aus „wir sollten mal wieder …“ ein echtes Date wird.</p>
       </div>
 
       <Suspense fallback={null}>
@@ -56,7 +56,7 @@ async function LoginError({ searchParams }: { searchParams: PageProps<"/login">[
   const message = typeof error === "string" ? ERRORS[error] : undefined;
   if (!message) return null;
   return (
-    <p role="alert" className="rounded-[20px] border-2 border-line bg-himbeere-soft px-4 py-3 font-bold text-tinte">
+    <p role="alert" className="rounded-[20px] bg-rose px-4 py-3 font-semibold text-tinte">
       {message}
     </p>
   );

@@ -5,14 +5,30 @@ import { HeartShape } from "@/components/hearts";
 import { Button } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
 import { cn } from "@/lib/cn";
-import { RATING_MAX, REVIEW_NOTE_MAX } from "@/lib/domain";
+import { AGAIN_ANSWERS, AGAIN_LABEL, RATING_MAX, REVIEW_NOTE_MAX, type AgainAnswer } from "@/lib/domain";
 import { saveReviewAction, type ReviewFormState } from "./actions";
 
 const MOODS = ["", "Naja 😕", "Ganz okay 🙂", "Schön 😊", "Richtig schön 🥰", "Unvergesslich 🤩"];
 
-export function ReviewForm({ dateId, rating, note, cost, initialHearts = 0 }: { dateId: string; rating: number | null; note: string | null; cost: number | null; /** From a tap on a heart on the start page. */ initialHearts?: number }) {
+export function ReviewForm({
+  dateId,
+  rating,
+  note,
+  cost,
+  again: savedAgain = null,
+  initialHearts = 0,
+}: {
+  dateId: string;
+  rating: number | null;
+  note: string | null;
+  cost: number | null;
+  again?: AgainAnswer | null;
+  /** From a tap on a heart on the start page. */
+  initialHearts?: number;
+}) {
   const celebrate = useCelebrate();
   const [hearts, setHearts] = useState(rating ?? initialHearts);
+  const [again, setAgain] = useState<AgainAnswer | null>(savedAgain);
   const [editing, setEditing] = useState(rating === null);
   const [state, action, pending] = useActionState<ReviewFormState, FormData>(async (prev, formData) => {
     const result = await saveReviewAction(prev, formData);
@@ -25,7 +41,7 @@ export function ReviewForm({ dateId, rating, note, cost, initialHearts = 0 }: { 
 
   if (!editing && rating !== null) {
     return (
-      <button type="button" onClick={() => setEditing(true)} className="self-start text-sm font-extrabold text-muted underline">
+      <button type="button" onClick={() => setEditing(true)} className="self-start text-sm font-semibold text-muted underline">
         Meine Bewertung ändern
       </button>
     );
@@ -50,28 +66,46 @@ export function ReviewForm({ dateId, rating, note, cost, initialHearts = 0 }: { 
                   className="sr-only"
                   aria-label={`${value} ${value === 1 ? "Herz" : "Herzen"}`}
                 />
-                <HeartShape filled={value <= hearts} size={44} className={cn(value <= hearts && "animate-pop-in")} />
+                <HeartShape filled={value <= hearts} size={40} className={cn(value <= hearts && "animate-pop-in")} />
               </label>
             );
           })}
         </div>
-        <p aria-live="polite" className="h-6 font-display text-lg font-semibold">
+        <p aria-live="polite" className="h-6 text-base font-semibold">
           {MOODS[hearts]}
         </p>
       </fieldset>
+      {/* MFoto: "Nochmal machen?" */}
+      <fieldset className="flex flex-col gap-2.5">
+        <legend className="mb-2.5 text-[15px] font-bold">Nochmal machen?</legend>
+        <input type="hidden" name="again" value={again ?? ""} />
+        <div className="grid grid-cols-3 gap-1.5">
+          {AGAIN_ANSWERS.map((answer) => (
+            <button
+              key={answer}
+              type="button"
+              aria-pressed={again === answer}
+              onClick={() => setAgain(again === answer ? null : answer)}
+              className={cn("tap h-[46px] rounded-full text-[15px] font-semibold", again === answer ? "bg-ink text-bg" : "bg-soft text-ink")}
+            >
+              {AGAIN_LABEL[answer]}
+            </button>
+          ))}
+        </div>
+      </fieldset>
       <label className="flex flex-col gap-1.5">
-        <span className="font-extrabold">Was war besonders? (optional)</span>
+        <span className="text-[15px] font-bold">Was war besonders? (optional)</span>
         <textarea
           name="note"
           defaultValue={note ?? ""}
           maxLength={REVIEW_NOTE_MAX}
           rows={3}
           placeholder="Der Sonnenuntergang, das beste Eis der Stadt …"
-          className="rounded-[18px] border-2 border-line bg-bg px-4 py-3 font-semibold placeholder:text-muted/70"
+          className="rounded-[18px] bg-soft px-4 py-3 placeholder:text-muted/70 focus:outline-2 focus:outline-himmel"
         />
       </label>
       <label className="flex flex-col gap-1.5">
-        <span className="font-extrabold">Was hat&apos;s ungefähr gekostet? (für euch beide, optional)</span>
+        <span className="text-[15px] font-bold">Was hat&apos;s ungefähr gekostet? (für euch beide, optional)</span>
         <span className="flex items-center gap-2">
           <input
             name="cost"
@@ -79,11 +113,11 @@ export function ReviewForm({ dateId, rating, note, cost, initialHearts = 0 }: { 
             inputMode="decimal"
             placeholder="0"
             aria-label="Kosten in Euro"
-            className="h-12 w-28 rounded-[18px] border-2 border-line bg-bg px-4 font-bold placeholder:text-muted/70"
+            className="h-12 w-28 rounded-[18px] bg-soft px-4 font-semibold placeholder:text-muted/70"
           />
           <span className="font-bold">€</span>
         </span>
-        <span className="text-xs font-bold text-muted">Zählt fürs Monatsbudget – ihr seht beide denselben Betrag.</span>
+        <span className="text-xs text-muted">Zählt fürs Monatsbudget – ihr seht beide denselben Betrag.</span>
       </label>
       {state.status === "error" && (
         <p role="alert" className="rounded-xl bg-zitrone-soft px-3 py-2 font-bold text-tinte">
@@ -91,7 +125,7 @@ export function ReviewForm({ dateId, rating, note, cost, initialHearts = 0 }: { 
         </p>
       )}
       <Button type="submit" disabled={pending || hearts === 0} className="w-full">
-        {pending ? "Speichert …" : rating === null ? "Bewertung abschicken" : "Speichern"}
+        {pending ? "Speichert …" : rating === null ? "Blatt speichern" : "Speichern"}
       </Button>
     </form>
   );

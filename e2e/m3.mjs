@@ -67,8 +67,9 @@ async function readSlots(page) {
   // On the start page "Date planen" opens step 1.
   const stepOne = page.getByRole("heading", { name: "was?", exact: true });
   const start = page.getByRole("link", { name: "Date planen", exact: true });
-  await page.locator("ol li").or(stepOne).or(start).first().waitFor({ timeout: 15000 });
-  if (!(await page.locator("ol li").first().isVisible())) await customIdea(page, "Spazieren gehen");
+  const slotItems = page.locator("ol li").filter({ visible: true });
+  await slotItems.or(stepOne).or(start).filter({ visible: true }).first().waitFor({ timeout: 15000 });
+  if (!(await slotItems.first().isVisible())) await customIdea(page, "Spazieren gehen");
   await page.locator("ol li").first().waitFor({ timeout: 10000 });
   const slots = [];
   for (let i = 0; i < 10; i++) {

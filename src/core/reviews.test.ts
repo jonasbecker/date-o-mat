@@ -20,10 +20,12 @@ describe("reviewAskAt", () => {
 
 describe("parseReview", () => {
   it("accepts 1–5 hearts and trims the note", () => {
-    expect(parseReview({ rating: "4", note: "  schön  " })).toEqual({ rating: 4, note: "schön" });
+    expect(parseReview({ rating: "4", note: "  schön  " })).toEqual({ rating: 4, note: "schön", again: null });
   });
   it("turns an empty note into null", () => {
-    expect(parseReview({ rating: 5, note: "   " })).toEqual({ rating: 5, note: null });
+    expect(parseReview({ rating: 5, note: "   " })).toEqual({ rating: 5, note: null, again: null });
+    expect(parseReview({ rating: 5, note: "", again: "yes" })?.again).toBe("yes");
+    expect(parseReview({ rating: 5, note: "", again: "egal" })?.again).toBeNull();
   });
   it("rejects ratings out of range or not whole", () => {
     expect(parseReview({ rating: "0", note: "" })).toBeNull();

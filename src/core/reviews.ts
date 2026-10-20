@@ -2,11 +2,11 @@
 // and the numbers for the "Unsere Dates" page. Pure – no DB.
 
 import { DateTime } from "luxon";
-import { APP_TIMEZONE, RATING_MAX, RATING_MIN, REVIEW_NOTE_MAX } from "@/lib/domain";
+import { AGAIN_ANSWERS, APP_TIMEZONE, RATING_MAX, RATING_MIN, REVIEW_NOTE_MAX, type AgainAnswer } from "@/lib/domain";
 
-export type ReviewInput = { rating: number; note: string | null };
+export type ReviewInput = { rating: number; note: string | null; again: AgainAnswer | null };
 
-export type ReviewView = { userId: string; rating: number; note: string | null };
+export type ReviewView = { userId: string; rating: number; note: string | null; again?: AgainAnswer | null };
 
 /** How long the home screen keeps asking "Wie war's?" after a date. */
 export const REVIEW_PROMPT_DAYS = 14;
@@ -26,11 +26,12 @@ export function reviewAskAt(date: { startsAt: Date; endsAt: Date }, zone = APP_T
   return nextDay > afterEnd ? nextDay : afterEnd;
 }
 
-export function parseReview(raw: { rating: unknown; note: unknown }): ReviewInput | null {
+export function parseReview(raw: { rating: unknown; note: unknown; again?: unknown }): ReviewInput | null {
   const rating = Number(raw.rating);
   if (!Number.isInteger(rating) || rating < RATING_MIN || rating > RATING_MAX) return null;
   const note = typeof raw.note === "string" ? raw.note.trim().slice(0, REVIEW_NOTE_MAX) : "";
-  return { rating, note: note || null };
+  const again = AGAIN_ANSWERS.find((a) => a === raw.again) ?? null;
+  return { rating, note: note || null, again };
 }
 
 /**

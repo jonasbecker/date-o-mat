@@ -1,0 +1,1 @@
+ALTER TABLE "date_reviews" ADD COLUMN "again" text;

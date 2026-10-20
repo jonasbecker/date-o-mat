@@ -29,37 +29,37 @@ async function Welcome() {
   const settings = await getCoupleSettings(coupleId);
   const slides: Slide[] = [
     {
-      emoji: "💞",
+      emoji: "🌱",
       title: `Willkommen, ${user.name}!`,
-      text: `Der Date-O-Mat sorgt dafür, dass ${partner.name} und du regelmäßig Dates habt – ohne langes Hin und Her.`,
-      tone: "bg-himbeere-soft",
+      text: `Der Date-O-Mat sorgt dafür, dass ${partner.name} und du regelmäßig Dates habt. Jedes Date wird ein Blatt in eurem Beet.`,
+      tone: "bg-tile-green",
     },
     {
       emoji: "🔁",
       title: RHYTHM_TITLE[settings.rhythm],
       text:
         settings.mode === "alternating"
-          ? `Ihr wechselt euch ab: Wer dran ist, sucht Termin und Idee aus – die andere Person sagt „Passt!“. Rhythmus und Modus könnt ihr jederzeit ändern.`
+          ? `Wer die Gießkanne hat, ist dran: Termin und Idee aussuchen, „Gießen & senden“ – die andere Person sagt zu. Dann wandert die Kanne weiter.`
           : "Der Date-O-Mat schlägt euch jede Runde Termin und Idee vor – ihr müsst nur noch zusagen. Rhythmus und Modus könnt ihr jederzeit ändern.",
-      tone: "bg-zitrone-soft",
+      tone: "bg-tile-butter",
     },
     {
       emoji: "📅",
       title: "Eure freie Zeit – automatisch",
       text: "Verbindet beide eure Google-Kalender. Der Date-O-Mat sieht nur, wann ihr belegt seid, findet gemeinsame Lücken und trägt das Date für euch beide ein.",
-      tone: "bg-himmel/30",
+      tone: "bg-tile-sky",
     },
     {
-      emoji: "💡",
-      title: "Idee → Zeit → fertig",
-      text: "Die App ist ein Weg: „Date planen“, Idee aussuchen, Zeit wählen, fertig 🎉. Steht ein Date, siehst du es gleich beim Öffnen – darunter swipst du neue Ideen (was du nach rechts wischst, kommt auf die Wunschliste; wollt ihr beide, ist es ein 💞 Match). Oben rechts: 💡 Wunschliste, 💞 bisherige Dates und ⚙️ Einstellungen.",
-      tone: "bg-minze-soft",
+      emoji: "♥",
+      title: "Swipen ist das Herz",
+      text: "In der Mitte unten swipt ihr beide getrennt durch Ideen. Drückt ihr beide ♥, ist es ein Match – und steht beim Planen ganz oben.",
+      tone: "bg-rose",
     },
     {
       emoji: "🔔",
       title: "Damit ihr kein Date vergesst",
       text: "Der Date-O-Mat erinnert euch, wenn ihr dran seid, wenn etwas ansteht und vor dem Date. Ohne Erinnerungen vergisst man es doch.",
-      tone: "bg-zitrone-soft",
+      tone: "bg-tile-lilac",
       push: true,
     },
   ];
