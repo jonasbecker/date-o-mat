@@ -175,16 +175,16 @@ oberste Karte bleibt liegen, Tasten-Wächter, „hat doch nicht geklappt“ mit 
 ohne Hin-und-her + Push, Anstupsen ehrlich, „wann?“ fängt sich, Kosten nur wenn geändert, Merken
 einmal, Rückfragen beim Entfernen/Trennen, Willkommen-Texte, Manifest dunkel, „1.000 €“.
 
-1. **Dev-Tools in Produktion aus** (`ENABLE_DEV_TOOLS`): die verschobene Dev-Uhr hat schon eine
-   falsche Runde erzeugt; die Pille „dev-uhr“ steht auf dem Beet.
-2. **Dates über die Rundengrenze** („Auch danach suchen“): das Date gehört in die Runde, in der es
+1. ~~**Dev-Tools in Produktion aus**~~ – bleibt an (Entscheidung 21.10.: die Dev-Uhr wird zum Testen
+   gebraucht; die Pille „dev-uhr“ zeigt, wenn sie verschoben ist).
+2. ✅ **Dates über die Rundengrenze** („Auch danach suchen“): das Date gehört in die Runde, in der es
    stattfindet – sonst zeigt das Beet nächste Woche „du bist dran.“, versteckt das Date, und die Runde
    welkt, obwohl ihr eins hattet.
-3. **Nur zugesagte Dates zählen als erlebt**: ein nie bestätigter Vorschlag wird heute nach Ablauf
-   „done“ (Blatt, Budget, „Wie war's?“). Stattdessen: zählt nicht oder wird nachgefragt.
-4. **Gleichzeitig handeln**: „Zusagen“ bestätigt nur die Zeit, die man gesehen hat; eine Verschiebung
+3. ✅ **Nur zugesagte Dates zählen als erlebt**: ein nie bestätigter Vorschlag wird heute nach Ablauf
+   „done“ (Blatt, Budget, „Wie war's?“). Jetzt fragt das Beet „habt ihr's gemacht?“ (Ja zählt).
+4. ✅ **Gleichzeitig handeln**: „Zusagen“ bestätigt nur die Zeit, die man gesehen hat; eine Verschiebung
    holt kein gerade abgesagtes Date zurück (Status-Wächter, eigene Meldung „wurde abgesagt“).
-5. **Eingeladene Person kann absagen** (heute nur „Zusagen“ oder „Anderer Termin“).
+5. ✅ **Eingeladene Person kann absagen** (heute nur „Zusagen“ oder „Anderer Termin“).
 6. **Push einmal, nicht dreimal**: ein gemeinsamer Push-Zustand in den Einstellungen (Banner und
    Schalter widersprechen sich), der Hinweis auf dem Beet nur noch als Sprechblase der Blume.
 7. **Beet aufräumen**: zu viele Zeilen machen die Blume winzig; die Blume sagt Passendes (nicht „wer

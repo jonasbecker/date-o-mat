@@ -54,4 +54,10 @@ describe("periodLabel", () => {
     ["2026-10-16", "2026-11-01", "Diese Monatshälfte"],
     ["2026-10-01", "2026-11-01", "Dieser Monat"],
   ])("%s – %s", (a, b, label) => expect(periodLabel(d(a), d(b))).toBe(label));
+  it("asks about a date nobody said yes to before anything but the calendar and an invitation", () => {
+    const unanswered = { id: "d0", title: "Kino" };
+    expect(step({ unanswered })).toBe("did_it");
+    expect(step({ unanswered, myCalendar: "missing" })).toBe("connect_calendar");
+    expect(step({ unanswered, upcoming: { id: "d1", status: "planned", proposedById: "sam" } })).toBe("confirm");
+  });
 });

@@ -147,7 +147,17 @@ check(`Sam must confirm: "${await heading(s)}"`, (await heading(s)) === "jonas h
 check("only one Zusagen button on the page", (await s.getByRole("button", { name: "Zusagen" }).count()) === 1);
 check("the invitation: wann, wo, was + Anderer Termin", (await s.locator("[data-next-step] [data-date-card]").getByText("wann", { exact: true }).isVisible()) && (await s.getByRole("link", { name: "Anderer Termin" }).isVisible()));
 check("Zusagen state fits the screen", await fitsScreen(s));
+check("the invitee can also say no (Absagen)", await s.locator("[data-next-step]").getByRole("button", { name: "Absagen" }).first().isVisible());
 await s.screenshot({ path: `${OUT}m13-05-home-confirm.png`, fullPage: true });
+// Jonas moves the time while Sam looks at the old one: Sam's "Zusagen" must not confirm the new one.
+const { rows: [shown] } = await db.query("SELECT id, starts_at, ends_at FROM date_plans WHERE status = 'planned' ORDER BY created_at DESC LIMIT 1");
+await db.query("UPDATE date_plans SET starts_at = starts_at + interval '1 hour', ends_at = ends_at + interval '1 hour' WHERE id = $1", [shown.id]);
+await s.getByRole("button", { name: "Zusagen" }).click();
+await s.waitForTimeout(1500);
+const { rows: [afterMove] } = await db.query("SELECT status FROM date_plans WHERE id = $1", [shown.id]);
+check(`"Zusagen" on a time that moved meanwhile confirms nothing (${afterMove.status})`, afterMove.status === "planned");
+await db.query("UPDATE date_plans SET starts_at = $2, ends_at = $3 WHERE id = $1", [shown.id, shown.starts_at, shown.ends_at]);
+await s.goto(`${BASE}/plan`);
 await s.getByRole("button", { name: "Zusagen" }).click();
 await s.getByRole("heading", { name: "date steht." }).waitFor({ timeout: 15000 });
 check("after Zusagen: date steht. – the flower is happy", (await s.locator('[data-next-step] [data-bloom="froh"]').count()) === 1);

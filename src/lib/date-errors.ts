@@ -7,7 +7,8 @@ export const DATE_ERROR_MESSAGES: Record<SaveDateError, string> = {
   taken: "Dieser Zeitraum ist inzwischen belegt – such dir einen anderen aus.",
   not_connected: "Ein Kalender ist nicht (mehr) verbunden. Schau kurz in die Einstellungen.",
   google: "Google Kalender antwortet gerade nicht. Versuch es gleich nochmal.",
-  round_has_date: "Diesmal ist schon ein Date geplant.",
+  round_has_date: "In dieser Runde steht schon ein Date.",
+  cancelled: "Das Date wurde inzwischen abgesagt.",
   invalid: "Da passt etwas nicht – bitte Zeit und Idee nochmal wählen.",
   no_round: "Gerade kann nichts geplant werden.",
 };

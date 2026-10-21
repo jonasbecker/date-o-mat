@@ -1,6 +1,6 @@
 // What the notifications say, and when they go out.
 import "server-only";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, lte } from "drizzle-orm";
 import { dueReminders, type Reminder } from "@/core/reminders";
 import { formatDeadline, formatShortDate, formatTimeRange, genitive } from "@/lib/format";
 import type { CoupleContext } from "@/server/auth/dal";
@@ -65,7 +65,13 @@ export async function sendDueReminders(coupleId: string, now: Date): Promise<num
   const members = await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.coupleId, coupleId));
   if (members.length !== 2) return 0;
   const settings = await getCoupleSettings(coupleId);
-  const [cycle] = await db.select().from(cycles).where(eq(cycles.coupleId, coupleId)).orderBy(desc(cycles.seq)).limit(1);
+  // The round running now (a later one may exist already for a date planned ahead).
+  const [cycle] = await db
+    .select()
+    .from(cycles)
+    .where(and(eq(cycles.coupleId, coupleId), lte(cycles.startsAt, now)))
+    .orderBy(desc(cycles.seq))
+    .limit(1);
   const date = await upcomingDate(coupleId, now);
   const reviewDates = await reviewReminderDates(coupleId, now);
 

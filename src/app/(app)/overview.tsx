@@ -21,7 +21,7 @@ import { calendarStates } from "@/server/availability";
 import { budgetState } from "@/server/budget";
 import { activeDateOf, cycleHistory, ensureCurrentCycle } from "@/server/cycles";
 import { listTasks } from "@/server/date-tasks";
-import { dateForViewer, upcomingDate } from "@/server/dates";
+import { dateForViewer, unansweredDate, upcomingDate } from "@/server/dates";
 import type { CoupleSettings, Cycle, DatePlan } from "@/server/db/schema";
 import { env } from "@/server/env";
 import { countSubscriptions, pushPublicKey } from "@/server/push";
@@ -51,9 +51,9 @@ export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings,
   const { user, partner, coupleId } = ctx;
   const cycle = current !== undefined ? current : await ensureCurrentCycle(coupleId, now);
   // One round trip for everything that only needs the round – then one for what builds on it.
-  const [calendars, history, nextDate, pushDevices, partnerPushDevices, toReview, tick, budget, specialDays, roundDate] = await Promise.all([
+  const [calendars, history, nextDate, pushDevices, partnerPushDevices, toReview, tick, budget, specialDays, roundDate, unanswered] = await Promise.all([
     calendarStates(ctx),
-    cycleHistory(coupleId),
+    cycleHistory(coupleId, now),
     upcomingDate(coupleId, now),
     countSubscriptions(user.id),
     countSubscriptions(partner.id),
@@ -62,6 +62,7 @@ export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings,
     budgetState(coupleId, now),
     upcomingForHome(ctx, now, SHOW_DAYS_BEFORE),
     cycle?.status === "done" ? activeDateOf(cycle.id) : undefined,
+    unansweredDate(coupleId, now),
   ]);
   const calendarsReady = calendars.every((person) => person.state === "connected");
   const [reviewPhoto, dateExtras, suggestion] = await Promise.all([
@@ -84,11 +85,13 @@ export async function loadOverview(ctx: CoupleContext, settings: CoupleSettings,
         cycle,
         upcoming: nextDate ?? null,
         toReview: toReview ? { id: toReview.id, title: toReview.title } : null,
+        unanswered: unanswered ? { id: unanswered.id, title: unanswered.title } : null,
       })
     : null;
   return {
     cycle,
     step,
+    unanswered,
     nextDate,
     shownDate,
     dateExtras,

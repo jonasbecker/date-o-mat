@@ -121,12 +121,15 @@ export function DateCard({
       {canConfirm ? (
         <div className="flex flex-col gap-2.5">
           <p className="font-bold">{proposer.name} hat das geplant. Passt dir das?</p>
-          <ConfettiActionButton action={confirmDateAction.bind(null, date.id)} className="w-full">
+          <ConfettiActionButton action={confirmDateAction.bind(null, date.id, date.startsAt.toISOString())} className="w-full">
             Passt! 💚
           </ConfettiActionButton>
           <Link href={`/plan?reschedule=${date.id}`} className={buttonClass("secondary", "md", "w-full")}>
             Anderen Termin vorschlagen
           </Link>
+          <span className="self-center">
+            <CancelDateButton action={cancelDateAction.bind(null, date.id)} partnerName={proposer.name} />
+          </span>
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">

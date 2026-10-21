@@ -1,7 +1,7 @@
 // Round ("Zyklus") engine: creates rounds, closes finished ones, keeps statuses current.
 // Idempotent – safe to run from the cron tick and on every page view.
 import "server-only";
-import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, lte, ne } from "drizzle-orm";
 import { alignedCycleStart, cycleDeadline, cycleEnd, cycleStatus, plannerForSeq } from "@/core/cycles";
 import { db } from "@/server/db";
 import { cycles, datePlans, users, type CoupleSettings, type Cycle } from "@/server/db/schema";
@@ -102,12 +102,49 @@ export async function ensureCurrentCycle(coupleId: string, now: Date): Promise<C
   }
 
   await refreshStatuses(coupleId, now);
-  return (await latestCycle(coupleId)) ?? null;
+  return (await cycleAt(coupleId, now)) ?? (await latestCycle(coupleId)) ?? null;
+}
+
+/** The round containing `at` (a later round may already exist: a date planned ahead lives there). */
+async function cycleAt(coupleId: string, at: Date): Promise<Cycle | undefined> {
+  const [cycle] = await db
+    .select()
+    .from(cycles)
+    .where(and(eq(cycles.coupleId, coupleId), lte(cycles.startsAt, at), gt(cycles.endsAt, at)))
+    .orderBy(desc(cycles.seq))
+    .limit(1);
+  return cycle;
+}
+
+/**
+ * The round a date at `start` belongs to – the one it happens in. A date planned ahead ("Auch danach
+ * suchen") creates the rounds up to it, so this round stays open and that one is already done.
+ */
+export async function cycleForDate(coupleId: string, start: Date, now: Date): Promise<Cycle | null> {
+  const current = await ensureCurrentCycle(coupleId, now);
+  if (!current || start < current.endsAt) return current;
+  const memberIds = await members(coupleId);
+  const settings = await getCoupleSettings(coupleId);
+  let latest = await latestCycle(coupleId);
+  for (let i = 0; latest && latest.endsAt <= start && i < MAX_CATCH_UP; i++) {
+    await db
+      .insert(cycles)
+      .values(buildCycle(coupleId, latest.seq + 1, latest.endsAt, settings, memberIds))
+      .onConflictDoNothing();
+    latest = await latestCycle(coupleId);
+  }
+  return (await cycleAt(coupleId, start)) ?? null;
 }
 
 /** The last rounds, oldest first (for the history dots on the home screen). */
-export async function cycleHistory(coupleId: string, limit = 8): Promise<Cycle[]> {
-  const rows = await db.select().from(cycles).where(eq(cycles.coupleId, coupleId)).orderBy(desc(cycles.seq)).limit(limit);
+export async function cycleHistory(coupleId: string, now: Date, limit = 8): Promise<Cycle[]> {
+  // Rounds that have begun – one created ahead for a planned date is not history yet.
+  const rows = await db
+    .select()
+    .from(cycles)
+    .where(and(eq(cycles.coupleId, coupleId), lte(cycles.startsAt, now)))
+    .orderBy(desc(cycles.seq))
+    .limit(limit);
   return rows.reverse();
 }
 

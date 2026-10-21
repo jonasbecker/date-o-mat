@@ -218,9 +218,14 @@ const roundEnd = (await db.query("SELECT ends_at FROM cycles WHERE couple_id = $
 const minutes = Math.ceil((Math.min(chosenEnd.getTime() + 3_600_000, roundEnd.getTime() - 60_000) - Date.now()) / 60_000);
 await db.query("UPDATE couple_settings SET dev_clock_offset_minutes = $2 WHERE couple_id = $1", [couple.id, minutes]);
 await j.goto(`${BASE}/`);
+// Sam never said yes: it does not count by itself – the Beet asks first.
+await j.getByRole("heading", { name: "habt ihr's gemacht?" }).waitFor({ timeout: 10000 });
+check("an unconfirmed date that is over does not count by itself", (await cycleStatus()) === "planned");
+await j.screenshot({ path: `${SHOTS}m5-06a-did-it.png` });
+await j.getByRole("button", { name: "Ja, haben wir" }).click();
 // The next step after a date is the review ("Wie war's?").
 await j.getByRole("heading", { name: "Wie war's?" }).waitFor({ timeout: 10000 });
-check("after the date: round counts as done, next step asks how it was", (await cycleStatus()) === "done");
+check("„Ja, haben wir“: round counts as done, next step asks how it was", (await cycleStatus()) === "done");
 await j.waitForTimeout(300);
 await j.screenshot({ path: `${SHOTS}m5-06-done.png` });
 await j.getByRole("button", { name: /hat doch nicht geklappt/ }).click();

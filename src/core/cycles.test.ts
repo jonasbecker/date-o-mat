@@ -114,6 +114,12 @@ describe("cycleStatus", () => {
     expect(cycleStatus({ current: "planned", date, cycleEnd: end, now: after })).toBe("skipped");
   });
 
+  it("a date nobody said yes to does not count by itself – it waits for the answer", () => {
+    const date = { status: "planned" as const, endsAt: at("2026-10-17T21:00") };
+    expect(cycleStatus({ current: "planned", date, cycleEnd: end, now: after })).toBe("planned");
+    expect(cycleStatus({ current: "planned", date: { ...date, status: "done" }, cycleEnd: end, now: after })).toBe("done");
+  });
+
   it("final states stay final", () => {
     expect(cycleStatus({ current: "skipped", date: null, cycleEnd: end, now: before })).toBe("skipped");
     expect(cycleStatus({ current: "done", date: null, cycleEnd: end, now: before })).toBe("done");

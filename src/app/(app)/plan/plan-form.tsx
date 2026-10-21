@@ -253,6 +253,7 @@ export function PlanFlow({
                 data-weekday={option.weekday}
                 data-day={option.day}
                 data-time={option.timeLabel}
+                data-start={option.startIso}
                 onClick={() => setSlotKey(option.key)}
                 className={cn(
                   "tap grid min-h-[52px] w-full grid-cols-[78px_minmax(0,1fr)_auto] items-center rounded-2xl px-4 py-1.5 text-left",

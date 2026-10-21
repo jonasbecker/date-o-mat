@@ -9,7 +9,7 @@ import { addTask, deleteTask, toggleTask } from "@/server/date-tasks";
 import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
 import { applySettingsToOpenCycle, ensureCurrentCycle } from "@/server/cycles";
-import { cancelDate, confirmDate, getDate, markNotHappened, saveDate } from "@/server/dates";
+import { cancelDate, confirmDate, getDate, markHappened, markNotHappened, saveDate } from "@/server/dates";
 import { notifyPartner, notifyTurnHandedOver, nudgePartner, type PartnerEvent } from "@/server/notifications";
 import type { CoupleContext } from "@/server/auth/dal";
 import { db } from "@/server/db";
@@ -64,11 +64,13 @@ export type ActionResult = { ok: boolean; message?: string };
 const dateIdSchema = z.uuid();
 
 /** "Passt!" */
-export async function confirmDateAction(dateId: string): Promise<ActionResult> {
+/** `shownStart` (ISO): the time on the screen – if the other one moved it meanwhile, nothing is confirmed. */
+export async function confirmDateAction(dateId: string, shownStart?: string): Promise<ActionResult> {
   const ctx = await requireCouple();
   const id = dateIdSchema.safeParse(dateId);
   const now = coupleNow(await getCoupleSettings(ctx.coupleId));
-  const ok = id.success && (await confirmDate(ctx, id.data, now));
+  const shown = shownStart ? new Date(shownStart) : undefined;
+  const ok = id.success && !(shown && Number.isNaN(shown.getTime())) && (await confirmDate(ctx, id.data, now, shown));
   if (ok) await tellPartner(ctx, "confirmed", id.data);
   refresh();
   return ok ? { ok } : { ok, message: "Das Date wurde inzwischen geändert – schau nochmal drauf." };
@@ -92,6 +94,15 @@ export async function notHappenedAction(dateId: string): Promise<void> {
   const ctx = await requireCouple();
   const id = dateIdSchema.safeParse(dateId);
   if (id.success) await markNotHappened(ctx, id.data, coupleNow(await getCoupleSettings(ctx.coupleId)));
+  refresh();
+}
+
+/** "Habt ihr „X“ gemacht?" – a past date nobody said yes to. */
+export async function didItAction(dateId: string, happened: boolean): Promise<void> {
+  const ctx = await requireCouple();
+  const id = dateIdSchema.safeParse(dateId);
+  const now = coupleNow(await getCoupleSettings(ctx.coupleId));
+  if (id.success) await (happened ? markHappened(ctx, id.data, now) : markNotHappened(ctx, id.data, now));
   refresh();
 }
 

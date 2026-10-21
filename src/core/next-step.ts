@@ -14,11 +14,14 @@ export type StepInput = {
   upcoming: { id: string; status: DateStatus; proposedById: string | null } | null;
   /** A date that happened and that I have not reviewed yet. */
   toReview: { id: string; title: string } | null;
+  /** A date that is over but nobody ever said yes to – "Habt ihr's gemacht?". */
+  unanswered?: { id: string; title: string } | null;
 };
 
 export type NextStep =
   | { kind: "connect_calendar"; reauth: boolean }
   | { kind: "confirm"; dateId: string }
+  | { kind: "did_it"; dateId: string; title: string }
   | { kind: "plan" }
   | { kind: "suggestion" }
   | { kind: "partner_calendar" }
@@ -37,6 +40,8 @@ export function nextStep(input: StepInput): NextStep {
   const { meId, myCalendar, partnerCalendar, cycle, upcoming, toReview } = input;
   if (myCalendar !== "connected") return { kind: "connect_calendar", reauth: myCalendar === "reauth" };
   if (upcoming?.status === "planned" && upcoming.proposedById !== meId) return { kind: "confirm", dateId: upcoming.id };
+  // A quick yes/no first – until then the round is neither done nor wilted.
+  if (input.unanswered) return { kind: "did_it", dateId: input.unanswered.id, title: input.unanswered.title };
 
   if (cycle.status === "open") {
     const mine = cycle.mode === "suggestion" || cycle.plannerId === meId;

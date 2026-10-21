@@ -60,7 +60,8 @@ export type DateSummary = { status: DateStatus; endsAt: Date };
 
 /**
  * Status of a round given its (latest, non-cancelled) date and the time:
- * a date that is over counts as done; a round that ends without a date is skipped.
+ * a confirmed date that is over counts as done; one nobody said yes to stays "planned" until you
+ * two answer "Habt ihr's gemacht?"; a round that ends without a date is skipped.
  */
 export function cycleStatus(params: {
   current: CycleStatus;
@@ -71,7 +72,7 @@ export function cycleStatus(params: {
   const { current, date, cycleEnd: end, now } = params;
   if (current === "done" || current === "skipped") return current;
   if (date && date.status !== "cancelled") {
-    if (date.status === "done" || date.endsAt <= now) return "done";
+    if (date.status === "done" || (date.status === "confirmed" && date.endsAt <= now)) return "done";
     return date.status === "confirmed" ? "confirmed" : "planned";
   }
   return end <= now ? "skipped" : "open";

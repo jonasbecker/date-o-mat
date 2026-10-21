@@ -16,7 +16,7 @@ import { formatTimeRange } from "@/lib/format";
 import { sendToUser } from "@/server/push";
 import { deleteEvent, getEvent, insertEvent, patchEvent, queryFreeBusy } from "@/server/google/calendar-api";
 import { CalendarNotConnectedError, getConnection } from "@/server/google/connection";
-import { ensureCurrentCycle } from "@/server/cycles";
+import { cycleForDate, ensureCurrentCycle } from "@/server/cycles";
 import { getCoupleSettings } from "@/server/settings";
 
 const MAX_SYNC_ATTEMPTS = 10;
@@ -51,7 +51,7 @@ export function dateForViewer<T extends DatePlan>(date: T, viewerId: string | nu
 
 export type SaveDateResult =
   | { ok: true; dateId: string; synced: boolean }
-  | { ok: false; error: "taken" | "not_connected" | "google" | "round_has_date" | "invalid" | "no_round" };
+  | { ok: false; error: "taken" | "not_connected" | "google" | "round_has_date" | "cancelled" | "invalid" | "no_round" };
 
 // --- Queries -----------------------------------------------------------------------
 
@@ -161,44 +161,59 @@ export async function saveDate(ctx: CoupleContext, choice: DateChoice, now: Date
     return { ok: false, error: "google" };
   }
 
+  // The date lives in the round it happens in (planned ahead: a later round, this one stays open).
+  const target = await cycleForDate(ctx.coupleId, choice.start, now);
+  if (!target) return { ok: false, error: "no_round" };
+  // Locks the round and says whether another date (not `except`) already lives there.
+  const roundTaken = async (tx: Pick<typeof db, "select">, cycleId: string, except?: string) => {
+    await tx.select({ id: cycles.id }).from(cycles).where(eq(cycles.id, cycleId)).for("update");
+    const [active] = await tx
+      .select({ id: datePlans.id })
+      .from(datePlans)
+      .where(and(eq(datePlans.cycleId, cycleId), ne(datePlans.status, "cancelled"), except ? ne(datePlans.id, except) : undefined))
+      .limit(1);
+    return Boolean(active);
+  };
+
   let savedId: string;
   if (existing) {
-    await db
-      .update(datePlans)
-      .set({
-        ...details,
-        size: choice.size,
-        startsAt: choice.start,
-        endsAt: choice.end,
-        fromPot: choice.fromPot ?? existing.fromPot,
-        ...(choice.surprise !== undefined ? { surprise: choice.surprise !== null, surpriseHint: choice.surprise?.hint ?? null, surpriseRevealedAt: null } : {}),
-        status: "planned",
-        proposedById: ctx.user.id,
-        confirmedById: null,
-        confirmedAt: null,
-        syncStatus: "pending",
-        syncAttempts: 0,
-      })
-      .where(eq(datePlans.id, existing.id));
+    const moved = await db.transaction(async (tx) => {
+      if (target.id !== existing.cycleId && (await roundTaken(tx, target.id, existing.id))) return "round_has_date" as const;
+      // Only a date that is still on: one cancelled meanwhile (the other one pressed "Absagen") stays cancelled.
+      const rows = await tx
+        .update(datePlans)
+        .set({
+          ...details,
+          cycleId: target.id,
+          size: choice.size,
+          startsAt: choice.start,
+          endsAt: choice.end,
+          fromPot: choice.fromPot ?? existing.fromPot,
+          ...(choice.surprise !== undefined ? { surprise: choice.surprise !== null, surpriseHint: choice.surprise?.hint ?? null, surpriseRevealedAt: null } : {}),
+          status: "planned",
+          proposedById: ctx.user.id,
+          confirmedById: null,
+          confirmedAt: null,
+          syncStatus: "pending",
+          syncAttempts: 0,
+        })
+        .where(and(eq(datePlans.id, existing.id), inArray(datePlans.status, ["planned", "confirmed"])))
+        .returning({ id: datePlans.id });
+      return rows.length ? ("ok" as const) : ("cancelled" as const);
+    });
+    if (moved !== "ok") return { ok: false, error: moved };
     savedId = existing.id;
   } else {
-    const cycle = await ensureCurrentCycle(ctx.coupleId, now);
-    if (!cycle) return { ok: false, error: "no_round" };
+    const current = await ensureCurrentCycle(ctx.coupleId, now);
     // Lock the round so two people pressing "festlegen" at once cannot create two dates.
     const created = await db.transaction(async (tx) => {
-      await tx.select({ id: cycles.id }).from(cycles).where(eq(cycles.id, cycle.id)).for("update");
-      const [active] = await tx
-        .select({ id: datePlans.id })
-        .from(datePlans)
-        .where(and(eq(datePlans.cycleId, cycle.id), ne(datePlans.status, "cancelled")))
-        .limit(1);
-      if (active) return null;
+      if (await roundTaken(tx, target.id)) return null;
       const [row] = await tx
         .insert(datePlans)
         .values({
           ...details,
           coupleId: ctx.coupleId,
-          cycleId: cycle.id,
+          cycleId: target.id,
           size: choice.size,
           startsAt: choice.start,
           endsAt: choice.end,
@@ -213,7 +228,7 @@ export async function saveDate(ctx: CoupleContext, choice: DateChoice, now: Date
         await tx
           .update(suggestions)
           .set({ status: "accepted", decidedById: ctx.user.id, decidedAt: now })
-          .where(and(eq(suggestions.id, suggestionId), eq(suggestions.cycleId, cycle.id)));
+          .where(and(eq(suggestions.id, suggestionId), eq(suggestions.cycleId, current?.id ?? target.id)));
       }
       return row;
     });
@@ -249,7 +264,8 @@ export async function swapDateIdea(ctx: CoupleContext, dateId: string, ideaId: s
 }
 
 /** "Passt!" – only the person who did not propose the current time can confirm. */
-export async function confirmDate(ctx: CoupleContext, dateId: string, now: Date): Promise<boolean> {
+/** `shownStart`: the time the person saw – moved meanwhile, the "Zusagen" does not count. */
+export async function confirmDate(ctx: CoupleContext, dateId: string, now: Date, shownStart?: Date): Promise<boolean> {
   const updated = await db
     .update(datePlans)
     .set({ status: "confirmed", confirmedById: ctx.user.id, confirmedAt: now })
@@ -259,6 +275,7 @@ export async function confirmDate(ctx: CoupleContext, dateId: string, now: Date)
         eq(datePlans.coupleId, ctx.coupleId),
         eq(datePlans.status, "planned"),
         ne(datePlans.proposedById, ctx.user.id),
+        shownStart ? eq(datePlans.startsAt, shownStart) : undefined,
       ),
     )
     .returning({ id: datePlans.id });
@@ -285,7 +302,7 @@ export async function cancelDate(ctx: CoupleContext, dateId: string, now: Date):
  */
 export async function markNotHappened(ctx: CoupleContext, dateId: string, now: Date): Promise<boolean> {
   const date = await getDate(ctx.coupleId, dateId);
-  if (!date || date.status !== "done") return false;
+  if (!date || !(date.status === "done" || isUnanswered(date, now))) return false;
   const [cycle] = await db.select({ endsAt: cycles.endsAt }).from(cycles).where(eq(cycles.id, date.cycleId)).limit(1);
   const running = cycle && cycle.endsAt > now;
   await db.update(datePlans).set({ status: "cancelled", cancelledAt: now }).where(eq(datePlans.id, date.id));
@@ -293,6 +310,34 @@ export async function markNotHappened(ctx: CoupleContext, dateId: string, now: D
     .update(cycles)
     .set(running ? { status: "open", closedAt: null } : { status: "skipped" })
     .where(eq(cycles.id, date.cycleId));
+  return true;
+}
+
+/** Over, but nobody ever said yes – it counts only when you two say you did it. */
+function isUnanswered(date: DatePlan, now: Date): boolean {
+  return date.status === "planned" && date.endsAt <= now;
+}
+
+/** "Habt ihr „X“ gemacht?" – the oldest past date nobody confirmed. */
+export async function unansweredDate(coupleId: string, now: Date): Promise<DatePlan | undefined> {
+  const [date] = await db
+    .select()
+    .from(datePlans)
+    .where(and(eq(datePlans.coupleId, coupleId), eq(datePlans.status, "planned"), lte(datePlans.endsAt, now)))
+    .orderBy(asc(datePlans.startsAt))
+    .limit(1);
+  return date;
+}
+
+/** "Ja, haben wir": the date counts (leaf, budget, "Wie war's?"). "Nein" is `markNotHappened`. */
+export async function markHappened(ctx: CoupleContext, dateId: string, now: Date): Promise<boolean> {
+  const updated = await db
+    .update(datePlans)
+    .set({ status: "done", confirmedById: ctx.user.id, confirmedAt: now })
+    .where(and(eq(datePlans.id, dateId), eq(datePlans.coupleId, ctx.coupleId), eq(datePlans.status, "planned"), lte(datePlans.endsAt, now)))
+    .returning({ id: datePlans.id });
+  if (!updated.length) return false;
+  await ensureCurrentCycle(ctx.coupleId, now); // its round → done
   return true;
 }
 

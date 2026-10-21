@@ -4,7 +4,8 @@
 // is one thing to do – "Date planen", "Anstupsen", "Zusagen" or "Wie war's?".
 import Link from "next/link";
 import { DateTime } from "luxon";
-import { confirmDateAction, swapTurnAction } from "./actions";
+import { cancelDateAction, confirmDateAction, didItAction, swapTurnAction } from "./actions";
+import { CancelDateButton } from "@/components/cancel-date-button";
 import { Avatar } from "@/components/avatar";
 import { buttonClass } from "@/components/button";
 import { ConfettiActionButton } from "@/components/confetti";
@@ -247,6 +248,14 @@ function ThoughtBubble({ text }: { text: string }) {
   );
 }
 
+/** A date already planned for a later round, shown while this round is still to plan: "Sa 31.10. 18:30". */
+function aheadPill(date: DatePlan | undefined) {
+  if (!date) return undefined;
+  const start = DateTime.fromJSDate(date.startsAt, { zone: APP_TIMEZONE }).setLocale("de");
+  const when = `${start.toFormat("ccc").replace(".", "")} ${start.toFormat("d.M. HH:mm")}`;
+  return { when: `danach ${when}`, title: date.title };
+}
+
 function viewFor(
   step: NextStep,
   { me, partner, date, swappable, o, now }: { me: User; partner: User; date?: DatePlan; swappable: boolean; o: Overview; now: Date },
@@ -274,6 +283,7 @@ function viewFor(
         headline: "du bist\ndran.",
         deadline: true,
         on: me,
+        pill: aheadPill(date),
         cta: (
           // "Date planen" and, round next to it, handing the turn over (HomeB.html).
           <div className="grid grid-cols-[minmax(0,1fr)_56px] gap-2">
@@ -293,6 +303,7 @@ function viewFor(
         headline: `${partner.name.toLowerCase()} ist\ndran.`,
         deadline: true,
         on: partner,
+        pill: aheadPill(date),
         cta: (
           <div className="grid grid-cols-[minmax(0,1fr)_56px] gap-2">
             <NudgeButton />
@@ -322,12 +333,16 @@ function viewFor(
         invitation: true,
         cta: date && (
           <>
-            <ConfettiActionButton action={confirmDateAction.bind(null, date.id)} variant="primary" className="w-full">
+            <ConfettiActionButton action={confirmDateAction.bind(null, date.id, date.startsAt.toISOString())} variant="primary" className="w-full">
               Zusagen
             </ConfettiActionButton>
             <Link href={`/plan?reschedule=${date.id}`} className={buttonClass("secondary", "lg", "w-full")}>
               Anderer Termin
             </Link>
+            {/* Can't or won't: say so instead of inventing another time. */}
+            <span className="flex items-center justify-center gap-x-4">
+              <CancelDateButton action={cancelDateAction.bind(null, date.id)} partnerName={partner.name} />
+            </span>
             {details}
           </>
         ),
@@ -373,6 +388,25 @@ function viewFor(
               Date planen
             </Link>
           ),
+      };
+    case "did_it":
+      return {
+        headline: "habt ihr's\ngemacht?",
+        sub: o.unanswered && `„${o.unanswered.title}“, ${formatShortDate(o.unanswered.startsAt)} – zugesagt hatte noch niemand. Zählt nur, wenn ihr's gemacht habt.`,
+        cta: (
+          <div data-did-it className="grid grid-cols-2 gap-2">
+            <form action={didItAction.bind(null, step.dateId, true)}>
+              <button type="submit" className={buttonClass("primary", "lg", "h-14 w-full")}>
+                Ja, haben wir
+              </button>
+            </form>
+            <form action={didItAction.bind(null, step.dateId, false)}>
+              <button type="submit" className={buttonClass("secondary", "lg", "h-14 w-full")}>
+                Nein
+              </button>
+            </form>
+          </div>
+        ),
       };
     case "round_done":
       return step.skipped

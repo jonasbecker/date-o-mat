@@ -4,7 +4,7 @@ import pg from "pg";
 import { chromium } from "playwright";
 import { startMock } from "./google-mock.mjs";
 import { tuesdayMorningOffset } from "./clock.mjs";
-import { fitsScreen, openTimes } from "./flow.mjs";
+import { fitsScreen, openTimes, SEND } from "./flow.mjs";
 import { resetDb } from "./db.mjs";
 
 const BASE = "http://localhost:3000";
@@ -188,6 +188,39 @@ await j.getByText(/^Diese[r]? .+ · der Date-O-Mat schlägt vor$/).waitFor({ tim
 check("plan page shows the round", true);
 await openTimes(j, BASE, "?self=1");
 check("plan page offers searching after the round", (await j.getByRole("link", { name: "Auch danach suchen" }).count()) === 1);
+
+// A date found after the round ("Auch danach suchen") lives in the round it happens in: this round
+// stays open (still to plan), the Beet shows the date ahead.
+// (The clock goes to an hour before the round ends: every free time left is in the next round.)
+await db.query("UPDATE couple_settings SET mode = 'alternating' WHERE couple_id = $1", [couple.id]);
+await db.query("UPDATE cycles SET mode = 'alternating', planner_id = $2 WHERE couple_id = $1 AND status = 'open'", [couple.id, jonas.id]);
+const { rows: [round] } = await db.query("SELECT id, ends_at FROM cycles WHERE couple_id = $1 AND status = 'open' ORDER BY seq DESC LIMIT 1", [couple.id]);
+await db.query("UPDATE couple_settings SET dev_clock_offset_minutes = $2 WHERE couple_id = $1", [couple.id, Math.round((round.ends_at.getTime() - 3_600_000 - Date.now()) / 60_000)]);
+await openTimes(j, BASE, "?later=1");
+let ahead = null;
+for (let page = 0; page < 12 && !ahead; page++) {
+  for (const button of await j.locator("ol li button[data-start]").all()) {
+    if (new Date(await button.getAttribute("data-start")) >= round.ends_at) {
+      ahead = button;
+      break;
+    }
+  }
+  if (!ahead) await j.getByRole("button", { name: "Weitere Zeiten →" }).click();
+}
+check("a free time after the round is offered", ahead !== null);
+await ahead.click();
+await j.getByRole("button", { name: SEND }).click();
+await j.waitForURL((url) => url.pathname === "/plan" && !url.search.includes("pick"), { timeout: 20000 });
+const { rows: [aheadDate] } = await db.query(
+  "SELECT d.title, c.id AS cycle_id, c.starts_at FROM date_plans d JOIN cycles c ON c.id = d.cycle_id WHERE d.couple_id = $1 AND d.status = 'planned'",
+  [couple.id],
+);
+const { rows: [stillOpen] } = await db.query("SELECT status FROM cycles WHERE id = $1", [round.id]);
+check(`the date belongs to its own round (${aheadDate?.starts_at?.toISOString()}), this one stays open (${stillOpen.status})`, aheadDate && aheadDate.cycle_id !== round.id && aheadDate.starts_at >= round.ends_at && stillOpen.status === "open");
+await j.goto(`${BASE}/plan`);
+await j.locator("[data-date-pill]").filter({ hasText: "danach" }).waitFor({ timeout: 15000 });
+check("Beet: still your turn, the date ahead as a pill", (await heading(j)) === "du bist dran.");
+await j.screenshot({ path: `${SHOTS}m4-07-ahead.png` });
 
 // Dark mode home
 const dark = await pageFor(sam.token, "dark");

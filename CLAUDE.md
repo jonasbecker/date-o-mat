@@ -59,6 +59,10 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   with its thought bubble in Caveat (`font-hand`), and one action ("Date planen" + the round hand-over button,
   "Anstupsen", "Zusagen"). The pot has no face. All five moods side by side: `/dev/blume`. The old `Plant`
   (components/plant.tsx) is only the small mark (logo, mascot, empty states).
+- **Rounds and dates:** a date lives in the round it happens in (`cycleForDate()` creates later rounds when a date is
+  planned ahead; the current round is the one containing now, never just the newest row). A planned date nobody
+  confirmed does not turn "done" by itself: the Beet asks "habt ihr's gemacht?" (step `did_it`, `markHappened` /
+  `markNotHappened`). "Zusagen" carries the time that was shown (`confirmDateAction(id, startIso)`).
 - Slot ranking stays pure: `scoreSlot`/`findSlots` get daylight and the hourly forecast as
   parameters (`core/outdoor.ts`, `core/sun.ts`); the one forecast request per search lives in
   `server/weather.ts`. Outdoor ideas (`ideas.setting`) use the outdoor ranking, see `core/slot-modes.ts`.
