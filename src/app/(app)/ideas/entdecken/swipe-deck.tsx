@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useRef, useState, useTransition, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState, useTransition, type PointerEvent as ReactPointerEvent } from "react";
 import { Bloom } from "@/components/bloom";
 import { Button, buttonClass } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
@@ -85,7 +85,8 @@ function fitCard(card: HTMLElement, info: HTMLElement) {
  * lines, then the type, the title's second line last; the info box is never cut.
  * 1: smaller picture · 2: no sub-lines · 3: small picture, smaller type · 4: no picture, no Sorte · 5: title on one line.
  */
-function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: string; pos?: string }) {
+// Memoized: the deck renders again while a card is dragged (the stamp), the card itself does not change.
+const Card = memo(function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: string; pos?: string }) {
   const when = card.when;
   const box = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
@@ -169,7 +170,7 @@ function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: str
       </div>
     </div>
   );
-}
+});
 
 /** EINPFLANZEN (right, top left, green) / KOMPOST (left, top right, brown) – from 30 % of the way. */
 function Stamp({ verdict }: { verdict: Verdict }) {
@@ -225,7 +226,24 @@ export function SwipeDeck({
     if (messageTimer.current) clearTimeout(messageTimer.current);
     if (text) messageTimer.current = setTimeout(() => setMessageState(null), MESSAGE_MS);
   }
-  const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
+  // The finger moves the card straight in the DOM (no render per move – that stuttered on phones); React only
+  // hears when a drag starts and when the stamp changes.
+  const dragX = useRef<number | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [dragStamp, setDragStamp] = useState<Verdict | null>(null);
+  const frame = useRef<number | null>(null);
+  function endDrag(springBack: boolean) {
+    dragX.current = null;
+    if (frame.current) cancelAnimationFrame(frame.current);
+    frame.current = null;
+    const el = topEl.current;
+    if (springBack && el) {
+      el.style.transition = "transform 180ms ease-out";
+      el.style.transform = "none";
+    }
+    setDragging(false);
+    setDragStamp(null);
+  }
   const [flying, setFlying] = useState<{ id: string; verdict: Verdict } | null>(null);
   const [busy, startBusy] = useTransition();
   // While an undo is on its way, the top card is about to change – no swiping.
@@ -304,7 +322,7 @@ export function SwipeDeck({
       }
     }
     setFlying({ id: card.id, verdict });
-    setDrag(null);
+    endDrag(false);
     flyTimer.current = { id: card.id, timer: setTimeout(() => landed(card.id), FLY_MS) };
     startBusy(async () => {
       const result = await swipeAction(card.id, verdict).catch(() => null);
@@ -417,20 +435,34 @@ export function SwipeDeck({
     const dx = event.clientX - start.current.x;
     const dy = event.clientY - start.current.y;
     // Only sideways counts: a mostly vertical move lets go (the page stays calm), the card never leaves its row.
-    if (!drag && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 12) {
+    if (dragX.current === null && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 12) {
       start.current = null;
       return;
     }
-    setDrag({ x: dx, y: 0 });
+    if (dragX.current === null) setDragging(true);
+    dragX.current = dx;
+    const threshold = width.current * THRESHOLD;
+    setDragStamp(dx > threshold ? "like" : dx < -threshold ? "nope" : null);
+    // One style write per frame, on the compositor (transform only).
+    if (frame.current === null) {
+      frame.current = requestAnimationFrame(() => {
+        frame.current = null;
+        const el = topEl.current;
+        const x = dragX.current;
+        if (!el || x === null) return;
+        el.style.transition = "none";
+        el.style.transform = `translate3d(${x}px, 0, 0) rotate(${Math.max(-9, Math.min(9, (x / width.current) * 18))}deg)`;
+      });
+    }
   }
   function onPointerUp() {
-    const d = drag;
+    const x = dragX.current;
     start.current = null;
-    if (!d) return;
+    if (x === null) return;
     const threshold = width.current * THRESHOLD;
-    if (d.x > threshold) decide("like");
-    else if (d.x < -threshold) decide("nope");
-    else setDrag(null);
+    if (x > threshold) decide("like");
+    else if (x < -threshold) decide("nope");
+    else endDrag(true);
   }
 
   useShareDeck({ swiped: stats.swiped, left: cards.length, canUndo, undo, more: ai ? more : null, loading });
@@ -442,10 +474,8 @@ export function SwipeDeck({
   const topStyle =
     flying && top && flying.id === top.id
       ? { transform: flyTransform(flying.verdict), transition: `transform ${FLY_MS}ms ease-in` }
-      : drag
-        ? { transform: `translate(${drag.x}px, 0) rotate(${Math.max(-9, Math.min(9, (drag.x / width.current) * 18))}deg)` }
-        : { transform: "none", transition: "transform 180ms ease-out" };
-  const stamp = drag ? (drag.x > width.current * THRESHOLD ? "like" : drag.x < -width.current * THRESHOLD ? "nope" : null) : (flying?.verdict ?? null);
+      : { transform: "none", transition: "transform 180ms ease-out" };
+  const stamp = dragging ? dragStamp : (flying?.verdict ?? null);
   // What the flower says: its reaction, or about the top card (another one with every tap).
   const quip = message ?? reaction?.quip ?? (top ? pickQuip(top.art.quips.neutral, top.id, tap) : "");
   const idle = !message && !reaction && !status && !!top;
@@ -478,7 +508,7 @@ export function SwipeDeck({
             onPointerUp={onPointerUp}
             onPointerCancel={() => {
               start.current = null;
-              setDrag(null);
+              endDrag(true);
             }}
           >
             <Card card={top} partnerName={partnerName} pos={`${position} / ${position + cards.length - 1}`} />

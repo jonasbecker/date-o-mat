@@ -49,6 +49,9 @@ const REF_WIDTH = 350;
 const HANDLE: Handle = { top: 8, w: 38, h: 4 };
 
 export type SheetLayout = {
+  /** The Beet's area. */
+  width: number;
+  height: number;
   /** The closed card's text (measured). */
   headH: number;
   /** The card's top at each stop. */
@@ -114,6 +117,8 @@ export function sheetLayout({
   };
   const bubbleW = Math.min(150, width - 147);
   return {
+    width,
+    height,
     headH,
     tops: { zu: zuTop, mitte: midTop, voll: screenTop },
     zu,

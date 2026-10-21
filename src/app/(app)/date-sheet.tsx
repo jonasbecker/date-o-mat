@@ -19,6 +19,7 @@ import {
   poseTransform,
   position,
   release,
+  SHEET,
   sheetLayout,
   TIMING,
   type Pose,
@@ -29,7 +30,7 @@ import {
 import { cn } from "@/lib/cn";
 
 type Phase = { stop: Stop; tempo: Tempo };
-type Drag = { startY: number; startTop: number; from: Stop; moved: boolean; samples: Array<{ y: number; t: number }> };
+type Drag = { startY: number; startTop: number; from: Stop; moved: boolean; samples: Array<{ y: number; t: number }>; top?: number };
 
 const LABEL: Record<Stop, string> = { zu: "Details öffnen", mitte: "Details schließen", voll: "Weniger Details" };
 
@@ -68,11 +69,16 @@ export function DateSheet({
   const [dragTop, setDragTop] = useState<number | null>(null);
   const [moving, setMoving] = useState(false);
   const [kick, setKick] = useState(false);
+  // Bubble and dots glide only while the card settles – new measurements (a notice appeared) put them right away.
+  const [gliding, setGliding] = useState(false);
+  const glideTimer = useRef<number | null>(null);
   const [words, setWords] = useState<string | null>(null);
   const [bubbleH, setBubbleH] = useState(60);
   const [more, setMore] = useState(false);
   const [reduced, setReduced] = useState(false);
   const drag = useRef<Drag | null>(null);
+  const dragFrame = useRef<number | null>(null);
+  const clip = useRef<HTMLDivElement>(null);
   const pushed = useRef(false);
   const flowerVoice = useFlowerVoice({ text: saying, ...voice });
 
@@ -164,6 +170,9 @@ export function DateSheet({
       stopNow.current = to;
       setDragTop(null);
       setPhase({ stop: to, tempo });
+      setGliding(true);
+      if (glideTimer.current) window.clearTimeout(glideTimer.current);
+      glideTimer.current = window.setTimeout(() => setGliding(false), (reduced ? 200 : TIMING[tempo].ms) + 50);
       setMoving(to !== "zu");
       const pool: Stimmung = tempo === "schubs" ? "autsch" : "genervt";
       if (to === "mitte" || to === "zu") setWords(to === "mitte" ? bloomSaying(pool, Math.floor(Math.random() * 1000), { partner: voice.partnerName }) : null);
@@ -216,19 +225,28 @@ export function DateSheet({
     const top = Math.max(layout.tops.voll, Math.min(layout.tops.zu + 30, d.startTop + (y - d.startY)));
     d.samples.push({ y, t: performance.now() });
     if (d.samples.length > 6) d.samples.shift();
-    setDragTop(top);
+    // At most one render per frame (a 120 Hz phone sends twice as many moves as it shows).
+    d.top = top;
+    if (dragFrame.current === null) {
+      dragFrame.current = requestAnimationFrame(() => {
+        dragFrame.current = null;
+        if (drag.current) setDragTop(drag.current.top ?? null);
+      });
+    }
     return true;
   };
   const end = (): boolean => {
     const d = drag.current;
     drag.current = null;
+    if (dragFrame.current !== null) cancelAnimationFrame(dragFrame.current);
+    dragFrame.current = null;
     if (!d || !layout) return false;
     if (!d.moved) return false;
     const first = d.samples[0];
     const last = d.samples.at(-1)!;
     // Upwards is positive.
     const speed = (first.y - last.y) / Math.max(1, last.t - first.t);
-    const at = position(dragTop ?? d.startTop, layout);
+    const at = position(d.top ?? dragTop ?? d.startTop, layout);
     const { to, tempo } = release(at, d.from, speed);
     settle(to, tempo, at);
     return true;
@@ -296,14 +314,23 @@ export function DateSheet({
   useEffect(() => {
     const el = scroller.current;
     if (!el || phase.stop !== "mitte" || dragTop !== null) return;
-    const timer = window.setTimeout(() => setMore(el.scrollHeight > el.clientHeight + 4), timing.ms);
+    // The content box is as high as at voll; what shows at mitte is the card's frame (clip).
+    const visibleHeight = () => clip.current?.clientHeight ?? el.clientHeight;
+    const timer = window.setTimeout(() => setMore(el.scrollHeight > visibleHeight() + 4), timing.ms);
     const onScroll = () => {
       if (el.scrollTop > 0 && stopNow.current === "mitte") settle("voll", "sanft");
     };
+    const onFocus = (e: FocusEvent) => {
+      const frame = clip.current?.getBoundingClientRect();
+      const target = (e.target as Element).getBoundingClientRect();
+      if (frame && target.bottom > frame.bottom && stopNow.current === "mitte") settle("voll", "sanft");
+    };
     el.addEventListener("scroll", onScroll);
+    el.addEventListener("focusin", onFocus);
     return () => {
       window.clearTimeout(timer);
       el.removeEventListener("scroll", onScroll);
+      el.removeEventListener("focusin", onFocus);
     };
   }, [phase.stop, dragTop, settle, timing.ms]);
 
@@ -315,7 +342,7 @@ export function DateSheet({
   const look = layout ? cardAt(at, layout) : null;
   const mood: Stimmung = !moving && phase.stop === "zu" ? "froh" : dragging || phase.tempo === "sanft" ? "genervt" : "autsch";
   const dots = pose && bubble ? bubbleDots(flat(pose), { x: bubble.box.x, y: bubble.box.y, w: bubble.box.w, h: bubbleH }) : null;
-  const glide = dragging ? "none" : `${timing.ms}ms ease`;
+  const glide = dragging || !gliding ? "none" : `${timing.ms}ms ease`;
   const cardGlide = dragging ? "none" : `${timing.ms}ms ${timing.cardEase}`;
   const showVoice = !moving && phase.stop === "zu";
   const stop = phase.stop;
@@ -352,13 +379,17 @@ export function DateSheet({
 
       {dots && bubble && (
         <div aria-hidden={bubble.opacity === 0 ? true : undefined} style={{ opacity: bubble.opacity, transition: dragging ? "none" : "opacity 250ms ease" }} className={cn(bubble.opacity === 0 && "pointer-events-none")}>
-          <span aria-hidden="true" className="absolute z-[5] size-1.5 rounded-full bg-ink" style={{ left: dots.small.x, top: dots.small.y, transition: `left ${glide}, top ${glide}` }} />
-          <span aria-hidden="true" className="absolute z-[5] size-2.5 rounded-full bg-ink" style={{ left: dots.big.x, top: dots.big.y, transition: `left ${glide}, top ${glide}` }} />
+          <span aria-hidden="true" className="absolute left-0 top-0 z-[5] size-1.5 rounded-full bg-ink" style={{ transform: `translate3d(${dots.small.x}px, ${dots.small.y}px, 0)`, transition: `transform ${glide}` }} />
+          <span aria-hidden="true" className="absolute left-0 top-0 z-[5] size-2.5 rounded-full bg-ink" style={{ transform: `translate3d(${dots.big.x}px, ${dots.big.y}px, 0)`, transition: `transform ${glide}` }} />
           <div
             ref={bubbleEl}
             data-sheet-bubble
-            className="absolute z-[5]"
-            style={{ left: bubble.box.x, top: bubble.box.y, width: bubble.box.w, transform: `rotate(${reduced ? 0 : bubble.box.rotate}deg)`, transition: `left ${glide}, top ${glide}, transform ${glide}` }}
+            className="absolute left-0 top-0 z-[5] origin-center"
+            style={{
+              width: bubble.box.w,
+              transform: `translate3d(${bubble.box.x}px, ${bubble.box.y}px, 0) rotate(${reduced ? 0 : bubble.box.rotate}deg)`,
+              transition: `transform ${glide}`,
+            }}
           >
             <VoiceBubble
               voice={showVoice ? flowerVoice : { words: words ?? saying, hint: null, sheet: null }}
@@ -370,9 +401,12 @@ export function DateSheet({
       )}
       {flowerVoice.sheet}
 
+      {/* The card's frame moves with the finger (its edges, corners and shadow); the content inside keeps one
+          fixed size – as wide as the screen, as high as at voll – so the text never wraps anew while it moves. */}
       <div
+        ref={clip}
         data-sheet-card
-        className={cn("absolute z-[2] flex flex-col overflow-hidden bg-surface shadow-[0_-10px_30px_rgba(0,0,0,0.35)]", !layout && "-inset-x-2 bottom-[-20px] rounded-[26px]")}
+        className={cn("absolute z-[2] bg-surface shadow-[0_-10px_30px_rgba(0,0,0,0.35)] overflow-clip", !layout && "-inset-x-2 bottom-[-20px] flex flex-col rounded-[26px]")}
         style={
           layout && cardTop !== null && look
             ? {
@@ -386,6 +420,10 @@ export function DateSheet({
             : undefined
         }
       >
+        <div
+          className={cn("flex flex-col", layout ? "absolute top-0" : "contents")}
+          style={layout && look ? { left: -(SHEET.insetVoll - look.inset), width: layout.width + 2 * SHEET.insetVoll, height: layout.height + SHEET.overhangVoll - layout.tops.voll, transition: dragging ? "none" : `left ${cardGlide}` } : undefined}
+        >
         <button
           type="button"
           aria-expanded={stop !== "zu"}
@@ -417,7 +455,7 @@ export function DateSheet({
         <div
           ref={scroller}
           className={cn("flex min-h-0 flex-1 flex-col gap-2.5 overscroll-contain px-[22px] pb-[18px]", up && phase.stop === "voll" ? "overflow-y-auto" : "overflow-hidden")}
-          style={{ paddingTop: look?.padTop ?? 24, paddingInline: look ? 22 + look.inset - 8 : 22, transition: dragging ? "none" : `padding ${cardGlide}` }}
+          style={{ paddingTop: look?.padTop ?? 24, paddingInline: layout ? 22 + SHEET.insetVoll - SHEET.insetZu : 22, transition: dragging ? "none" : `padding-top ${cardGlide}` }}
         >
           <div ref={headEl} className="flex flex-col gap-2.5">
             {head}
@@ -434,6 +472,7 @@ export function DateSheet({
           >
             {details}
           </div>
+        </div>
         </div>
         {/* At mitte the rest is cut off: a soft fade, pull up for all of it. */}
         <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-surface to-transparent transition-opacity duration-300" style={{ opacity: more && up && stop === "mitte" ? 1 : 0 }} />

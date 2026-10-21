@@ -11,7 +11,7 @@ export function PageTitle({ title, back, backLabel = "Zurück", children }: { ti
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center gap-3">
         {back && (
-          <Link href={back} aria-label={backLabel} className="tap flex size-10 shrink-0 items-center justify-center rounded-full bg-surface">
+          <Link data-back href={back} aria-label={backLabel} className="tap flex size-10 shrink-0 items-center justify-center rounded-full bg-surface">
             <BackIcon width={18} height={18} />
           </Link>
         )}

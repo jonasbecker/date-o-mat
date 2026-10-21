@@ -458,12 +458,12 @@ export function PlanFlow({
 
   // The top row: back on the left, four dots (Filter · was? · wann? · gesendet) in the middle – where the Beet has its dots.
   const backHome = (
-    <Link href="/plan" aria-label="Zurück" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
+    <Link data-back href="/plan" aria-label="Zurück" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
       <BackIcon width={20} height={20} />
     </Link>
   );
   const backTo = (to: "filter" | "idea", label: string) => (
-    <button type="button" onClick={() => setStep(to)} aria-label={label} className="tap flex size-11 items-center justify-center rounded-full bg-surface">
+    <button data-back type="button" onClick={() => setStep(to)} aria-label={label} className="tap flex size-11 items-center justify-center rounded-full bg-surface">
       <BackIcon width={20} height={20} />
     </button>
   );

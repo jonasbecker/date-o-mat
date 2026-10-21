@@ -175,7 +175,8 @@
      no text selection or long-press callout on the UI – only where you type. */
   html,
   body {
-    overscroll-behavior-y: none;
+    /* Both axes: sideways the browser's own swipe-to-go-back stays out of the way of ours (gestures.tsx). */
+    overscroll-behavior: none;
   }
   html {
     -webkit-text-size-adjust: 100%;

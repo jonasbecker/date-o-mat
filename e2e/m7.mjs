@@ -43,6 +43,8 @@ for (const [title, size, loc] of [["Picknick im Stadtwald", "small", "Stadtwald"
 }
 let failures = 0;
 const check = (label, ok) => { console.log(`${ok ? "✓" : "✗"} ${label}`); if (!ok) failures++; };
+// Routing reaches the service worker's requests (Chromium, with this flag).
+process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = "1";
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 async function pageFor(token, scheme = "light") {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: "de-DE", colorScheme: scheme });
@@ -63,22 +65,31 @@ await jd.goto(`${BASE}/gibtsnicht`);
 await jd.getByText("Hier ist nichts").waitFor({ timeout: 10000 });
 await jd.screenshot({ path: `${OUT}m7-02-404-dark.png` });
 
-// 2) Offline: the service worker serves the offline page for navigations
+// 2) Offline: the service worker shows the last state of pages seen before, the offline page for new ones
 await j.goto(`${BASE}/`);
 await j.getByText("Du bist dran").first().waitFor({ timeout: 15000 });
 await j.evaluate(async () => { await navigator.serviceWorker.ready; });
-await j.reload(); // now controlled by the service worker
+await j.reload(); // now controlled by the service worker (and this page is kept)
 await j.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 10000 });
+await j.getByText("Du bist dran").first().waitFor({ timeout: 15000 });
+await j.waitForTimeout(800); // the copy is written after the page
+// No network at all – for the page and for the service worker (setOffline alone does not reach the worker).
+const cut = (route) => route.abort("internetdisconnected");
+await j.context().route("**/*", cut);
 await j.context().setOffline(true);
 await j.goto(`${BASE}/plan`).catch(() => {});
+await j.getByText("Du bist dran").first().waitFor({ timeout: 10000 }).catch(() => {});
+check("offline: a page seen before shows its last state", await j.getByText("Du bist dran").first().isVisible().catch(() => false));
+await j.goto(`${BASE}/budget`).catch(() => {});
 await j.getByText("Gerade offline").waitFor({ timeout: 10000 });
-check("offline: friendly page instead of the browser error", true);
+check("offline: friendly page instead of the browser error for a page not seen yet", true);
 const imgOk = await j.evaluate(() => document.querySelector("img").naturalWidth > 0);
 check("offline: logo comes from the cache", imgOk);
 await j.screenshot({ path: `${OUT}m7-03-offline.png` });
+await j.context().unroute("**/*", cut);
 await j.context().setOffline(false);
-await j.getByText("Du bist dran").first().waitFor({ timeout: 15000 }).catch(() => {});
-check("back online: reloads by itself", await j.getByText("Du bist dran").first().isVisible());
+await j.getByRole("heading", { name: "budget." }).waitFor({ timeout: 15000 }).catch(() => {});
+check("back online: reloads by itself", await j.getByRole("heading", { name: "budget." }).isVisible().catch(() => false));
 
 // 3) Manifest shortcuts
 const manifest = await fetch(`${BASE}/manifest.webmanifest`).then((r) => r.json());

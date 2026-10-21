@@ -2,6 +2,7 @@
 // components/Bloom.html – every div there is a shape here with the same coordinates, so it scales.
 // The geometry is core/bloom.ts. The pot has no face; the face sits in the flower.
 import { bloomGeometry, BLOOM_BOX, POT_COLORS, STIMMUNG_LABEL, type FlowerPot, type Stimmung } from "@/core/bloom";
+import { memo } from "react";
 import { cn } from "@/lib/cn";
 
 const C = {
@@ -22,7 +23,8 @@ const C = {
   zzz: "#9FB09C",
 };
 
-export function Bloom({
+/** Memoized: it sits in pages that render often while a finger moves (date sheet, swipe deck). */
+export const Bloom = memo(function Bloom({
   stimmung,
   blaetter,
   welk = -1,
@@ -169,4 +171,4 @@ export function Bloom({
       <polygon points="72,348 228,348 209.28,420 90.72,420" fill={POT_COLORS[topf].body} />
     </svg>
   );
-}
+});

@@ -50,7 +50,7 @@ async function DateDetail({ params, searchParams }: { params: PageProps<"/dates/
         <AutoRefresh />
         {/* Like "euer blatt.": the round arrow on top, the card carries the title. */}
         <div className="flex items-center justify-between">
-          <Link href="/plan" aria-label="Zum Beet" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
+          <Link data-back href="/plan" aria-label="Zum Beet" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
             <BackIcon width={20} height={20} />
           </Link>
           <span className="meta">Details</span>
@@ -66,7 +66,7 @@ async function DateDetail({ params, searchParams }: { params: PageProps<"/dates/
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         <div className="flex items-center justify-between">
-          <Link href="/plan" aria-label="Zum Beet" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
+          <Link data-back href="/plan" aria-label="Zum Beet" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
             <BackIcon width={20} height={20} />
           </Link>
           <span className="meta">Details</span>

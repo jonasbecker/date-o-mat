@@ -41,6 +41,16 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - **Server errors:** `src/instrumentation.ts` (`onRequestError`) → `server/server-errors.ts`: counted in `app_status`
   (`errors`, left out of the stamp so a failing page cannot refresh itself in a loop), shown as "Fehler" under
   Einstellungen → Status, push type `errors` (off by default, `NOTIFICATIONS_OFF_BY_DEFAULT`) at most once a day.
+- **Gestures and offline:** `components/gestures.tsx` – from the left edge = back where the page has a back arrow
+  (mark it `data-back`; installed app only, `localStorage["dom-gestures"]="1"` elsewhere), pull down at the top =
+  `router.refresh()` (not on `[data-sheet-card]`, the swipe card, dialogs, fields, `[data-no-pull]`). `public/sw.js`
+  keeps the pages you opened (network first; offline: their last state, `/` → the Beet, else `offline.html`) and the
+  `/_next/static` files; the login page forgets the pages (`forget-pages.tsx`). `offline-note.tsx` says so. e2e: m27
+  (Playwright's `setOffline` does not reach the service worker – cut the network with `context.route` and
+  `PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS=1`, see m7/m27).
+- **Smooth on phones:** what follows a finger moves with `transform` only and renders at most once per frame – the swipe
+  card is moved straight in the DOM (React hears only the stamp), the date sheet's frame moves around content of one
+  fixed size (never re-wrapped), bubble and dots are translated; `Bloom` and the swipe `Card` are memoized.
 - **Navigation (M40):** `BottomNav` in the `(app)` layout: Archiv (`/dates`) · Swipen (`/ideas/entdecken`) · **Beet** (`/plan`,
   the big green circle, always on top – the bar is `z-30`) · Ideen · Einstellungen. `AppHeader` is the small name plus the page's
   own thing on the right (avatars, "36 Ideen", matches pill). The four dots are one path: the Beet is dot 1, the

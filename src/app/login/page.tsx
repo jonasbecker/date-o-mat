@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { buttonClass } from "@/components/button";
+import { ForgetPages } from "@/components/forget-pages";
 import { GoogleIcon } from "@/components/icons";
 import { LogoMark } from "@/components/logo";
 import { getSessionUser } from "@/server/auth/session";
@@ -18,6 +19,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
       <Suspense fallback={null}>
         <RedirectIfLoggedIn />
       </Suspense>
+      <ForgetPages />
 
       <div className="flex flex-col items-center gap-4 text-center">
         <span className="flex size-32 items-center justify-center rounded-[34px] bg-surface">

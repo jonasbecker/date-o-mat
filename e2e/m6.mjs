@@ -162,7 +162,12 @@ await s.goto(`${BASE}/settings?t=push`);
 await s.getByText("Welche Erinnerungen?").click();
 const toggle = s.getByRole("switch", { name: /Jonas plant, bestätigt oder sagt ab/ });
 await toggle.waitFor({ timeout: 10000 });
-check("all reminder types are on by default", (await s.getByRole("switch").evaluateAll((els) => els.every((e) => e.getAttribute("aria-checked") === "true"))));
+// All on – but the technical one (server errors) is off until someone looks after the app.
+const switches = await s.getByRole("switch").evaluateAll((els) => els.map((e) => [e.getAttribute("aria-label") ?? e.textContent ?? "", e.getAttribute("aria-checked")]));
+check(
+  "all reminder types are on by default, the technical one off",
+  switches.every(([label, on]) => (label.includes("Technik") ? on === "false" : on === "true")) && switches.some(([label]) => label.includes("Technik")),
+);
 await toggle.click();
 await new Promise((r) => setTimeout(r, 1000));
 const { rows: [pref] } = await db.query("SELECT enabled FROM notification_prefs WHERE user_id = $1 AND type = 'partner_activity'", [sam.id]);

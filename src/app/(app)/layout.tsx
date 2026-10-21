@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import { BottomNav, BottomNavBar } from "@/components/bottom-nav";
 import { CelebrationProvider } from "@/components/celebration";
+import { Gestures } from "@/components/gestures";
 import { NavPending } from "@/components/nav-pending";
+import { OfflineNote } from "@/components/offline-note";
 import { BeetSkeleton, WishlistCount } from "@/components/app-header";
 
 // Shell for all signed-in pages. Static on purpose: everything that reads the
@@ -20,6 +22,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </main>
         <Suspense fallback={null}>
           <NavPending />
+          <Gestures />
+          <OfflineNote />
         </Suspense>
         {/* The path is only known at runtime: the bar is there from the start, the active item follows. */}
         <Suspense fallback={<BottomNavBar path="" />}>

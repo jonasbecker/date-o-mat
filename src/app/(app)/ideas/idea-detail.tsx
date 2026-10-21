@@ -46,7 +46,7 @@ export function IdeaDetail({
   return (
     <div className="animate-slide-in flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex items-center justify-between">
-        <Link href={backHref} aria-label="Zurück zur Liste" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
+        <Link data-back href={backHref} aria-label="Zurück zur Liste" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
           <BackIcon width={20} height={20} />
         </Link>
         {idea.matched && <span className="rounded-full bg-rose px-3 py-1 text-sm font-semibold text-tinte">♥ Match</span>}

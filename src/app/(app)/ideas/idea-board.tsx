@@ -144,7 +144,7 @@ export function IdeaBoard({
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <span className="flex min-w-0 items-center gap-3">
-          <Link href="/ideas" aria-label="Zurück zu den Kacheln" className="tap flex size-10 shrink-0 items-center justify-center rounded-full bg-surface">
+          <Link data-back href="/ideas" aria-label="Zurück zu den Kacheln" className="tap flex size-10 shrink-0 items-center justify-center rounded-full bg-surface">
             <BackIcon width={18} height={18} />
           </Link>
           <h1 className="headline truncate text-[40px]">{VIEW_TITLE[view]}</h1>
