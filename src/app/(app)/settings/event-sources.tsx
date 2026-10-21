@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useOptimistic, useState, useTransition } from "react";
 import { ConfirmButton } from "@/components/confirm-button";
 import { Button } from "@/components/button";
 import {
@@ -43,7 +43,9 @@ const TONE = {
   new: "text-muted",
 } as const;
 
-export function EventSources({ sources, aiReady }: { sources: SourceView[]; aiReady: boolean }) {
+export function EventSources({ sources: allSources, aiReady }: { sources: SourceView[]; aiReady: boolean }) {
+  // A removed source (or sub-page) is gone at once, not when the server is done.
+  const [sources, hideSource] = useOptimistic(allSources, (current, id: string) => current.filter((s) => s.id !== id));
   const [state, action, pending] = useActionState<SourceFormState, FormData>(addSourceAction, { status: "idle" });
   const [busy, startTransition] = useTransition();
   // "Jetzt lesen" a second time within 10 minutes: say when it works again instead of doing nothing.
@@ -86,7 +88,15 @@ export function EventSources({ sources, aiReady }: { sources: SourceView[]; aiRe
                 >
                   Jetzt lesen
                 </button>
-                <ConfirmButton label="Entfernen" question="Die gelesenen Termine verschwinden mit." yes="Ja, entfernen" action={() => removeSourceAction(source.id)} />
+                <ConfirmButton
+                  label="Entfernen"
+                  question="Die gelesenen Termine verschwinden mit."
+                  yes="Ja, entfernen"
+                  action={async () => {
+                    hideSource(source.id);
+                    await removeSourceAction(source.id);
+                  }}
+                />
               </div>
               {wait?.id === source.id && (
                 <p role="status" className="text-sm font-bold text-muted">
@@ -138,21 +148,22 @@ export function EventSources({ sources, aiReady }: { sources: SourceView[]; aiRe
 function SubPages({ source }: { source: SourceView }) {
   const [state, action, pending] = useActionState<SourceFormState, FormData>(addSourcePageAction.bind(null, source.id), { status: "idle" });
   const [busy, startTransition] = useTransition();
+  const [pages, hidePage] = useOptimistic(source.pages, (current, id: string) => current.filter((p) => p.id !== id));
   return (
     <details className="group/sub mt-1 rounded-2xl border-[1.5px] border-track">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-sm font-extrabold">
         <span>
-          Unterseiten · {source.pages.length}
-          {source.picking && source.pages.length === 0 && <span className="font-bold text-muted"> (werden beim Lesen gesucht)</span>}
+          Unterseiten · {pages.length}
+          {source.picking && pages.length === 0 && <span className="font-bold text-muted"> (werden beim Lesen gesucht)</span>}
         </span>
         <span aria-hidden="true" className="transition-transform group-open/sub:rotate-180">
           ⌄
         </span>
       </summary>
       <div className="flex flex-col gap-2 border-t-[1.5px] border-track px-3 py-2.5">
-        {source.pages.length === 0 && !source.picking && <p className="text-sm font-semibold text-muted">Keine – gelesen wird nur die Hauptseite (und ihre Seite 2).</p>}
+        {pages.length === 0 && !source.picking && <p className="text-sm font-semibold text-muted">Keine – gelesen wird nur die Hauptseite (und ihre Seite 2).</p>}
         <ul className="flex flex-col gap-2">
-          {source.pages.map((page) => (
+          {pages.map((page) => (
             <li key={page.id} className="flex items-start justify-between gap-3">
               <span className="flex min-w-0 flex-col">
                 <a href={page.url} target="_blank" rel="noopener noreferrer" className="truncate text-sm font-extrabold underline decoration-2 underline-offset-2">
@@ -168,7 +179,12 @@ function SubPages({ source }: { source: SourceView }) {
                 disabled={busy}
                 aria-label={`${page.label} entfernen`}
                 className="shrink-0 text-xs font-extrabold text-muted underline"
-                onClick={() => startTransition(() => removeSourcePageAction(page.id))}
+                onClick={() =>
+                  startTransition(async () => {
+                    hidePage(page.id);
+                    await removeSourcePageAction(page.id);
+                  })
+                }
               >
                 Entfernen
               </button>

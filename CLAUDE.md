@@ -28,8 +28,8 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   (`bg-tile-*`, `bg-rose`, `bg-zitrone-soft` …) reset the tokens to light values, so `text-ink` on them stays readable
   – `bg-cta`/`bg-butter` are NOT in that list (their text is dark by design). Garden words: Ideen = Samen, Like =
   einpflanzen, Nein = Kompost, Match = keimt / Matchlinge, Frist = Gießzeit, Rhythmus = Gießrhythmus, Planen = gießen.
-- **Navigation (M40):** `BottomNav` in the `(app)` layout: Ideen · Swipen (`/ideas/entdecken`) · **Beet** (`/plan`,
-  the big green circle) · Archiv (`/dates`) · Einstellungen. `AppHeader` is the small name plus the page's
+- **Navigation (M40):** `BottomNav` in the `(app)` layout: Archiv (`/dates`) · Swipen (`/ideas/entdecken`) · **Beet** (`/plan`,
+  the big green circle, always on top – the bar is `z-30`) · Ideen · Einstellungen. `AppHeader` is the small name plus the page's
   own thing on the right (avatars, "36 Ideen", matches pill). The four dots are one path: the Beet is dot 1, the
   planning flow's filter / "was?" / "wann?" are dots 2–4 (`flowTop` in `plan-form.tsx`); once a date is proposed
   the Beet shows them as one lit bar (`StepDots all`). `/ideas` shows tiles; a tile opens `/ideas?ansicht=<kind>` (URL-driven, so the
@@ -43,7 +43,7 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   free evening / half day from one FreeBusy query per page, `core/card-when.ts`; none → "irgendwann.", never a made-up date), WO · DAUER · KOSTEN (never cut: in plain CSS the picture gives way first – `flex-shrink`, text `flex 1 0 auto`;
   then `fitCard()` measures where the info box ends – geometry, not scrollHeight, Safari differs – on every size change
   and sets the steps `data-d1…5` styled in globals.css `.swipe-card`; m24 checks five heights, a hidden tab, no measuring); swiping only,
-  with the EINPFLANZEN / KOMPOST stamp; the flower (tap = next quip) reacts happy / sad and also says what a swipe
+  with the EINPFLANZEN / KOMPOST stamp; the flower (a new quip every 10 s; tap = "sam hat n geswipt." + "deine likes ›" for 5 s – no line under the title) reacts happy / sad and also says what a swipe
   changed or what went wrong – no small text under the card. ⓘ next to the Matchlinge (how it works, "n geswipt · n
   übrig", Mehr Ideen, Euer Ding) and ↺ next to the filter live in `deck-chrome.tsx`. For keyboard / screen readers the
   two choices are sr-only buttons on the card ("Einpflanzen", "Auf den Kompost" – e2e presses them with
@@ -105,7 +105,7 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   `flow.mjs`; `backToIdeas()` is the arrow at the top). Use `e2e/flow.mjs` (`openFlow`, `pickIdea`, `openTimes`,
   `customIdea`, `backAtStart`) instead of expecting the wishlist or the times (`ol li button`) right away.
   The next date sits on the Beet (`[data-next-step] [data-date-card]`); its checklist,
-  "Zeit ändern" and "Absagen" are on `/dates/<id>` ("Details ›").
+  "Zeit ändern" and "Absagen" are in the date sheet ("Details öffnen") and on `/dates/<id>`.
 - **Hidden pages in e2e:** Next keeps the last visited pages mounted but hidden, so `getByText` can match
   twice – prefer `getByRole` (ignores hidden elements) or `{ exact: true }` / `.filter({ visible: true })`.
 - **Timing in e2e:** CI is slower than the container. Wait for the UI that proves a state (e.g. the

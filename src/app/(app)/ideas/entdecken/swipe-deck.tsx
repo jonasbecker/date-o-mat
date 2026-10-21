@@ -27,6 +27,12 @@ const FLY_MS = 220;
 const REACTION_MS = 1600;
 /** A note in the flower's bubble stays this long. */
 const MESSAGE_MS = 4000;
+/** Tapped, the flower tells how far you two are – this long. */
+const STATUS_MS = 5000;
+/** Left alone, the flower says something else about the top card this often. */
+const QUIP_MS = 10_000;
+
+const QUIP_CLASS = "min-h-9 max-w-[250px] -rotate-2 justify-self-start rounded-[18px_18px_18px_4px] bg-butter px-3.5 pb-[11px] pt-[9px] font-hand text-xl font-semibold leading-[1.02] text-[#2B1D12]";
 
 const DAUER = { small: { v: "ein Abend", s: "ca. 2–3 Stunden" }, large: { v: "halber Tag", s: "ca. 5 Stunden" } } as const;
 const SETTING = { indoor: "drinnen", outdoor: "draußen" } as const;
@@ -186,12 +192,15 @@ export function SwipeDeck({
   generating,
   ai,
   partnerName,
+  partnerSwiped,
   people,
 }: {
   cards: DeckCardView[];
   generating: boolean;
   ai: boolean;
   partnerName: string;
+  /** How many cards the partner has swiped – the flower says it when tapped. */
+  partnerSwiped: number;
   /** Me and the partner – their avatars on the match screen. */
   people: [AvatarPerson, AvatarPerson];
 }) {
@@ -229,8 +238,16 @@ export function SwipeDeck({
   // The flower reacts to your last choice for a moment (happy / sad), then waits again.
   const [reaction, setReaction] = useState<{ verdict: Verdict; quip: string } | null>(null);
   const reactionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Tapping the flower: the next quip about the top card.
+  // Left alone, the flower moves on to the next quip about the top card every few seconds.
   const [tap, setTap] = useState(0);
+  // Tapped, it tells how far you two are (and leads to my likes) for a moment.
+  const [status, setStatus] = useState(false);
+  const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function showStatus() {
+    setStatus(true);
+    if (statusTimer.current) clearTimeout(statusTimer.current);
+    statusTimer.current = setTimeout(() => setStatus(false), STATUS_MS);
+  }
   const width = useRef(320);
   const verdicts = useRef<Verdict[]>([]);
   // The fly-out of the last swipe; an undo right after must not be overtaken by it.
@@ -431,6 +448,13 @@ export function SwipeDeck({
   const stamp = drag ? (drag.x > width.current * THRESHOLD ? "like" : drag.x < -width.current * THRESHOLD ? "nope" : null) : (flying?.verdict ?? null);
   // What the flower says: its reaction, or about the top card (another one with every tap).
   const quip = message ?? reaction?.quip ?? (top ? pickQuip(top.art.quips.neutral, top.id, tap) : "");
+  const idle = !message && !reaction && !status && !!top;
+  useEffect(() => {
+    if (!idle) return;
+    const timer = setInterval(() => setTap((n) => n + 1), QUIP_MS);
+    return () => clearInterval(timer);
+  }, [idle]);
+  const swipedWords = partnerSwiped > 0 ? `${partnerName.toLowerCase()} hat ${partnerSwiped} geswipt.` : `${partnerName.toLowerCase()} hat noch nix geswipt.`;
   const mood = reaction ? (reaction.verdict === "like" ? "froh" : "traurig") : "wartet";
 
   return (
@@ -502,23 +526,28 @@ export function SwipeDeck({
         )}
       </div>
 
-      {/* Under the card only the flower (tap: another quip) and its bubble – ⓘ and ↺ sit at the top. */}
+      {/* Under the card only the flower (tap: how far you two are) and its bubble – ⓘ and ↺ sit at the top. */}
       <div className="grid shrink-0 grid-cols-[76px_minmax(0,1fr)] items-center gap-x-2">
         <button
           type="button"
-          onClick={() => setTap((n) => n + 1)}
-          aria-label="Blume antippen für einen neuen Spruch"
+          onClick={showStatus}
+          aria-label="Blume antippen: wie weit seid ihr?"
           className="relative h-[106px] w-[76px] overflow-hidden [@media(max-height:700px)]:h-[84px]"
         >
           <Bloom stimmung={mood} blaetter={2} className="absolute -left-1 top-0 h-[106px] w-[76px] [@media(max-height:700px)]:h-[84px]" />
         </button>
-        <p
-          data-quip
-          aria-live="polite"
-          className="min-h-9 max-w-[250px] -rotate-2 justify-self-start rounded-[18px_18px_18px_4px] bg-butter px-3.5 pb-[11px] pt-[9px] font-hand text-xl font-semibold leading-[1.02] text-[#2B1D12]"
-        >
-          {quip || "na, was meinst du?"}
-        </p>
+        {status && !message && !reaction ? (
+          <p data-quip data-deck-status aria-live="polite" className={QUIP_CLASS}>
+            {swipedWords}{" "}
+            <Link href="/ideas?ansicht=geswipt" className="underline">
+              deine likes ›
+            </Link>
+          </p>
+        ) : (
+          <p data-quip aria-live="polite" className={QUIP_CLASS}>
+            {quip || "na, was meinst du?"}
+          </p>
+        )}
       </div>
 
       {match && (

@@ -192,7 +192,7 @@ await j.getByRole("button", { name: "Weiter" }).click();
 await j.waitForTimeout(600);
 await j.screenshot({ path: `${OUT}m13-07-welcome.png` });
 
-// 6b) The bottom bar: Beet · Ideen · Swipen · Archiv · Einstellungen
+// 6b) The bottom bar: Archiv · Swipen · Beet · Ideen · Einstellungen
 await j.goto(`${BASE}/plan`);
 await j.locator("[data-next-step]").filter({ visible: true }).first().waitFor({ timeout: 15000 });
 const bar = j.getByRole("navigation", { name: "Hauptmenü" });

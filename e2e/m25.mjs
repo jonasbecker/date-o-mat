@@ -154,6 +154,22 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
   await settle(j);
   check(`${tag}: a tap opens it gently (${JSON.stringify(await state(j))})`, JSON.stringify(await state(j)) === JSON.stringify({ z: "offen", tempo: "sanft", mood: "genervt" }) && (await head(j).getAttribute("aria-expanded")) === "true");
   check(`${tag}: open – nothing covered (${(await overlaps(j)).join(", ")})`, (await overlaps(j)).length === 0);
+  // The Beet circle sticks up out of the tab bar (its ring even more) – the card must never cover it: pushed a bit
+  // lower, the card still has to go behind the circle. Without the page's fade-in (Chromium keeps a layer for it,
+  // Safari does not – there the card was in front).
+  const beetOnTop = await j.evaluate(() => {
+    const card = document.querySelector("[data-sheet-card]");
+    const beet = document.querySelector('nav[aria-label="Hauptmenü"] a[aria-label="Beet"]');
+    const page = card.closest(".animate-page-in");
+    page.style.animation = "none";
+    card.style.translate = "0 12px";
+    const r = beet.getBoundingClientRect();
+    const hit = beet.contains(document.elementFromPoint(r.left + r.width / 2, r.top + 4));
+    card.style.translate = "";
+    page.style.animation = "";
+    return hit;
+  });
+  check(`${tag}: the Beet circle stays in front of the open card`, beetOnTop);
   check(`${tag}: week and subtitle fade out`, (await j.locator("[data-sheet-above]").evaluate((el) => getComputedStyle(el).opacity)) === "0");
   const details = j.locator("[data-sheet-details]");
   check(

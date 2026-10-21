@@ -63,16 +63,10 @@ async function Discover() {
           </span>
         }
       />
-      {/* SwipeC.html: "swipen." with a mono line under it, the round filter on the right. */}
+      {/* SwipeC.html: "swipen.", the round filter on the right (how far you two are: tap the flower). */}
       <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex min-w-0 flex-col">
           <h1 className="text-[40px] font-extrabold leading-[0.92] tracking-[-0.05em]">swipen.</h1>
-          <span className="truncate font-mono text-[11px] text-muted">
-            {deck.partnerSwiped > 0 && <>{ctx.partner.name} hat {deck.partnerSwiped} geswipt · </>}
-            <Link href="/ideas?ansicht=geswipt" className="underline">
-              Meine Likes
-            </Link>
-          </span>
         </div>
         <span className="flex shrink-0 gap-2">
           <DeckUndoButton />

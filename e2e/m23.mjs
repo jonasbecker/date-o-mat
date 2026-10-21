@@ -116,11 +116,19 @@ await j.screenshot({ path: `${OUT}m23-02b-info.png` });
 await j.keyboard.press("Escape");
 await j.locator("dialog[open]").waitFor({ state: "detached", timeout: 5000 }).catch(() => {});
 
-// 5) The deck page fits the screen and links to "Meine Likes"
+// 5) The deck page fits the screen; tapping the flower tells how far Sam is and links to my likes (for 5 s)
 check("deck page fits the screen", await fitsScreen(j));
-await j.getByRole("link", { name: "Meine Likes" }).click();
+await j.getByRole("button", { name: "Blume antippen: wie weit seid ihr?" }).click();
+const status = j.locator("[data-deck-status]");
+await status.waitFor({ timeout: 5000 }).catch(() => {});
+check(`the flower says how far Sam is (${await status.innerText().catch(() => "")})`, /^sam hat (\d+|noch nix) geswipt\. deine likes ›$/.test(((await status.innerText().catch(() => "")) || "").trim()));
+await j.screenshot({ path: `${OUT}m23-02c-status.png` });
+await status.waitFor({ state: "detached", timeout: 8000 }).catch(() => {});
+check("after a few seconds it goes back to its quips", (await status.count()) === 0);
+await j.getByRole("button", { name: "Blume antippen: wie weit seid ihr?" }).click();
+await j.getByRole("link", { name: "deine likes ›" }).click();
 await items.first().waitFor({ timeout: 20000 });
-check(`Meine Likes opens the wishlist on Geswipt (${await items.count()})`, (await j.getByRole("heading", { name: "geswipt." }).isVisible()) && (await items.count()) === 2);
+check(`"deine likes" opens the wishlist on Geswipt (${await items.count()})`, (await j.getByRole("heading", { name: "geswipt." }).isVisible()) && (await items.count()) === 2);
 await j.screenshot({ path: `${OUT}m23-03-my-likes.png` });
 
 // 6) Dark mode

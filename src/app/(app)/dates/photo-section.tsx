@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useOptimistic, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/button";
 import { PHOTO_LIMITS } from "@/lib/domain";
 import { resizePhoto } from "@/lib/resize-image";
@@ -8,9 +8,11 @@ import { deletePhotoAction, uploadPhotoAction } from "./actions";
 
 export type PhotoView = { id: string; width: number; height: number };
 
-export function PhotoSection({ dateId, photos, enabled }: { dateId: string; photos: PhotoView[]; enabled: boolean }) {
+export function PhotoSection({ dateId, photos: allPhotos, enabled }: { dateId: string; photos: PhotoView[]; enabled: boolean }) {
   const input = useRef<HTMLInputElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
+  // A deleted photo is gone at once, not when the server is done.
+  const [photos, hidePhoto] = useOptimistic(allPhotos, (current, id: string) => current.filter((p) => p.id !== id));
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [open, setOpen] = useState<number | null>(null);
@@ -132,8 +134,9 @@ export function PhotoSection({ dateId, photos, enabled }: { dateId: string; phot
                   disabled={deleting}
                   onClick={() =>
                     startDelete(async () => {
-                      await deletePhotoAction(current.id);
                       dialog.current?.close();
+                      hidePhoto(current.id);
+                      await deletePhotoAction(current.id);
                     })
                   }
                 >

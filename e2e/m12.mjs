@@ -212,7 +212,12 @@ check("own sub-page added", (await db.query("SELECT added_by FROM event_source_p
 await j.locator("#events").screenshot({ path: `${OUT}m12-01-sources.png` });
 await htmlRow.getByRole("button", { name: "Konzerte entfernen" }).click();
 await htmlRow.getByRole("button", { name: "Konzerte entfernen" }).waitFor({ state: "detached", timeout: 10000 });
-check("sub-page removed", (await db.query("SELECT count(*)::int AS c FROM event_source_pages WHERE url LIKE '%konzerte'")).rows[0].c === 0);
+let konzerte = 1;
+for (let i = 0; i < 40 && konzerte > 0; i++) {
+  if (i > 0) await sleep(250);
+  konzerte = (await db.query("SELECT count(*)::int AS c FROM event_source_pages WHERE url LIKE '%konzerte'")).rows[0].c;
+}
+check("sub-page removed", konzerte === 0);
 
 // 3) "Was läuft": groups, free-time badges
 await j.goto(`${BASE}/events`);
@@ -308,7 +313,12 @@ const removeCount = await db.query("SELECT count(*)::int AS c FROM event_sources
 await j.locator("li", { has: j.locator('a[href="http://localhost:4040/tips"]') }).getByRole("button", { name: "Entfernen" }).click();
 await j.locator("li", { has: j.locator('a[href="http://localhost:4040/tips"]') }).getByRole("button", { name: "Ja, entfernen" }).click();
 await j.locator('a[href="http://localhost:4040/tips"]').waitFor({ state: "detached", timeout: 10000 });
-const { rows: [left] } = await db.query("SELECT count(*)::int AS c FROM events WHERE kind = 'tip'");
+// The source is gone at once (optimistic) – the server may still be on it.
+let left = { c: -1 };
+for (let i = 0; i < 40 && left.c !== 0; i++) {
+  if (i > 0) await sleep(250);
+  ({ rows: [left] } = await db.query("SELECT count(*)::int AS c FROM events WHERE kind = 'tip'"));
+}
 check(`removing a source deletes its entries (${removeCount.rows[0].c} → tips left ${left.c})`, left.c === 0);
 
 // 9) Blocked magazine (HTTP 403), added as a calendar by mistake: read through its feed, as tips
