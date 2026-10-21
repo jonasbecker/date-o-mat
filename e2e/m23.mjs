@@ -75,10 +75,10 @@ check("no chip row above the list any more (only the Filter button)", (await j.g
 check("origin tags: von dir geswipt / Sam hat's geliked", (await items.filter({ hasText: "💚 von dir geswipt" }).count()) === 1 && (await items.filter({ hasText: "💚 Sam hat's geliked" }).count()) === 1);
 await j.screenshot({ path: `${OUT}m23-01-wishlist.png` });
 
-// 2) Geswipt (a tile / ?ansicht=geswipt) shows exactly the swiped ones
+// 2) Geswipt ("Meine Likes") shows what I swiped – not Sam's like (blind swiping stays blind)
 await j.goto(`${BASE}/ideas?ansicht=geswipt`);
 await items.first().waitFor({ timeout: 20000 });
-check("Geswipt: only the two swiped ideas", (await items.count()) === 2);
+check("Geswipt: only my swiped idea, not Sam's", (await items.count()) === 1 && (await items.filter({ hasText: "Sam hat's geliked" }).count()) === 0);
 
 // 3) The category is a question in the one Filter
 await j.goto(`${BASE}/ideas?ansicht=alle`);
@@ -120,7 +120,7 @@ await j.locator("dialog[open]").waitFor({ state: "detached", timeout: 5000 }).ca
 check("deck page fits the screen", await fitsScreen(j));
 await j.getByRole("link", { name: "Meine Likes" }).click();
 await items.first().waitFor({ timeout: 20000 });
-check("Meine Likes opens the wishlist on Geswipt", (await j.getByRole("heading", { name: "geswipt." }).isVisible()) && (await items.count()) === 3);
+check(`Meine Likes opens the wishlist on Geswipt (${await items.count()})`, (await j.getByRole("heading", { name: "geswipt." }).isVisible()) && (await items.count()) === 2);
 await j.screenshot({ path: `${OUT}m23-03-my-likes.png` });
 
 // 6) Dark mode

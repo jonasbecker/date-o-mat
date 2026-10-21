@@ -107,6 +107,10 @@ const offsetBefore = (await db.query("SELECT dev_clock_offset_minutes AS o FROM 
 await j.goto(`${BASE}/settings?t=konto`);
 await j.getByRole("button", { name: "+1 Woche" }).click();
 await j.getByText(`verstellt um ${Math.round((offsetBefore + 7 * 24 * 60) / 60)} Std`).waitFor({ timeout: 10000 });
+// Both have a phone for reminders – otherwise the flower's bubble asks for them instead of talking.
+for (const id of [jonas.id, sam.id]) {
+  await db.query("INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth) VALUES ($1, $2, 'p256dh', 'auth') ON CONFLICT DO NOTHING", [id, `https://push.invalid/${id}`]);
+}
 await j.goto(`${BASE}/`);
 check(`round 2 is Sam's (${await heading(j)})`, (await heading(j)) === "sam ist dran.");
 check("the flower is sad and says the round was missed (thought bubble)", (await j.locator('[data-next-step] [data-bloom="traurig"]').count()) === 1 && /letztes mal fiel's aus/.test(await j.locator("[data-next-step] [data-speech]").innerText()));

@@ -133,7 +133,7 @@ check("it was put on the wishlist first", onList.c === 1);
 
 // 4) Home stays focused; dark mode
 await j.goto(`${BASE}/dates`);
-await j.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 15000 });
+await j.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 15000 });
 check("Dates stays focused: no Zufall button", (await j.getByRole("button", { name: /Überrasch uns|Zufall/ }).count()) === 0);
 await j.screenshot({ path: `${OUT}m10-05-home.png` });
 const jd = await pageFor(jonas.token, "dark");

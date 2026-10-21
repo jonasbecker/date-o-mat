@@ -7,7 +7,6 @@ import { NotHappenedButton } from "./not-happened-button";
 import { BudgetBar } from "@/components/budget-bar";
 import type { DateCardExtras } from "@/components/date-card";
 import { StartReview } from "@/components/start-review";
-import { PushRow } from "@/components/push-row";
 import { SetupChecklist } from "@/components/setup-checklist";
 import { isSurpriseHidden, suggestTasks } from "@/core/date-extras";
 import { nextStep } from "@/core/next-step";
@@ -171,7 +170,7 @@ export function StartNotices({ o, ctx }: { o: Overview; ctx: CoupleContext }) {
       {/* The budget only speaks up when it gets tight; otherwise it lives under /budget. */}
       {o.budget && o.budget.level !== "ok" && <BudgetBar {...o.budget} />}
 
-      <PushRow publicKey={o.push.publicKey} myDevices={o.push.mine} partnerDevices={o.push.partner} partnerName={partner.name} />
+      {/* Reminders: the flower says it in its bubble (components/flower-voice.tsx) – no row of its own. */}
 
       <SetupChecklist
         calendar={o.calendars.find((p) => p.isMe)?.state === "connected"}

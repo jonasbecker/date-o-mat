@@ -63,7 +63,7 @@ export function IdeaBoard({
   const matches = ideas.filter((idea) => idea.matched);
   const visible = ideas
     .filter((idea) => matchesIdeaFilter({ size: idea.size, costEur: idea.costEur, setting: idea.setting, category: categoryOf(idea) }, filter))
-    .filter((idea) => view !== "tiles" && inView(idea, view));
+    .filter((idea) => view !== "tiles" && inView(idea, view, meId));
   const counts = Object.fromEntries((["small", "large", "outdoor", "indoor", "local", "own"] as const).map((v) => [v, ideas.filter((i) => inView(i, v)).length])) as TileCounts;
 
   // Tapping an idea opens it on the whole screen (in the URL, so "back" works like everywhere).
@@ -186,14 +186,15 @@ const VIEW_TITLE: Record<ListView, string> = {
   own: "eigene.",
 };
 
-function inView(idea: BoardIdea, view: ListView): boolean {
+function inView(idea: BoardIdea, view: ListView, meId?: string): boolean {
   switch (view) {
     case "all":
       return true;
     case "match":
       return idea.matched;
     case "swiped":
-      return idea.source === "deck";
+      // "Meine Likes": what I swiped right (and the matches) – the other one's likes stay theirs.
+      return idea.source === "deck" && (idea.createdById === meId || idea.matched);
     case "small":
     case "large":
       return idea.size === view;

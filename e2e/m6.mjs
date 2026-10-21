@@ -198,18 +198,18 @@ await iphone.goto(`${BASE}/`);
 await iphone.getByText("Leg den Date-O-Mat auf den Home-Bildschirm").waitFor({ timeout: 10000 });
 check("iOS browser: checklist explains installing first", await iphone.getByText(/Teilen-Symbol → „Zum Home-Bildschirm“/).isVisible());
 await iphone.screenshot({ path: `${SHOTS}m6-03-ios-home.png` });
-check("iOS browser: the start says reminders need the app", await iphone.getByText("Erinnerungen gehen erst als App.").isVisible());
-await iphone.getByRole("button", { name: "So geht's" }).click();
+check("iOS browser: the flower says reminders need the app", (await iphone.getByRole("button", { name: "So gehen Erinnerungen" }).innerText()).includes("erst als app"));
+await iphone.getByRole("button", { name: "So gehen Erinnerungen" }).click();
 check("…and \"So geht's\" opens the install guide", await iphone.locator("dialog[open]").getByText("Erst auf den Home-Bildschirm").isVisible());
 await iphone.keyboard.press("Escape");
 
 // The other person has no device: a quiet line for Jonas, snoozed for a week
 await j.goto(`${BASE}/`);
-const partnerLine = j.getByText("Sam bekommt keine Erinnerungen – sag Bescheid.");
+const partnerLine = j.getByRole("button", { name: "Sam bekommt keine Erinnerungen – eine Woche ausblenden" });
 await partnerLine.waitFor({ timeout: 15000 });
 check("Jonas sees that Sam gets no reminders", true);
 await j.screenshot({ path: `${SHOTS}m6-04-partner-line.png` });
-await j.getByRole("button", { name: "Eine Woche ausblenden" }).click();
+await partnerLine.click();
 await partnerLine.waitFor({ state: "hidden", timeout: 5000 });
 await j.reload();
 await j.locator("[data-next-step]").filter({ visible: true }).first().waitFor({ timeout: 15000 });

@@ -185,10 +185,10 @@ einmal, Rückfragen beim Entfernen/Trennen, Willkommen-Texte, Manifest dunkel, �
 4. ✅ **Gleichzeitig handeln**: „Zusagen“ bestätigt nur die Zeit, die man gesehen hat; eine Verschiebung
    holt kein gerade abgesagtes Date zurück (Status-Wächter, eigene Meldung „wurde abgesagt“).
 5. ✅ **Eingeladene Person kann absagen** (heute nur „Zusagen“ oder „Anderer Termin“).
-6. **Push einmal, nicht dreimal**: ein gemeinsamer Push-Zustand in den Einstellungen (Banner und
+6. ✅ **Push einmal, nicht dreimal** (21.10.: nur die Blume auf dem Beet + der Schalter im Setup): ein gemeinsamer Push-Zustand in den Einstellungen (Banner und
    Schalter widersprechen sich), der Hinweis auf dem Beet nur noch als Sprechblase der Blume.
 7. **Beet aufräumen**: zu viele Zeilen machen die Blume winzig; die Blume sagt Passendes (nicht „wer
-   gießt?“, wenn du dran bist); „sam ist dran.“ nach dem Gießen → „wartet auf sam.“; Blumengröße
+   gießt?“, wenn du dran bist); „sam ist dran.“ nach dem Gießen → „wartet auf sam.“ ✅; Blumengröße
    über alle Zustände gleich.
 8. **„Anderer Termin“** bietet auch Zeiten an, die das alte Date überlappen (es blockiert sich selbst).
 9. **Sams Kalender fehlt und du bist dran**: Anstupsen + Kanne abgeben statt Sackgasse.
@@ -196,9 +196,9 @@ einmal, Rückfragen beim Entfernen/Trennen, Willkommen-Texte, Manifest dunkel, �
     Fehler sichtbar.
 11. **Rückgängig beim Swipen**: Idee nicht hart löschen (Vorschläge, Änderungen der anderen Person);
     ein geplanter Swipe blockiert nicht alle früheren.
-12. **„Meine Likes“** zeigt auch die Likes der anderen Person – verrät das blinde Swipen. Nur eigene
+12. ✅ **„Meine Likes“** (nur eigene + Matches) zeigt auch die Likes der anderen Person – verrät das blinde Swipen. Nur eigene
     zeigen oder umbenennen.
-13. **Ein Name pro Ort**: Tab „Einstellungen“ / Seite „setup.“ / „der gartenschuppen“; Archiv heißt
+13. ✅ **Ein Name pro Ort** („einstellungen.“, „archiv.“): Tab „Einstellungen“ / Seite „setup.“ / „der gartenschuppen“; Archiv heißt
     „unser beet.“, obwohl der Start-Tab „Beet“ ist.
 14. **„wann?“**: große Lücke zwischen Zeiten und Senden-Kasten; der Senden-Knopf ist blau statt der
     hellen Haupt-Pille.

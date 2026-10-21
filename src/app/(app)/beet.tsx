@@ -11,6 +11,7 @@ import { buttonClass } from "@/components/button";
 import { ConfettiActionButton } from "@/components/confetti";
 import { NudgeButton } from "@/components/nudge-button";
 import { Bloom } from "@/components/bloom";
+import { FlowerVoice } from "@/components/flower-voice";
 import { StepDots } from "@/components/step-dots";
 import { StartReview } from "@/components/start-review";
 import { SuggestionCard } from "@/components/suggestion-card";
@@ -137,7 +138,7 @@ export function Beet({
           {/* The flower box keeps the mockup's 300×420 proportions; the bubble sits by its head. */}
           <div className="absolute inset-y-0 left-1/2 aspect-[300/420] max-w-full -translate-x-1/2 [container-type:size]">
             <Bloom stimmung={stimmung} blaetter={blaetter} welk={welk} topf={pot} className="absolute inset-0 size-full" />
-            <ThoughtBubble text={saying} />
+            <FlowerVoice text={saying} publicKey={o.push.publicKey} myDevices={o.push.mine} partnerDevices={o.push.partner} partnerName={partner.name} />
           </div>
         </div>
       )}
@@ -228,26 +229,6 @@ function WeekBar({ cycle, now }: { cycle: NonNullable<Overview["cycle"]>; now: D
   );
 }
 
-/**
- * What the flower thinks (Caveat, a tilted oval) and two dots leading to its head – positions from
- * HomeB.html in the flower's 300×420 box; sizes in container units (cqw), so it scales with the flower –
- * but never below 16 px text: on a small phone the bubble keeps 150 px and grows to the left.
- */
-function ThoughtBubble({ text }: { text: string }) {
-  return (
-    <>
-      <p
-        data-speech
-        className="animate-pop-in absolute left-[-9.7%] top-[1.9%] z-10 w-[max(58.7%,150px)] -translate-x-[max(0px,calc(150px-58.7cqw))] -rotate-[4deg] rounded-[40px/34px] bg-ink px-[max(5.3cqw,12px)] pb-[max(5.3cqw,12px)] pt-[max(4.7cqw,10px)] text-center font-hand text-[max(7.67cqw,16px)] font-semibold leading-[1.02] text-bg"
-      >
-        {text}
-      </p>
-      <span aria-hidden="true" className="absolute left-[48.3%] top-[23.3%] size-[4.67cqw] rounded-full bg-ink" />
-      <span aria-hidden="true" className="absolute left-[53.7%] top-[28.6%] size-[2.67cqw] rounded-full bg-ink" />
-    </>
-  );
-}
-
 /** A date already planned for a later round, shown while this round is still to plan: "Sa 31.10. 18:30". */
 function aheadPill(date: DatePlan | undefined) {
   if (!date) return undefined;
@@ -316,8 +297,9 @@ function viewFor(
         ),
       };
     case "wait_confirm":
+      // You watered – now only the other one's "Zusagen" is missing.
       return {
-        headline: `${partner.name.toLowerCase()} ist\ndran.`,
+        headline: `wartet auf\n${partner.name.toLowerCase()}.`,
         pill: date ? { when: shortWhen(date.startsAt), title: date.title } : undefined,
         on: partner,
         cta: (

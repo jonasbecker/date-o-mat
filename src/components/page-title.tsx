@@ -15,7 +15,8 @@ export function PageTitle({ title, back, backLabel = "Zurück", children }: { ti
             <BackIcon width={18} height={18} />
           </Link>
         )}
-        <h1 className={`headline min-w-0 text-balance break-words ${back ? "text-[40px]" : "text-[54px]"}`}>{title}</h1>
+        {/* A long single word ("einstellungen.") gets smaller on narrow phones instead of breaking mid-word. */}
+        <h1 className={`headline min-w-0 text-balance break-words ${back ? "text-[40px]" : title.length > 11 && !title.includes(" ") ? "text-[min(54px,10.8vw)]" : "text-[54px]"}`}>{title}</h1>
       </div>
       {children && <p className="text-sm font-semibold text-muted">{children}</p>}
     </div>

@@ -37,7 +37,7 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - **Setup (Garten):** `/settings` is the garden shed (`setup-main.tsx`: "Wer gießt?", Gießrhythmus, Gießzeit, push
   switch; calendars + "Freie Abende ab"; `flower-card.tsx`: the flower's name and pot – `couple_settings.flower_name`,
   `flower_pot`, pots unlock at 10/25 lived dates, `core/bloom.ts`). `garden-banner.tsx` shows only when something is
-  missing (push off, calendar, status). "Mehr" (`?t=mehr`) lists the other topics.
+  missing (calendar, status – push is only the switch). The page is "einstellungen." (no "gartenschuppen"). "Mehr" (`?t=mehr`) lists the other topics.
 - **Swipen (C2 card, `docs/design/garten/swipe-karte/`):** `swipe-deck.tsx` – the light card with a picture strip
   (`components/illustrations.tsx`, all of them on `/dev/illustrationen`), the day big (combo: the event; else the next
   free evening / half day from one FreeBusy query per page, `core/card-when.ts`), WO · DAUER · KOSTEN (never cut: in plain CSS the picture gives way first – `flex-shrink`, text `flex 1 0 auto`;
@@ -51,13 +51,15 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   (`color`, `illustrations`, `quips`): Claude writes them in the batch call, `server/card-art.ts` in one small call
   after an idea is created (kind `art`); empty → `core/card-art.ts` (category + cost/place/size). e2e fakes answer
   that call via `e2e/claude-art.mjs` (outside their call counts). "keimt!" for a match.
-- **Ideen / Archiv (Garten):** the seed shelf (`idea-tiles.tsx`, Matchlinge in pots), the stem (`/dates`,
+- **Ideen / Archiv (Garten):** the seed shelf (`idea-tiles.tsx`, Matchlinge in pots; "Meine Likes" = `?ansicht=geswipt`
+  shows only my likes + matches), the stem (`/dates`, titled "archiv.",
   `?ansicht=raster` is the old grid).
 - **The Beet (start, Main B – `docs/design/main-b/`):** `src/app/(app)/beet.tsx` – headline per step ("du bist dran.",
-  "sam ist dran." – always the same size –, "date steht." …) at up to 70 px, the time left big on the right (`TimeLeft`, `--accent-time`), the round as its weekdays
+  "sam ist dran." – always the same size –, "wartet auf sam." after watering, "date steht." …) at up to 70 px, the time left big on the right (`TimeLeft`, `--accent-time`), the round as its weekdays
   (`WeekBar`: today lit, the bar filled up to today – no deadline marker, it looked like a slider handle), the flower (`components/bloom.tsx`, geometry and mood in `core/bloom.ts`: `bloomGeometry`
   is renderVals() of Bloom.html 1:1, `bloomStimmung` = §3, `bloomLeaves` = the last 5 rounds from `server/plant.ts`)
-  with its thought bubble in Caveat (`font-hand`), and one action ("Date planen" + the round hand-over button,
+  with its thought bubble in Caveat (`font-hand`; `components/flower-voice.tsx` – it is also the one reminder hint:
+  "mein wecker ist aus – tipp mich an." turns push on, no row of its own), and one action ("Date planen" + the round hand-over button,
   "Anstupsen", "Zusagen"). The pot has no face. All five moods side by side: `/dev/blume`. The old `Plant`
   (components/plant.tsx) is only the small mark (logo, mascot, empty states).
 - **Rounds and dates:** a date lives in the round it happens in (`cycleForDate()` creates later rounds when a date is

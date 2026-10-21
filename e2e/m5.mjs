@@ -106,7 +106,7 @@ check("event is in Jonas' calendar and invites Sam", ev?.attendees?.[0]?.email =
 check(`event title and location (${ev?.summary})`, ev?.summary === "💞 Date: Picknick im Stadtwald" && ev.location === "Stadtwald");
 check("guest is notified (sendUpdates=all)", requests.some((r) => r.method === "POST" && r.url.includes("/events?sendUpdates=all")));
 check("round is now 'planned'", (await cycleStatus()) === "planned");
-await j.getByRole("heading", { name: "sam ist dran." }).waitFor({ timeout: 10000 });
+await j.getByRole("heading", { name: "wartet auf sam." }).waitFor({ timeout: 10000 });
 check("Jonas waits for Sam's confirmation", true);
 await j.waitForTimeout(300);
 await j.screenshot({ path: `${SHOTS}m5-02-home-planned.png` });
@@ -190,7 +190,7 @@ await db.query("UPDATE cycles SET mode = 'suggestion', planner_id = NULL WHERE c
 await s.goto(`${BASE}/`);
 await s.getByRole("button", { name: "Übernehmen 🎉" }).waitFor({ timeout: 15000 });
 await s.getByRole("button", { name: "Übernehmen 🎉" }).click();
-await s.getByRole("heading", { name: "jonas ist dran." }).waitFor({ timeout: 15000 });
+await s.getByRole("heading", { name: "wartet auf jonas." }).waitFor({ timeout: 15000 });
 const accepted = await theDate();
 const sug = (await db.query("SELECT status FROM suggestions WHERE status = 'accepted'")).rows.length;
 check("suggestion accepted → date with Sam as organizer", accepted.organizer_id === sam.id && sug === 1);

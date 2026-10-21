@@ -126,13 +126,13 @@ check("bottom bar: Ideen · Swipen · Beet · Archiv · Einstellungen", (await b
 await header.getByRole("link", { name: "Date-O-Mat – zum Start" }).waitFor({ timeout: 15000 });
 check("the header is only the name", (await header.getByRole("link").count()) === 1);
 
-// Reminders: my own line stays until a device of mine is registered – one tap, no detour
-const pushLine = a.getByText("Damit ihr kein Date vergesst: Erinnerungen an.");
+// Reminders: the flower says it in its bubble until a device of mine is registered – one tap, no detour
+const pushLine = a.getByRole("button", { name: "Erinnerungen anschalten" });
 await pushLine.waitFor({ timeout: 15000 });
-check("start: a line asks for reminders, with a one-tap button", await a.getByRole("button", { name: "Aktivieren" }).isVisible());
-check("…and it cannot be dismissed (only the button is in it)", (await a.locator("[role=note]").filter({ hasText: "Erinnerungen an" }).getByRole("button").count()) === 1);
+check("start: the flower asks for reminders („mein wecker ist aus“)", (await pushLine.innerText()).includes("mein wecker ist aus"));
+check("…no extra row for it", (await a.locator("[role=note]").filter({ hasText: "Erinnerungen" }).count()) === 0);
 await a.screenshot({ path: `${SHOTS}05d-push-row.png` });
-await a.getByRole("button", { name: "Aktivieren" }).click();
+await pushLine.click();
 await pushLine.waitFor({ state: "hidden", timeout: 10000 });
 const { rows: [jonasPush] } = await db.query("SELECT count(*)::int AS n FROM push_subscriptions s JOIN users u ON u.id = s.user_id WHERE u.email = 'jonas@example.com'");
 check(`one tap on the start registers the device and the line is gone (${jonasPush.n})`, jonasPush.n === 1);
@@ -154,9 +154,10 @@ const darkContext = await contextFor(tokenB, "dark");
 await stubPush(darkContext, "denied");
 const dark = await darkContext.newPage();
 await dark.goto(`${BASE}/`);
-await dark.getByRole("button", { name: "Aktivieren" }).click();
-await dark.getByText("Erinnerungen sind blockiert.").waitFor({ timeout: 10000 });
-await dark.getByRole("button", { name: "So erlaubst du sie" }).click();
+await dark.getByRole("button", { name: "Erinnerungen anschalten" }).click();
+await dark.getByRole("button", { name: "So erlaubst du Erinnerungen" }).waitFor({ timeout: 10000 });
+check("denied: the flower says its alarm is blocked", (await dark.getByRole("button", { name: "So erlaubst du Erinnerungen" }).innerText()).includes("blockiert"));
+await dark.getByRole("button", { name: "So erlaubst du Erinnerungen" }).click();
 check("denied: the start shows how to allow notifications again", await dark.locator("dialog[open]").getByText("Stelle „Benachrichtigungen“ auf „Zulassen“.").isVisible());
 await dark.screenshot({ path: `${SHOTS}06b-push-denied-dark.png` });
 await dark.keyboard.press("Escape");
@@ -166,7 +167,7 @@ await dark.screenshot({ path: `${SHOTS}06-home-dark.png` });
 
 // Settings + logout
 await a.goto(`${BASE}/settings`);
-await a.getByRole("heading", { name: /setup/ }).waitFor();
+await a.getByRole("heading", { name: /einstellungen/ }).waitFor();
 await a.getByRole("radiogroup", { name: "Wer gießt?" }).waitFor({ timeout: 15000 });
 await a.waitForTimeout(500);
 await a.screenshot({ path: `${SHOTS}07-setup.png` });

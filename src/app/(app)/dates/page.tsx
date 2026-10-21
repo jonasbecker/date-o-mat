@@ -33,7 +33,7 @@ const TILES = [
 ];
 
 /**
- * ThArchiv (DESIGN-GARTEN.md §5.4): "unser beet." – the stem: every date a photo leaf, every round that
+ * ThArchiv (DESIGN-GARTEN.md §5.4): "archiv." (was "unser beet." – the Beet is the start) – the stem: every date a photo leaf, every round that
  * fell through a wilted one, the next date a bud on top. "Raster" is the grid of tiles (MArchiv).
  */
 export default function DatesPage({ searchParams }: PageProps<"/dates">) {
@@ -86,7 +86,7 @@ async function Dates({ searchParams }: { searchParams: PageProps<"/dates">["sear
     <>
       <AutoRefresh />
       <AppHeader action={<HeaderMeta>{dates.length === 1 ? "1 Blatt" : `${dates.length} Blätter`}{since ? ` · seit ${since}` : ""}</HeaderMeta>} />
-      <h1 className="headline text-[54px]">unser beet.</h1>
+      <h1 className="headline text-[54px]">archiv.</h1>
       <nav aria-label="Ansicht" className="inline-flex self-start rounded-full bg-surface p-[3px]">
         {[
           { label: "Stiel", href: "/dates", on: !grid },

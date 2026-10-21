@@ -169,13 +169,13 @@ check(`Sam's review saved, "Nochmal machen? unbedingt" too (${samReview?.again})
 await new Promise((r) => setTimeout(r, 800));
 check(`Jonas is told (${titles("jonas-phone")})`, titles("jonas-phone").some((t) => t.startsWith("Sam hat verraten")));
 await s.goto(`${BASE}/dates`);
-await s.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 10000 });
+await s.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 10000 });
 check("review prompt gone after reviewing", (await s.getByRole("link", { name: /Wie war „Picknick/ }).count()) === 0);
 
 // 3) Jonas: Sam's hearts are hidden until he reviews
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/dates`);
-await j.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 15000 });
+await j.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 15000 });
 check("list: Sam's review is locked", await j.getByText("hat bewertet 🔒").isVisible());
 check("the Archiv shows no hearts or averages that could give Sam's hidden review away", (await j.locator("dl").count()) === 0 && !(await j.locator("main").innerText()).includes("Ø"));
 await j.getByRole("link", { name: /Picknick im Stadtwald/ }).last().click();
@@ -205,17 +205,17 @@ check("editing works and does not push again", inbox.length === before);
 
 // 5) Stats + nav
 await j.goto(`${BASE}/dates`);
-await j.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 10000 });
+await j.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 10000 });
 check("the Archiv counts its dates in the header", await j.locator("header").filter({ visible: true }).first().getByText(/1 Blatt/).isVisible());
 await j.screenshot({ path: `${OUT}m8-04-list.png`, fullPage: true });
 check("dates history fits the screen", await fitsScreen(j));
 const jd = await pageFor(jonas.token, { colorScheme: "dark" });
 await jd.goto(`${BASE}/dates`);
-await jd.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 10000 });
+await jd.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 10000 });
 await jd.screenshot({ path: `${OUT}m8-05-list-dark.png`, fullPage: true });
 await j.goto(`${BASE}/`);
 await j.getByRole("link", { name: "Einstellungen" }).click();
-await j.getByRole("heading", { name: "setup." }).waitFor({ timeout: 10000 });
+await j.getByRole("heading", { name: "einstellungen." }).waitFor({ timeout: 10000 });
 check("settings reachable from the header", true);
 await j.getByRole("link", { name: /^Mehr/ }).click();
 await j.getByRole("link", { name: /Erinnerungen im Detail/ }).click();

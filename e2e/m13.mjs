@@ -140,7 +140,7 @@ check("no surprise option before the first date", (await j.getByText("🎁 Als �
 // 5) Planned → Sam's next step is "Passt!"
 await j.getByRole("button", { name: SEND }).click();
 await backAtStart(j, BASE);
-check(`Jonas waits: "${await heading(j)}"`, (await heading(j)) === "sam ist dran.");
+check(`Jonas waits: "${await heading(j)}"`, (await heading(j)) === "wartet auf sam.");
 await s.goto(`${BASE}/`);
 await s.waitForURL(`${BASE}/plan`, { timeout: 15000 });
 check(`Sam must confirm: "${await heading(s)}"`, (await heading(s)) === "jonas hat gegossen.");
@@ -199,7 +199,7 @@ const bar = j.getByRole("navigation", { name: "Hauptmenü" });
 check("Beet is the current tab on the start", (await bar.getByRole("link", { name: "Beet", exact: true }).getAttribute("aria-current")) === "page");
 await bar.getByRole("link", { name: "Archiv", exact: true }).click();
 await j.waitForURL(`${BASE}/dates`, { timeout: 10000 });
-await j.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 10000 });
+await j.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 10000 });
 check("Archiv opens the history, marked as the current page", (await bar.getByRole("link", { name: "Archiv", exact: true }).getAttribute("aria-current")) === "page");
 await j.screenshot({ path: `${OUT}m13-13-panel.png` });
 await bar.getByRole("link", { name: "Swipen", exact: true }).click();
