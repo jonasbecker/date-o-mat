@@ -193,6 +193,18 @@ for (const viewport of [
   await page.waitForTimeout(600);
   const grown = await whole();
   check(`…and is roomy again when it grows (step ${grown?.dense})`, grown?.whole === true && grown.dense === roomy?.dense);
+  // Like on the phone: the tab bar moves between pages (Next keeps the swipe page, hidden), the screen
+  // changes meanwhile, back on Swipen the card must fit what it has now.
+  await page.getByRole("link", { name: "Beet" }).click();
+  await page.waitForURL(`${BASE}/plan`);
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.waitForTimeout(400);
+  await page.getByRole("link", { name: "Swipen" }).click();
+  await page.waitForURL(`${BASE}/ideas/entdecken`);
+  await page.waitForTimeout(800);
+  const back = await whole();
+  await page.screenshot({ path: `${OUT}m24-card-back.png` });
+  check(`back on Swipen after the screen changed while it was hidden: whole (step ${back?.dense})`, back?.whole === true && back.dense > 0);
   await ctx.close();
 }
 // The five moods of the flower side by side (/dev/blume), to compare with BloomStates.html

@@ -47,8 +47,23 @@ function infoRows(card: DeckCardView) {
   return rows;
 }
 
-/** How many steps the card can tighten to fit its box (see `Card`). */
+/** How many steps the card can tighten to fit its box (see `Card`, the rules are in globals.css). */
 const DENSEST = 5;
+
+/**
+ * Tightens the card until its content fits: sets `data-d1` … `data-dN` (globals.css, `.swipe-card`) and
+ * `data-card-dense` right on the element and measures after each step. Plain DOM, no React state: it runs
+ * whenever the card or its content changes size, so it cannot miss the moment the card is laid out
+ * (a page Next rendered hidden, Safari's bars, fonts arriving).
+ */
+function fitCard(card: HTMLElement, body: HTMLElement) {
+  for (let dense = 0; dense <= DENSEST; dense++) {
+    for (let step = 1; step <= DENSEST; step++) card.toggleAttribute(`data-d${step}`, step <= dense);
+    card.dataset.cardDense = String(dense);
+    // Not laid out (hidden): nothing to measure – the observer calls again once it is shown.
+    if (body.clientHeight === 0 || body.scrollHeight <= body.clientHeight + 1) return;
+  }
+}
 
 /**
  * One idea as a card (SWIPE-KARTE.md §2, SwipeC.html variant 2): the picture strip in its pastel, the sort
@@ -56,89 +71,79 @@ const DENSEST = 5;
  * The card is light in the dark app – its colors are fixed, not tokens.
  *
  * Phones differ by 300 px in height (Safari's bars, safe areas), and a card by a row (event) or a chip:
- * the card measures itself and tightens step by step until everything fits – the picture first, then
- * the small lines, then the type, the title's second line last; the info box is never cut.
+ * the card tightens step by step until everything fits (`fitCard`) – the picture first, then the small
+ * lines, then the type, the title's second line last; the info box is never cut.
  * 1: smaller picture · 2: no sub-lines · 3: small picture, smaller type · 4: no picture, no Sorte · 5: title on one line.
  */
 function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: string; pos?: string }) {
   const when = card.when;
   const box = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
-  // `run` counts the fits: starting over must measure again even when the card is already roomiest
-  // (setting 0 to 0 would not render – the card stayed cut when the box shrank after the first fit).
-  const [{ dense, run }, setFit] = useState({ dense: 0, run: 0 });
-  // Before paint: one more step while the content is taller than its box.
   useLayoutEffect(() => {
-    const el = body.current;
-    if (el && dense < DENSEST && el.scrollHeight > el.clientHeight + 1) setFit((f) => ({ ...f, dense: f.dense + 1 }));
-  }, [dense, run]);
-  // The box changes height (rotation, Safari's bars, the page settling after the first paint) or the
-  // fonts arrive (other line breaks): start over from the roomiest.
-  useEffect(() => {
     const el = box.current;
-    if (!el) return;
-    const refit = () => setFit((f) => ({ dense: 0, run: f.run + 1 }));
-    let last = el.clientHeight;
-    const ro = new ResizeObserver(() => {
-      if (Math.abs(el.clientHeight - last) < 2) return;
-      last = el.clientHeight;
-      refit();
-    });
-    ro.observe(el);
-    let live = true;
-    void document.fonts?.ready.then(() => live && refit());
-    document.fonts?.addEventListener?.("loadingdone", refit);
-    return () => {
-      live = false;
-      ro.disconnect();
-      document.fonts?.removeEventListener?.("loadingdone", refit);
+    const inner = body.current;
+    if (!el || !inner) return;
+    let frame = 0;
+    const fit = () => fitCard(el, inner);
+    const later = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(fit);
     };
-  }, []);
-  const d = (n: number) => dense >= n;
+    fit();
+    // The card's box and everything in it: any size change (shown, rotated, fonts, a longer title) fits again.
+    const ro = new ResizeObserver(later);
+    ro.observe(el);
+    for (const child of inner.children) ro.observe(child);
+    const timer = setTimeout(fit, 400);
+    void document.fonts?.ready.then(later);
+    document.fonts?.addEventListener?.("loadingdone", later);
+    window.addEventListener("pageshow", later);
+    document.addEventListener("visibilitychange", later);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+      ro.disconnect();
+      document.fonts?.removeEventListener?.("loadingdone", later);
+      window.removeEventListener("pageshow", later);
+      document.removeEventListener("visibilitychange", later);
+    };
+  }, [card]);
   return (
-    <div ref={box} data-card-dense={dense} className="relative flex h-full flex-col overflow-hidden rounded-[28px] bg-[#E7EEDF] text-[#1B2620] shadow-[0_18px_30px_rgba(0,0,0,0.4)]">
-      {!d(4) && (
-        <IllustrationStrip
-          names={card.art.illustrations}
-          hex={card.art.hex}
-          className={cn("-mb-2.5 shrink-0 overflow-hidden", d(3) ? "h-11" : d(1) ? "h-16" : "h-[clamp(56px,13vh,110px)]")}
-        />
-      )}
-      <div ref={body} className={cn("relative flex min-h-0 flex-1 flex-col overflow-hidden", d(3) ? "gap-2 p-3.5" : d(1) ? "gap-2.5 p-4" : "gap-3.5 p-5")}>
-        {!d(4) && (
-          <div className="flex items-center justify-between gap-2">
-            <span className="inline-flex h-[26px] items-center truncate rounded-full bg-white px-2.5 font-mono text-[11px]">Sorte: {card.sorte}</span>
-            {pos && <span className="shrink-0 font-mono text-[11px] text-[#6A7566]">Nº {pos}</span>}
-          </div>
-        )}
+    <div ref={box} data-card-dense={0} className="swipe-card relative flex h-full flex-col overflow-hidden rounded-[28px] bg-[#E7EEDF] text-[#1B2620] shadow-[0_18px_30px_rgba(0,0,0,0.4)]">
+      <IllustrationStrip names={card.art.illustrations} hex={card.art.hex} className="sc-strip -mb-2.5 h-[clamp(56px,13vh,110px)] shrink-0 overflow-hidden" />
+      <div ref={body} className="sc-body relative flex min-h-0 flex-1 flex-col gap-3.5 overflow-hidden p-5">
+        <div className="sc-sorte flex items-center justify-between gap-2">
+          <span className="inline-flex h-[26px] items-center truncate rounded-full bg-white px-2.5 font-mono text-[11px]">Sorte: {card.sorte}</span>
+          {pos && <span className="shrink-0 font-mono text-[11px] text-[#6A7566]">Nº {pos}</span>}
+        </div>
         {(card.partnerSuper || card.kind === "revisit") && (
-          <div className={cn("flex flex-wrap gap-1.5 font-mono text-[10px]", !d(4) && "-mt-1.5")}>
+          <div className="sc-chips -mt-1.5 flex flex-wrap gap-1.5 font-mono text-[10px]">
             {card.partnerSuper && <span className="rounded-full bg-[#F6DFD3] px-2.5 py-1">★ {partnerName} findet das super</span>}
             {card.kind === "revisit" && <span className="rounded-full bg-[#E6E0F2] px-2.5 py-1">🕰️ Liegt {card.waitingSince ?? "lange"} im Regal</span>}
           </div>
         )}
         {when && (
-          <div className={cn("flex flex-col", d(3) ? "gap-0.5" : "gap-1")} data-card-when>
-            <span className={cn("font-extrabold leading-[0.92] tracking-[-0.055em]", d(3) ? "text-[32px]" : "text-[42px]")}>{when.day}</span>
-            <span className={cn("flex flex-wrap items-center gap-x-2 font-bold", d(3) ? "text-[15px]" : "text-[17px]", when.free === true ? "text-[#2E7D46]" : when.free === false ? "text-[#A0522D]" : "text-[#6A7566]")}>
+          <div className="sc-when flex flex-col gap-1" data-card-when>
+            <span className="sc-day text-[42px] font-extrabold leading-[0.92] tracking-[-0.055em]">{when.day}</span>
+            <span className={cn("sc-time flex flex-wrap items-center gap-x-2 text-[17px] font-bold", when.free === true ? "text-[#2E7D46]" : when.free === false ? "text-[#A0522D]" : "text-[#6A7566]")}>
               <span>{when.time}</span>
               <span aria-hidden="true">·</span>
               <span>{when.note}</span>
             </span>
           </div>
         )}
-        <div className={cn("border-t-[1.5px] border-[#C9D4C4]", d(3) ? "pt-2" : "pt-3")}>
-          <h2 className={cn("font-extrabold leading-[1.05] tracking-[-0.03em]", d(5) ? "line-clamp-1" : "line-clamp-2", d(3) ? "text-xl" : "text-2xl")}>{card.title}</h2>
+        <div className="sc-rule border-t-[1.5px] border-[#C9D4C4] pt-3">
+          <h2 className="sc-title line-clamp-2 text-2xl font-extrabold leading-[1.05] tracking-[-0.03em]">{card.title}</h2>
         </div>
         <div data-card-info className="mt-auto shrink-0 overflow-hidden rounded-[18px] bg-white">
           {infoRows(card).map((r, i) => (
-            <div key={r.k} className={cn("grid grid-cols-[30px_minmax(0,1fr)_auto] items-center gap-2.5 px-3.5", d(3) ? "py-1" : d(2) ? "py-1.5" : "py-[9px]", i > 0 && "border-t border-[#EDF3EA]")}>
-              <span aria-hidden="true" className={cn("flex items-center justify-center rounded-[9px] text-[13px] font-extrabold", d(3) ? "size-6" : "size-7")} style={{ background: r.bg }}>
+            <div key={r.k} className={cn("sc-row grid grid-cols-[30px_minmax(0,1fr)_auto] items-center gap-2.5 px-3.5 py-[9px]", i > 0 && "border-t border-[#EDF3EA]")}>
+              <span aria-hidden="true" className="sc-icon flex size-7 items-center justify-center rounded-[9px] text-[13px] font-extrabold" style={{ background: r.bg }}>
                 {r.icon}
               </span>
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-[15px] font-bold leading-[1.15]">{r.v}</span>
-                {r.s && !d(2) && <span className="truncate text-xs text-[#6A7566]">{r.s}</span>}
+                {r.s && <span className="sc-sub truncate text-xs text-[#6A7566]">{r.s}</span>}
               </span>
               <span className="font-mono text-[10px] text-[#6A7566]">{r.k}</span>
             </div>
