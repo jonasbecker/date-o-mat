@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import { bubbleAt, bubbleDots, cardAt, poseAt, position, release, sheetLayout, topAt } from "./date-sheet";
 
 // The reference phone: 390 × 844 → the Beet's area is 350 wide, the card's bottom edge at 704 (764 − 60).
-// The subtitle ends at 198. The closed card holds a two-line title and when · where (≈ 148 px of text →
+// The closed card holds a two-line title and when · where (≈ 148 px of text →
 // 192 like the reference); the header starts 42 px above the area, the screen 58 px above it.
-const REF = sheetLayout({ width: 350, height: 684, flowBottom: 198, headH: 148 });
+// The closed flower fills the room between the text and the card: in the reference that is exactly 0.72.
+const REF = sheetLayout({ width: 350, height: 684, flowBottom: 200.6, headH: 148 });
 
 describe("sheetLayout", () => {
   it("matches the reference on 390 × 844: card 192 high, mitte at 176, flower at 0.72 above it", () => {
@@ -32,6 +33,15 @@ describe("sheetLayout", () => {
     expect(REF.handleVoll).toEqual({ top: -20 - 3 + 58, w: 58, h: 6 });
     // The text starts below the header (it ends 2 px above the area).
     expect(REF.padTop.voll).toBe(2 + 58 + 14);
+  });
+
+  it("with more room the closed flower grows to fill it, never wider than the area", () => {
+    const tall = sheetLayout({ width: 350, height: 760, flowBottom: 200, headH: 80 });
+    expect(tall.zu.s).toBeGreaterThan(0.72);
+    expect(tall.zu.y).toBeGreaterThanOrEqual(201);
+    expect(tall.zu.y + 420 * tall.zu.s).toBeCloseTo(tall.tops.zu - 7, 0);
+    const wide = sheetLayout({ width: 300, height: 1200, flowBottom: 200, headH: 80 });
+    expect(300 * wide.zu.s).toBeLessThanOrEqual(300 + 0.01);
   });
 
   it("a short phone shrinks the closed flower instead of covering the text above it", () => {

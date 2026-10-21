@@ -43,7 +43,7 @@ export const TIMING: Record<Tempo, { ms: number; ease: string; cardEase: string 
 /** Flying off the top speeds up; coming back down it lands softly. */
 export const FLY = { out: { ms: 550, ease: "cubic-bezier(0.5, 0, 0.9, 0.6)" }, back: { ms: 1100, ease: "cubic-bezier(0.15, 0.6, 0.3, 1)" } } as const;
 
-/** Reference sizes: the flower is drawn at 0.72 when closed (216 × 302). */
+/** Reference sizes: the flower is drawn at 0.72 when closed (216 × 302) – it grows or shrinks with the room it has. */
 const ZU_SCALE = 0.72;
 const REF_WIDTH = 350;
 const HANDLE: Handle = { top: 8, w: 38, h: 4 };
@@ -102,7 +102,8 @@ export function sheetLayout({
   const midTop = Math.min(SHEET.midTop, zuTop - 40);
   // Room for the closed flower between the text and the card (302 px in the reference).
   const room = zuTop - SHEET.potGap - (flowBottom + 2);
-  const k = Math.max(0.3, Math.min(1, room / (420 * ZU_SCALE)));
+  // The closed flower fills that room (on a tall phone bigger than the reference) – only as wide as the area.
+  const k = Math.max(0.3, Math.min(room / (420 * ZU_SCALE), width / (300 * ZU_SCALE)));
   const s = ZU_SCALE * k;
   const zu: Pose = { x: Math.round((width - 300 * s) / 2 - 5 * k), y: Math.round(zuTop - SHEET.potGap - 420 * s), s, r: 0 };
   // At mitte the head sits right of the headline, under the avatars (reference ≈ 310, 88).

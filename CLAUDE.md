@@ -70,7 +70,7 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   `genervt` / `autsch` for the date sheet).
   **"date steht."** (`docs/design/garten/date-steht/`, `date-sheet.tsx`, geometry `core/date-sheet.ts`): no "Details ›" – the
   card is a sheet (bottom edge fixed, only its top moves) with three stops (`data-date-sheet`): `zu` (only title and
-  when · where – the closed card is as high as that text), `mitte` (the reference's open card, the rest cut off with a
+  when · where – the closed card is as high as that text; the flower fills the room between the text and the card), `mitte` (the reference's open card, the rest cut off with a
   fade; if the browser scrolls it – focus, a link further down – it goes to voll) and `voll` (covers the screen under
   the header, all without scrolling, the handle becomes the header's step bar, the flower flies off the top and comes
   back down with the card). Everything between follows the card's top (`position()` 0…2). Letting go faster than
