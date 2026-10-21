@@ -205,7 +205,7 @@ einmal, Rückfragen beim Entfernen/Trennen, Willkommen-Texte, Manifest dunkel, �
 15. ✅ **Tipp-Ziele ≥ 44 px** (`hit`: unsichtbare Fläche, das Aussehen bleibt): Details ›, Lieber was anderes?, Weitere Zeiten, ⓘ, Filter,
     Matchlinge-Pille, Größen-Umschalter, Herzen klein.
 16. ✅ **Karte ohne freien Abend** („irgendwann.“): kein großes Wochenend-Datum, das wie ein Vorschlag aussieht.
-17. **„Was läuft“ auffindbar machen** (heute ein kleiner Link oben auf /ideas).
+17. ✅ **„Was läuft“ auffindbar machen** (Pille mit Ticket oben auf /ideas) (heute ein kleiner Link oben auf /ideas).
 18. ✅ **Weniger Google-Abfragen**: doppelte Vorschläge im Vorschlag-Modus (eindeutig pro Runde),
     FreeBusy der Swipe-Seite ein paar Minuten zwischenspeichern.
 19. ✅ **Google-Zusage nach Verschieben prüfen**: ein altes „accepted“ darf die neue Zeit nicht

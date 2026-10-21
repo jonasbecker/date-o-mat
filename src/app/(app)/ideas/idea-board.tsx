@@ -11,7 +11,7 @@ import type { NextDateInfo } from "@/components/swap-confirm";
 import { IdeaForm, type IdeaFormDefaults } from "@/components/idea-form";
 import { Sheet, type SheetHandle } from "@/components/sheet";
 import { IdeaCard } from "@/components/idea-card";
-import { BackIcon } from "@/components/icons";
+import { BackIcon, TicketIcon } from "@/components/icons";
 import { QuickAdd } from "@/components/quick-add";
 import { IdeaDetail } from "./idea-detail";
 import { IdeaTiles, type TileCounts } from "./idea-tiles";
@@ -124,12 +124,13 @@ export function IdeaBoard({
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         <div className="flex items-end justify-between gap-3">
           <h1 className="headline text-[54px]">ideen.</h1>
-          <span className="flex items-center gap-3 pb-1.5 text-sm font-bold">
-            <Link href="/events" className="tap">
-              Was läuft ›
-            </Link>
-            <Link href="/ideas?ansicht=alle" className="tap">
+          <span className="flex items-center gap-3 pb-1 text-sm font-bold">
+            <Link href="/ideas?ansicht=alle" className="tap hit">
               Alle {ideas.length} ›
+            </Link>
+            {/* Events in town: a real pill, not a small link (it is half of what to do). */}
+            <Link href="/events" className="tap inline-flex h-11 items-center gap-1.5 rounded-full bg-surface px-4">
+              <TicketIcon width={16} height={16} aria-hidden="true" /> Was läuft
             </Link>
           </span>
         </div>
