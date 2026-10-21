@@ -206,11 +206,11 @@ einmal, Rückfragen beim Entfernen/Trennen, Willkommen-Texte, Manifest dunkel, �
     Matchlinge-Pille, Größen-Umschalter, Herzen klein.
 16. ✅ **Karte ohne freien Abend** („irgendwann.“): kein großes Wochenend-Datum, das wie ein Vorschlag aussieht.
 17. **„Was läuft“ auffindbar machen** (heute ein kleiner Link oben auf /ideas).
-18. **Weniger Google-Abfragen**: doppelte Vorschläge im Vorschlag-Modus (eindeutig pro Runde),
+18. ✅ **Weniger Google-Abfragen**: doppelte Vorschläge im Vorschlag-Modus (eindeutig pro Runde),
     FreeBusy der Swipe-Seite ein paar Minuten zwischenspeichern.
 19. ✅ **Google-Zusage nach Verschieben prüfen**: ein altes „accepted“ darf die neue Zeit nicht
     bestätigen (`responseStatus` zurücksetzen).
-20. **Gießzeit-Auswahl** passend zum Rhythmus und mit der echten Uhrzeit (nicht immer „20:00“).
+20. ✅ **Gießzeit-Auswahl** passend zum Rhythmus und mit der echten Uhrzeit (nicht immer „20:00“).
 21. ✅ Kleinkram: „Jetzt lesen“ sagt, wann es wieder geht; Tab „Sam“ → „Sams Herzen“; „keimt!“ mit
     Escape/Fokus; Zoomen erlauben; eigener Code beim Beitreten erklärt; „Ihr seht euch Dienstag“ am
     selben Tag → „heute“; Date um 00:30 bekommt „Morgen ist Date-Tag“ zur richtigen Zeit; Fehler

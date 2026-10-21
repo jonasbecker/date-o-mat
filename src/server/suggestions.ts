@@ -70,8 +70,12 @@ export async function currentSuggestion(ctx: CoupleContext, cycle: Cycle, now: D
       endsAt: pick.slot.end,
       ideaId: pick.idea?.ideaId ?? null,
     })
+    .onConflictDoNothing()
     .returning();
-  return { status: "ok", suggestion: created, idea: await loadIdea(created.ideaId) };
+  // The other one was faster: theirs is the round's suggestion.
+  const suggestion = created ?? (await db.select().from(suggestions).where(and(eq(suggestions.cycleId, cycle.id), eq(suggestions.status, "pending"))).limit(1))[0];
+  if (!suggestion) return { status: "no_slots" };
+  return { status: "ok", suggestion, idea: await loadIdea(suggestion.ideaId) };
 }
 
 /** `cycleId` must be the caller's current round – that scopes the update to the couple. */

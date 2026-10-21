@@ -15,6 +15,7 @@ import { env } from "@/server/env";
 import { formatTimeRange } from "@/lib/format";
 import { sendToUser } from "@/server/push";
 import { deleteEvent, getEvent, insertEvent, patchEvent, queryFreeBusy } from "@/server/google/calendar-api";
+import { forgetBusy } from "@/server/busy-cache";
 import { CalendarNotConnectedError, getConnection } from "@/server/google/connection";
 import { cycleForDate, ensureCurrentCycle } from "@/server/cycles";
 import { getCoupleSettings } from "@/server/settings";
@@ -359,6 +360,7 @@ async function partnerEmailOf(date: DatePlan): Promise<string | null> {
 export async function syncDate(dateId: string): Promise<boolean> {
   const [date] = await db.select().from(datePlans).where(eq(datePlans.id, dateId)).limit(1);
   if (!date) return false;
+  forgetBusy(date.coupleId); // the calendars change with it
   const eventId = date.googleEventId ?? eventIdFor(date.id);
 
   try {

@@ -4,7 +4,7 @@
 // calendars and "Freie Abende ab".
 // Every control saves on its own (no "Speichern") and says so with a small ✓.
 import Link from "next/link";
-import { useActionState, useRef } from "react";
+import { useActionState, useRef, useState } from "react";
 import { usePush } from "@/components/use-push";
 import { cn } from "@/lib/cn";
 import { DEFAULT_DEADLINE_DAYS, RHYTHMS, type PlanMode, type Rhythm } from "@/lib/domain";
@@ -34,12 +34,18 @@ function Saved({ show, className }: { show: boolean; className?: string }) {
   );
 }
 
+/** How many days before the end the deadline can be: a week leaves room for at most 5. */
+const MAX_DEADLINE_DAYS: Record<Rhythm, number> = { weekly: 5, biweekly: 10, semimonthly: 10, monthly: 10 };
+
 /** Wer plant? (Abwechselnd / Vorschlag), Rhythmus and Frist. */
-export function CycleQuick({ values }: { values: { rhythm: Rhythm; mode: PlanMode; deadlineDaysBeforeEnd: number } }) {
+export function CycleQuick({ values }: { values: { rhythm: Rhythm; mode: PlanMode; deadlineDaysBeforeEnd: number; deadlineMinute: number } }) {
   const [state, action, pending] = useActionState<CycleSettingsState, FormData>(saveCycleSettingsAction, { status: "idle" });
   const form = useRef<HTMLFormElement>(null);
   const deadline = useRef<HTMLSelectElement>(null);
   const submit = () => form.current?.requestSubmit();
+  // The deadline choices follow the rhythm picked here, with the real time of day.
+  const [rhythm, setRhythm] = useState(values.rhythm);
+  const at = minutesToTime(values.deadlineMinute);
 
   return (
     <form key={JSON.stringify(values)} ref={form} action={action} className="relative flex flex-col gap-2.5">
@@ -66,7 +72,9 @@ export function CycleQuick({ values }: { values: { rhythm: Rhythm; mode: PlanMod
             defaultValue={values.rhythm}
             onChange={(event) => {
               // The deadline that fits the new rhythm.
-              if (deadline.current) deadline.current.value = String(DEFAULT_DEADLINE_DAYS[event.target.value as Rhythm]);
+              const next = event.target.value as Rhythm;
+              setRhythm(next);
+              if (deadline.current) deadline.current.value = String(DEFAULT_DEADLINE_DAYS[next]);
               submit();
             }}
             className={selectClass}
@@ -84,9 +92,9 @@ export function CycleQuick({ values }: { values: { rhythm: Rhythm; mode: PlanMod
             <span className="text-xs text-muted">Frist zum Planen</span>
           </span>
           <select ref={deadline} name="deadlineDaysBeforeEnd" aria-label="Plan bis … (Frist)" defaultValue={values.deadlineDaysBeforeEnd} onChange={submit} className={selectClass}>
-            {Array.from({ length: 11 }, (_, days) => (
+            {Array.from({ length: Math.max(MAX_DEADLINE_DAYS[rhythm], values.deadlineDaysBeforeEnd) + 1 }, (_, days) => (
               <option key={days} value={days}>
-                {days === 0 ? "letzter Tag, 20:00" : `${days} ${days === 1 ? "Tag" : "Tage"} vorher, 20:00`}
+                {days === 0 ? `letzter Tag, ${at}` : `${days} ${days === 1 ? "Tag" : "Tage"} vorher, ${at}`}
               </option>
             ))}
           </select>

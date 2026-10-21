@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 // Database schema (Drizzle ORM). Column names are camelCase here and
 // snake_case in Postgres (`casing: "snake_case"`).
 //
@@ -15,6 +16,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { IDEA_CATEGORIES } from "@/core/categories";
@@ -348,7 +350,8 @@ export const suggestions = pgTable(
     decidedAt: timestamptz(),
     createdAt: createdAt(),
   },
-  (t) => [index("suggestions_cycle_idx").on(t.cycleId)],
+  // One open suggestion per round – both opening the Beet at once must not create two.
+  (t) => [index("suggestions_cycle_idx").on(t.cycleId), uniqueIndex("suggestions_one_pending").on(t.cycleId).where(sql`${t.status} = 'pending'`)],
 );
 
 // --- Event sources -----------------------------------------------------------------

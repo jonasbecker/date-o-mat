@@ -306,7 +306,7 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
       <PageTitle title="einstellungen." />
       <GardenBanner calendarsMissing={!calendarsReady} otherProblem={!statusOk} />
       <Card size="md" className="flex flex-col gap-1">
-        <CycleQuick values={{ rhythm: settings.rhythm, mode: settings.mode, deadlineDaysBeforeEnd: settings.deadlineDaysBeforeEnd }} />
+        <CycleQuick values={{ rhythm: settings.rhythm, mode: settings.mode, deadlineDaysBeforeEnd: settings.deadlineDaysBeforeEnd, deadlineMinute: settings.deadlineMinute }} />
         <div className="border-t border-divider pt-2.5">
           <PushToggle publicKey={pushPublicKey()} partnerName={partner.name} />
         </div>

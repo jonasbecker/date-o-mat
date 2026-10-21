@@ -40,6 +40,7 @@ import { eventSpan, fitsFreeTime } from "@/core/events";
 import { mergeRanges } from "@/core/ranges";
 import { findSlots, type Slot } from "@/core/slots";
 import { queryFreeBusy } from "@/server/google/calendar-api";
+import { cachedBusy } from "@/server/busy-cache";
 import { getConnection } from "@/server/google/connection";
 import type { CoupleContext } from "@/server/auth/dal";
 import { aiRequestsToday, anthropic, recordAiUsage, reserveAiRequest } from "@/server/anthropic";
@@ -239,14 +240,17 @@ async function deckTimes(ctx: CoupleContext, now: Date, cards: DeckCard[]): Prom
   const buffer = settings.bufferMinutes * 60_000;
   const until = new Date(Math.max(now.getTime() + FREE_LOOKAHEAD_DAYS * 86_400_000, ...spans.map((s) => s.span.end.getTime() + buffer)));
   try {
-    const results = await Promise.all(
-      [ctx.user, ctx.partner].map(async (person) => {
-        const connection = await getConnection(person.id);
-        if (!connection || connection.status !== "ok") throw new CalendarMissing();
-        return queryFreeBusy(person.id, connection.busyCalendarIds ?? ["primary"], now, until);
-      }),
-    );
-    const raw = results.flatMap((r) => r.busy);
+    // A few minutes old is fine for "the next free evening" (busy-cache.ts); a new date clears it.
+    const raw = await cachedBusy(ctx.coupleId, now, until, async () => {
+      const results = await Promise.all(
+        [ctx.user, ctx.partner].map(async (person) => {
+          const connection = await getConnection(person.id);
+          if (!connection || connection.status !== "ok") throw new CalendarMissing();
+          return queryFreeBusy(person.id, connection.busyCalendarIds ?? ["primary"], now, until);
+        }),
+      );
+      return results.flatMap((r) => r.busy);
+    });
     const busy = mergeRanges(raw);
     const rules = slotRulesFrom(settings);
     const free = (size: IdeaSize) => firstFree(findSlots({ now, until: new Date(now.getTime() + FREE_LOOKAHEAD_DAYS * 86_400_000), busy: raw, rules, size, limit: FREE_LOOKAHEAD_DAYS }), size);
