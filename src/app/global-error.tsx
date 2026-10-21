@@ -20,10 +20,10 @@ export default function GlobalError({ retry }: { error: Error & { digest?: strin
           color: "#163a22",
         }}
       >
-        <title>Date-O-Mat</title>
+        <title>Zweisamen</title>
         <p style={{ fontSize: 48, margin: 0 }}>🙈</p>
         <h1 style={{ margin: 0 }}>Hoppla!</h1>
-        <p style={{ margin: 0, fontWeight: 600 }}>Der Date-O-Mat hakt gerade. Versuch es gleich nochmal.</p>
+        <p style={{ margin: 0, fontWeight: 600 }}>Zweisamen hakt gerade. Versuch es gleich nochmal.</p>
         <button
           type="button"
           onClick={() => retry()}

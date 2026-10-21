@@ -214,7 +214,7 @@ check("Beet leads to the start, not into the flow", !j.url().includes("pick=1"))
 await bar.getByRole("link", { name: "Ideen", exact: true }).click();
 await j.getByRole("heading", { name: "ideen." }).waitFor({ timeout: 15000 });
 check("Ideen opens the wishlist", (await bar.getByRole("link", { name: "Ideen", exact: true }).getAttribute("aria-current")) === "page");
-check("top: the name only (plus the page's own action)", (await j.locator("header:visible a").evaluateAll((a) => a.map((x) => x.getAttribute("aria-label")))).join("|") === "Date-O-Mat – zum Start");
+check("top: the name only (plus the page's own action)", (await j.locator("header:visible a").evaluateAll((a) => a.map((x) => x.getAttribute("aria-label")))).join("|") === "Zweisamen – zum Start");
 
 // 7) Dark mode + nav label
 const jd = await pageFor(jonas.token, "dark");

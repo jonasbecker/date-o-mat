@@ -8,7 +8,7 @@ export function IosInstallGuide() {
   return (
     <div className="flex flex-col gap-3 rounded-[20px] bg-zitrone-soft p-4 text-left text-tinte">
       <p className="font-display text-lg font-semibold">📲 Erst auf den Home-Bildschirm</p>
-      <p className="text-sm font-semibold">Auf dem iPhone gibt es Push nur, wenn der Date-O-Mat als App installiert ist (ab iOS 16.4):</p>
+      <p className="text-sm font-semibold">Auf dem iPhone gibt es Push nur, wenn Zweisamen als App installiert ist (ab iOS 16.4):</p>
       <ol className="flex flex-col gap-2 text-sm font-bold">
         <li className="flex items-center gap-2">
           <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-tinte text-xs text-zitrone-soft">1</span>
@@ -24,7 +24,7 @@ export function IosInstallGuide() {
         </li>
         <li className="flex items-center gap-2">
           <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-tinte text-xs text-zitrone-soft">3</span>
-          Den Date-O-Mat über das neue Icon öffnen
+          Zweisamen über das neue Icon öffnen
         </li>
         <li className="flex items-center gap-2">
           <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-tinte text-xs text-zitrone-soft">4</span>

@@ -9,10 +9,10 @@ const dmMono = DM_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "
 const caveat = Caveat({ subsets: ["latin"], weight: ["600"], variable: "--font-caveat" });
 
 export const metadata: Metadata = {
-  title: "Date-O-Mat",
-  description: "Damit aus „wir sollten mal wieder …“ ein echtes Date wird.",
-  applicationName: "Date-O-Mat",
-  appleWebApp: { capable: true, title: "Date-O-Mat", statusBarStyle: "default" },
+  title: "Zweisamen",
+  description: "Lasst eure Dates aufblühen.",
+  applicationName: "Zweisamen",
+  appleWebApp: { capable: true, title: "Zweisamen", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

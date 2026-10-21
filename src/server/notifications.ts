@@ -16,7 +16,7 @@ function reminderText(reminder: Reminder, cycle: Cycle | undefined, date: DatePl
   switch (reminder.type) {
     case "turn_started":
       return cycle?.mode === "suggestion"
-        ? { title: "Neuer Vorschlag ✨", body: "Der Date-O-Mat hat eine Idee für euch – schau mal rein.", url: "/plan", tag: "turn" }
+        ? { title: "Neuer Vorschlag ✨", body: "Zweisamen hat eine Idee für euch – schau mal rein.", url: "/plan", tag: "turn" }
         : {
             title: "Du bist dran! 🎯",
             body: `Plan bis ${cycle ? formatDeadline(cycle.deadlineAt) : "Ende der Runde"} euer nächstes Date.`,
@@ -52,7 +52,7 @@ function reminderText(reminder: Reminder, cycle: Cycle | undefined, date: DatePl
         tag: "review",
       };
     default:
-      return { title: "Date-O-Mat", body: "", url: "/plan" };
+      return { title: "Zweisamen", body: "", url: "/plan" };
   }
 }
 

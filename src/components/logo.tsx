@@ -14,7 +14,7 @@ export function LogoLockup() {
   return (
     <span className="flex items-center gap-2">
       <LogoMark size={34} />
-      <span className="font-display text-[22px] font-extrabold tracking-[-0.03em]">date-o-mat</span>
+      <span className="font-display text-[22px] font-extrabold tracking-[-0.03em]">zweisamen</span>
     </span>
   );
 }

@@ -21,7 +21,7 @@ function SyncHint({ date }: { date: DatePlan }) {
   }
   return (
     <p className="rounded-xl bg-zitrone-soft px-3 py-2 text-[13px] font-bold text-tinte">
-      Google Kalender hakt gerade – der Date-O-Mat versucht es automatisch nochmal.
+      Google Kalender hakt gerade – Zweisamen versucht es automatisch nochmal.
     </p>
   );
 }

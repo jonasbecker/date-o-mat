@@ -7,12 +7,12 @@ import { ShareIcon } from "@/components/icons";
 /** Share button for the invite code: native share sheet, clipboard as fallback. */
 export function InviteShare({ code, joinUrl }: { code: string; joinUrl: string }) {
   const [copied, setCopied] = useState(false);
-  const text = `Komm in unseren Date-O-Mat! 💞 Melde dich an und gib diesen Code ein: ${code}`;
+  const text = `Komm zu uns in Zweisamen! 💞 Melde dich an und gib diesen Code ein: ${code}`;
 
   async function share() {
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Date-O-Mat", text, url: joinUrl });
+        await navigator.share({ title: "Zweisamen", text, url: joinUrl });
         return;
       } catch {
         // Share sheet dismissed – fall through to copying.

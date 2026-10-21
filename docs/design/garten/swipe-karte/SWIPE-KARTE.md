@@ -1,4 +1,4 @@
-# Date-O-Mat – Swipe-Karte „C2“ (mit Bildstreifen)
+# Zweisamen – Swipe-Karte „C2“ (mit Bildstreifen)
 
 Ergänzt `DESIGN-GARTEN.md` (Abschnitt 5.2) und **ersetzt** dort die Samentüte und die ✕/♥-Buttons.
 Referenz: `screens/SwipeC.html` (Variante 2, `variante="2"` im Script). Farben/Schriften wie in DESIGN-GARTEN.md.

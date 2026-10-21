@@ -139,7 +139,7 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
     return <PlanFlow mode={{ kind: "swap", next: { ...nextInfo, ideaId: roundDate.ideaId } }} ideas={ideas} partnerName={ctx.partner.name} aiEnabled={env().ai} />;
   }
   // Whose turn it is stands in the step card; only the suggestion mode says so here.
-  const roundInfo = cycle && cycle.mode === "suggestion" && <p className="text-sm text-muted">{periodLabel(cycle.startsAt, cycle.endsAt)} · der Date-O-Mat schlägt vor</p>;
+  const roundInfo = cycle && cycle.mode === "suggestion" && <p className="text-sm text-muted">{periodLabel(cycle.startsAt, cycle.endsAt)} · Zweisamen schlägt vor</p>;
   const scopeLink = cycle && (
     <Link
       href={`/plan?${new URLSearchParams({ ...(later ? {} : { later: "1" }), ...(reschedule ? { reschedule: reschedule.dateId } : {}), ...(typeof params.idea === "string" ? { idea: params.idea } : {}), ...(self ? { self: "1" } : {}) })}`}

@@ -168,7 +168,7 @@ export async function nudgeAction(reason?: "calendar"): Promise<ActionResult> {
   if (!cycle) return { ok: false, message: "Gerade läuft keine Runde." };
   const text =
     reason === "calendar"
-      ? { title: `${ctx.user.name} stupst dich an 👋`, body: "Verbinde deinen Kalender (Einstellungen), dann findet der Date-O-Mat eure freien Abende." }
+      ? { title: `${ctx.user.name} stupst dich an 👋`, body: "Verbinde deinen Kalender (Einstellungen), dann findet Zweisamen eure freien Abende." }
       : cycle.status === "planned"
       ? { title: `${ctx.user.name} stupst dich an 👋`, body: "Euer Date wartet auf dein „Zusagen“." }
       : { title: `${ctx.user.name} stupst dich an 👋`, body: "Die Gießkanne ist bei dir – plant ihr was?" };

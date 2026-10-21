@@ -19,8 +19,8 @@ export type HeaderPlace = "plan" | "ideas" | "dates" | "settings";
 export function AppHeader({ action, center }: { current?: HeaderPlace; action?: React.ReactNode; center?: React.ReactNode }) {
   return (
     <header className={center ? "relative flex h-11 items-center gap-2.5" : "flex min-h-9 items-center gap-2.5"}>
-      <Link href="/plan" aria-label="Date-O-Mat – zum Start" className="min-w-0 flex-1 font-display text-[15px] font-extrabold leading-none tracking-[-0.02em]">
-        date-o-mat
+      <Link href="/plan" aria-label="Zweisamen – zum Start" className="min-w-0 flex-1 font-display text-[15px] font-extrabold leading-none tracking-[-0.02em]">
+        zweisamen
       </Link>
       {center && <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">{center}</span>}
       {action}

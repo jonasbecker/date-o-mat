@@ -136,7 +136,7 @@ export function Beet({
       )}
       {date?.syncStatus === "error" && (
         <p role="status" className="mt-3 rounded-[18px] bg-zitrone-soft px-3.5 py-2 text-sm text-tinte">
-          Google Kalender hakt gerade – der Date-O-Mat versucht es nochmal.
+          Google Kalender hakt gerade – Zweisamen versucht es nochmal.
         </p>
       )}
       {notices && <div className="mt-3 flex flex-col gap-2">{notices}</div>}
@@ -410,7 +410,7 @@ function viewFor(
       // Your turn, but without the other calendar no free evening can be found: nudge, or hand over.
       return {
         headline: "fast\nstartklar.",
-        sub: `${partner.name} muss den Kalender noch verbinden – erst dann findet der Date-O-Mat eure freien Abende.`,
+        sub: `${partner.name} muss den Kalender noch verbinden – erst dann findet Zweisamen eure freien Abende.`,
         cta: (
           <div className="grid grid-cols-[minmax(0,1fr)_56px] gap-2">
             <NudgeButton calendar />

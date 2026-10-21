@@ -1,4 +1,4 @@
-# Date-O-Mat – Main Page „B“ + Blume mit 5 Stimmungen
+# Zweisamen – Main Page „B“ + Blume mit 5 Stimmungen
 
 Ergänzt `DESIGN.md`. **Wichtig:** Die App bleibt im bestehenden **Dark-Look**. Die Farben unten gelten für die Main Page und die Blume und ersetzen dort die hellen Pastell-Werte aus DESIGN.md.
 

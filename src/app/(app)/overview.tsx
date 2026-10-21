@@ -152,7 +152,7 @@ export function StartNotices({ o, ctx }: { o: Overview; ctx: CoupleContext }) {
       )}
 
       {o.suggestion?.status === "no_slots" && (
-        <p className={`${line} border-[1.5px] border-dashed border-line`}>Bis zum Ende findet der Date-O-Mat keine gemeinsame Lücke mehr – sucht beim Planen auch danach.</p>
+        <p className={`${line} border-[1.5px] border-dashed border-line`}>Bis zum Ende findet Zweisamen keine gemeinsame Lücke mehr – sucht beim Planen auch danach.</p>
       )}
 
       {/* At most two special days – the start page is one screen. */}

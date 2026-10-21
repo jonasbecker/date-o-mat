@@ -25,7 +25,7 @@ export type DeniedHelp = { where: "ios" | "android" | "desktop"; steps: string[]
 export function deniedHelp(userAgent: string, maxTouchPoints = 0): DeniedHelp {
   const ios = /iPhone|iPad|iPod/.test(userAgent) || (userAgent.includes("Macintosh") && maxTouchPoints > 1);
   if (ios) {
-    return { where: "ios", steps: ["Öffne die Einstellungen deines iPhones.", "Tippe auf „Mitteilungen“ und dann auf „Date-O-Mat“.", "Schalte „Mitteilungen erlauben“ ein.", "Öffne den Date-O-Mat neu und tippe auf „Aktivieren“."] };
+    return { where: "ios", steps: ["Öffne die Einstellungen deines iPhones.", "Tippe auf „Mitteilungen“ und dann auf „Zweisamen“.", "Schalte „Mitteilungen erlauben“ ein.", "Öffne Zweisamen neu und tippe auf „Aktivieren“."] };
   }
   if (/Android/.test(userAgent)) {
     return { where: "android", steps: ["Tippe oben im Browser auf das Schloss oder auf ⋮ → „Einstellungen für diese Website“.", "Stelle „Benachrichtigungen“ auf „Zulassen“.", "Lade die Seite neu und tippe auf „Aktivieren“."] };

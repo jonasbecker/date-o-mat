@@ -13,7 +13,7 @@ export function SuggestionCard({ suggestion, idea }: { suggestion: SuggestionRow
   return (
     <>
       <div className="flex flex-col gap-1 font-bold" data-suggestion>
-        <p className="text-[13px] font-extrabold opacity-80">Der Date-O-Mat schlägt vor</p>
+        <p className="text-[13px] font-extrabold opacity-80">Zweisamen schlägt vor</p>
         <p className="font-display text-[19px] font-semibold leading-tight">{idea ? idea.title : "Zeit zu zweit – die Idee sucht ihr spontan aus"}</p>
         <p className="flex items-center gap-2">
           <CalendarIcon width={17} height={17} /> {formatShortDate(suggestion.startsAt)} · {formatTimeRange(suggestion.startsAt, suggestion.endsAt)} Uhr

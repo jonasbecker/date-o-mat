@@ -1,4 +1,4 @@
-# Date-O-Mat – Design-Spezifikation „Pastell & rund“
+# Zweisamen – Design-Spezifikation „Pastell & rund“
 
 Diese Datei beschreibt das neue Design der App. Die Mockups liegen als HTML-Dateien in `screens/`. Sie dienen als **visuelle Referenz**: Alle Maße, Farben und Abstände stehen als Inline-Styles direkt im Markup. Die Dateien laufen nicht eigenständig (sie brauchen die Laufzeit des Design-Tools), aber sie lassen sich lesen.
 

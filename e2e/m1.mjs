@@ -123,7 +123,7 @@ const header = a.locator("header").first();
 await a.getByRole("heading", { name: "Date planen" }).waitFor({ timeout: 15000 });
 const bar = a.getByRole("navigation", { name: "Hauptmenü" });
 check("bottom bar: Ideen · Swipen · Beet · Archiv · Einstellungen", (await bar.getByRole("link").evaluateAll((l) => l.map((x) => x.getAttribute("aria-label")))).join("|") === "Ideen|Swipen|Beet|Archiv|Einstellungen");
-await header.getByRole("link", { name: "Date-O-Mat – zum Start" }).waitFor({ timeout: 15000 });
+await header.getByRole("link", { name: "Zweisamen – zum Start" }).waitFor({ timeout: 15000 });
 check("the header is only the name", (await header.getByRole("link").count()) === 1);
 
 // Reminders: the flower says it in its bubble until a device of mine is registered – one tap, no detour
@@ -143,7 +143,7 @@ await c.goto(`${BASE}/pair`);
 await c.getByLabel("Einladungscode").fill(code);
 await c.getByRole("button", { name: "Beitreten" }).click();
 await c.locator("#invite-code-error").waitFor();
-check("third person is rejected", (await c.locator("#invite-code-error").textContent()).includes("kennt der Date-O-Mat nicht"));
+check("third person is rejected", (await c.locator("#invite-code-error").textContent()).includes("kennt Zweisamen nicht"));
 const { rows: members } = await db.query("SELECT count(*)::int AS n FROM users WHERE couple_id IS NOT NULL");
 check("couple has exactly two members", members[0].n === 2);
 

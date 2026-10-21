@@ -28,7 +28,7 @@ export function StartLocationForm({ value }: { value: string | null }) {
   );
 }
 
-/** The personal key and the steps for the iPhone shortcut "Teilen → Date-O-Mat". */
+/** The personal key and the steps for the iPhone shortcut "Teilen → Zweisamen". */
 export function ShareShortcut({ hasKey, endpoint }: { hasKey: boolean; endpoint: string }) {
   const [key, setKey] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -45,7 +45,7 @@ export function ShareShortcut({ hasKey, endpoint }: { hasKey: boolean; endpoint:
   return (
     <div className="flex flex-col gap-3">
       <p className="font-semibold">
-        Auf dem iPhone steht die App nicht im Teilen-Menü – ein Kurzbefehl macht das: In TikTok, Instagram & Co. <strong>Teilen → Date-O-Mat</strong>, und die
+        Auf dem iPhone steht die App nicht im Teilen-Menü – ein Kurzbefehl macht das: In TikTok, Instagram & Co. <strong>Teilen → Zweisamen</strong>, und die
         Idee landet direkt auf eurer Wunschliste.
       </p>
       {key ? (
@@ -72,7 +72,7 @@ export function ShareShortcut({ hasKey, endpoint }: { hasKey: boolean; endpoint:
       <details className="rounded-2xl border-[1.5px] border-dashed border-track px-4 py-2">
         <summary className="cursor-pointer py-1 text-sm font-extrabold">So richtest du den Kurzbefehl ein (2 Minuten)</summary>
         <ol className="flex list-decimal flex-col gap-1.5 py-2 pl-5 text-sm font-semibold">
-          <li>App „Kurzbefehle“ öffnen → <strong>+</strong> → oben den Namen auf <strong>Date-O-Mat</strong> setzen.</li>
+          <li>App „Kurzbefehle“ öffnen → <strong>+</strong> → oben den Namen auf <strong>Zweisamen</strong> setzen.</li>
           <li>
             Unten auf <strong>ⓘ</strong> → <strong>Im Share-Sheet anzeigen</strong> einschalten. Ganz oben bei „Empfängt“ nur <strong>URLs</strong> und{" "}
             <strong>Text</strong> lassen.

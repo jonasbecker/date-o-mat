@@ -6,7 +6,7 @@ import { LogoMark } from "@/components/logo";
 import { getSessionUser } from "@/server/auth/session";
 
 const ERRORS: Record<string, string> = {
-  not_allowed: "Diese Google-Adresse ist nicht freigeschaltet. Der Date-O-Mat ist nur für euch zwei.",
+  not_allowed: "Diese Google-Adresse ist nicht freigeschaltet. Zweisamen ist nur für euch zwei.",
   cancelled: "Anmeldung abgebrochen. Probier's einfach nochmal.",
   state: "Die Anmeldung ist abgelaufen. Bitte nochmal versuchen.",
   oauth: "Bei der Anmeldung mit Google ist etwas schiefgelaufen. Bitte nochmal versuchen.",
@@ -21,10 +21,10 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 
       <div className="flex flex-col items-center gap-4 text-center">
         <span className="flex size-32 items-center justify-center rounded-[34px] bg-surface">
-          <LogoMark size={96} title="Date-O-Mat Logo: eine kleine Pflanze im Topf" />
+          <LogoMark size={96} title="Zweisamen Logo: eine kleine Pflanze im Topf" />
         </span>
-        <h1 className="headline text-[62px]">date-o-mat.</h1>
-        <p className="text-lg text-muted">Damit aus „wir sollten mal wieder …“ ein echtes Date wird.</p>
+        <h1 className="headline text-[62px]">zweisamen.</h1>
+        <p className="text-lg text-muted">Lasst eure Dates aufblühen.</p>
       </div>
 
       <Suspense fallback={null}>
@@ -38,8 +38,8 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
       </a>
 
       <p className="text-center text-sm font-semibold leading-relaxed text-muted">
-        Google zeigt beim ersten Mal „Diese App wurde nicht überprüft“. Das ist okay – der Date-O-Mat gehört euch. Tippe
-        auf <strong>Erweitert</strong> und dann auf <strong>Weiter zu Date-O-Mat</strong>.
+        Google zeigt beim ersten Mal „Diese App wurde nicht überprüft“. Das ist okay – Zweisamen gehört euch. Tippe
+        auf <strong>Erweitert</strong> und dann auf <strong>Weiter zu Zweisamen</strong>.
       </p>
     </main>
   );

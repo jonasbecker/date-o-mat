@@ -1,4 +1,4 @@
-# Date-O-Mat – Design „Garten“ (Dark)
+# Zweisamen – Design „Garten“ (Dark)
 
 Vollständige Design-Spezifikation für alle Hauptseiten. Ersetzt für diese Seiten die älteren Dokumente (`DESIGN.md`, `MAIN-B-UND-BLUME.md`). **Die ganze App ist dunkel.**
 

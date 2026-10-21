@@ -1,4 +1,4 @@
-# Date-O-Mat 💞
+# Zweisamen 💞
 
 Eine kleine PWA für genau ein Paar: Sie erinnert euch daran, regelmäßig Dates zu planen,
 schlägt freie gemeinsame Zeiten aus euren Google-Kalendern vor und verwaltet eure
@@ -508,7 +508,7 @@ scripts/              Migration beim Build, Secret-Generator
 
 - **Einfügen:** Einen Link (oder einen ganzen Teilen-Text mit Link) ins Titelfeld einer neuen
   Idee einsetzen – oder **🔗 Link einfügen** tippen (liest die Zwischenablage; iPhone fragt
-  einmal nach). **Android:** in TikTok/Instagram/YouTube **Teilen → Date-O-Mat** (Manifest
+  einmal nach). **Android:** in TikTok/Instagram/YouTube **Teilen → Zweisamen** (Manifest
   `share_target` → `/share`).
 - **Lesen** (`src/server/link-ideas.ts`): TikTok und YouTube über ihre öffentliche oEmbed-
   Schnittstelle (Bildunterschrift, Kanal, Vorschaubild), alles andere über OpenGraph-Tags plus

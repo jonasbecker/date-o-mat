@@ -79,7 +79,7 @@ Mit **deinem** Google-Konto anmelden. Deine Freundin braucht hier nichts zu tun.
 ### 3.1 Projekt anlegen
 
 1. <https://console.cloud.google.com> öffnen.
-2. Oben links auf die Projektauswahl → **Neues Projekt** → Name `Date-O-Mat` → **Erstellen**.
+2. Oben links auf die Projektauswahl → **Neues Projekt** → Name `Zweisamen` → **Erstellen**.
 3. Sicherstellen, dass oben das neue Projekt ausgewählt ist.
 
 ### 3.2 Google Calendar API aktivieren
@@ -90,7 +90,7 @@ Mit **deinem** Google-Konto anmelden. Deine Freundin braucht hier nichts zu tun.
 ### 3.3 Zustimmungsbildschirm („Google Auth Platform“)
 
 1. Menü ☰ → **Google Auth Platform** (heißt teils auch „OAuth-Zustimmungsbildschirm“) → **Jetzt starten**.
-2. **App-Informationen**: App-Name `Date-O-Mat`, Nutzersupport-E-Mail = deine Adresse → Weiter.
+2. **App-Informationen**: App-Name `Zweisamen`, Nutzersupport-E-Mail = deine Adresse → Weiter.
 3. **Zielgruppe**: **Extern** → Weiter.
 4. **Kontaktdaten**: deine Adresse → Weiter → Richtlinie akzeptieren → **Erstellen**.
 5. Links **Branding**: **kein Logo hochladen**. Ein Logo verlangt eine Prüfung durch Google.
@@ -119,7 +119,7 @@ Mit **deinem** Google-Konto anmelden. Deine Freundin braucht hier nichts zu tun.
 ### 3.4 OAuth-Client erstellen
 
 1. **Google Auth Platform → Clients → Client erstellen**.
-2. Anwendungstyp: **Webanwendung**, Name: `Date-O-Mat Web`.
+2. Anwendungstyp: **Webanwendung**, Name: `Zweisamen Web`.
 3. **Autorisierte JavaScript-Quellen** → zwei Einträge:
    ```
    https://DEINE-APP.vercel.app
@@ -163,7 +163,7 @@ Danach neu deployen, denn Variablen gelten erst für neue Deployments:
 ## 5. Meilenstein 1 testen
 
 1. App-URL am Handy öffnen → **Mit Google anmelden** → Konto wählen.
-2. Hinweis „Google hat diese App nicht überprüft“ → **Erweitert** → **Weiter zu Date-O-Mat (unsicher)**.
+2. Hinweis „Google hat diese App nicht überprüft“ → **Erweitert** → **Weiter zu Zweisamen (unsicher)**.
 3. Du: **Paar starten** → **Code teilen** → an deine Freundin schicken.
 4. Sie: App-URL öffnen, anmelden (gleicher Hinweis), Code eingeben → **Beitreten**.
 5. Ihr landet beide auf der Startseite „Ihr seid gekoppelt“. Dein Code-Bildschirm springt
@@ -205,7 +205,7 @@ Voraussetzung: `CRON_SECRET` ist in Vercel eingetragen (Schritt 4).
 
 1. <https://console.cron-job.org/signup> → Konto anlegen.
 2. **Cronjob erstellen**
-   - Titel: `Date-O-Mat Tick`
+   - Titel: `Zweisamen Tick`
    - URL: `https://DEINE-APP.vercel.app/api/cron/tick`
    - Ausführung: **alle 5 Minuten**
 3. Tab **Erweitert**
@@ -234,9 +234,9 @@ nicht eingerichtet“.
 **iPhone (iOS 16.4 oder neuer):**
 
 1. Die App in **Safari** öffnen → unten **Teilen** → **Zum Home-Bildschirm** → **Hinzufügen**.
-2. Den Date-O-Mat über das neue Icon öffnen (nicht mehr über Safari) und einloggen.
+2. Zweisamen über das neue Icon öffnen (nicht mehr über Safari) und einloggen.
 3. **Einstellungen → Erinnerungen → Push aktivieren** → Mitteilungen **Erlauben**.
-4. **Test-Push** tippen → nach wenigen Sekunden kommt „Date-O-Mat“ als Mitteilung.
+4. **Test-Push** tippen → nach wenigen Sekunden kommt „Zweisamen“ als Mitteilung.
 
 **Android (Chrome):** App öffnen → **Einstellungen → Erinnerungen → Push aktivieren** →
 erlauben → **Test-Push**. Optional über das Chrome-Menü **App installieren**.
@@ -335,7 +335,7 @@ kommen per Push (Erinnerungen → „Besondere Tage“).
 
 Jede:r einmal auf dem eigenen iPhone: **Einstellungen → Unterwegs & Teilen → Schlüssel
 erstellen**, dann der Anleitung darunter folgen (Kurzbefehle-App, etwa 2 Minuten). Danach in
-TikTok/Instagram: **Teilen → Date-O-Mat**. Unter Android geht das ohne Kurzbefehl direkt.
+TikTok/Instagram: **Teilen → Zweisamen**. Unter Android geht das ohne Kurzbefehl direkt.
 
 ### Status prüfen (M16)
 

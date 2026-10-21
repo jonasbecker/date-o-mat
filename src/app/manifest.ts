@@ -3,9 +3,9 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Date-O-Mat",
-    short_name: "Date-O-Mat",
-    description: "Damit aus „wir sollten mal wieder …“ ein echtes Date wird.",
+    name: "Zweisamen",
+    short_name: "Zweisamen",
+    description: "Lasst eure Dates aufblühen.",
     start_url: "/",
     scope: "/",
     display: "standalone",
@@ -14,7 +14,7 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#111a14",
     lang: "de",
     categories: ["lifestyle", "productivity"],
-    // Android: "Teilen → Date-O-Mat" in TikTok, Instagram, YouTube … turns the link into an idea.
+    // Android: "Teilen → Zweisamen" in TikTok, Instagram, YouTube … turns the link into an idea.
     share_target: { action: "/share", method: "GET", params: { title: "title", text: "text", url: "url" } },
     shortcuts: [
       { name: "Date planen", url: "/plan", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },

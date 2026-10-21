@@ -195,7 +195,7 @@ check("iOS browser: install guide in settings", (await iphone.getByRole("button"
 await iphone.screenshot({ path: `${SHOTS}m6-02-ios-guide.png` });
 await db.query("DELETE FROM push_subscriptions WHERE user_id = $1", [sam.id]);
 await iphone.goto(`${BASE}/`);
-await iphone.getByText("Leg den Date-O-Mat auf den Home-Bildschirm").waitFor({ timeout: 10000 });
+await iphone.getByText("Leg Zweisamen auf den Home-Bildschirm").waitFor({ timeout: 10000 });
 check("iOS browser: checklist explains installing first", await iphone.getByText(/Teilen-Symbol → „Zum Home-Bildschirm“/).isVisible());
 await iphone.screenshot({ path: `${SHOTS}m6-03-ios-home.png` });
 check("iOS browser: the flower says reminders need the app", (await iphone.getByRole("button", { name: "So gehen Erinnerungen" }).innerText()).includes("erst als app"));

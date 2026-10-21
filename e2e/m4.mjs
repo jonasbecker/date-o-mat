@@ -166,7 +166,7 @@ await j.locator("form").filter({ has: j.getByLabel("Rhythmus", { exact: true }) 
 rows = await cyclesInDb();
 check("open round switched to suggestion mode immediately", rows.at(-1).mode === "suggestion" && rows.at(-1).planner_id === null);
 await j.goto(`${BASE}/`);
-await j.getByText("Der Date-O-Mat schlägt vor").waitFor({ timeout: 15000 });
+await j.getByText("Zweisamen schlägt vor").waitFor({ timeout: 15000 });
 // The proposal sits inside the step card.
 const first = await j.locator("[data-next-step] [data-suggestion] p.font-display").filter({ visible: true }).first().textContent();
 check(`a suggestion with an idea is shown (${first})`, ["Picknick im Stadtwald", "Ramen kochen", "Wandern"].includes(first));
@@ -176,7 +176,7 @@ check("open proposal: no swipe deck on the Beet (it has its own tab)", (await j.
 check("the proposal state fits the screen", await fitsScreen(j));
 const before = (await db.query("SELECT starts_at, idea_id FROM suggestions WHERE status = 'pending'")).rows[0];
 await s.goto(`${BASE}/`);
-await s.getByText("Der Date-O-Mat schlägt vor").waitFor({ timeout: 15000 });
+await s.getByText("Zweisamen schlägt vor").waitFor({ timeout: 15000 });
 const samSees = await s.locator("[data-next-step] [data-suggestion] p.font-display").filter({ visible: true }).first().textContent();
 check("both partners see the same suggestion", samSees === first);
 await j.getByRole("button", { name: "Anderer Vorschlag" }).click();
@@ -188,7 +188,7 @@ check("…and a different idea", after && after.idea_id !== before.idea_id);
 // Plan page is limited to the round ("Selbst aussuchen" next to the proposal)
 await j.goto(`${BASE}/plan`);
 await j.getByRole("link", { name: "Selbst aussuchen →" }).click();
-await j.getByText(/^Diese[r]? .+ · der Date-O-Mat schlägt vor$/).waitFor({ timeout: 15000 });
+await j.getByText(/^Diese[r]? .+ · Zweisamen schlägt vor$/).waitFor({ timeout: 15000 });
 check("plan page shows the round", true);
 await openTimes(j, BASE, "?self=1");
 check("plan page offers searching after the round", (await j.getByRole("link", { name: "Auch danach suchen" }).count()) === 1);

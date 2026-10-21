@@ -3,13 +3,13 @@
 Ziel: Die App stößt zwei Studenten aktiv an, regelmäßig Dates zu planen, und macht das Planen
 reibungsarm. Alles, was dazu nicht beiträgt, ist nicht in V1.
 
-Design-Richtung: [Canvas „Date-O-Mat Designrichtung“](https://claude.ai/artifact/BXRwu39TC5ZEqAzYVuwyCL) (privat).
+Design-Richtung: [Canvas „Zweisamen Designrichtung“](https://claude.ai/artifact/BXRwu39TC5ZEqAzYVuwyCL) (privat).
 
 ## Entscheidungen
 
 | Thema | Entscheidung |
 |---|---|
-| Name | Date-O-Mat (Logo: Kaugummiautomat voller Herzen) |
+| Name | Zweisamen (Logo: Kaugummiautomat voller Herzen) |
 | Repo / Branch | `jonasbecker/date-o-mat`, direkt auf `main` |
 | Kalender | mehrere Kalender pro Person auswählbar (`calendar.calendarlist.readonly`) |
 | Google OAuth | Status „In Produktion“, unverifiziert. Im Testmodus laufen Refresh-Tokens nach 7 Tagen ab. |

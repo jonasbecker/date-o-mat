@@ -131,7 +131,7 @@ export async function sendTestPushAction(): Promise<{ delivered: number }> {
   const { user } = await requireCouple();
   const delivered = await sendToUser(
     user.id,
-    { title: "Hallo vom Date-O-Mat 👋", body: "So sehen eure Erinnerungen aus.", url: "/", tag: "test" },
+    { title: "Hallo von Zweisamen 👋", body: "So sehen eure Erinnerungen aus.", url: "/", tag: "test" },
     "test",
   );
   return { delivered };

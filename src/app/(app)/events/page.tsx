@@ -47,7 +47,7 @@ async function Events({ searchParams }: { searchParams: PageProps<"/events">["se
         </span>
         <p className="font-display text-xl font-semibold">Folgt euren Lieblings-Seiten</p>
         <p className="font-semibold text-muted">
-          Der Date-O-Mat liest jeden Morgen eure Veranstaltungsseiten und zeigt hier, was läuft – und wann ihr beide Zeit habt.
+          Zweisamen liest jeden Morgen eure Veranstaltungsseiten und zeigt hier, was läuft – und wann ihr beide Zeit habt.
         </p>
         <Link href="/settings?t=events" className="font-extrabold underline">
           Event-Quellen einrichten

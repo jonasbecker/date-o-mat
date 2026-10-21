@@ -27,7 +27,7 @@ export function ConnectCalendarCard({ people, next }: { people: PersonCalendar[]
           <p className="font-semibold">
             {me.state === "reauth"
               ? "Google hat die Verbindung beendet (z. B. nach einer Passwortänderung). Ein Tipp, und es läuft wieder."
-              : "Der Date-O-Mat sieht nur, wann du belegt bist – keine Termintitel, keine Details."}
+              : "Zweisamen sieht nur, wann du belegt bist – keine Termintitel, keine Details."}
           </p>
           {/* Plain <a>: the route handler redirects to Google. */}
           <a href={connectCalendarHref(next)} className={buttonClass("primary", "md", "w-full")}>
@@ -41,7 +41,7 @@ export function ConnectCalendarCard({ people, next }: { people: PersonCalendar[]
       {partner && partner.state !== "connected" && (
         <p className="font-bold">
           {partner.name} muss {partner.state === "reauth" ? "den Kalender neu verbinden" : "den Kalender noch verbinden"} –
-          erst dann findet der Date-O-Mat eure gemeinsamen Lücken.
+          erst dann findet Zweisamen eure gemeinsamen Lücken.
         </p>
       )}
     </div>

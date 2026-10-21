@@ -72,7 +72,7 @@ export function SurpriseButton({
       <button type="button" onClick={open} className={look === "link" ? cn("tap flex items-center gap-1.5 underline", className) : buttonClass(variant, size, cn("w-full", className))}>
         {label}
       </button>
-      <Sheet ref={sheet} title="Der Date-O-Mat zieht …">
+      <Sheet ref={sheet} title="Zweisamen zieht …">
         <div aria-live="polite" className="flex min-h-56 flex-col gap-4">
           {drawing ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 py-6">
@@ -92,7 +92,7 @@ export function SurpriseButton({
                 </div>
                 {pick.meta && <p className="meta">{pick.meta}</p>}
                 {pick.note && <p className="text-muted">{pick.note}</p>}
-                <p data-draw-source className="meta">{pick.ideaId ? "von eurer Wunschliste" : "Köln-Tipp vom Date-O-Mat"}</p>
+                <p data-draw-source className="meta">{pick.ideaId ? "von eurer Wunschliste" : "Köln-Tipp von Zweisamen"}</p>
               </div>
             )
           )}

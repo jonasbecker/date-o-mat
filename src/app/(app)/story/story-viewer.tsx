@@ -169,7 +169,7 @@ function SlideBody({ slide }: { slide: Slide }) {
             🌱
           </span>
           <p className="font-display text-3xl font-bold">{slide.year} fängt gerade erst an</p>
-          <p className="text-lg font-semibold">Nach euren ersten Dates erzählt euch der Date-O-Mat hier eure Geschichte.</p>
+          <p className="text-lg font-semibold">Nach euren ersten Dates erzählt euch Zweisamen hier eure Geschichte.</p>
         </>
       );
   }

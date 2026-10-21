@@ -51,7 +51,7 @@ describe("buildEventBody", () => {
   it("works for a spontaneous idea without details", () => {
     const plain = buildEventBody({ ...date, location: null, note: null, url: null, costEur: null }, "sam@example.com", "https://x.app");
     expect(plain.location).toBeUndefined();
-    expect(plain.description).toBe("Geplant mit dem Date-O-Mat 💞\nhttps://x.app");
+    expect(plain.description).toBe("Geplant mit Zweisamen 💞\nhttps://x.app");
   });
 
   it("keeps the app's id for later lookups", () => {

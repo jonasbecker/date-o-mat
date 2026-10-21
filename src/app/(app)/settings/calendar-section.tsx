@@ -10,9 +10,9 @@ import { disconnectCalendarAction, saveBusyCalendarsAction } from "./actions";
 const MESSAGES: Record<string, string> = {
   connected: "Kalender verbunden. 🎉",
   saved: "Auswahl gespeichert.",
-  disconnected: "Kalender getrennt. Der Date-O-Mat hat keinen Zugriff mehr.",
+  disconnected: "Kalender getrennt. Zweisamen hat keinen Zugriff mehr.",
   cancelled: "Verbinden abgebrochen.",
-  missing_scopes: "Bitte setze bei Google alle Häkchen – sonst kann der Date-O-Mat keine freien Zeiten finden.",
+  missing_scopes: "Bitte setze bei Google alle Häkchen – sonst kann Zweisamen keine freien Zeiten finden.",
   wrong_account: "Bitte verbinde den Kalender des Google-Kontos, mit dem du angemeldet bist.",
   state: "Das hat zu lange gedauert. Bitte nochmal versuchen.",
   oauth: "Bei Google ist etwas schiefgelaufen. Bitte nochmal versuchen.",
@@ -94,7 +94,7 @@ export function CalendarSection({
               <a href={connectCalendarHref("/settings")} className="underline">
                 Neu verbinden
               </a>
-              <ConfirmButton label="Verbindung trennen" question="Ohne Kalender findet der Date-O-Mat keine freien Zeiten mehr." yes="Ja, trennen" action={disconnectCalendarAction} />
+              <ConfirmButton label="Verbindung trennen" question="Ohne Kalender findet Zweisamen keine freien Zeiten mehr." yes="Ja, trennen" action={disconnectCalendarAction} />
             </div>
           </>
         ) : (
@@ -102,7 +102,7 @@ export function CalendarSection({
             <p className="font-semibold">
               {me.state === "reauth"
                 ? "Google hat die Verbindung beendet. Bitte verbinde deinen Kalender neu."
-                : "Der Date-O-Mat sieht nur, wann du belegt bist – keine Termintitel, keine Details."}
+                : "Zweisamen sieht nur, wann du belegt bist – keine Termintitel, keine Details."}
             </p>
             <a href={connectCalendarHref("/settings")} className={buttonClass("primary", "md", "w-full")}>
               <CalendarIcon />

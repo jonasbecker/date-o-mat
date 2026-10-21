@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# Date-O-Mat – project notes
+# Zweisamen – project notes
 
 Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Setup: `docs/SETUP.md`.
 

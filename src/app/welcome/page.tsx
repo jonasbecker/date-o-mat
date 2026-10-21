@@ -31,7 +31,7 @@ async function Welcome() {
     {
       emoji: "🌱",
       title: `Willkommen, ${user.name}!`,
-      text: `Der Date-O-Mat sorgt dafür, dass ${partner.name} und du regelmäßig Dates habt. Jedes Date wird ein Blatt in eurem Beet.`,
+      text: `Zweisamen sorgt dafür, dass ${partner.name} und du regelmäßig Dates habt. Jedes Date wird ein Blatt in eurem Beet.`,
       tone: "bg-tile-green",
     },
     {
@@ -40,13 +40,13 @@ async function Welcome() {
       text:
         settings.mode === "alternating"
           ? "Wer die Gießkanne hat, ist dran: Idee und Termin aussuchen und gießen – die andere Person sagt zu. Dann wandert die Kanne weiter."
-          : "Der Date-O-Mat schlägt euch jede Runde Termin und Idee vor – ihr müsst nur noch zusagen. Rhythmus und Modus könnt ihr jederzeit ändern.",
+          : "Zweisamen schlägt euch jede Runde Termin und Idee vor – ihr müsst nur noch zusagen. Rhythmus und Modus könnt ihr jederzeit ändern.",
       tone: "bg-tile-butter",
     },
     {
       emoji: "📅",
       title: "Eure freie Zeit – automatisch",
-      text: "Verbindet beide eure Google-Kalender. Der Date-O-Mat sieht nur, wann ihr belegt seid, findet gemeinsame Lücken und trägt das Date für euch beide ein.",
+      text: "Verbindet beide eure Google-Kalender. Zweisamen sieht nur, wann ihr belegt seid, findet gemeinsame Lücken und trägt das Date für euch beide ein.",
       tone: "bg-tile-sky",
     },
     {
@@ -58,7 +58,7 @@ async function Welcome() {
     {
       emoji: "🔔",
       title: "Damit ihr kein Date vergesst",
-      text: "Der Date-O-Mat erinnert euch, wenn ihr dran seid, wenn etwas ansteht und vor dem Date. Ohne Erinnerungen vergisst man es doch.",
+      text: "Zweisamen erinnert euch, wenn ihr dran seid, wenn etwas ansteht und vor dem Date. Ohne Erinnerungen vergisst man es doch.",
       tone: "bg-tile-lilac",
       push: true,
     },

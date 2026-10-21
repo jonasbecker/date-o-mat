@@ -5,7 +5,7 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* ---------------------------------------------------------------------------
-   Date-O-Mat design tokens
+   Zweisamen design tokens
    Fixed brand colors keep their value in dark mode; the semantic colors
    (bg, surface, ink, muted, line) switch with the color scheme.
    --------------------------------------------------------------------------- */

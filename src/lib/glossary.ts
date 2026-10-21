@@ -14,8 +14,8 @@ export const GLOSSARY = {
     text: "Jedes Mal ist eine Person dran: Sie sucht Idee und Termin aus, die andere sagt „Passt!“. Beim nächsten Mal ist es umgekehrt. Abgeben oder übernehmen geht jederzeit.",
   },
   vorschlag: {
-    title: "Der Date-O-Mat schlägt vor",
-    text: "Der Date-O-Mat sucht selbst eine freie Zeit und eine Idee von eurer Wunschliste aus. Wer zuerst auf „Übernehmen“ tippt, plant das Date.",
+    title: "Zweisamen schlägt vor",
+    text: "Zweisamen sucht selbst eine freie Zeit und eine Idee von eurer Wunschliste aus. Wer zuerst auf „Übernehmen“ tippt, plant das Date.",
   },
   dauer: {
     title: "Kurz oder lang?",
@@ -23,7 +23,7 @@ export const GLOSSARY = {
   },
   frei: {
     title: "Ihr seid beide frei",
-    text: "Eure Kalender zeigen zu der Zeit nichts – mit etwas Puffer davor und danach. Der Date-O-Mat sieht dabei nur „frei“ oder „belegt“, nie eure Termine.",
+    text: "Eure Kalender zeigen zu der Zeit nichts – mit etwas Puffer davor und danach. Zweisamen sieht dabei nur „frei“ oder „belegt“, nie eure Termine.",
   },
   swipen: {
     title: "Swipen",

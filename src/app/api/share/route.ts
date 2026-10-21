@@ -1,4 +1,4 @@
-// The iPhone share shortcut: "Teilen → Date-O-Mat" in TikTok/Instagram sends
+// The iPhone share shortcut: "Teilen → Zweisamen" in TikTok/Instagram sends
 // the link here with the personal key; the idea lands on the wishlist right
 // away. The answer is plain text – the shortcut shows it as a notification.
 import { and, eq, ne } from "drizzle-orm";

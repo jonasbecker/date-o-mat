@@ -11,7 +11,7 @@ import { env } from "@/server/env";
 const MAX_BYTES = 3 * 1024 * 1024;
 const MAX_REDIRECTS = 3;
 const TIMEOUT_MS = 15_000;
-const USER_AGENT = "Mozilla/5.0 (compatible; Date-O-Mat/1.0; private date planner for two people)";
+const USER_AGENT = "Mozilla/5.0 (compatible; Zweisamen/1.0; private date planner for two people)";
 
 export class FetchPageError extends Error {
   constructor(public readonly reason: string) {

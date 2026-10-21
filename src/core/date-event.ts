@@ -44,7 +44,7 @@ export function buildEventBody(date: EventSource, partnerEmail: string, appUrl: 
     date.url,
     date.costEur === null ? null : date.costEur === 0 ? "Kosten: kostenlos" : `Kosten: ca. ${date.costEur} €`,
   ].filter(Boolean);
-  const footer = `Geplant mit dem Date-O-Mat 💞\n${appUrl}`;
+  const footer = `Geplant mit Zweisamen 💞\n${appUrl}`;
   return {
     summary: `💞 Date: ${date.title}`,
     description: lines.length ? `${lines.join("\n")}\n\n${footer}` : footer,

@@ -62,8 +62,8 @@ export function SetupChecklist({
     items.push({
       key: "install",
       done: env.installed,
-      label: "Date-O-Mat liegt auf dem Home-Bildschirm",
-      todo: "Leg den Date-O-Mat auf den Home-Bildschirm",
+      label: "Zweisamen liegt auf dem Home-Bildschirm",
+      todo: "Leg Zweisamen auf den Home-Bildschirm",
       hint: env.ios ? "Safari: Teilen-Symbol → „Zum Home-Bildschirm“ → Hinzufügen. Danach die App über das Icon öffnen." : "Browser-Menü (⋮) → „App installieren“ oder „Zum Startbildschirm hinzufügen“.",
     });
   }

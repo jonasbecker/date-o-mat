@@ -1,4 +1,4 @@
-// Date-O-Mat service worker: shows push notifications and opens the app on tap.
+// Zweisamen service worker: shows push notifications and opens the app on tap.
 // Deliberately small: no data caching (everything is live and shared), only a
 // friendly offline page for navigations without network.
 
@@ -42,10 +42,10 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: "Date-O-Mat", body: event.data ? event.data.text() : "" };
+    data = { title: "Zweisamen", body: event.data ? event.data.text() : "" };
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "Date-O-Mat", {
+    self.registration.showNotification(data.title || "Zweisamen", {
       body: data.body || "",
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",

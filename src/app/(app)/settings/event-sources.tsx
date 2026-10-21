@@ -59,7 +59,7 @@ export function EventSources({ sources, aiReady }: { sources: SourceView[]; aiRe
 
       {sources.length === 0 ? (
         <div className="flex flex-col gap-2">
-          <p className="font-semibold">Der Date-O-Mat liest jeden Morgen eure Lieblings-Seiten und zeigt unter „Was läuft“, wann ihr beide Zeit habt.</p>
+          <p className="font-semibold">Zweisamen liest jeden Morgen eure Lieblings-Seiten und zeigt unter „Was läuft“, wann ihr beide Zeit habt.</p>
           <Button variant="primary" size="sm" disabled={busy} onClick={() => startTransition(() => addCologneSourcesAction())} className="self-start">
             Köln-Quellen hinzufügen
           </Button>
