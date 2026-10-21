@@ -56,12 +56,16 @@ const DENSEST = 5;
  * whenever the card or its content changes size, so it cannot miss the moment the card is laid out
  * (a page Next rendered hidden, Safari's bars, fonts arriving).
  */
-function fitCard(card: HTMLElement, body: HTMLElement) {
+function fitCard(card: HTMLElement, info: HTMLElement) {
+  // e2e: checks that the plain CSS alone (the picture giving way) already keeps the info box whole.
+  if ((window as { __noCardFit?: boolean }).__noCardFit) return;
   for (let dense = 0; dense <= DENSEST; dense++) {
     for (let step = 1; step <= DENSEST; step++) card.toggleAttribute(`data-d${step}`, step <= dense);
     card.dataset.cardDense = String(dense);
     // Not laid out (hidden): nothing to measure – the observer calls again once it is shown.
-    if (body.clientHeight === 0 || body.scrollHeight <= body.clientHeight + 1) return;
+    if (card.clientHeight === 0) return;
+    // Where the info box really ends (geometry – Safari and Chrome agree on it, unlike scrollHeight).
+    if (info.getBoundingClientRect().bottom <= card.getBoundingClientRect().bottom - 8) return;
   }
 }
 
@@ -79,12 +83,14 @@ function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: str
   const when = card.when;
   const box = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
+  const info = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = box.current;
     const inner = body.current;
-    if (!el || !inner) return;
+    const rows = info.current;
+    if (!el || !inner || !rows) return;
     let frame = 0;
-    const fit = () => fitCard(el, inner);
+    const fit = () => fitCard(el, rows);
     const later = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(fit);
@@ -110,8 +116,9 @@ function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: str
   }, [card]);
   return (
     <div ref={box} data-card-dense={0} className="swipe-card relative flex h-full flex-col overflow-hidden rounded-[28px] bg-[#E7EEDF] text-[#1B2620] shadow-[0_18px_30px_rgba(0,0,0,0.4)]">
-      <IllustrationStrip names={card.art.illustrations} hex={card.art.hex} className="sc-strip -mb-2.5 h-[clamp(56px,13vh,110px)] shrink-0 overflow-hidden" />
-      <div ref={body} className="sc-body relative flex min-h-0 flex-1 flex-col gap-3.5 overflow-hidden p-5">
+      <IllustrationStrip names={card.art.illustrations} hex={card.art.hex} className="sc-strip -mb-2.5 min-h-8 shrink basis-[110px] overflow-hidden" />
+      {/* The text never shrinks (flex 1 0 auto): when room is short the picture gives way first – plain CSS. */}
+      <div ref={body} className="sc-body relative flex flex-[1_0_auto] flex-col gap-3.5 p-5">
         <div className="sc-sorte flex items-center justify-between gap-2">
           <span className="inline-flex h-[26px] items-center truncate rounded-full bg-white px-2.5 font-mono text-[11px]">Sorte: {card.sorte}</span>
           {pos && <span className="shrink-0 font-mono text-[11px] text-[#6A7566]">Nº {pos}</span>}
@@ -135,7 +142,7 @@ function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: str
         <div className="sc-rule border-t-[1.5px] border-[#C9D4C4] pt-3">
           <h2 className="sc-title line-clamp-2 text-2xl font-extrabold leading-[1.05] tracking-[-0.03em]">{card.title}</h2>
         </div>
-        <div data-card-info className="mt-auto shrink-0 overflow-hidden rounded-[18px] bg-white">
+        <div ref={info} data-card-info className="mt-auto shrink-0 overflow-hidden rounded-[18px] bg-white">
           {infoRows(card).map((r, i) => (
             <div key={r.k} className={cn("sc-row grid grid-cols-[30px_minmax(0,1fr)_auto] items-center gap-2.5 px-3.5 py-[9px]", i > 0 && "border-t border-[#EDF3EA]")}>
               <span aria-hidden="true" className="sc-icon flex size-7 items-center justify-center rounded-[9px] text-[13px] font-extrabold" style={{ background: r.bg }}>

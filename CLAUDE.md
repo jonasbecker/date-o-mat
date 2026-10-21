@@ -40,8 +40,9 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   missing (push off, calendar, status). "Mehr" (`?t=mehr`) lists the other topics.
 - **Swipen (C2 card, `docs/design/garten/swipe-karte/`):** `swipe-deck.tsx` – the light card with a picture strip
   (`components/illustrations.tsx`, all of them on `/dev/illustrationen`), the day big (combo: the event; else the next
-  free evening / half day from one FreeBusy query per page, `core/card-when.ts`), WO · DAUER · KOSTEN (the card measures itself and tightens in steps – `data-card-dense` 0–5 – so the info box is
-  never cut; m24 checks five phone heights); swiping only,
+  free evening / half day from one FreeBusy query per page, `core/card-when.ts`), WO · DAUER · KOSTEN (never cut: in plain CSS the picture gives way first – `flex-shrink`, text `flex 1 0 auto`;
+  then `fitCard()` measures where the info box ends – geometry, not scrollHeight, Safari differs – on every size change
+  and sets the steps `data-d1…5` styled in globals.css `.swipe-card`; m24 checks five heights, a hidden tab, no measuring); swiping only,
   with the EINPFLANZEN / KOMPOST stamp; the flower (tap = next quip) reacts happy / sad and also says what a swipe
   changed or what went wrong – no small text under the card. ⓘ next to the Matchlinge (how it works, "n geswipt · n
   übrig", Mehr Ideen, Euer Ding) and ↺ next to the filter live in `deck-chrome.tsx`. For keyboard / screen readers the

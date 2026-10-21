@@ -207,6 +207,24 @@ for (const viewport of [
   check(`back on Swipen after the screen changed while it was hidden: whole (step ${back?.dense})`, back?.whole === true && back.dense > 0);
   await ctx.close();
 }
+// Without the measuring (before hydration, or should it fail on some browser): on an iPhone as an app
+// (390×763 – 844 minus status bar and home bar) the picture alone gives way and the info box stays whole.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 763 }, deviceScaleFactor: 1, locale: "de-DE", colorScheme: "dark" });
+  await ctx.addInitScript(() => (window.__noCardFit = true));
+  await ctx.addCookies([{ name: "dom_session", value: jonas.token, url: BASE }]);
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/ideas/entdecken`);
+  await page.locator("[data-card-info]").first().waitFor({ timeout: 20000 });
+  const fit = await page.evaluate(() => {
+    const card = [...document.querySelectorAll("[data-card-dense]")].find((el) => el.getBoundingClientRect().height > 0);
+    const info = card?.querySelector("[data-card-info]");
+    return card && info ? info.getBoundingClientRect().bottom <= card.getBoundingClientRect().bottom - 4 : null;
+  });
+  await page.screenshot({ path: `${OUT}m24-card-nojs.png` });
+  check("no measuring, 390×763: the picture gives way, WO · DAUER · KOSTEN whole", fit === true);
+  await ctx.close();
+}
 // The five moods of the flower side by side (/dev/blume), to compare with BloomStates.html
 const wide = await browser.newContext({ viewport: { width: 1800, height: 720 }, locale: "de-DE", colorScheme: "dark" });
 await wide.addCookies([{ name: "dom_session", value: jonas.token, url: BASE }]);

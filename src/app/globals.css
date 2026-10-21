@@ -445,11 +445,11 @@
 
 /* The swipe card tightens step by step until it fits (swipe-deck.tsx, fitCard sets data-d1 … data-d5).
    Later steps come later in the file, so they win. */
-.swipe-card[data-d1] .sc-strip { height: 64px; }
+.swipe-card[data-d1] .sc-strip { flex-basis: 64px; }
 .swipe-card[data-d1] .sc-body { gap: 0.625rem; padding: 1rem; }
 .swipe-card[data-d2] .sc-sub { display: none; }
 .swipe-card[data-d2] .sc-row { padding-block: 0.375rem; }
-.swipe-card[data-d3] .sc-strip { height: 44px; }
+.swipe-card[data-d3] .sc-strip { flex-basis: 44px; }
 .swipe-card[data-d3] .sc-body { gap: 0.5rem; padding: 0.875rem; }
 .swipe-card[data-d3] .sc-when { gap: 0.125rem; }
 .swipe-card[data-d3] .sc-day { font-size: 32px; }
