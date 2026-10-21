@@ -47,7 +47,7 @@ import { budgetState } from "@/server/budget";
 import { specialDayPrompt } from "@/core/special-days";
 import { upcomingDaysFor } from "@/server/special-days";
 import { db } from "@/server/db";
-import { coupleSettings, datePlans, deckCards, deckSwipes, ideas, notificationLog, users, type DeckCard } from "@/server/db/schema";
+import { coupleSettings, datePlans, deckCards, deckSwipes, ideas, notificationLog, suggestions, users, type DeckCard } from "@/server/db/schema";
 import { env } from "@/server/env";
 import { upcomingEvents, type EventWithSource } from "@/server/events";
 import { CURATED_IDEAS } from "@/core/curated-ideas";
@@ -191,7 +191,7 @@ export async function deckFor(ctx: CoupleContext, now: Date): Promise<DeckState>
       view.bothFree = times.calendars ? (times.eventFree.get(card.id) ?? null) : null;
       view.when = eventWhenOnCard({ startsAt: card.eventStartsAt, allDay: card.eventAllDay }, view.bothFree);
     } else {
-      view.when = freeWhen(times.free[card.size], now, times.calendars);
+      view.when = freeWhen(times.free[card.size], times.calendars);
     }
   }
   const refillAt = settings.deckRefillStartedAt;
@@ -362,7 +362,8 @@ export async function swipe(ctx: CoupleContext, cardId: string, verdict: SwipeVe
   });
 }
 
-export type UndoResult = { ok: true; card: DeckCardView } | { ok: false; error: "nothing" | "planned" };
+/** `kept`: only the like was taken back – the idea stays on the list (planned, suggested or edited by the other one). */
+export type UndoResult = { ok: true; card: DeckCardView; kept?: boolean } | { ok: false; error: "nothing" };
 
 /** Takes back this person's latest swipe – again and again, one at a time. */
 export async function undoLastSwipe(ctx: CoupleContext, now: Date): Promise<UndoResult> {
@@ -386,16 +387,24 @@ export async function undoLastSwipe(ctx: CoupleContext, now: Date): Promise<Undo
       .where(and(eq(deckSwipes.cardId, card.id), eq(deckSwipes.userId, ctx.partner.id)));
     const partnerLikes = partner?.verdict === "like" || partner?.verdict === "super";
     let ideaId = card.ideaId;
-    // Taking back the only like takes the idea off the wishlist again – unless it is planned already.
+    let kept = false;
+    // Taking back the only like takes the idea off the wishlist again – unless it already lives on:
+    // planned, in a round's suggestion, or changed by the other one. Then only the like goes.
     if (card.kind !== "revisit" && card.ideaId && !partnerLikes && (last.swipe.verdict === "like" || last.swipe.verdict === "super")) {
-      const used = await tx.$count(datePlans, eq(datePlans.ideaId, card.ideaId));
-      if (used > 0) return { ok: false, error: "planned" } as const;
-      await tx.delete(ideas).where(and(eq(ideas.id, card.ideaId), eq(ideas.coupleId, ctx.coupleId)));
-      ideaId = null;
+      const [planned, suggested, [idea]] = await Promise.all([
+        tx.$count(datePlans, eq(datePlans.ideaId, card.ideaId)),
+        tx.$count(suggestions, and(eq(suggestions.ideaId, card.ideaId), eq(suggestions.status, "pending"))),
+        tx.select({ updatedById: ideas.updatedById }).from(ideas).where(eq(ideas.id, card.ideaId)).limit(1),
+      ]);
+      kept = planned > 0 || suggested > 0 || idea?.updatedById === ctx.partner.id;
+      if (!kept) {
+        await tx.delete(ideas).where(and(eq(ideas.id, card.ideaId), eq(ideas.coupleId, ctx.coupleId)));
+        ideaId = null;
+      }
     }
     await tx.update(deckCards).set({ status: "open", matchedAt: null, ideaId }).where(eq(deckCards.id, card.id));
     await tx.delete(deckSwipes).where(and(eq(deckSwipes.cardId, card.id), eq(deckSwipes.userId, ctx.user.id)));
-    return { ok: true, card: cardView({ ...card, status: "open" }, partner?.verdict) } as const;
+    return { ok: true, card: cardView({ ...card, status: "open" }, partner?.verdict), kept } as const;
   });
 }
 

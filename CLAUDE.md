@@ -40,7 +40,7 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   missing (calendar, status – push is only the switch). The page is "einstellungen." (no "gartenschuppen"). "Mehr" (`?t=mehr`) lists the other topics.
 - **Swipen (C2 card, `docs/design/garten/swipe-karte/`):** `swipe-deck.tsx` – the light card with a picture strip
   (`components/illustrations.tsx`, all of them on `/dev/illustrationen`), the day big (combo: the event; else the next
-  free evening / half day from one FreeBusy query per page, `core/card-when.ts`), WO · DAUER · KOSTEN (never cut: in plain CSS the picture gives way first – `flex-shrink`, text `flex 1 0 auto`;
+  free evening / half day from one FreeBusy query per page, `core/card-when.ts`; none → "irgendwann.", never a made-up date), WO · DAUER · KOSTEN (never cut: in plain CSS the picture gives way first – `flex-shrink`, text `flex 1 0 auto`;
   then `fitCard()` measures where the info box ends – geometry, not scrollHeight, Safari differs – on every size change
   and sets the steps `data-d1…5` styled in globals.css `.swipe-card`; m24 checks five heights, a hidden tab, no measuring); swiping only,
   with the EINPFLANZEN / KOMPOST stamp; the flower (tap = next quip) reacts happy / sad and also says what a swipe

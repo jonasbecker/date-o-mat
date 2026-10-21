@@ -135,6 +135,14 @@ await s.screenshot({ path: `${OUT}m15-02-partner-calendar.png`, fullPage: true }
 await j.goto(`${BASE}/settings?t=status`);
 check("Jonas gets a link to reconnect", (await status(j).getByRole("link", { name: "Verbindung verloren – bitte neu verbinden." }).getAttribute("href")) === "/settings?t=kalender");
 
+// Sam's turn while Jonas' calendar is gone: not a dead end – nudge Jonas, or hand the turn over.
+await db.query("UPDATE couple_settings SET mode = 'alternating' WHERE couple_id = $1", [couple.id]);
+await db.query("UPDATE cycles SET mode = 'alternating', planner_id = $2 WHERE couple_id = $1 AND status = 'open'", [couple.id, sam.id]);
+await s.goto(`${BASE}/plan`);
+await s.getByRole("heading", { name: "fast startklar." }).waitFor({ timeout: 15000 });
+check("Sam's turn, Jonas' calendar missing: Anstupsen + hand over", (await s.getByRole("button", { name: "Anstupsen" }).isVisible()) && (await s.getByRole("button", { name: "Diesmal an Jonas abgeben" }).isVisible()));
+await s.screenshot({ path: `${OUT}m15-03-partner-calendar-turn.png` });
+
 // 5) Push preference "Wichtiges" off → no alert for that person
 await db.query("UPDATE google_connections SET status = 'ok' WHERE user_id = $1", [jonas.id]);
 await db.query("INSERT INTO notification_prefs (user_id, type, enabled) VALUES ($1, 'system', false)", [sam.id]);

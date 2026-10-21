@@ -395,8 +395,25 @@ function viewFor(
         ? { headline: "diesmal\nwelk.", sub: `Kein Date diesmal – passiert. Weiter geht's am ${formatShortDate(o.cycle!.endsAt)}.`, cta: null }
         : { headline: "geschafft.", sub: `Weiter geht's am ${formatShortDate(o.cycle!.endsAt)}.`, cta: null };
     case "connect_calendar":
-    case "partner_calendar":
       return { headline: "fast\nstartklar.", cta: null };
+    case "partner_calendar":
+      // Your turn, but without the other calendar no free evening can be found: nudge, or hand over.
+      return {
+        headline: "fast\nstartklar.",
+        sub: `${partner.name} muss den Kalender noch verbinden – erst dann findet der Date-O-Mat eure freien Abende.`,
+        cta: (
+          <div className="grid grid-cols-[minmax(0,1fr)_56px] gap-2">
+            <NudgeButton calendar />
+            {o.cycle?.mode === "alternating" && (
+              <form action={swapTurnAction.bind(null, partner.id)}>
+                <button type="submit" aria-label={`Diesmal an ${partner.name} abgeben`} className="press flex size-14 items-center justify-center rounded-full bg-surface text-ink">
+                  <ArrowIcon width={20} height={20} />
+                </button>
+              </form>
+            )}
+          </div>
+        ),
+      };
   }
   void now;
 }

@@ -4,8 +4,9 @@ import { useState, useTransition } from "react";
 import { nudgeAction } from "@/app/(app)/actions";
 import { Button } from "./button";
 
-/** "Anstupsen" on the Beet: one push to whoever has the watering can (at most once an hour). */
-export function NudgeButton() {
+/** "Anstupsen" on the Beet: one push to whoever has the watering can (at most once an hour) – or, with
+ * `calendar`, to the one whose calendar needs connecting again. */
+export function NudgeButton({ calendar = false }: { calendar?: boolean }) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   return (
@@ -17,7 +18,7 @@ export function NudgeButton() {
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
-            const result = await nudgeAction();
+            const result = await nudgeAction(calendar ? "calendar" : undefined);
             setMessage(result.message ?? null);
           })
         }

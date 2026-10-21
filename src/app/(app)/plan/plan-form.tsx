@@ -591,7 +591,6 @@ export function PlanFlow({
           {ok.failedCalendars === 1 ? "Ein Kalender konnte" : `${ok.failedCalendars} Kalender konnten`} nicht gelesen werden – prüft die Auswahl in den Einstellungen.
         </p>
       )}
-      <div className="flex-1" />
       {mode.kind === "new" && surpriseEnabled && (
         <div className="flex flex-col gap-1.5">
           <label className="flex items-center gap-2.5 text-sm font-semibold">
@@ -636,7 +635,7 @@ export function PlanFlow({
               )}
             </div>
           )}
-          <Button form="plan-form" type="submit" variant={mode.kind === "reschedule" ? "primary" : "send"} size="lg" disabled={!ready || pending || leaving} className="w-full">
+          <Button form="plan-form" type="submit" variant="primary" size="lg" disabled={!ready || pending || leaving} className="w-full">
             {pending ? "Wird eingetragen …" : mode.kind === "reschedule" ? "Termin ändern" : `Gießen & an ${partnerName} senden`}
           </Button>
         </div>

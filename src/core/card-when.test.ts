@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { describe, expect, it } from "vitest";
-import { dayLabel, eventWhen, firstFree, freeWhen, nextWeekendEvening } from "./card-when";
+import { dayLabel, eventWhen, firstFree, freeWhen } from "./card-when";
 import type { Slot } from "./slots";
 
 const at = (iso: string) => DateTime.fromISO(iso, { zone: "Europe/Berlin" }).toJSDate();
@@ -26,17 +26,10 @@ describe("card dates", () => {
     expect(firstFree([], "small")).toBeNull();
   });
 
-  it("without calendars: the next Friday or Saturday evening", () => {
-    expect(nextWeekendEvening(at("2026-10-20T10:00"))).toEqual(at("2026-10-23T18:00"));
-    expect(nextWeekendEvening(at("2026-10-23T10:00"))).toEqual(at("2026-10-23T18:00"));
-    expect(nextWeekendEvening(at("2026-10-23T19:00"))).toEqual(at("2026-10-24T18:00"));
-    expect(nextWeekendEvening(at("2026-10-24T19:00"))).toEqual(at("2026-10-30T18:00"));
-  });
 
   it("builds the line under the day", () => {
-    const now = at("2026-10-20T10:00");
-    expect(freeWhen(slot("2026-10-23T18:00"), now, true)).toEqual({ day: "Fr 23.10.", time: "ab 18:00", free: true, note: "✓ ihr habt beide Zeit" });
-    expect(freeWhen(null, now, false)).toEqual({ day: "Fr 23.10.", time: "ab 18:00", free: null, note: "kalender fehlt" });
-    expect(freeWhen(null, now, true).note).toBe("gerade nichts frei");
+    expect(freeWhen(slot("2026-10-23T18:00"), true)).toEqual({ day: "Fr 23.10.", time: "ab 18:00", free: true, note: "✓ ihr habt beide Zeit" });
+    expect(freeWhen(null, false)).toEqual({ day: "irgendwann.", time: "", free: null, note: "kalender fehlt" });
+    expect(freeWhen(null, true).note).toBe("gerade nichts frei");
   });
 });

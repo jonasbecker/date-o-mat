@@ -106,7 +106,7 @@ export function WelcomeSlides({ slides, publicKey }: { slides: Slide[]; publicKe
           </form>
         ) : (
           <form action={finishOnboardingAction}>
-            <Button type="submit" variant="send" size="lg" className="w-full">
+            <Button type="submit" variant="primary" size="lg" className="w-full">
               Los geht&apos;s 🎉
             </Button>
           </form>

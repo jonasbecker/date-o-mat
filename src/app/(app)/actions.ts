@@ -161,13 +161,15 @@ export async function deleteTaskAction(taskId: string): Promise<void> {
 }
 
 /** "Anstupsen": a push to the one who has the watering can – to plan, or to say yes to the plan. */
-export async function nudgeAction(): Promise<ActionResult> {
+export async function nudgeAction(reason?: "calendar"): Promise<ActionResult> {
   const ctx = await requireCouple();
   const now = coupleNow(await getCoupleSettings(ctx.coupleId));
   const cycle = await ensureCurrentCycle(ctx.coupleId, now);
   if (!cycle) return { ok: false, message: "Gerade läuft keine Runde." };
   const text =
-    cycle.status === "planned"
+    reason === "calendar"
+      ? { title: `${ctx.user.name} stupst dich an 👋`, body: "Verbinde deinen Kalender (Einstellungen), dann findet der Date-O-Mat eure freien Abende." }
+      : cycle.status === "planned"
       ? { title: `${ctx.user.name} stupst dich an 👋`, body: "Euer Date wartet auf dein „Zusagen“." }
       : { title: `${ctx.user.name} stupst dich an 👋`, body: "Die Gießkanne ist bei dir – plant ihr was?" };
   const sent = await nudgePartner(ctx, cycle.id, now, text);

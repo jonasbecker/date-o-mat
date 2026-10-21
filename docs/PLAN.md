@@ -191,20 +191,20 @@ einmal, Rückfragen beim Entfernen/Trennen, Willkommen-Texte, Manifest dunkel, �
    gießt?“, wenn du dran bist); „sam ist dran.“ nach dem Gießen → „wartet auf sam.“ ✅; Blumengröße
    über alle Zustände gleich.
 8. **„Anderer Termin“** bietet auch Zeiten an, die das alte Date überlappen (es blockiert sich selbst).
-9. **Sams Kalender fehlt und du bist dran**: Anstupsen + Kanne abgeben statt Sackgasse.
+9. ✅ **Sams Kalender fehlt und du bist dran**: Anstupsen + Kanne abgeben statt Sackgasse.
 10. **Abgesagtes Date** zeigt „wurde abgesagt“ statt „Hier ist nichts“; Absage-Text je nach Rolle,
     Fehler sichtbar.
-11. **Rückgängig beim Swipen**: Idee nicht hart löschen (Vorschläge, Änderungen der anderen Person);
+11. ✅ **Rückgängig beim Swipen** (nur dein Like geht, wenn die Idee schon weiterlebt): Idee nicht hart löschen (Vorschläge, Änderungen der anderen Person);
     ein geplanter Swipe blockiert nicht alle früheren.
 12. ✅ **„Meine Likes“** (nur eigene + Matches) zeigt auch die Likes der anderen Person – verrät das blinde Swipen. Nur eigene
     zeigen oder umbenennen.
 13. ✅ **Ein Name pro Ort** („einstellungen.“, „archiv.“): Tab „Einstellungen“ / Seite „setup.“ / „der gartenschuppen“; Archiv heißt
     „unser beet.“, obwohl der Start-Tab „Beet“ ist.
-14. **„wann?“**: große Lücke zwischen Zeiten und Senden-Kasten; der Senden-Knopf ist blau statt der
+14. ✅ **„wann?“**: große Lücke zwischen Zeiten und Senden-Kasten; der Senden-Knopf ist blau statt der
     hellen Haupt-Pille.
 15. **Tipp-Ziele ≥ 44 px**: Details ›, Lieber was anderes?, Weitere Zeiten, ⓘ, Filter,
     Matchlinge-Pille, Größen-Umschalter, Herzen klein.
-16. **Karte ohne freien Abend**: kein großes Wochenend-Datum, das wie ein Vorschlag aussieht.
+16. ✅ **Karte ohne freien Abend** („irgendwann.“): kein großes Wochenend-Datum, das wie ein Vorschlag aussieht.
 17. **„Was läuft“ auffindbar machen** (heute ein kleiner Link oben auf /ideas).
 18. **Weniger Google-Abfragen**: doppelte Vorschläge im Vorschlag-Modus (eindeutig pro Runde),
     FreeBusy der Swipe-Seite ein paar Minuten zwischenspeichern.

@@ -85,7 +85,8 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
     const rounds = beetRounds ?? (await plantRounds(ctx.coupleId));
     const step = overview.step;
     const onTurn = step?.kind === "plan" || step?.kind === "confirm" ? "me" : step?.kind === "partner_turn" || step?.kind === "wait_confirm" ? "partner" : null;
-    const calendarStep = step?.kind === "connect_calendar" || step?.kind === "partner_calendar";
+    // My own calendar: the big card to connect it. The other one's: one line on the Beet (beet.tsx).
+    const calendarStep = step?.kind === "connect_calendar";
     return (
       <>
         <AutoRefresh />

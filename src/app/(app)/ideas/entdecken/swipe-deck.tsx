@@ -133,8 +133,12 @@ function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: str
           <div className="sc-when flex flex-col gap-1" data-card-when>
             <span className="sc-day text-[42px] font-extrabold leading-[0.92] tracking-[-0.055em]">{when.day}</span>
             <span className={cn("sc-time flex flex-wrap items-center gap-x-2 text-[17px] font-bold", when.free === true ? "text-[#2E7D46]" : when.free === false ? "text-[#A0522D]" : "text-[#6A7566]")}>
-              <span>{when.time}</span>
-              <span aria-hidden="true">·</span>
+              {when.time && (
+                <>
+                  <span>{when.time}</span>
+                  <span aria-hidden="true">·</span>
+                </>
+              )}
               <span>{when.note}</span>
             </span>
           </div>
@@ -331,9 +335,10 @@ export function SwipeDeck({
       const result = await undoSwipeAction().catch(() => null);
       if (!result) return setMessage("hoppla – bist du offline?");
       if (!result.ok) {
-        setMessage(result.error === "planned" ? "ist schon als date geplant – bleibt 💞" : "da gibt's nix mehr zurück.");
+        setMessage("da gibt's nix mehr zurück.");
         return;
       }
+      if (result.kept) setMessage("die idee bleibt auf eurer liste – nur dein like ist weg.");
       // The undo answer has no day on it – the card had one when it was shown.
       const card = { ...result.card, when: result.card.when ?? shownWhen.current.get(result.card.id) ?? null };
       const undone = verdicts.current.pop();

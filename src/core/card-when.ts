@@ -47,22 +47,11 @@ export function firstFree(slots: Slot[], size: IdeaSize, zone = APP_TIMEZONE): S
   return [...(fitting.length ? fitting : slots)].sort((a, b) => a.start.getTime() - b.start.getTime())[0] ?? null;
 }
 
-/** No calendars: the next Friday or Saturday evening (today counts until 17:00). */
-export function nextWeekendEvening(now: Date, zone = APP_TIMEZONE): Date {
-  let day = DateTime.fromJSDate(now, { zone }).startOf("day");
-  const late = DateTime.fromJSDate(now, { zone }).hour >= EVENING_FROM;
-  for (let i = 0; i < 8; i++) {
-    if ((day.weekday === 5 || day.weekday === 6) && !(i === 0 && late)) break;
-    day = day.plus({ days: 1 });
-  }
-  return day.set({ hour: 18 }).toJSDate();
-}
-
-/** A card without an event: the next free evening / half day, or a weekend evening without calendars. */
-export function freeWhen(slot: Slot | null, now: Date, calendars: boolean, zone = APP_TIMEZONE): CardWhen {
-  if (!calendars || !slot) {
-    const guess = nextWeekendEvening(now, zone);
-    return { day: dayLabel(guess, zone), time: "ab 18:00", free: null, note: calendars ? "gerade nichts frei" : "kalender fehlt" };
-  }
+/**
+ * A card without an event: the next free evening / half day. Without one (no calendars, nothing free)
+ * no made-up date – it would read like a suggestion: "irgendwann." and why.
+ */
+export function freeWhen(slot: Slot | null, calendars: boolean, zone = APP_TIMEZONE): CardWhen {
+  if (!calendars || !slot) return { day: "irgendwann.", time: "", free: null, note: calendars ? "gerade nichts frei" : "kalender fehlt" };
   return { day: dayLabel(slot.start, zone), time: `ab ${timeLabel(slot.start, zone)}`, free: true, note: NOTE.true };
 }
