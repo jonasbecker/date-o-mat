@@ -114,6 +114,18 @@ export async function notifyPartner(ctx: CoupleContext, event: PartnerEvent, ful
   }
 }
 
+/** The watering can changed hands mid-round: the other one should know right away. */
+export async function notifyTurnHandedOver(ctx: CoupleContext, toPartner: boolean) {
+  const payload: PushPayload = toPartner
+    ? { title: `${ctx.user.name} gibt dir die Gießkanne 🪴`, body: "Diesmal planst du das Date.", url: "/plan", tag: "turn" }
+    : { title: `${ctx.user.name} übernimmt diesmal`, body: "Du hast Pause – das Date plant diesmal jemand anderes.", url: "/plan", tag: "turn" };
+  try {
+    await sendToUser(ctx.partner.id, payload, "partner_activity");
+  } catch (error) {
+    console.warn("[push] hand-over notification failed", error);
+  }
+}
+
 /** "Jonas hat verraten, wie's war" – nudges the partner to review too (or tells them both are in). */
 export async function notifyPartnerReviewed(ctx: CoupleContext, date: Pick<DatePlan, "id" | "title">, partnerDone: boolean) {
   const payload: PushPayload = partnerDone
@@ -128,20 +140,21 @@ export async function notifyPartnerReviewed(ctx: CoupleContext, date: Pick<DateP
 
 /**
  * "Anstupsen" on the Beet: the one waiting reminds the one with the watering can. At most once an
- * hour per round (notification_log). Returns false when it was too soon.
+ * hour per round (notification_log). Returns how many phones got it (0: push is off over there), or
+ * null when it was too soon.
  */
-export async function nudgePartner(ctx: CoupleContext, cycleId: string, now: Date, text: { title: string; body: string }): Promise<boolean> {
+export async function nudgePartner(ctx: CoupleContext, cycleId: string, now: Date, text: { title: string; body: string }): Promise<number | null> {
   const hour = new Date(Math.floor(now.getTime() / 3_600_000) * 3_600_000);
   const [claimed] = await db
     .insert(notificationLog)
     .values({ userId: ctx.partner.id, type: "nudge", refId: cycleId, dueAt: hour })
     .onConflictDoNothing()
     .returning({ id: notificationLog.id });
-  if (!claimed) return false;
+  if (!claimed) return null;
   try {
-    await sendToUser(ctx.partner.id, { ...text, url: "/plan", tag: "turn" }, "nudge");
+    return await sendToUser(ctx.partner.id, { ...text, url: "/plan", tag: "turn" }, "nudge");
   } catch (error) {
     console.warn("[push] nudge failed", error);
+    return 0;
   }
-  return true;
 }

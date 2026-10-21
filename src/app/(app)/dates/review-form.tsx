@@ -107,6 +107,8 @@ export function ReviewForm({
       <label className="flex flex-col gap-1.5">
         <span className="text-[15px] font-bold">Was hat&apos;s ungefähr gekostet? (für euch beide, optional)</span>
         <span className="flex items-center gap-2">
+          {/* Only a changed amount is saved – hearts alone must not turn the estimate into the real cost. */}
+          <input type="hidden" name="costBefore" value={cost ?? ""} />
           <input
             name="cost"
             defaultValue={cost ?? ""}

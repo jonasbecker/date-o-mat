@@ -18,7 +18,7 @@ import { searchUntil } from "@/server/suggestions";
 import type { EventView } from "../events/event-list";
 import { eventView } from "../events/event-view";
 
-export type SaveDateState = { status: "idle" | "saved" | "error"; message?: string; savedAt?: number };
+export type SaveDateState = { status: "idle" | "saved" | "error"; message?: string; savedAt?: number; code?: string };
 
 const optionalUuid = z.preprocess((v) => (v === "" || v === null ? undefined : v), z.uuid().optional());
 const optionalText = z.preprocess((v) => (typeof v === "string" && v.trim() ? v.trim() : undefined), z.string().max(120).optional());
@@ -63,7 +63,7 @@ export async function saveDateAction(_prev: SaveDateState, formData: FormData): 
     now,
     data.dateId,
   );
-  if (!result.ok) return { status: "error", message: DATE_ERROR_MESSAGES[result.error] };
+  if (!result.ok) return { status: "error", message: DATE_ERROR_MESSAGES[result.error], code: result.error };
   const saved = await getDate(ctx.coupleId, result.dateId);
   if (saved) after(() => notifyPartner(ctx, data.dateId ? "rescheduled" : "planned", saved));
   refresh();

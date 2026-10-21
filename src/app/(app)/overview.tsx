@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
 import { notHappenedAction } from "./actions";
+import { NotHappenedButton } from "./not-happened-button";
 import { BudgetBar } from "@/components/budget-bar";
 import type { DateCardExtras } from "@/components/date-card";
 import { StartReview } from "@/components/start-review";
@@ -145,11 +146,7 @@ export function StartNotices({ o, ctx }: { o: Overview; ctx: CoupleContext }) {
       )}
 
       {o.roundDate?.status === "done" && (
-        <form action={notHappenedAction.bind(null, o.roundDate.id)} className="self-center">
-          <button type="submit" className="text-sm font-semibold text-muted underline">
-            „{o.roundDate.title}“ hat doch nicht geklappt?
-          </button>
-        </form>
+        <NotHappenedButton title={o.roundDate.title} action={notHappenedAction.bind(null, o.roundDate.id)} />
       )}
 
       {o.suggestion?.status === "no_slots" && (

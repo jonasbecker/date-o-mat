@@ -224,8 +224,10 @@ check("after the date: round counts as done, next step asks how it was", (await 
 await j.waitForTimeout(300);
 await j.screenshot({ path: `${SHOTS}m5-06-done.png` });
 await j.getByRole("button", { name: /hat doch nicht geklappt/ }).click();
+await j.getByRole("button", { name: "Ja, hat nicht geklappt" }).click();
 await j.waitForTimeout(1500);
-check("'hat doch nicht geklappt' marks the round as skipped", (await cycleStatus()) === "skipped");
+// The round still runs (a minute left): it opens again instead of wilting.
+check("'hat doch nicht geklappt' (asked once more) opens the running round again", (await cycleStatus()) === "open");
 
 await browser.close();
 await db.end();

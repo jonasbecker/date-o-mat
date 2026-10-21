@@ -10,7 +10,7 @@ import { requireCouple } from "@/server/auth/dal";
 import { coupleNow } from "@/server/clock";
 import { applySettingsToOpenCycle, ensureCurrentCycle } from "@/server/cycles";
 import { cancelDate, confirmDate, getDate, markNotHappened, saveDate } from "@/server/dates";
-import { notifyPartner, nudgePartner, type PartnerEvent } from "@/server/notifications";
+import { notifyPartner, notifyTurnHandedOver, nudgePartner, type PartnerEvent } from "@/server/notifications";
 import type { CoupleContext } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { suggestions } from "@/server/db/schema";
@@ -18,18 +18,23 @@ import { DATE_ERROR_MESSAGES } from "@/lib/date-errors";
 import { getCoupleSettings, setFirstPlanner } from "@/server/settings";
 import { rejectSuggestion } from "@/server/suggestions";
 
-/** Alternating mode: the other person takes over this round (and the order flips from here on). */
-export async function swapTurnAction() {
-  const { user, partner, coupleId } = await requireCouple();
+/**
+ * Alternating mode: `plannerId` takes over this round (and the order flips from here on). The button
+ * says who should plan, not "swap" – a double tap or a stale page must not hand the turn back.
+ */
+export async function swapTurnAction(plannerId: string) {
+  const ctx = await requireCouple();
+  const { user, partner, coupleId } = ctx;
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
   const cycle = await ensureCurrentCycle(coupleId, now);
-  if (cycle?.status === "open" && cycle.mode === "alternating" && cycle.plannerId) {
-    const newPlanner = cycle.plannerId === user.id ? partner.id : user.id;
+  const newPlanner = [user.id, partner.id].find((id) => id === plannerId);
+  if (newPlanner && cycle?.status === "open" && cycle.mode === "alternating" && cycle.plannerId && cycle.plannerId !== newPlanner) {
     const otherId = newPlanner === user.id ? partner.id : user.id;
     // plannerForSeq: odd rounds → first planner. Pick the first planner so this round goes to newPlanner.
     await setFirstPlanner(coupleId, cycle.seq % 2 === 1 ? newPlanner : otherId);
     await applySettingsToOpenCycle(coupleId, now);
+    after(() => notifyTurnHandedOver(ctx, newPlanner === partner.id));
   }
   refresh();
 }
@@ -86,7 +91,7 @@ export async function cancelDateAction(dateId: string): Promise<ActionResult> {
 export async function notHappenedAction(dateId: string): Promise<void> {
   const ctx = await requireCouple();
   const id = dateIdSchema.safeParse(dateId);
-  if (id.success) await markNotHappened(ctx, id.data);
+  if (id.success) await markNotHappened(ctx, id.data, coupleNow(await getCoupleSettings(ctx.coupleId)));
   refresh();
 }
 
@@ -155,5 +160,9 @@ export async function nudgeAction(): Promise<ActionResult> {
       ? { title: `${ctx.user.name} stupst dich an 👋`, body: "Euer Date wartet auf dein „Zusagen“." }
       : { title: `${ctx.user.name} stupst dich an 👋`, body: "Die Gießkanne ist bei dir – plant ihr was?" };
   const sent = await nudgePartner(ctx, cycle.id, now, text);
-  return sent ? { ok: true, message: `${ctx.partner.name} ist angestupst.` } : { ok: false, message: `Schon angestupst – ${ctx.partner.name} hat Bescheid.` };
+  const name = ctx.partner.name;
+  if (sent === null) return { ok: false, message: "Gerade erst angestupst – in einer Stunde wieder." };
+  // Nobody would see it: better say so than pretend.
+  if (sent === 0) return { ok: false, message: `${name} hat Push aus – sag's lieber direkt.` };
+  return { ok: true, message: `${name} ist angestupst.` };
 }

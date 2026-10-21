@@ -280,7 +280,7 @@ function viewFor(
             <Link href="/plan?pick=1" className={buttonClass("primary", "lg", "h-14 w-full")}>
               Date planen
             </Link>
-            <form action={swapTurnAction}>
+            <form action={swapTurnAction.bind(null, partner.id)}>
               <button type="submit" aria-label={`Diesmal an ${partner.name} abgeben`} className="press flex size-14 items-center justify-center rounded-full bg-surface text-ink">
                 <ArrowIcon width={20} height={20} />
               </button>
@@ -296,7 +296,7 @@ function viewFor(
         cta: (
           <div className="grid grid-cols-[minmax(0,1fr)_56px] gap-2">
             <NudgeButton />
-            <form action={swapTurnAction}>
+            <form action={swapTurnAction.bind(null, me.id)}>
               <button type="submit" aria-label="Ich übernehme diesmal" className="press flex size-14 items-center justify-center rounded-full bg-surface text-ink">
                 <SwapIcon width={20} height={20} />
               </button>
@@ -318,7 +318,7 @@ function viewFor(
       };
     case "confirm":
       return {
-        headline: `${partner.name} hat\ngegossen.`,
+        headline: `${partner.name.toLowerCase()} hat\ngegossen.`,
         invitation: true,
         cta: date && (
           <>

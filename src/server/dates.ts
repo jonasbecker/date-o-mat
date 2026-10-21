@@ -279,12 +279,20 @@ export async function cancelDate(ctx: CoupleContext, dateId: string, now: Date):
   return true;
 }
 
-/** After the fact: "it did not happen after all" – the round counts as skipped. */
-export async function markNotHappened(ctx: CoupleContext, dateId: string): Promise<boolean> {
+/**
+ * After the fact: "it did not happen after all". While its round still runs, the round opens again
+ * (there is still time to plan one); afterwards it counts as skipped.
+ */
+export async function markNotHappened(ctx: CoupleContext, dateId: string, now: Date): Promise<boolean> {
   const date = await getDate(ctx.coupleId, dateId);
   if (!date || date.status !== "done") return false;
-  await db.update(datePlans).set({ status: "cancelled", cancelledAt: new Date() }).where(eq(datePlans.id, date.id));
-  await db.update(cycles).set({ status: "skipped" }).where(eq(cycles.id, date.cycleId));
+  const [cycle] = await db.select({ endsAt: cycles.endsAt }).from(cycles).where(eq(cycles.id, date.cycleId)).limit(1);
+  const running = cycle && cycle.endsAt > now;
+  await db.update(datePlans).set({ status: "cancelled", cancelledAt: now }).where(eq(datePlans.id, date.id));
+  await db
+    .update(cycles)
+    .set(running ? { status: "open", closedAt: null } : { status: "skipped" })
+    .where(eq(cycles.id, date.cycleId));
   return true;
 }
 

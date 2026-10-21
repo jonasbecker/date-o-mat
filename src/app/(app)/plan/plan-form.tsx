@@ -158,6 +158,13 @@ export function PlanFlow({
       // Back to the start, which now shows the date.
       setTimeout(() => router.replace("/plan"), 1000);
     }
+    // Someone was quicker: the time is gone (fresh times, nothing picked), or the round has its date
+    // (back to the Beet, which shows it).
+    if (result.code === "taken") {
+      setSlotKey(null);
+      loadTimes();
+    }
+    if (result.code === "round_has_date") setTimeout(() => router.replace("/plan"), 1800);
     return result;
   }, { status: "idle" });
 

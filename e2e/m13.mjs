@@ -102,9 +102,10 @@ check(`Sam: "${await heading(s)}"`, (await heading(s)) === "jonas ist dran.");
 // Not Sam's turn: the can stands at Jonas', Sam can nudge or take over
 check("partner's turn: Anstupsen + Ich übernehme diesmal", (await s.getByRole("button", { name: "Anstupsen" }).isVisible()) && (await s.getByRole("button", { name: "Ich übernehme diesmal" }).isVisible()) && (await s.getByRole("link", { name: "Date planen", exact: true }).count()) === 0);
 await s.getByRole("button", { name: "Anstupsen" }).click();
-await s.getByText("Jonas ist angestupst.").waitFor({ timeout: 10000 });
+// Jonas has no phone with push here: Sam is told so instead of "angestupst".
+await s.getByText("Jonas hat Push aus – sag's lieber direkt.").waitFor({ timeout: 10000 });
 await s.getByRole("button", { name: "Anstupsen" }).click();
-await s.getByText(/Schon angestupst/).waitFor({ timeout: 10000 });
+await s.getByText(/Gerade erst angestupst/).waitFor({ timeout: 10000 });
 const { rows: [nudges] } = await db.query("SELECT count(*)::int AS c FROM notification_log WHERE type = 'nudge'");
 check(`Anstupsen: once an hour (${nudges.c})`, nudges.c === 1);
 await s.screenshot({ path: `${OUT}m13-12-partner-turn.png` });
@@ -142,7 +143,7 @@ await backAtStart(j, BASE);
 check(`Jonas waits: "${await heading(j)}"`, (await heading(j)) === "sam ist dran.");
 await s.goto(`${BASE}/`);
 await s.waitForURL(`${BASE}/plan`, { timeout: 15000 });
-check(`Sam must confirm: "${await heading(s)}"`, (await heading(s)) === "Jonas hat gegossen.");
+check(`Sam must confirm: "${await heading(s)}"`, (await heading(s)) === "jonas hat gegossen.");
 check("only one Zusagen button on the page", (await s.getByRole("button", { name: "Zusagen" }).count()) === 1);
 check("the invitation: wann, wo, was + Anderer Termin", (await s.locator("[data-next-step] [data-date-card]").getByText("wann", { exact: true }).isVisible()) && (await s.getByRole("link", { name: "Anderer Termin" }).isVisible()));
 check("Zusagen state fits the screen", await fitsScreen(s));

@@ -26,7 +26,8 @@ export async function saveReviewAction(_prev: ReviewFormState, formData: FormDat
   if (!before || !(await saveReview(ctx, id.data, input))) {
     return { status: "error", message: "Dieses Date kann man (noch) nicht bewerten." };
   }
-  if (formData.has("cost")) await setActualCost(ctx.coupleId, id.data, cost);
+  const costChanged = String(formData.get("cost") ?? "").trim() !== String(formData.get("costBefore") ?? "").trim();
+  if (formData.has("cost") && costChanged) await setActualCost(ctx.coupleId, id.data, cost);
   // Only the first review is news for the partner – later edits are not.
   if (!before.reviews.some((r) => r.userId === ctx.user.id)) {
     const partnerDone = before.reviews.some((r) => r.userId === ctx.partner.id);

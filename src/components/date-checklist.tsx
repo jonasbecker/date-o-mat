@@ -13,13 +13,16 @@ export function DateChecklist({ dateId, tasks, suggestions, collapsed = false }:
   );
   const [title, setTitle] = useState("");
   const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const open = shown.filter((t) => !t.done).length;
 
   function add(text: string) {
     if (!text.trim()) return;
     start(async () => {
-      await addTaskAction(dateId, text);
-      setTitle("");
+      const result = await addTaskAction(dateId, text).catch(() => ({ ok: false, message: "Gerade offline? Versuch's gleich nochmal." }));
+      // A full list (or offline) keeps the text and says why.
+      setError(result.ok ? null : (result.message ?? "Das ging nicht."));
+      if (result.ok) setTitle("");
     });
   }
 
@@ -47,7 +50,7 @@ export function DateChecklist({ dateId, tasks, suggestions, collapsed = false }:
                   className="size-5 shrink-0 accent-ink"
                 />
                 <span className={cn("grow font-bold", task.done && "text-muted line-through")}>{task.title}</span>
-                <button type="button" aria-label={`${task.title} löschen`} onClick={() => start(() => deleteTaskAction(task.id))} className="text-muted">
+                <button type="button" aria-label={`${task.title} löschen`} onClick={() => start(() => deleteTaskAction(task.id))} className="-my-2 flex size-10 shrink-0 items-center justify-center text-muted">
                   ✕
                 </button>
               </li>
@@ -82,6 +85,11 @@ export function DateChecklist({ dateId, tasks, suggestions, collapsed = false }:
             Dazu
           </button>
         </form>
+        {error && (
+          <p role="alert" className="text-sm font-bold text-like">
+            {error}
+          </p>
+        )}
         <p className="text-xs font-bold text-muted">Was am Vortag um 18 Uhr noch offen ist, gibt&apos;s als Erinnerung.</p>
       </div>
     </details>
