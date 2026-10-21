@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Date steht Karte hochziehen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&amp;family=DM+Mono:wght@400;500&amp;family=Caveat:wght@600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #111A14; color: #E7EEDF; font-family: 'Bricolage Grotesque', system-ui, sans-serif; overflow: hidden">
+
+  <div style="position: absolute; left: 18px; right: 18px; top: 18px; height: 36px; display: flex; justify-content: space-between; align-items: center">
+    <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em">zweisamen</span>
+    <div style="display: flex">
+      <span style="width: 32px; height: 32px; border-radius: 50%; background: #FFFFFF; color: #111A14; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">J</span>
+      <span style="width: 32px; height: 32px; border-radius: 50%; background: #FFFFFF; color: #111A14; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-left: -7px">L</span>
+    </div>
+  </div>
+
+  <h1 style="position: absolute; left: 20px; top: 66px; margin: 0; font-weight: 800; font-size: 70px; line-height: 0.9; letter-spacing: -0.055em">date<br>steht.</h1>
+
+  <div style="position: absolute; left: 20px; right: 20px; top: 198px; opacity: {{ weekOp }}; transition: opacity 300ms ease">
+    <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); font-family: 'DM Mono', monospace; font-size: 10px; color: #9FB09C; text-align: center">
+      <span>MO</span><span>DI</span><span style="color: #F5EFC6">MI</span><span>DO</span><span>FR</span><span>SA</span><span>SO</span>
+    </div>
+    <div style="position: relative; margin-top: 8px; height: 6px; border-radius: 3px; background: #1F2B24">
+      <div aria-hidden="true" style="position: absolute; left: 0; top: 0; height: 6px; width: 36%; border-radius: 3px; background: #E7EEDF; opacity: 0.85"></div>
+    </div>
+  </div>
+  <div style="position: absolute; left: 20px; top: 240px; font-size: 15px; color: #9FB09C; opacity: {{ weekOp }}; transition: opacity 300ms ease">Lotte hat zugesagt. Ihr seht euch Freitag.</div>
+
+  <div aria-hidden="true" style="position: absolute; left: 82px; top: 263px; width: 216px; height: 302px; transform-origin: top left; transform: {{ plantTf }}; transition: transform {{ dur }} {{ ease }}; z-index: 3">
+    <div style="width: 300px; height: 420px; transform: scale(0.72); transform-origin: top left">
+      <dc-import name="Bloom" stimmung="{{ mood }}" blaetter="{{ 3 }}" welk="{{ -1 }}" grund="transparent" hint-size="300px,420px"></dc-import>
+    </div>
+  </div>
+  <sc-for list="{{ lines }}" as="ln" hint-placeholder-count="0">
+    <div aria-hidden="true" style="position: absolute; left: {{ ln.x }}; top: {{ ln.y }}; width: {{ ln.w }}; height: 3px; border-radius: 2px; background: #F5EFC6; opacity: 0.7; transform: rotate(-40deg); z-index: 4"></div>
+  </sc-for>
+
+  <div aria-hidden="true" style="position: absolute; left: {{ d1x }}; top: {{ d1y }}; width: 6px; height: 6px; border-radius: 50%; background: #E7EEDF; transition: left {{ dur }} ease, top {{ dur }} ease; z-index: 5"></div>
+  <div aria-hidden="true" style="position: absolute; left: {{ d2x }}; top: {{ d2y }}; width: 10px; height: 10px; border-radius: 50%; background: #E7EEDF; transition: left {{ dur }} ease, top {{ dur }} ease; z-index: 5"></div>
+  <div style="position: absolute; left: {{ bx }}; top: {{ by }}; width: {{ bw }}; box-sizing: border-box; padding: {{ bpad }}; border-radius: 20px; background: #E7EEDF; color: #1B2620; font-family: 'Caveat', cursive; font-weight: 600; font-size: {{ bfs }}; line-height: 1.02; text-align: center; transform: rotate({{ brot }}); transition: left {{ dur }} ease, top {{ dur }} ease, transform {{ dur }} ease; z-index: 5">{{ bubble }}</div>
+
+  <div style="position: absolute; left: 12px; right: 12px; top: {{ cardTop }}; height: {{ cardH }}; border-radius: 26px; background: #1B2620; box-shadow: 0 -10px 30px rgba(0,0,0,0.35); transition: top {{ dur }} {{ cardEase }}, height {{ dur }} {{ cardEase }}; overflow: hidden; z-index: 2">
+    <button type="button" onClick="{{ toggle }}" aria-label="{{ toggleLabel }}" aria-expanded="{{ open }}" style="position: absolute; inset: 0; width: 100%; height: 136px; border: 0; background: transparent; padding: 0; z-index: 2"></button>
+    <div aria-hidden="true" style="position: absolute; left: 50%; top: 8px; width: 38px; height: 4px; margin-left: -19px; border-radius: 2px; background: #3A4A40"></div>
+    <div style="padding: 24px 22px 18px; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 21px; font-weight: 800; line-height: 1.12; letter-spacing: -0.02em">Zweizeiler-Schnitzeljagd durch die Altstadt</span>
+      <span style="font-size: 15px; color: #9FB09C">Fr, 30. Okt · 19:30 – 21:30 · Altstadt-Nord</span>
+      <span style="align-self: flex-start; height: 30px; padding: 0 12px; border-radius: 999px; background: #26342B; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center">✓ in beiden Kalendern</span>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; opacity: {{ detailOp }}; transform: translateY({{ detailY }}); transition: opacity 400ms ease {{ detailDelay }}, transform 400ms ease {{ detailDelay }}">
+        <div aria-hidden="true" style="position: relative; height: 128px; border-radius: 18px; background: #26342B; overflow: hidden; margin-top: 4px">
+          <div style="position: absolute; left: -20px; top: 70px; width: 420px; height: 14px; background: #2F4036; transform: rotate(-8deg)"></div>
+          <div style="position: absolute; left: 140px; top: -10px; width: 14px; height: 160px; background: #2F4036; transform: rotate(14deg)"></div>
+          <div style="position: absolute; left: 196px; top: 40px; width: 22px; height: 22px; border-radius: 50% 50% 50% 0; background: #E58FA6; transform: rotate(-45deg)"></div>
+          <span style="position: absolute; left: 12px; bottom: 10px; font-family: 'DM Mono', monospace; font-size: 10px; color: #9FB09C">[Karte] Treffpunkt: Alter Markt</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 70px minmax(0, 1fr); row-gap: 8px; font-size: 14px">
+          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C; padding-top: 2px">TREFFPUNKT</span><span>Alter Markt, am Brunnen</span>
+          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C; padding-top: 2px">MITNEHMEN</span><span>Stift, Handy-Akku, warme Jacke</span>
+          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C; padding-top: 2px">VON LOTTE</span><span style="font-family: 'Caveat', cursive; font-size: 19px; line-height: 1.05; color: #F5EFC6">„ich hab schon den ersten reim!“</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 4px">
+          <a href="#" style="height: 48px; border-radius: 999px; background: #E4ECDD; color: #111A14; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700">Route</a>
+          <a href="#" style="height: 48px; border-radius: 999px; border: 2px solid #3A4A40; color: #E7EEDF; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700">Verschieben</a>
+        </div>
+        <a href="#" style="align-self: center; font-size: 13px; color: #9FB09C; padding: 6px">Absagen</a>
+      </div>
+    </div>
+  </div>
+
+  <nav style="position: absolute; left: 0; right: 0; bottom: 0; height: 66px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; color: #E7EEDF; background: #111A14; z-index: 6">
+    <a href="#" aria-label="Ideen" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2"></rect><rect x="13" y="3" width="8" height="8" rx="2"></rect><rect x="3" y="13" width="8" height="8" rx="2"></rect><rect x="13" y="13" width="8" height="8" rx="2"></rect></svg></a>
+    <a href="#" aria-label="Swipen" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="12" height="16" rx="2.5" transform="rotate(8 13 11)"></rect><path d="M5.5 6.5L4 17.5a2 2 0 0 0 1.7 2.3l7.3 1"></path></svg></a>
+    <a href="#" aria-label="Beet" style="justify-self: center; width: 60px; height: 60px; border-radius: 50%; background: #2E7D46; color: #FFFFFF; display: flex; align-items: center; justify-content: center; margin-top: -22px; box-shadow: 0 0 0 6px #111A14"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 14c0-3-2-5-6-5 0 3 2 5 6 5z"></path></svg></a>
+    <a href="#" aria-label="Archiv" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10" r="1.6"></circle><path d="M21 16l-5-5-7 8"></path></svg></a>
+    <a href="#" aria-label="Einstellungen" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle></svg></a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tempo":{"editor":"enum","options":["sanft","schubs"],"default":"sanft"},"zustand":{"editor":"enum","options":["zu","mitte","offen"],"default":"zu"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { z: props.zustand ?? 'zu' };
+  }
+  renderVals() {
+    const tempo = this.props.tempo ?? 'sanft';
+    const fast = tempo === 'schubs';
+    const z = this.state.z;
+    const S = {
+      zu: {
+        plantTf: 'translate(0px, 0px) scale(1) rotate(0deg)', mood: 'froh',
+        cardTop: '572px', cardH: '192px', weekOp: 1,
+        bx: '266px', by: '268px', bw: '110px', bfs: '20px', brot: '-3deg', bpad: '9px 10px 11px',
+        d1x: '243px', d1y: '340px', d2x: '254px', d2y: '326px',
+        bubble: 'juhu, wasser! freitag wird schön.', lines: []
+      },
+      mitte: fast ? {
+        plantTf: 'translate(120px, -150px) scale(0.62) rotate(-38deg)', mood: 'autsch',
+        cardTop: '420px', cardH: '344px', weekOp: 0,
+        bx: '200px', by: '196px', bw: '104px', bfs: '24px', brot: '5deg', bpad: '9px 10px 11px',
+        d1x: '276px', d1y: '150px', d2x: '266px', d2y: '170px',
+        bubble: 'WAAAH—!', lines: [{ x: '96px', y: '330px', w: '60px' }, { x: '120px', y: '360px', w: '44px' }, { x: '150px', y: '384px', w: '54px' }]
+      } : {
+        plantTf: 'translate(60px, -60px) scale(0.8) rotate(8deg)', mood: 'genervt',
+        cardTop: '420px', cardH: '344px', weekOp: 0,
+        bx: '22px', by: '292px', bw: '128px', bfs: '19px', brot: '-3deg', bpad: '9px 10px 11px',
+        d1x: '172px', d1y: '292px', d2x: '156px', d2y: '302px',
+        bubble: 'hey … ich rück ja schon.', lines: []
+      },
+      offen: fast ? {
+        plantTf: 'translate(173px, -198px) scale(0.444) rotate(-14deg)', mood: 'autsch',
+        cardTop: '236px', cardH: '528px', weekOp: 0,
+        bx: '112px', by: '8px', bw: '150px', bfs: '17px', brot: '2deg', bpad: '6px 10px 7px',
+        d1x: '280px', d1y: '78px', d2x: '267px', d2y: '62px',
+        bubble: 'AUA! mein lieblingsblatt.', lines: []
+      } : {
+        plantTf: 'translate(180px, -211px) scale(0.444) rotate(0deg)', mood: 'genervt',
+        cardTop: '236px', cardH: '528px', weekOp: 0,
+        bx: '112px', by: '8px', bw: '150px', bfs: '17px', brot: '-2deg', bpad: '6px 10px 7px',
+        d1x: '280px', d1y: '78px', d2x: '267px', d2y: '62px',
+        bubble: 'na gut. ich wart hier oben.', lines: []
+      }
+    }[z];
+    const open = z === 'offen';
+    return {
+      ...S,
+      open: open ? 'true' : 'false',
+      dur: fast ? '650ms' : '900ms',
+      ease: fast ? 'cubic-bezier(0.2, 1.7, 0.4, 1)' : 'cubic-bezier(0.4, 0, 0.2, 1)',
+      cardEase: fast ? 'cubic-bezier(0.25, 1.2, 0.4, 1)' : 'cubic-bezier(0.4, 0, 0.2, 1)',
+      detailOp: z === 'zu' ? 0.35 : 1, detailY: z === 'zu' ? '16px' : '0px', detailDelay: z === 'zu' ? '0ms' : '250ms',
+      toggleLabel: open ? 'Details schließen' : 'Details öffnen',
+      toggle: () => this.setState({ z: this.state.z === 'zu' ? 'offen' : 'zu' })
+    };
+  }
+}
+</script>
+</body>
+</html>

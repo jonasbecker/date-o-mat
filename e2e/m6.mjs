@@ -170,8 +170,8 @@ check("switch is stored", pref?.enabled === false);
 await s.screenshot({ path: `${SHOTS}m6-01-settings.png` });
 const before = titles("sam-phone").length;
 await j.goto(`${BASE}/`);
-// Changing and cancelling sit under "Details" (the date's own page).
-await j.getByRole("link", { name: "Details ›" }).click();
+// Cancelling sits in the date card: open it (a tap), then "Absagen".
+await j.getByRole("button", { name: "Details öffnen" }).click();
 await j.getByRole("button", { name: "Absagen" }).click();
 await j.getByRole("button", { name: "Ja, absagen" }).click();
 await j.waitForURL(`${BASE}/plan`, { timeout: 10000 });

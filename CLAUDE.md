@@ -60,7 +60,13 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   is renderVals() of Bloom.html 1:1, `bloomStimmung` = §3, `bloomLeaves` = the last 5 rounds from `server/plant.ts`)
   with its thought bubble in Caveat (`font-hand`; `components/flower-voice.tsx` – it is also the one reminder hint:
   "mein wecker ist aus – tipp mich an." turns push on, no row of its own), and one action ("Date planen" + the round hand-over button,
-  "Anstupsen", "Zusagen"). The pot has no face. All five moods side by side: `/dev/blume`. The old `Plant`
+  "Anstupsen", "Zusagen"). The pot has no face. All moods side by side: `/dev/blume` (seven: the round's five +
+  `genervt` / `autsch` for the date sheet).
+  **"date steht."** (`docs/design/garten/date-steht/`, `date-sheet.tsx`, geometry `core/date-sheet.ts`): no "Details ›" – the
+  card is a sheet (bottom edge fixed, only its top moves). Tap or pull up; letting go faster than 0.8 px/ms is a
+  "schubs" (flower kicked: `autsch`, overshoot, motion lines), else "sanft" (`genervt`); past 35 % it opens. The bubble
+  comes out of the mouth (dots computed), never covers text, card, name or avatars (the header's step bar fades);
+  back gesture / tap on the head / pulling down closes it. e2e: m25 (both sizes, slow/fast, back, reduced motion). The old `Plant`
   (components/plant.tsx) is only the small mark (logo, mascot, empty states).
 - **Rounds and dates:** a date lives in the round it happens in (`cycleForDate()` creates later rounds when a date is
   planned ahead; the current round is the one containing now, never just the newest row). A planned date nobody

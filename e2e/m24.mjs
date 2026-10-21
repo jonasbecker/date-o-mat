@@ -232,7 +232,7 @@ const bp = await wide.newPage();
 await bp.goto(`${BASE}/dev/blume`);
 await bp.waitForTimeout(600);
 await bp.screenshot({ path: `${OUT}m24-blume.png` });
-check("all five moods on /dev/blume", (await bp.locator("[data-bloom]").count()) === 5);
+check("all seven moods on /dev/blume", (await bp.locator("[data-bloom]").count()) === 7);
 // The picture strip's drawings on all pastels (SWIPE-KARTE.md §4)
 await bp.setViewportSize({ width: 1200, height: 900 });
 await bp.goto(`${BASE}/dev/illustrationen`);

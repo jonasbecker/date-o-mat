@@ -2,6 +2,26 @@ import { describe, expect, it } from "vitest";
 import { bloomGeometry, bloomLeaves, bloomSaying, bloomStimmung, shownPot, unlockedPots } from "./bloom";
 
 describe("bloomGeometry (renderVals of Bloom.html)", () => {
+  it("genervt: 8 petals Ø40 at 42, face 64, flat eyes and mouth, head +8°", () => {
+    const g = bloomGeometry("genervt", 3);
+    expect(g.petals).toHaveLength(8);
+    expect(g.face).toEqual({ d: 64, sad: false, visible: true });
+    expect([g.eyes, g.mouth, g.head.rotate]).toEqual(["flat", "flat", 8]);
+  });
+
+  it("autsch: petals 1 and 4 are gone, cross eyes, open mouth, head −18°, stars", () => {
+    const g = bloomGeometry("autsch", 3);
+    expect(g.petals).toHaveLength(6);
+    expect(g.petals[0]).toEqual({ x: -20, y: -63, d: 40, light: false });
+    expect([g.eyes, g.mouth, g.head.rotate, g.sparkles.length]).toEqual(["x", "ouch", -18, 4]);
+  });
+
+  it("the five round moods are unchanged by the new ones", () => {
+    expect(bloomGeometry("froh", 4).petals.map((p) => p.d)).toEqual(Array(8).fill(42));
+    expect([bloomGeometry("wartet", 3).eyes, bloomGeometry("wartet", 3).mouth, bloomGeometry("wartet", 3).head.rotate]).toEqual(["dot", "o", 0]);
+    expect(bloomGeometry("traurig", 3).eyes).toBe("dot");
+  });
+
   it("waits: 8 petals Ø32 at distance 38, face 60, dot eyes to the side, o-mouth", () => {
     const g = bloomGeometry("wartet", 3);
     expect(g.petals).toHaveLength(8);

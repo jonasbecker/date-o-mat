@@ -2,15 +2,18 @@ import type { Metadata } from "next";
 import { Bloom } from "@/components/bloom";
 import type { Stimmung } from "@/core/bloom";
 
-export const metadata: Metadata = { title: "Die Blume – 5 Stimmungen" };
+export const metadata: Metadata = { title: "Die Blume – 7 Stimmungen" };
 
-// The five moods side by side, as in docs/design/main-b/components/BloomStates.html – to compare.
+// The moods side by side, as in docs/design/main-b/components/BloomStates.html (+ genervt/autsch from
+// docs/design/garten/date-steht) – to compare.
 const STATES: Array<{ stimmung: Stimmung; blaetter: number; welk: number; title: string; text: string }> = [
   { stimmung: "schlaeft", blaetter: 0, welk: -1, title: "schläft", text: "Neue Runde, noch nichts geplant. Knospe zu." },
   { stimmung: "wartet", blaetter: 3, welk: -1, title: "wartet", text: "Einladung raus, schaut zu der Person, die antworten muss." },
   { stimmung: "froh", blaetter: 4, welk: -1, title: "freut sich", text: "Date steht. Blüte geht auf." },
   { stimmung: "blueht", blaetter: 5, welk: -1, title: "blüht", text: "Date erlebt. Volle Blüte, neues Blatt, Funkeln." },
   { stimmung: "traurig", blaetter: 3, welk: 1, title: "traurig", text: "Frist knapp oder Runde ausgefallen. Kopf hängt, Blatt fällt." },
+  { stimmung: "genervt", blaetter: 3, welk: -1, title: "genervt", text: "Die Date-Karte wird sanft hochgezogen und drängt sie weg. Flache Augen, eine Braue hoch." },
+  { stimmung: "autsch", blaetter: 3, welk: -1, title: "autsch", text: "Die Karte wird schnell hochgeschubst. Kreuzaugen, offener Mund, zwei Blätter weg, Sternchen." },
 ];
 
 export default function BloomStatesPage() {

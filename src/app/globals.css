@@ -245,6 +245,24 @@
   }
 }
 
+/* The open date sheet's bubble sits in the header's middle: the step bar steps aside. */
+:root:has([data-date-sheet][data-moving]) [data-header-center] {
+  opacity: 0;
+}
+
+/* The motion lines of a kick (date sheet): there for a moment, then gone. */
+@keyframes fade-out {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@utility animate-fade-out {
+  animation: fade-out 400ms ease-in both;
+}
+
 @keyframes pop-in {
   from {
     opacity: 0;

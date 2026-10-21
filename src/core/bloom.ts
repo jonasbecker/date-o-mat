@@ -3,8 +3,9 @@
 // Pure geometry in a 300×420 box – ported 1:1 from renderVals() in components/Bloom.html;
 // the drawing is components/bloom.tsx.
 
-export type Stimmung = "schlaeft" | "wartet" | "froh" | "blueht" | "traurig";
-export const STIMMUNGEN: readonly Stimmung[] = ["schlaeft", "wartet", "froh", "blueht", "traurig"];
+export type Stimmung = "schlaeft" | "wartet" | "froh" | "blueht" | "traurig" | "genervt" | "autsch";
+/** The moods of a round (§3). `genervt` / `autsch` are only for the date sheet (date-steht/DATE-STEHT.md §4). */
+export const STIMMUNGEN: readonly Stimmung[] = ["schlaeft", "wartet", "froh", "blueht", "traurig", "genervt", "autsch"];
 
 export const BLOOM_BOX = { width: 300, height: 420 } as const;
 /** Leaves on the flower; older dates are in the Archiv. */
@@ -16,6 +17,8 @@ export const STIMMUNG_LABEL: Record<Stimmung, string> = {
   froh: "Blume freut sich",
   blueht: "Blume blüht",
   traurig: "Blume ist traurig",
+  genervt: "Blume ist genervt",
+  autsch: "Blume sagt autsch",
 };
 
 const PETALS: Record<Stimmung, { count: number; d: number; dist: number; face: number }> = {
@@ -24,6 +27,8 @@ const PETALS: Record<Stimmung, { count: number; d: number; dist: number; face: n
   froh: { count: 8, d: 42, dist: 44, face: 66 },
   blueht: { count: 10, d: 44, dist: 52, face: 70 },
   traurig: { count: 6, d: 34, dist: 38, face: 60 },
+  genervt: { count: 8, d: 40, dist: 42, face: 64 },
+  autsch: { count: 8, d: 40, dist: 43, face: 64 },
 };
 
 export type BloomLeaf = {
@@ -48,14 +53,14 @@ export type BloomGeometry = {
   petals: Petal[];
   head: { x: number; y: number; rotate: number };
   face: { d: number; sad: boolean; visible: boolean };
-  eyes: "dot" | "happy" | "closed";
+  eyes: "dot" | "happy" | "closed" | "x" | "flat";
   /** x of the left/right dot eye (its box), relative to the head. */
   eyeL: number;
   eyeR: number;
   brows: boolean;
   tear: boolean;
   blush: boolean;
-  mouth: "smile" | "big" | "frown" | "o";
+  mouth: "smile" | "big" | "frown" | "o" | "flat" | "ouch";
   bud: boolean;
   sparkles: Array<{ x: number; y: number; d: number }>;
   zzz: boolean;
@@ -69,6 +74,8 @@ export function bloomGeometry(stimmung: Stimmung, blaetter: number, welk = -1): 
   const P = PETALS[st];
   const petals: Petal[] = [];
   for (let k = 0; k < P.count; k++) {
+    // Kicked away: two petals are gone.
+    if (st === "autsch" && (k === 1 || k === 4)) continue;
     const a = (k / P.count) * Math.PI * 2 - Math.PI / 2 + (sad ? 0.4 : 0);
     petals.push({ x: Math.round(Math.cos(a) * P.dist - P.d / 2), y: Math.round(Math.sin(a) * P.dist - P.d / 2), d: P.d, light: k % 2 === 1 });
   }
@@ -90,15 +97,15 @@ export function bloomGeometry(stimmung: Stimmung, blaetter: number, welk = -1): 
     stem: sad ? "M150 336 C150 260, 150 200, 182 148" : `M150 336 L150 ${hy}`,
     leaves,
     petals,
-    head: { x: hx, y: hy, rotate: sad ? 24 : 0 },
+    head: { x: hx, y: hy, rotate: sad ? 24 : st === "autsch" ? -18 : st === "genervt" ? 8 : 0 },
     face: { d: P.face, sad, visible: st !== "schlaeft" },
-    eyes: st === "froh" || st === "blueht" ? "happy" : st === "schlaeft" ? "closed" : "dot",
+    eyes: st === "froh" || st === "blueht" ? "happy" : st === "schlaeft" ? "closed" : st === "autsch" ? "x" : st === "genervt" ? "flat" : "dot",
     eyeL: st === "wartet" ? -10 : -14,
     eyeR: st === "wartet" ? 10 : 6,
     brows: sad,
     tear: sad,
     blush: st === "froh" || st === "blueht",
-    mouth: st === "froh" ? "smile" : st === "blueht" ? "big" : sad ? "frown" : "o",
+    mouth: st === "froh" ? "smile" : st === "blueht" ? "big" : sad ? "frown" : st === "genervt" ? "flat" : st === "autsch" ? "ouch" : "o",
     bud: st === "schlaeft",
     sparkles:
       st === "blueht"
@@ -108,7 +115,14 @@ export function bloomGeometry(stimmung: Stimmung, blaetter: number, welk = -1): 
             { x: 220, y: 170, d: 12 },
             { x: 74, y: 160, d: 7 },
           ]
-        : [],
+        : st === "autsch"
+          ? [
+              { x: 70, y: 40, d: 14 },
+              { x: 214, y: 28, d: 12 },
+              { x: 236, y: 120, d: 10 },
+              { x: 52, y: 128, d: 9 },
+            ]
+          : [],
     zzz: st === "schlaeft",
     fallen: sad,
   };
@@ -155,6 +169,9 @@ const SAYINGS: Record<Stimmung, readonly string[]> = {
   froh: ["juhu, wasser! {day} wird schön.", "ich freu mich schon auf {day}!", "date steht. ich grins schon."],
   blueht: ["schaut mal, ein neues blatt!", "das war schön. ich blühe!", "danke fürs gießen!"],
   traurig: ["psst … letztes mal fiel's aus. heute vielleicht?", "ich hab durst … nur noch kurz zeit.", "nicht vergessen: die frist läuft ab."],
+  // The date sheet pushed it up gently (sanft) or kicked it away (schubs) – DATE-STEHT.md §5.
+  genervt: ["hey … ich rück ja schon.", "drängeln ist auch eine sprache.", "na gut. ich wart hier oben.", "ich hab hier oben eh die bessere aussicht."],
+  autsch: ["WAAAH—!", "AUA! mein lieblingsblatt.", "ich bin eine PFLANZE, kein ball!", "das sag ich {partner}."],
 };
 
 /**

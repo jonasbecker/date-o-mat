@@ -22,7 +22,7 @@ export function AppHeader({ action, center }: { current?: HeaderPlace; action?: 
       <Link href="/plan" aria-label="Zweisamen – zum Start" className="min-w-0 flex-1 font-display text-[15px] font-extrabold leading-none tracking-[-0.02em]">
         zweisamen
       </Link>
-      {center && <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">{center}</span>}
+      {center && <span data-header-center className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transition-opacity duration-300">{center}</span>}
       {action}
     </header>
   );

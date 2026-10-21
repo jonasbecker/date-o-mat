@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Blume</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div role="img" aria-label="{{ label }}" style="position: relative; width: 300px; height: 420px; background: {{ grund }}; overflow: hidden">
+
+  <svg aria-hidden="true" width="300" height="420" viewBox="0 0 300 420" style="position: absolute; left: 0; top: 0">
+    <path d="{{ stem }}" fill="none" stroke="#3E8E52" stroke-width="6" stroke-linecap="round"/>
+  </svg>
+
+  <sc-for list="{{ leaves }}" as="l" hint-placeholder-count="5">
+    <div aria-hidden="true" style="position: absolute; left: {{ l.x }}; top: {{ l.y }}; width: {{ l.w }}; height: {{ l.h }}; border-radius: 50%; background: {{ l.bg }}; border: {{ l.border }}; box-sizing: border-box; transform: rotate({{ l.rot }}); transform-origin: {{ l.origin }}"></div>
+  </sc-for>
+
+  <div aria-hidden="true" style="position: absolute; left: {{ hx }}; top: {{ hy }}; width: 0; height: 0; transform: rotate({{ headRot }})">
+    <sc-for list="{{ petals }}" as="p" hint-placeholder-count="8">
+      <div style="position: absolute; left: {{ p.x }}; top: {{ p.y }}; width: {{ p.d }}; height: {{ p.d }}; border-radius: 50%; background: {{ p.c }}"></div>
+    </sc-for>
+    <sc-if value="{{ bud }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; left: -12px; top: -54px; width: 24px; height: 34px; border-radius: 50%; background: #F2A7BB; transform: rotate(-14deg)"></div>
+      <div style="position: absolute; left: -2px; top: -52px; width: 22px; height: 32px; border-radius: 50%; background: #F7C1CF; transform: rotate(16deg)"></div>
+      <div style="position: absolute; left: -34px; top: -40px; width: 68px; height: 80px; border-radius: 50% 50% 46% 46%; background: #4FA25E"></div>
+    </sc-if>
+    <div style="position: absolute; left: {{ faceOff }}; top: {{ faceOff }}; width: {{ faceD }}; height: {{ faceD }}; border-radius: 50%; background: {{ faceBg }}"></div>
+
+    <sc-if value="{{ eyesDot }}" hint-placeholder-val="{{ true }}">
+      <div style="position: absolute; left: {{ eyeL }}; top: -9px; width: 8px; height: 10px; border-radius: 50%; background: #2B1D12"></div>
+      <div style="position: absolute; left: {{ eyeR }}; top: -9px; width: 8px; height: 10px; border-radius: 50%; background: #2B1D12"></div>
+    </sc-if>
+    <sc-if value="{{ eyesHappy }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; left: -17px; top: -9px; width: 12px; height: 7px; border: 3px solid #2B1D12; border-bottom: 0; border-radius: 12px 12px 0 0; box-sizing: border-box"></div>
+      <div style="position: absolute; left: 5px; top: -9px; width: 12px; height: 7px; border: 3px solid #2B1D12; border-bottom: 0; border-radius: 12px 12px 0 0; box-sizing: border-box"></div>
+    </sc-if>
+    <sc-if value="{{ eyesClosed }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; left: -15px; top: -8px; width: 11px; height: 6px; border: 3px solid #2B1D12; border-top: 0; border-radius: 0 0 11px 11px; box-sizing: border-box"></div>
+      <div style="position: absolute; left: 4px; top: -8px; width: 11px; height: 6px; border: 3px solid #2B1D12; border-top: 0; border-radius: 0 0 11px 11px; box-sizing: border-box"></div>
+    </sc-if>
+    <sc-if value="{{ eyesX }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; left: -18px; top: -8px; width: 12px; height: 3px; border-radius: 2px; background: #2B1D12; transform: rotate(30deg)"></div>
+      <div style="position: absolute; left: -18px; top: -2px; width: 12px; height: 3px; border-radius: 2px; background: #2B1D12; transform: rotate(-30deg)"></div>
+      <div style="position: absolute; left: 6px; top: -8px; width: 12px; height: 3px; border-radius: 2px; background: #2B1D12; transform: rotate(-30deg)"></div>
+      <div style="position: absolute; left: 6px; top: -2px; width: 12px; height: 3px; border-radius: 2px; background: #2B1D12; transform: rotate(30deg)"></div>
+    </sc-if>
+    <sc-if value="{{ eyesFlat }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; left: -17px; top: -7px; width: 12px; height: 3px; border-radius: 2px; background: #2B1D12"></div>
+      <div style="position: absolute; left: 5px; top: -7px; width: 12px; height: 3px; border-radius: 2px; background: #2B1D12"></div>
+      <div style="position: absolute; left: 4px; top: -15px; width: 13px; height: 3px; border-radius: 2px; background: #2B1D12; transform: rotate(-12deg)"></div>
+    </sc-if>
+    <sc-if value="{{ mouthOuch }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; left: -8px; top: 4px; width: 16px; height: 13px; border-radius: 45% 45% 50% 50%; background: #2B1D12"></div>
+    </sc-if>
+    <sc-if value="{{ brows }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; left: -19px; top: -17px; width: 11px; height: 3px; border-radius: 2px; background: #2B1D12; transform: rotate(-20deg)"></div>
+      <div style="position: absolute; left: 8px; top: -17px; width: 11px; height: 3px; border-radius: 2px; background: #2B1D12; transform: rotate(20deg)"></div>
+    </sc-if>
+    <sc-if value="{{ tear }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; left: 9px; top: 2px; width: 6px; height: 9px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #7FB6E8"></div>
+    </sc-if>
+    <sc-if value="{{ blush }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; left: -26px; top: 0; width: 10px; height: 6px; border-radius: 50%; background: #F2A7BB"></div>
+      <div style="position: absolute; left: 16px; top: 0; width: 10px; height: 6px; border-radius: 50%; background: #F2A7BB"></div>
+    </sc-if>
+
+    <sc-if value="{{ mouthSmile }}" hint-placeholder-val="{{ true }}">
+      <div style="position: absolute; left: -9px; top: 2px; width: 18px; height: 9px; border: 3px solid #2B1D12; border-top: 0; border-radius: 0 0 18px 18px; box-sizing: border-box"></div>
+    </sc-if>
+    <sc-if value="{{ mouthBig }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; left: -11px; top: 3px; width: 22px; height: 12px; border-radius: 0 0 22px 22px; background: #2B1D12; overflow: hidden"><div style="position: absolute; left: 5px; top: 6px; width: 12px; height: 8px; border-radius: 50%; background: #E8708A"></div></div>
+    </sc-if>
+    <sc-if value="{{ mouthFrown }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; left: -9px; top: 6px; width: 18px; height: 8px; border: 3px solid #2B1D12; border-bottom: 0; border-radius: 18px 18px 0 0; box-sizing: border-box"></div>
+    </sc-if>
+    <sc-if value="{{ mouthFlat }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; left: -6px; top: 6px; width: 12px; height: 3px; border-radius: 2px; background: #2B1D12"></div>
+    </sc-if>
+    <sc-if value="{{ mouthO }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; left: -4px; top: 4px; width: 8px; height: 8px; border-radius: 50%; border: 2px solid #2B1D12; box-sizing: border-box"></div>
+    </sc-if>
+  </div>
+
+  <sc-for list="{{ sparkles }}" as="s" hint-placeholder-count="4">
+    <div aria-hidden="true" style="position: absolute; left: {{ s.x }}; top: {{ s.y }}; width: {{ s.d }}; height: {{ s.d }}; background: #F5EFC6; transform: rotate(45deg); border-radius: 2px"></div>
+  </sc-for>
+  <sc-if value="{{ zzz }}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" style="position: absolute; left: 196px; top: 40px; font-family: 'DM Mono', monospace; font-size: 16px; color: #9FB09C; line-height: 1">z<br><span style="padding-left: 12px; font-size: 12px">z</span></div>
+  </sc-if>
+  <sc-if value="{{ fallen }}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" style="position: absolute; left: 238px; top: 398px; width: 26px; height: 16px; border-radius: 50%; background: #C79AA6; transform: rotate(-20deg)"></div>
+  </sc-if>
+
+  <div aria-hidden="true" style="position: absolute; left: 62px; top: 330px; width: 176px; height: 20px; border-radius: 10px; background: #C26A3F"></div>
+  <div aria-hidden="true" style="position: absolute; left: 72px; top: 348px; width: 156px; height: 72px; background: #D68456; clip-path: polygon(0 0, 100% 0, 88% 100%, 12% 100%)"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"stimmung":{"editor":"enum","options":["schlaeft","wartet","froh","blueht","traurig","genervt","autsch"],"default":"traurig"},"blaetter":{"editor":"int","min":0,"max":5,"default":3},"welk":{"editor":"int","min":-1,"max":4,"default":1},"grund":{"editor":"color","default":"#111A14"},"$preview":{"width":300,"height":420}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.props.stimmung ?? 'traurig';
+    const n = Math.max(0, Math.min(5, this.props.blaetter ?? 3));
+    const welk = this.props.welk ?? 1;
+    const sad = st === 'traurig';
+    const P = {
+      schlaeft: { count: 0, d: 0, dist: 0, face: 40 },
+      wartet: { count: 8, d: 32, dist: 38, face: 60 },
+      froh: { count: 8, d: 42, dist: 44, face: 66 },
+      blueht: { count: 10, d: 44, dist: 52, face: 70 },
+      traurig: { count: 6, d: 34, dist: 38, face: 60 },
+      genervt: { count: 8, d: 40, dist: 42, face: 64 },
+      autsch: { count: 8, d: 40, dist: 43, face: 64 }
+    }[st] || {};
+    const petals = [];
+    for (let k = 0; k < P.count; k++) {
+      if (st === 'autsch' && (k === 1 || k === 4)) continue;
+      const a = (k / P.count) * Math.PI * 2 - Math.PI / 2 + (sad ? 0.4 : 0);
+      const c = sad ? (k % 2 ? '#C79AA6' : '#B48A95') : (k % 2 ? '#F7C1CF' : '#F2A7BB');
+      petals.push({ x: Math.round(Math.cos(a) * P.dist - P.d / 2) + 'px', y: Math.round(Math.sin(a) * P.dist - P.d / 2) + 'px', d: P.d + 'px', c });
+    }
+    const hx = sad ? 182 : 150, hy = sad ? 148 : 112;
+    const leaves = Array.from({ length: n }, (_, i) => {
+      const right = i % 2 === 0;
+      const w = 56 - i * 4, h = Math.round(w * 0.5);
+      const y = 318 - i * 26;
+      const dead = i === welk;
+      let rot = right ? -30 : 30;
+      if (sad) rot = right ? 8 : -8;
+      if (dead) rot = right ? 40 : -40;
+      return {
+        x: (right ? 153 : 147 - w) + 'px', y: (y - h / 2) + 'px', w: w + 'px', h: h + 'px',
+        bg: dead ? 'transparent' : (i % 2 ? '#6DBA74' : '#4FA25E'),
+        border: dead ? '2px dashed #6DBA74' : '0',
+        rot: rot + 'deg', origin: right ? 'left center' : 'right center'
+      };
+    });
+    const labels = { schlaeft: 'Blume schläft', wartet: 'Blume wartet', froh: 'Blume freut sich', blueht: 'Blume blüht', traurig: 'Blume ist traurig', genervt: 'Blume ist genervt', autsch: 'Blume sagt autsch' };
+    const ouch = st === 'autsch', meh = st === 'genervt';
+    return {
+      label: labels[st], grund: this.props.grund ?? '#111A14',
+      stem: sad ? 'M150 336 C150 260, 150 200, 182 148' : 'M150 336 L150 ' + hy,
+      leaves, petals, hx: hx + 'px', hy: hy + 'px', headRot: sad ? '24deg' : (ouch ? '-18deg' : (meh ? '8deg' : '0deg')),
+      eyesX: ouch, eyesFlat: meh, mouthOuch: ouch,
+      bud: st === 'schlaeft',
+      faceD: P.face + 'px', faceOff: (-P.face / 2) + 'px',
+      faceBg: st === 'schlaeft' ? 'transparent' : (sad ? '#E6CF7A' : '#F5D76E'),
+      eyesDot: st === 'wartet' || sad, eyeL: st === 'wartet' ? '-10px' : '-14px', eyeR: st === 'wartet' ? '10px' : '6px',
+      eyesHappy: st === 'froh' || st === 'blueht', eyesClosed: st === 'schlaeft',
+      brows: sad, tear: sad, blush: st === 'froh' || st === 'blueht',
+      mouthSmile: st === 'froh', mouthBig: st === 'blueht', mouthFrown: sad, mouthFlat: meh, mouthO: st === 'wartet' || st === 'schlaeft',
+      sparkles: st === 'blueht' ? [{ x: '60px', y: '50px', d: '10px' }, { x: '232px', y: '70px', d: '8px' }, { x: '220px', y: '170px', d: '12px' }, { x: '74px', y: '160px', d: '7px' }]
+        : (ouch ? [{ x: '70px', y: '40px', d: '14px' }, { x: '214px', y: '28px', d: '12px' }, { x: '236px', y: '120px', d: '10px' }, { x: '52px', y: '128px', d: '9px' }] : []),
+      zzz: st === 'schlaeft', fallen: sad
+    };
+  }
+}
+</script>
+</body>
+</html>

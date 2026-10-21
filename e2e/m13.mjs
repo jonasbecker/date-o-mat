@@ -245,12 +245,15 @@ check(`welcome slide readable in dark mode (heading ${welcomeContrast}:1, text $
 await jd.screenshot({ path: `${OUT}m13-10-welcome-dark.png` });
 // The date stands: it sits in the box, "Lieber was anderes?" leads to the ideas (swap mode)
 await jd.goto(`${BASE}/plan`);
-const swapLink = jd.getByRole("link", { name: "Lieber was anderes?" });
-await swapLink.waitFor({ timeout: 20000 });
+await jd.locator("[data-next-step] [data-date-card]").filter({ visible: true }).first().waitFor({ timeout: 20000 });
 check("with a date: the date card on the Beet", (await jd.locator("[data-next-step] [data-date-card]").filter({ visible: true }).count()) === 1);
-check("with a date: details one tap away", (await jd.getByRole("link", { name: "Details ›" }).getAttribute("href"))?.startsWith("/dates/"));
 await jd.screenshot({ path: `${OUT}m13-09-plan-dark.png`, fullPage: true });
 check("start with a confirmed date fits the screen", await fitsScreen(jd));
+// The card is the control: a tap opens the details ("Lieber was anderes?" is in there).
+await jd.getByRole("button", { name: "Details öffnen" }).click();
+const swapLink = jd.getByRole("link", { name: "Lieber was anderes?" });
+await swapLink.waitFor({ timeout: 10000 });
+check("with a date: details one tap away", (await jd.getByRole("button", { name: "Details schließen" }).getAttribute("aria-expanded")) === "true");
 await swapLink.click();
 await jd.getByText("Statt „Picknick im Stadtwald“", { exact: false }).waitFor({ timeout: 15000 });
 check("swap mode: tap an idea to do it instead", (await jd.locator("ol li button").count()) === 0 && (await jd.getByRole("button", { name: "Zufall" }).isVisible()));

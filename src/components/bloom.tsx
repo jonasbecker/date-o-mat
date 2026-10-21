@@ -105,6 +105,23 @@ export function Bloom({
             <path d="M5.5 -6.5 A4 3.5 0 0 0 13.5 -6.5" />
           </g>
         )}
+        {g.eyes === "x" && (
+          // Cross eyes: two crossed bars each (Bloom.html eyesX).
+          <g fill={C.ink}>
+            <rect x={-18} y={-8} width={12} height={3} rx={1.5} transform="rotate(30 -12 -6.5)" />
+            <rect x={-18} y={-2} width={12} height={3} rx={1.5} transform="rotate(-30 -12 -0.5)" />
+            <rect x={6} y={-8} width={12} height={3} rx={1.5} transform="rotate(-30 12 -6.5)" />
+            <rect x={6} y={-2} width={12} height={3} rx={1.5} transform="rotate(30 12 -0.5)" />
+          </g>
+        )}
+        {g.eyes === "flat" && (
+          // Flat eyes, one brow up (Bloom.html eyesFlat).
+          <g fill={C.ink}>
+            <rect x={-17} y={-7} width={12} height={3} rx={1.5} />
+            <rect x={5} y={-7} width={12} height={3} rx={1.5} />
+            <rect x={4} y={-15} width={13} height={3} rx={1.5} transform="rotate(-12 10.5 -13.5)" />
+          </g>
+        )}
         {g.brows && (
           <>
             <rect x={-19} y={-17} width={11} height={3} rx={1.5} fill={C.ink} transform="rotate(-20 -13.5 -15.5)" />
@@ -130,6 +147,8 @@ export function Bloom({
           </>
         )}
         {g.mouth === "frown" && <path d="M-7.5 13 A7.5 6 0 0 1 7.5 13" fill="none" stroke={C.ink} strokeWidth={3} strokeLinecap="round" />}
+        {g.mouth === "flat" && <rect x={-6} y={6} width={12} height={3} rx={1.5} fill={C.ink} />}
+        {g.mouth === "ouch" && <ellipse cx={0} cy={10.5} rx={8} ry={6.5} fill={C.ink} />}
         {g.mouth === "o" && <circle cx={0} cy={8} r={3} fill="none" stroke={C.ink} strokeWidth={2} />}
       </g>
 

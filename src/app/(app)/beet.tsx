@@ -26,6 +26,8 @@ import type { CoupleContext } from "@/server/auth/dal";
 import type { DatePlan, User } from "@/server/db/schema";
 import type { Round } from "@/server/plant";
 import type { Overview } from "./overview";
+import { DateSheet } from "./date-sheet";
+import { routeUrl } from "@/core/date-extras";
 
 /** The four dots of the round – in the middle of the header (`AppHeader center`), only the active one moves. */
 export function RoundDots({ step }: { step: NextStep["kind"] }) {
@@ -118,6 +120,40 @@ export function Beet({
   const dayOfYear = DateTime.fromJSDate(now, { zone: APP_TIMEZONE }).ordinal;
   const saying = bloomSaying(stimmung, dayOfYear, { partner: partner.name, day: date ? weekday(date.startsAt) : undefined, missed, turn: onTurn ?? undefined });
 
+  const headline = (
+    <h2 className="headline mt-2 whitespace-pre-line font-extrabold leading-[0.9] tracking-[-0.055em]" style={{ fontSize: `${size}px` }}>
+      {view.headline}
+    </h2>
+  );
+
+  // "date steht.": the card is a sheet you pull up, the flower gets pushed out of the way (date-sheet.tsx).
+  if (step.kind === "date_ahead" && date) {
+    return (
+      <div data-next-step={step.kind} className="flex min-h-0 flex-1 flex-col">
+        <DateSheet
+          headline={headline}
+          above={
+            <>
+              <WeekBar cycle={cycle} now={now} />
+              {view.sub && <div className="mt-3 text-[15px] text-muted">{view.sub}</div>}
+              {date.syncStatus === "error" && (
+                <p role="status" className="mt-3 rounded-[18px] bg-zitrone-soft px-3.5 py-2 text-sm text-tinte">
+                  Google Kalender hakt gerade – Zweisamen versucht es nochmal.
+                </p>
+              )}
+              {notices && <div className="mt-3 flex flex-col gap-2">{notices}</div>}
+            </>
+          }
+          head={<SheetHead date={date} surprise={o.dateExtras?.surprise ?? null} partner={partner} />}
+          details={<SheetDetails date={date} me={me} partner={partner} o={o} swappable={swappable} />}
+          saying={saying}
+          voice={{ publicKey: o.push.publicKey, myDevices: o.push.mine, partnerDevices: o.push.partner, partnerName: partner.name }}
+          bloom={{ blaetter, welk, pot: pot ?? "terrakotta" }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div data-next-step={step.kind} className="flex min-h-0 flex-1 flex-col">
       <div className="mt-2 flex items-start justify-between gap-3">
@@ -146,7 +182,7 @@ export function Beet({
         // One flower size for every step (capped); it only gets smaller when a step needs the room.
         <div className="relative my-auto min-h-28 w-full flex-1 basis-0 max-h-[min(40svh,340px)]" data-onturn={onTurn ?? undefined}>
           {/* The flower box keeps the mockup's 300×420 proportions; the bubble sits by its head. */}
-          <div className="absolute inset-y-0 left-1/2 aspect-[300/420] max-w-full -translate-x-1/2 [container-type:size]">
+          <div className="absolute bottom-0 left-1/2 top-2 aspect-[300/420] max-w-full -translate-x-1/2 [container-type:size]">
             <Bloom stimmung={stimmung} blaetter={blaetter} welk={welk} topf={pot} className="absolute inset-0 size-full" />
             <FlowerVoice text={saying} publicKey={o.push.publicKey} myDevices={o.push.mine} partnerDevices={o.push.partner} partnerName={partner.name} />
           </div>
@@ -348,12 +384,8 @@ function viewFor(
             {mine ? `${partner.name} hat zugesagt.` : "Du hast zugesagt."} Ihr seht euch {seeWhen(date.startsAt, now)}.
           </>
         ),
-        cta: date && (
-          <>
-            <DateCard date={date} surprise={o.dateExtras?.surprise ?? null} partner={partner} />
-            {details}
-          </>
-        ),
+        // The card itself is the control (date-sheet.tsx) – no button below.
+        cta: null,
       };
     }
     case "review":
@@ -463,20 +495,101 @@ function Invitation({ date, partner, surprise }: { date: DatePlan; partner: User
   );
 }
 
-/** MBestaetigt: the date with its chips. */
-function DateCard({ date, surprise, partner }: { date: DatePlan; surprise: "hidden" | "organizer" | null; partner: User }) {
+/** The closed card (MBestaetigt): title, time and place, the calendar chip. */
+function SheetHead({ date, surprise, partner }: { date: DatePlan; surprise: "hidden" | "organizer" | null; partner: User }) {
   return (
-    <div data-date-card={date.id} className="flex flex-col gap-2.5 rounded-[22px] bg-surface p-4">
-      <p className="text-xl font-extrabold leading-tight tracking-[-0.02em]">{date.title}</p>
+    <div data-date-card={date.id} className="flex flex-col gap-2.5">
+      <p className="text-[21px] font-extrabold leading-[1.12] tracking-[-0.02em]">{date.title}</p>
       <p className="text-[15px] text-muted">
         {formatShortDate(date.startsAt)} · {formatTimeRange(date.startsAt, date.endsAt)}
         {date.location ? ` · ${date.location}` : ""}
       </p>
-      {surprise === "hidden" && <p className="text-[15px] text-muted">🤫 Eine Überraschung von {partner.name}{date.note ? ` · ${date.note}` : ""}</p>}
+      {surprise === "hidden" && <p className="text-[15px] text-muted">🤫 Eine Überraschung von {partner.name}</p>}
       {surprise === "organizer" && <p className="text-[15px] text-muted">🎁 {partner.name} sieht bis zum Tag nur die Zeit.</p>}
-      <div className="flex flex-wrap gap-1.5">
-        {date.syncStatus === "synced" && <span className="inline-flex h-[30px] items-center rounded-full bg-soft px-3 text-[13px] font-medium">✓ in beiden Kalendern</span>}
-      </div>
+      {date.syncStatus === "synced" && <span className="inline-flex h-[30px] items-center self-start rounded-full bg-soft px-3 text-[13px] font-semibold">✓ in beiden Kalendern</span>}
     </div>
+  );
+}
+
+const ROW_LABEL = "meta pt-0.5 text-[11px] uppercase text-muted";
+
+/** The open card: where (a drawn map that opens the route), what to bring, the note – then Route, Verschieben, Absagen. */
+function SheetDetails({ date, me, partner, o, swappable }: { date: DatePlan; me: User; partner: User; o: Overview; swappable: boolean }) {
+  const route = date.location ? routeUrl(date.location, me.startLocation) : null;
+  const tasks = o.dateExtras?.tasks ?? null;
+  const fromPartner = date.proposedById === partner.id;
+  const noteLabel = o.dateExtras?.surprise === "hidden" ? "HINWEIS" : fromPartner ? `VON ${partner.name.toUpperCase()}` : "DEINE NOTIZ";
+  return (
+    <>
+      {route && (
+        <a href={route} target="_blank" rel="noopener noreferrer" aria-label={`Route zu ${date.location}`} className="relative mt-1 block h-32 overflow-hidden rounded-[18px] bg-soft">
+          <span aria-hidden="true" className="absolute -left-5 top-[70px] h-3.5 w-[420px] -rotate-[8deg] bg-[#2F4036]" />
+          <span aria-hidden="true" className="absolute -top-2.5 left-[140px] h-40 w-3.5 rotate-[14deg] bg-[#2F4036]" />
+          <span aria-hidden="true" className="absolute left-[196px] top-10 size-[22px] -rotate-45 rounded-[50%_50%_50%_0] bg-like" />
+          <span className="meta absolute bottom-2.5 left-3 text-[10px] text-muted">Treffpunkt: {date.location}</span>
+        </a>
+      )}
+      <dl className="grid grid-cols-[84px_minmax(0,1fr)] gap-y-2 text-sm">
+        {date.location && (
+          <>
+            <dt className={ROW_LABEL}>Treffpunkt</dt>
+            <dd>{date.location}</dd>
+          </>
+        )}
+        {tasks && (
+          <>
+            <dt className={ROW_LABEL}>Mitnehmen</dt>
+            <dd>
+              {tasks.length > 0 && (
+                <span>
+                  {tasks.map((t, i) => (
+                    <span key={t.id} className={t.done ? "text-muted line-through" : undefined}>
+                      {i > 0 && ", "}
+                      {t.title}
+                    </span>
+                  ))}{" "}
+                </span>
+              )}
+              <Link href={`/dates/${date.id}`} className="text-muted underline">
+                {tasks.length > 0 ? "bearbeiten" : "Liste anlegen"}
+              </Link>
+            </dd>
+          </>
+        )}
+        {date.note && (
+          <>
+            <dt className={ROW_LABEL}>{noteLabel}</dt>
+            <dd className="font-hand text-[19px] leading-[1.05] text-butter">„{date.note}“</dd>
+          </>
+        )}
+      </dl>
+      <div className={cn("mt-1 grid gap-2", route ? "grid-cols-2" : "grid-cols-1")}>
+        {route && (
+          <a href={route} target="_blank" rel="noopener noreferrer" className={buttonClass("primary", "md", "w-full")}>
+            Route
+          </a>
+        )}
+        <Link href={`/plan?reschedule=${date.id}`} className={buttonClass("secondary", "md", "w-full")}>
+          Verschieben
+        </Link>
+      </div>
+      <span className="self-center">
+        <CancelDateButton action={cancelDateAction.bind(null, date.id)} partnerName={partner.name} />
+      </span>
+      {(swappable || o.dateExtras?.isToday) && (
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 pb-1 text-sm font-semibold">
+          {o.dateExtras?.isToday && (
+            <Link href="/fragen" className="hit underline">
+              💬 Gesprächskarten
+            </Link>
+          )}
+          {swappable && (
+            <Link href="/plan?pick=1" className="hit flex items-center gap-1.5 underline">
+              <SwapIcon width={15} height={15} /> Lieber was anderes?
+            </Link>
+          )}
+        </div>
+      )}
+    </>
   );
 }

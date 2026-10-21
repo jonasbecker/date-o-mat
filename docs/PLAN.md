@@ -216,6 +216,14 @@ einmal, Rückfragen beim Entfernen/Trennen, Willkommen-Texte, Manifest dunkel, �
     selben Tag → „heute“; Date um 00:30 bekommt „Morgen ist Date-Tag“ zur richtigen Zeit; Fehler
     offline zeigen statt Fehlerseite.
 
+## „date steht.“ – Karte hochziehen (21.10.2026) ✅
+
+Spezifikation: `docs/design/garten/date-steht/DATE-STEHT.md`. Entscheidungen: MITNEHMEN = Checkliste, VON SAM = Notiz
+beim Planen; Karte gezeichnet, „Route“ öffnet Maps; „Lieber was anderes?“ und Gesprächskarten in der offenen Karte;
+nur für „date steht.“ (nicht „wartet auf …“). Abweichungen: Maße relativ zum Beet statt absolut (andere Handys), die
+geschlossene Blume wird auf kleinen Handys kleiner statt den Text zu verdecken; die Rundenleiste oben blendet aus,
+solange die Blase dort sitzt; eine Spruchwahl pro Bewegung (statt eigener Sprüche für „mitte“).
+
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 
 1. OAuth „In Produktion (unverifiziert)“ statt Testmodus (7-Tage-Token-Ablauf).
