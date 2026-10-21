@@ -189,7 +189,13 @@ export function EventCard({ event, onPlanned }: { event: EventView; onPlanned?: 
           {event.saved ? (
             <span className="text-sm font-extrabold text-muted">💡 Auf der Wunschliste</span>
           ) : (
-            <Button variant="secondary" size="sm" disabled={saving} onClick={() => startSave(async () => void (await saveEventIdeaAction(event.id)))}>
+            <Button variant="secondary" size="sm" disabled={saving} onClick={() =>
+                startSave(async () => {
+                  const result = await saveEventIdeaAction(event.id).catch(() => ({ ok: false }));
+                  if (!result.ok) setMessage("Das ging gerade nicht – ist der Termin noch da? Versuch's gleich nochmal.");
+                })
+              }
+            >
               Merken
             </Button>
           )}

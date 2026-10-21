@@ -43,9 +43,16 @@ export function normalizeUrl(input: string): string | null {
   }
 }
 
-/** "15", "15 €", "12,50" → whole euros. Empty → null. Invalid → NaN. */
+/** A typed euro amount as JS number text: "1.000" and "1.250,50" are German thousands, "12,50" a decimal comma. */
+export function normalizeEuro(input: string): string {
+  const cleaned = input.replace(/[€\s]/g, "");
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(cleaned)) return cleaned.replace(/\./g, "").replace(",", ".");
+  return cleaned.replace(",", ".");
+}
+
+/** "15", "15 €", "12,50", "1.000" → whole euros. Empty → null. Invalid → NaN. */
 export function parseCost(input: string): number | null {
-  const cleaned = input.replace(/[€\s]/g, "").replace(",", ".");
+  const cleaned = normalizeEuro(input);
   if (!cleaned) return null;
   if (!/^\d+(\.\d+)?$/.test(cleaned)) return Number.NaN;
   return Math.round(Number(cleaned));

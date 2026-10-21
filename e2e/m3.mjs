@@ -207,6 +207,7 @@ check("rejected token leads to a friendly message, not a crash", true);
 // 8) Disconnect
 await j.goto(`${BASE}/settings?t=kalender`);
 await j.getByRole("button", { name: "Verbindung trennen" }).click();
+await j.getByRole("button", { name: "Ja, trennen" }).click();
 await j.getByText("Kalender getrennt.").waitFor({ timeout: 15000 });
 const { rows: left } = await db.query("SELECT count(*)::int AS n FROM google_connections WHERE user_id = $1", [jonas.id]);
 check("disconnect deletes the stored tokens", left[0].n === 0);

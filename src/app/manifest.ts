@@ -10,8 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#eef2e6",
-    theme_color: "#eef2e6",
+    background_color: "#111a14",
+    theme_color: "#111a14",
     lang: "de",
     categories: ["lifestyle", "productivity"],
     // Android: "Teilen → Date-O-Mat" in TikTok, Instagram, YouTube … turns the link into an idea.

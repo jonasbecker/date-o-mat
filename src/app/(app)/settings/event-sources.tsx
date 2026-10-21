@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useTransition } from "react";
+import { ConfirmButton } from "@/components/confirm-button";
 import { Button } from "@/components/button";
 import {
   addCologneSourcesAction,
@@ -77,9 +78,7 @@ export function EventSources({ sources, aiReady }: { sources: SourceView[]; aiRe
                 <button type="button" disabled={busy || source.tone === "busy"} className="underline disabled:opacity-50" onClick={() => startTransition(() => refreshSourceAction(source.id))}>
                   Jetzt lesen
                 </button>
-                <button type="button" disabled={busy} className="text-muted underline" onClick={() => startTransition(() => removeSourceAction(source.id))}>
-                  Entfernen
-                </button>
+                <ConfirmButton label="Entfernen" question="Die gelesenen Termine verschwinden mit." yes="Ja, entfernen" action={() => removeSourceAction(source.id)} />
               </div>
               <SubPages source={source} />
             </li>

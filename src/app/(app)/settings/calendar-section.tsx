@@ -1,5 +1,6 @@
 import { buttonClass, Button } from "@/components/button";
 import { Card } from "@/components/card";
+import { ConfirmButton } from "@/components/confirm-button";
 import { CalendarIcon, CheckIcon } from "@/components/icons";
 import { connectCalendarHref } from "@/components/connect-calendar";
 import { isInformationalCalendar, type CalendarListEntry } from "@/core/calendars";
@@ -93,11 +94,7 @@ export function CalendarSection({
               <a href={connectCalendarHref("/settings")} className="underline">
                 Neu verbinden
               </a>
-              <form action={disconnectCalendarAction}>
-                <button type="submit" className="text-muted underline">
-                  Verbindung trennen
-                </button>
-              </form>
+              <ConfirmButton label="Verbindung trennen" question="Ohne Kalender findet der Date-O-Mat keine freien Zeiten mehr." yes="Ja, trennen" action={disconnectCalendarAction} />
             </div>
           </>
         ) : (

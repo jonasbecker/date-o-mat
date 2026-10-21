@@ -90,6 +90,9 @@ describe("parseCost", () => {
     ["15 €", 15],
     ["12,49", 12],
     ["0", 0],
+    ["1.000", 1000],
+    ["1.250,50 €", 1251],
+    ["12.5", 13],
   ])("parses %j", (input, expected) => {
     expect(parseCost(input)).toBe(expected);
   });

@@ -306,6 +306,7 @@ await j.goto(`${BASE}/settings?t=events`);
 await j.locator("li", { hasText: "localhost" }).first().waitFor({ timeout: 10000 });
 const removeCount = await db.query("SELECT count(*)::int AS c FROM event_sources");
 await j.locator("li", { has: j.locator('a[href="http://localhost:4040/tips"]') }).getByRole("button", { name: "Entfernen" }).click();
+await j.locator("li", { has: j.locator('a[href="http://localhost:4040/tips"]') }).getByRole("button", { name: "Ja, entfernen" }).click();
 await j.locator('a[href="http://localhost:4040/tips"]').waitFor({ state: "detached", timeout: 10000 });
 const { rows: [left] } = await db.query("SELECT count(*)::int AS c FROM events WHERE kind = 'tip'");
 check(`removing a source deletes its entries (${removeCount.rows[0].c} → tips left ${left.c})`, left.c === 0);

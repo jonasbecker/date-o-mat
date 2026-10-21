@@ -1,5 +1,6 @@
 "use server";
 
+import { and, eq, isNull } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { after } from "next/server";
 import { z } from "zod";
@@ -112,6 +113,16 @@ export async function saveEventIdeaAction(eventId: string): Promise<{ ok: boolea
   const id = z.uuid().safeParse(eventId);
   const event = id.success ? await getEvent(coupleId, id.data) : undefined;
   if (!event) return { ok: false };
+  // Both of you (or a page from before) may tap "Merken": it lands on the list once.
+  const [already] = await db
+    .select({ id: ideas.id })
+    .from(ideas)
+    .where(and(eq(ideas.coupleId, coupleId), eq(ideas.source, "web"), eq(ideas.externalRef, event.dedupeKey), isNull(ideas.archivedAt)))
+    .limit(1);
+  if (already) {
+    refresh();
+    return { ok: true };
+  }
   const span = eventSpan(event);
   const long = span ? span.end.getTime() - span.start.getTime() > 4 * 3_600_000 : false;
   await db.insert(ideas).values({

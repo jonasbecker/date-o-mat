@@ -159,7 +159,7 @@ export type DeckState = {
   generating: boolean;
   matches: number;
   ai: boolean;
-  /** How many cards the partner has swiped so far ("S. hat 12 geswiped"). */
+  /** How many cards the partner has swiped so far ("S. hat 12 geswipt"). */
   partnerSwiped: number;
 };
 
@@ -168,7 +168,16 @@ export async function deckFor(ctx: CoupleContext, now: Date): Promise<DeckState>
     openCardsFor(ctx, now),
     lastSuperLike(ctx.user.id),
     getCoupleSettings(ctx.coupleId),
-    db.$count(deckCards, and(eq(deckCards.coupleId, ctx.coupleId), eq(deckCards.status, "matched"), ne(deckCards.kind, "revisit"))),
+    // Only matches still on the wishlist – the same number as the Matchlinge tile on /ideas.
+    db.$count(
+      deckCards,
+      and(
+        eq(deckCards.coupleId, ctx.coupleId),
+        eq(deckCards.status, "matched"),
+        ne(deckCards.kind, "revisit"),
+        inArray(deckCards.ideaId, db.select({ id: ideas.id }).from(ideas).where(and(eq(ideas.coupleId, ctx.coupleId), isNull(ideas.archivedAt)))),
+      ),
+    ),
     maybeCount(ctx, now),
     db.$count(deckSwipes, eq(deckSwipes.userId, ctx.partner.id)),
   ]);
@@ -395,10 +404,8 @@ export async function undoLastSwipe(ctx: CoupleContext, now: Date): Promise<Undo
 export async function notifyMatch(ctx: CoupleContext, match: { ideaId: string; title: string }): Promise<void> {
   const url = `/plan?idea=${match.ideaId}`;
   try {
-    await Promise.all([
-      sendToUser(ctx.partner.id, { title: "Match! 💞", body: `Ihr wollt beide: ${match.title}. Gleich planen?`, url, tag: "match" }, "match"),
-      sendToUser(ctx.user.id, { title: "Match! 💞", body: `Ihr wollt beide: ${match.title}. Steht auf eurer Wunschliste.`, url, tag: "match" }, "match"),
-    ]);
+    // The one who swiped just saw "keimt!" – only the other one hears about it.
+    await sendToUser(ctx.partner.id, { title: "Match! 💞", body: `Ihr wollt beide: ${match.title}. Gleich planen?`, url, tag: "match" }, "match");
   } catch (error) {
     console.warn("[deck] match push failed", error instanceof Error ? error.message : error);
   }

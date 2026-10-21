@@ -46,7 +46,9 @@ async function Discover() {
   }
   return (
     <DeckChrome>
-      <AutoRefresh intervalMs={deck.generating || deck.cards.length < DECK_REFILL_BELOW ? 6_000 : 30_000} />
+      {/* Fast only while a batch is being made; a low deck that cannot be refilled (limit, no AI) must not
+          ask Google every few seconds. */}
+      <AutoRefresh intervalMs={deck.generating ? 6_000 : deck.cards.length < DECK_REFILL_BELOW ? 15_000 : 30_000} />
       <AppHeader
         action={
           // Matches are seedlings (DESIGN-GARTEN.md §5.2) – the pill leads to them; ⓘ explains the page.
@@ -66,7 +68,7 @@ async function Discover() {
         <div className="flex min-w-0 flex-col gap-1">
           <h1 className="text-[40px] font-extrabold leading-[0.92] tracking-[-0.05em]">swipen.</h1>
           <span className="truncate font-mono text-[11px] text-muted">
-            {deck.partnerSwiped > 0 && <>{ctx.partner.name} hat {deck.partnerSwiped} geswiped · </>}
+            {deck.partnerSwiped > 0 && <>{ctx.partner.name} hat {deck.partnerSwiped} geswipt · </>}
             <Link href="/ideas?ansicht=geswipt" className="underline">
               Meine Likes
             </Link>

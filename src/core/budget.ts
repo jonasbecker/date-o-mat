@@ -10,6 +10,7 @@
 
 import { DateTime } from "luxon";
 import { APP_TIMEZONE, type DateStatus } from "@/lib/domain";
+import { normalizeEuro } from "@/lib/idea-input";
 
 export const MAX_BUDGET_EUR = 10_000;
 
@@ -128,7 +129,7 @@ export function parsePriceEur(text: string | null | undefined): number | null {
 
 /** The settings field: "80", "80 €", "" (= no budget). Null = no budget, NaN = invalid. */
 export function parseBudget(input: string): number | null {
-  const cleaned = input.replace(/[€\s]/g, "").replace(",", ".");
+  const cleaned = normalizeEuro(input);
   if (!cleaned) return null;
   if (!/^\d+(\.\d+)?$/.test(cleaned)) return Number.NaN;
   const value = Math.round(Number(cleaned));

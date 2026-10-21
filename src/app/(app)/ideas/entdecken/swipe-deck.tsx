@@ -215,17 +215,32 @@ export function SwipeDeck({
     seen.add(c.id);
     return true;
   });
-  const cards = all.filter((c) => matchesFilter(c, filter));
+  const sorted = all.filter((c) => matchesFilter(c, filter));
   const shownWhen = useRef(new Map<string, DeckCardView["when"]>());
   for (const c of serverCards) if (c.when) shownWhen.current.set(c.id, c.when);
+  // The card on top stays on top until it is swiped: a refresh re-sorts the deck (the partner's likes
+  // come first), and a new card must never slide in under your finger. Gone from the server meanwhile
+  // (the partner noped it) – it still stays; swiping it says so.
+  const [pinned, setPinned] = useState<DeckCardView | null>(null);
+  const keep = pinned && !handled.has(pinned.id) && matchesFilter(pinned, filter) ? (sorted.find((c) => c.id === pinned.id) ?? pinned) : null;
+  const cards = keep ? [keep, ...sorted.filter((c) => c.id !== keep.id)] : sorted;
   const top = cards[0];
   const next = cards[1];
+  // Remembered while rendering (React's "adjust state on change"), so the very next refresh sees it.
+  if (top && top.id !== pinned?.id) setPinned(top);
   // "3 / 12": how far this visit got.
   const position = stats.swiped + 1;
+  const canUndo = stats.swiped > 0 && !busy && !undoing;
 
   function decide(verdict: Verdict) {
     if (!top || flying || undoing) return;
     const card = top;
+    // The swipe did not count (offline, or the card was gone): the count and ↺ forget it again.
+    const forget = () => {
+      const i = verdicts.current.lastIndexOf(verdict);
+      if (i >= 0) verdicts.current.splice(i, 1);
+      setStats((s) => ({ swiped: Math.max(0, s.swiped - 1), liked: Math.max(0, s.liked - (verdict === "like" ? 1 : 0)) }));
+    };
     setMessage(null);
     verdicts.current.push(verdict);
     const quips = verdict === "like" ? card.art.quips.like : card.art.quips.nope;
@@ -255,10 +270,12 @@ export function SwipeDeck({
           copy.delete(card.id);
           return copy;
         });
+        forget();
         setMessage("hoppla – bist du offline?");
         return;
       }
       if (!result.ok) {
+        forget();
         setMessage(`die ist schon weg – ${partnerName.toLowerCase()} war schneller.`);
         return;
       }
@@ -310,6 +327,7 @@ export function SwipeDeck({
         return copy;
       });
       setRestored((prev) => [card, ...prev.filter((c) => c.id !== card.id)]);
+      setPinned(card);
       if (!matchesFilter(card, filter)) setFilter({});
     });
   }
@@ -327,10 +345,12 @@ export function SwipeDeck({
   const keyHandler = useRef<(event: KeyboardEvent) => void>(() => {});
   useEffect(() => {
     keyHandler.current = (event: KeyboardEvent) => {
-      if (match || (event.target as HTMLElement | null)?.closest("input, textarea, select")) return;
+      // Not while typing, while "keimt!" or a sheet (Filter, ⓘ) is open – the card is behind it.
+      if (match || document.querySelector("dialog[open]") || (event.target as HTMLElement | null)?.closest("input, textarea, select, dialog")) return;
       if (event.key === "ArrowLeft") decide("nope");
       else if (event.key === "ArrowRight") decide("like");
-      else if (event.key === "Backspace") undo();
+      // Like ↺: only what this visit swiped (not a like from days ago).
+      else if (event.key === "Backspace" && canUndo) undo();
       else return;
       event.preventDefault();
     };
@@ -368,7 +388,7 @@ export function SwipeDeck({
     else setDrag(null);
   }
 
-  useShareDeck({ swiped: stats.swiped, left: cards.length, canUndo: stats.swiped > 0 && !busy && !undoing, undo, more: ai ? more : null, loading });
+  useShareDeck({ swiped: stats.swiped, left: cards.length, canUndo, undo, more: ai ? more : null, loading });
 
   const flyTransform = (verdict: Verdict) =>
     verdict === "like"

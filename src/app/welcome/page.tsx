@@ -39,7 +39,7 @@ async function Welcome() {
       title: RHYTHM_TITLE[settings.rhythm],
       text:
         settings.mode === "alternating"
-          ? `Wer die Gießkanne hat, ist dran: Termin und Idee aussuchen, „Gießen & senden“ – die andere Person sagt zu. Dann wandert die Kanne weiter.`
+          ? "Wer die Gießkanne hat, ist dran: Idee und Termin aussuchen und gießen – die andere Person sagt zu. Dann wandert die Kanne weiter."
           : "Der Date-O-Mat schlägt euch jede Runde Termin und Idee vor – ihr müsst nur noch zusagen. Rhythmus und Modus könnt ihr jederzeit ändern.",
       tone: "bg-tile-butter",
     },
@@ -50,9 +50,9 @@ async function Welcome() {
       tone: "bg-tile-sky",
     },
     {
-      emoji: "♥",
+      emoji: "💚",
       title: "Swipen ist das Herz",
-      text: "In der Mitte unten swipt ihr beide getrennt durch Ideen. Drückt ihr beide ♥, ist es ein Match – und steht beim Planen ganz oben.",
+      text: "Unter „Swipen“ wischt ihr beide getrennt durch Ideen: rechts einpflanzen, links auf den Kompost. Wischt ihr beide rechts, keimt’s – ein Match, das beim Planen ganz oben steht.",
       tone: "bg-rose",
     },
     {
