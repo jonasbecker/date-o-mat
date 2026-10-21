@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { Suspense } from "react";
 import { ConnectCalendarCard } from "@/components/connect-calendar";
 import { formatShortDate, formatTimeRange } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
@@ -27,9 +26,7 @@ export default function PlanPage({ searchParams }: PageProps<"/plan">) {
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       {/* The step card says what's up – the page title is for screen readers. */}
       <h1 className="sr-only">Date planen</h1>
-      <Suspense fallback={<BeetSkeleton />}>
-        <Plan searchParams={searchParams} />
-      </Suspense>
+      <Plan searchParams={searchParams} />
     </div>
   );
 }
@@ -184,21 +181,5 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
       surpriseEnabled={extraOn(settings, "surprise") && doneDates > 0}
       withEvents={!reschedule}
     />
-  );
-}
-
-/** The shape of the Beet while it loads (the tab is there at once): name, dots, headline, plant, button. */
-function BeetSkeleton() {
-  return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3" aria-busy="true" aria-label="Lädt …">
-      <AppHeader center={<span className="block h-1.5 w-12 animate-pulse rounded-full bg-track" />} />
-      <div className="flex animate-pulse flex-1 flex-col gap-3">
-        <div className="h-[46px] w-3/4 rounded-[16px] bg-track" />
-        <div className="h-[46px] w-1/2 rounded-[16px] bg-track" />
-        <div className="h-3 w-2/3 rounded-full bg-track" />
-        <div className="mx-auto mt-auto size-40 rounded-full bg-track" />
-        <div className="mt-auto h-14 rounded-full bg-track" />
-      </div>
-    </div>
   );
 }

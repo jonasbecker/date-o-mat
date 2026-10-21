@@ -7,6 +7,7 @@ import pg from "pg";
 import { chromium } from "playwright";
 import { requests as googleRequests, startMock } from "./google-mock.mjs";
 import { resetDb } from "./db.mjs";
+import { tuesdayMorningOffset } from "./clock.mjs";
 
 const require = createRequire(new URL("../package.json", import.meta.url));
 const ece = require("http_ece");
@@ -73,7 +74,9 @@ async function makeUser(name, email, color, accessToken, refreshToken, createdAt
 // Jonas' refresh token has been revoked at Google – it shows once his access token expires.
 const jonas = await makeUser("Jonas", "jonas@example.com", "mandarine", "token-jonas", "revoked-refresh", "2026-01-01");
 const sam = await makeUser("Sam", "partnerin@example.com", "himmel", "token-sam", "fake-refresh", "2026-01-02");
-await db.query("INSERT INTO couple_settings (couple_id, first_planner_id) VALUES ($1, $2)", [couple.id, jonas.id]);
+// Tuesday morning on the dev clock: the round's deadline is days away, so no "Noch 24 Stunden" push gets in
+// between the pushes this test counts (it used to on Wednesday evenings).
+await db.query("INSERT INTO couple_settings (couple_id, first_planner_id, dev_clock_offset_minutes) VALUES ($1, $2, $3)", [couple.id, jonas.id, tuesdayMorningOffset()]);
 await db.query("INSERT INTO ideas (couple_id, title, size, created_by_id) VALUES ($1, 'Picknick im Stadtwald', 'small', $2)", [couple.id, jonas.id]);
 
 let failures = 0;

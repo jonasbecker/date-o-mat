@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { Suspense } from "react";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { AppHeader, PageSkeleton } from "@/components/app-header";
+import { AppHeader } from "@/components/app-header";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
@@ -73,9 +72,7 @@ export default function SettingsPage({ searchParams }: PageProps<"/settings">) {
   return (
     <div className="flex flex-col gap-4">
       <AppHeader />
-      <Suspense fallback={<PageSkeleton />}>
-        <Settings searchParams={searchParams} />
-      </Suspense>
+      <Settings searchParams={searchParams} />
     </div>
   );
 }

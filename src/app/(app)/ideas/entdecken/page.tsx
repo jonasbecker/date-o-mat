@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { after, connection } from "next/server";
-import { Suspense } from "react";
-import { AppHeader, PageSkeleton } from "@/components/app-header";
+import { AppHeader } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { FilterButton } from "@/components/idea-filter";
 import { DECK_REFILL_BELOW } from "@/core/deck";
@@ -20,16 +19,7 @@ export const maxDuration = 90;
 export default function DiscoverPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <Suspense
-        fallback={
-          <>
-            <AppHeader />
-            <PageSkeleton />
-          </>
-        }
-      >
-        <Discover />
-      </Suspense>
+      <Discover />
     </div>
   );
 }

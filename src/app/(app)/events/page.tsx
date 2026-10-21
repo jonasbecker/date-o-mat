@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { Suspense } from "react";
-import { AppHeader, PageSkeleton } from "@/components/app-header";
+import { AppHeader } from "@/components/app-header";
 import { PageTitle } from "@/components/page-title";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { agoLabel, dayHeading } from "@/lib/format";
@@ -20,9 +19,7 @@ export default function EventsPage({ searchParams }: PageProps<"/events">) {
     <div className="flex flex-col gap-4">
       <AppHeader />
       <PageTitle title="was läuft." back="/ideas" />
-      <Suspense fallback={<PageSkeleton />}>
-        <Events searchParams={searchParams} />
-      </Suspense>
+      <Events searchParams={searchParams} />
     </div>
   );
 }

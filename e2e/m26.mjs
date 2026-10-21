@@ -121,7 +121,7 @@ const TABS = [
 ];
 for (const [label, ready] of TABS) {
   const r = await tap(label, ready);
-  console.log(`first visit ${label}: ${JSON.stringify(r)}`);
+  check(`first visit ${label}: no skeleton, no fade (${JSON.stringify(r)})`, !r.skeleton && !r.faded);
 }
 // Each tab again: it was there a moment ago – it must come back at once, without skeleton or fade.
 for (const [label, ready] of TABS) {

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { Suspense } from "react";
-import { AppHeader, PageSkeleton } from "@/components/app-header";
+import { AppHeader } from "@/components/app-header";
 import { PageTitle } from "@/components/page-title";
 import { BudgetBar } from "@/components/budget-bar";
 import { buttonClass } from "@/components/button";
@@ -20,9 +19,7 @@ export default function BudgetPage() {
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <AppHeader />
       <PageTitle title="budget." back="/plan" />
-      <Suspense fallback={<PageSkeleton />}>
-        <Budget />
-      </Suspense>
+      <Budget />
     </div>
   );
 }

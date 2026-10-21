@@ -42,3 +42,22 @@ export function PageSkeleton() {
     </div>
   );
 }
+
+/**
+ * What a cold start shows until the page is there (the (app) layout's one loading boundary – a tab switch keeps
+ * the old page instead): the shape of the Beet, where the app opens – name, dots, headline, plant, button.
+ */
+export function BeetSkeleton() {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-3" aria-busy="true" aria-label="Lädt …">
+      <AppHeader center={<span className="block h-1.5 w-12 animate-pulse rounded-full bg-track" />} />
+      <div className="flex animate-pulse flex-1 flex-col gap-3">
+        <div className="h-[46px] w-3/4 rounded-[16px] bg-track" />
+        <div className="h-[46px] w-1/2 rounded-[16px] bg-track" />
+        <div className="h-3 w-2/3 rounded-full bg-track" />
+        <div className="mx-auto mt-auto size-40 rounded-full bg-track" />
+        <div className="mt-auto h-14 rounded-full bg-track" />
+      </div>
+    </div>
+  );
+}

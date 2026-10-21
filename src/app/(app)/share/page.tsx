@@ -1,5 +1,4 @@
-import { Suspense } from "react";
-import { AppHeader, PageSkeleton } from "@/components/app-header";
+import { AppHeader } from "@/components/app-header";
 import { PageTitle } from "@/components/page-title";
 import { extractUrl } from "@/core/link-idea";
 import { requireCouple } from "@/server/auth/dal";
@@ -13,9 +12,7 @@ export default function SharePage({ searchParams }: PageProps<"/share">) {
     <div className="flex flex-col gap-4">
       <AppHeader />
       <PageTitle title="neue idee." back="/ideas" />
-      <Suspense fallback={<PageSkeleton />}>
-        <Share searchParams={searchParams} />
-      </Suspense>
+      <Share searchParams={searchParams} />
     </div>
   );
 }

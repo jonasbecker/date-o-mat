@@ -11,7 +11,9 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - Pure logic (no DB, no `next/*`) lives in `src/lib` (later `src/core`) and gets Vitest tests next to it.
 - Server-only code lives in `src/server` and imports `server-only`.
 - Every page/action gets the user via `requireUser()`/`requireCouple()` (`src/server/auth/dal.ts`).
-- Cache Components is on: anything reading cookies or the DB must render inside `<Suspense>` in the page.
+- Cache Components is on: anything reading cookies or the DB must render inside `<Suspense>`. Signed-in pages have
+  ONE boundary, in the `(app)` layout (fallback `BeetSkeleton`) – no `<Suspense>` around a whole page: it would flash
+  its skeleton on every tab switch. A slow part inside a page may have its own.
 - Status-like columns are `text` with TS enums from `src/lib/domain.ts` – never Postgres enums.
 - Schema change → `npm run db:generate` → commit the SQL in `drizzle/`.
 - Mutations are server actions that call `refresh()`; pages that show shared data render `<AutoRefresh />`.
@@ -33,7 +35,9 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   fingerprint, `server/stamp.ts` – row counts + `xmin` per table, bookkeeping columns left out – plus a 5-minute
   bucket) only refreshes when `stampAction()` returns a different one (on show, foreground, every 15 s). New tables a
   page shows go into the stamp. Actions that `redirect()` call `refresh()` first. No page fade-in (no `template.tsx`).
-  e2e: m26.
+  Because the loading boundary sits in the layout, a first visit keeps the old page until the new one is there (the
+  tab lights up at once via `useLinkStatus`, `nav-pending.tsx` shows a thin bar after 150 ms). e2e: m26 (first visits
+  too).
 - **Navigation (M40):** `BottomNav` in the `(app)` layout: Archiv (`/dates`) · Swipen (`/ideas/entdecken`) · **Beet** (`/plan`,
   the big green circle, always on top – the bar is `z-30`) · Ideen · Einstellungen. `AppHeader` is the small name plus the page's
   own thing on the right (avatars, "36 Ideen", matches pill). The four dots are one path: the Beet is dot 1, the

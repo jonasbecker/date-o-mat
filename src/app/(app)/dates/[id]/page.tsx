@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
-import { Suspense } from "react";
-import { PageSkeleton } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { Avatar } from "@/components/avatar";
 import { Hearts } from "@/components/hearts";
@@ -29,11 +27,7 @@ import { getCoupleSettings } from "@/server/settings";
 import { dateExtrasFor } from "../../overview";
 
 export default function DatePage({ params, searchParams }: PageProps<"/dates/[id]">) {
-  return (
-    <Suspense fallback={<PageSkeleton />}>
-      <DateDetail params={params} searchParams={searchParams} />
-    </Suspense>
-  );
+  return <DateDetail params={params} searchParams={searchParams} />;
 }
 
 async function DateDetail({ params, searchParams }: { params: PageProps<"/dates/[id]">["params"]; searchParams: PageProps<"/dates/[id]">["searchParams"] }) {

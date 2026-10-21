@@ -1,6 +1,5 @@
 import { connection } from "next/server";
-import { Suspense } from "react";
-import { AppHeader, HeaderMeta, PageSkeleton } from "@/components/app-header";
+import { AppHeader, HeaderMeta } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { formatShortDate, formatTimeRange } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
@@ -15,16 +14,7 @@ import { IdeaBoard, type BoardIdea, type BoardNextDate, type BoardPerson } from 
 export default function IdeasPage({ searchParams }: PageProps<"/ideas">) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <Suspense
-        fallback={
-          <>
-            <AppHeader />
-            <PageSkeleton />
-          </>
-        }
-      >
-        <Ideas searchParams={searchParams} />
-      </Suspense>
+      <Ideas searchParams={searchParams} />
     </div>
   );
 }

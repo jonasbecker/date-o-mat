@@ -233,8 +233,8 @@ solange die Blase dort sitzt; eine Spruchwahl pro Bewegung (statt eigener Sprüc
   Stufe weiter; Zurück-Geste schließt.
 - Tabs: besuchte Seiten kommen 5 Minuten lang sofort aus dem Browser (`staleTimes.dynamic`); AutoRefresh lädt nur
   neu, wenn sich der Fingerabdruck der Daten geändert hat (`server/stamp.ts`); kein Einblenden mehr (`template.tsx`
-  entfernt). Ein Tab, der zum ersten Mal
-  geöffnet wird, zeigt noch kurz den Platzhalter. e2e: m26.
+  entfernt). Auch beim ersten Besuch kein Platzhalter mehr: die alte Seite bleibt stehen, bis die neue da ist
+  (der Tab leuchtet sofort, oben ein dünner Ladebalken, wenn es dauert). e2e: m26.
 
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 

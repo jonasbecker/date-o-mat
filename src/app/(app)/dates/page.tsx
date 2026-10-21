@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { Suspense } from "react";
 import { DateTime } from "luxon";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { Mascot } from "@/components/mascot";
-import { AppHeader, HeaderMeta, PageSkeleton } from "@/components/app-header";
+import { AppHeader, HeaderMeta } from "@/components/app-header";
 import { dateForViewer, upcomingDate } from "@/server/dates";
 import { visibleReviews } from "@/core/reviews";
 import { AGAIN_LABEL, APP_TIMEZONE, PERSON_HEX } from "@/lib/domain";
@@ -39,16 +38,7 @@ const TILES = [
 export default function DatesPage({ searchParams }: PageProps<"/dates">) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <Suspense
-        fallback={
-          <>
-            <AppHeader />
-            <PageSkeleton />
-          </>
-        }
-      >
-        <Dates searchParams={searchParams} />
-      </Suspense>
+      <Dates searchParams={searchParams} />
     </div>
   );
 }

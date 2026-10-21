@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { Suspense } from "react";
-import { AppHeader, PageSkeleton } from "@/components/app-header";
+import { AppHeader } from "@/components/app-header";
 import { PageTitle } from "@/components/page-title";
 import { DateTime } from "luxon";
 import { APP_TIMEZONE } from "@/lib/domain";
@@ -17,9 +16,7 @@ export default function StoryPage({ searchParams }: PageProps<"/story">) {
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <AppHeader />
       <PageTitle title="story." back="/dates" backLabel="Zum Archiv" />
-      <Suspense fallback={<PageSkeleton />}>
-        <Story searchParams={searchParams} />
-      </Suspense>
+      <Story searchParams={searchParams} />
     </div>
   );
 }
