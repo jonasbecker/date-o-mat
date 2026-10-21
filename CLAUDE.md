@@ -92,10 +92,13 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   the header, all without scrolling, the handle becomes the header's step bar, the flower flies off the top and comes
   back down with the card). Everything between follows the card's top (`position()` 0…2). Letting go faster than
   0.8 px/ms is a "schubs" (one stop further; zu → mitte kicks the flower: `autsch`, overshoot, motion lines), else
-  "sanft" (`genervt`); past 35 % of the way it goes to the next stop. Tap: zu ↔ mitte, voll → mitte ("Weniger
+  "sanft" (`genervt`); past 35 % of the way it goes to the next stop. Held still ≥ 300 ms before letting go, the card
+  stays right there (`data-parked`, `parks()`; the bubble finishes growing) until the next tap takes it to the nearest
+  stop. The glide to a stop takes as long as its way needs and starts at the finger's speed (`glide()`); the flower
+  sways as it stops and gives a little on landing from above. Tap: zu ↔ mitte, voll → mitte ("Weniger
   Details"). Closed, the flower's bubble sits by its head; pulled up, the header's step bar grows into the bubble at
   mitte (`morphAt` / `morphTransform`: the bar's place and size → the bubble's, words fade in at the end) and shrinks
-  back into it on the way to voll. Dots come out of the mouth, nothing covers text, card, name or avatars; back gesture closes it. e2e: m25 (both sizes, slow/fast, voll, back, reduced motion). The old `Plant`
+  back into it on the way to voll. Dots come out of the mouth, nothing covers text, card, name or avatars; back gesture closes it. e2e: m25 (both sizes, slow/fast, parked, voll, back, reduced motion). The old `Plant`
   (components/plant.tsx) is only the small mark (logo, mascot, empty states).
 - **Rounds and dates:** a date lives in the round it happens in (`cycleForDate()` creates later rounds when a date is
   planned ahead; the current round is the one containing now, never just the newest row). A planned date nobody

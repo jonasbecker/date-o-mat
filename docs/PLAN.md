@@ -231,6 +231,10 @@ solange die Blase dort sitzt; eine Spruchwahl pro Bewegung (statt eigener Sprüc
   Scrollen; ihr Griff wird zum Strich oben im Kopf, die Blume fliegt oben raus und kommt beim Runterziehen
   wieder herunter – je nachdem, wie weit man zieht). Tippen: zu ↔ mitte, voll → mitte; ein Schubs geht immer eine
   Stufe weiter; Zurück-Geste schließt.
+- Festhalten: wer die Karte zieht, kurz stillhält (≥ 300 ms) und dann loslässt, lässt sie genau dort stehen – ohne
+  Animation, die Blase oben wächst fertig; der nächste Tipp bringt sie zur nächsten Stufe. Die übrigen Bewegungen
+  dauern so lange, wie ihr Weg ist (kurz = schnell), starten mit dem Tempo des Fingers, die Blume wiegt beim
+  Anhalten nach und federt beim Landen von oben.
 - Tabs: besuchte Seiten kommen 5 Minuten lang sofort aus dem Browser (`staleTimes.dynamic`); AutoRefresh lädt nur
   neu, wenn sich der Fingerabdruck der Daten geändert hat (`server/stamp.ts`); kein Einblenden mehr (`template.tsx`
   entfernt). Auch beim ersten Besuch kein Platzhalter mehr: die alte Seite bleibt stehen, bis die neue da ist

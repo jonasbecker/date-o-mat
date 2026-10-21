@@ -231,6 +231,38 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
   await settle(j);
   check(`${tag}: pulled up a little → springs back`, (await state(j)).z === "zu");
 
+  // Held still, then let go → it stays right there (no animation) until the next tap
+  const cardTop = () => j.locator("[data-sheet-card]").evaluate((el) => Math.round(el.getBoundingClientRect().top));
+  const closedTop = await cardTop();
+  {
+    const b = await head(j).boundingBox();
+    const x = b.x + b.width / 2;
+    const y = b.y + 30;
+    await j.mouse.move(x, y);
+    await j.mouse.down();
+    for (let i = 1; i <= 20; i++) {
+      await j.mouse.move(x, y - ((zu.y - open.y) * 0.7 * i) / 20);
+      await j.waitForTimeout(25);
+    }
+    await j.waitForTimeout(450);
+    const held = await cardTop();
+    await j.mouse.up();
+    await j.waitForTimeout(900);
+    const after = await cardTop();
+    const parked = await j.locator("[data-date-sheet]").getAttribute("data-parked");
+    check(`${tag}: held still and let go → the card stays where it was (${closedTop} → ${held} → ${after})`, parked === "" && Math.abs(after - held) <= 2 && closedTop - after > (zu.y - open.y) * 0.6);
+    const words = await j.locator('[data-sheet-bubble="mitte"]').evaluate((el) => ({ w: Math.round(el.getBoundingClientRect().width), text: el.innerText.trim(), shown: getComputedStyle(el.querySelector("p")).opacity }));
+    check(`${tag}: parked – the bubble has grown all the way, words and all (${JSON.stringify(words)})`, words.w > 120 && words.text.length > 3 && words.shown === "1");
+    check(`${tag}: parked – nothing covered (${(await overlaps(j)).join(", ")})`, (await overlaps(j)).length === 0);
+    if (viewport.width === 390) await j.screenshot({ path: `${OUT}m25-02b-geparkt.png` });
+    await head(j).click({ position: { x: 40, y: 20 } });
+    await settle(j);
+    const st = await state(j);
+    check(`${tag}: a tap on the parked card takes it to the nearest stop (${st.z})`, st.z === "mitte" && (await j.locator("[data-date-sheet]").getAttribute("data-parked")) === null);
+    await head(j).click();
+    await settle(j);
+  }
+
   // A flick → schubs: kicked away, motion lines
   await drag(j, { to: zu.y + 30 - 260, ms: 120, steps: 4 });
   await j.waitForTimeout(120);

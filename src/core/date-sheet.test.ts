@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bubbleAt, bubbleDots, cardAt, morphAt, morphTransform, poseAt, position, release, sheetLayout, topAt } from "./date-sheet";
+import { bubbleAt, bubbleDots, cardAt, glide, morphAt, nearest, parks, morphTransform, poseAt, position, release, sheetLayout, topAt } from "./date-sheet";
 
 // The reference phone: 390 × 844 → the Beet's area is 350 wide, the card's bottom edge at 704 (764 − 60).
 // The closed card holds a two-line title and when · where (≈ 148 px of text →
@@ -138,5 +138,37 @@ describe("the bubble grows out of the step bar", () => {
     expect(sy0 * 60).toBeCloseTo(6, 1);
     const [x1, y1, , r1, sx1, sy1] = nums(morphTransform(box, 60, REF.bar, 1));
     expect([x1, y1, r1, sx1, sy1]).toEqual([box.x, box.y, box.rotate, 1, 1]);
+  });
+});
+
+describe("holding still parks the card", () => {
+  it("held for 300 ms between the stops it stays; a quick let-go or right at a stop does not", () => {
+    expect(parks(0.5, 400)).toBe(true);
+    expect(parks(1.6, 300)).toBe(true);
+    expect(parks(0.5, 120)).toBe(false);
+    expect(parks(0.03, 800)).toBe(false);
+    expect(parks(1.97, 800)).toBe(false);
+  });
+
+  it("a tap then goes to the nearest stop", () => {
+    expect([nearest(0.3), nearest(0.6), nearest(1.4), nearest(1.7), nearest(2.4)]).toEqual(["zu", "mitte", "mitte", "voll", "voll"]);
+  });
+});
+
+describe("glide", () => {
+  it("takes longer for a longer way, within bounds", () => {
+    expect(glide(20, 0, "sanft").ms).toBe(340);
+    expect(glide(336, 0, "sanft").ms).toBe(636);
+    expect(glide(900, 0, "sanft").ms).toBe(720);
+    expect(glide(100, 0, "schubs").ms).toBe(430);
+  });
+
+  it("starts at the finger's speed: slope y1 / x1 · distance / ms = speed", () => {
+    const { ms, ease } = glide(300, 0.5, "sanft");
+    const [x1, y1] = ease.match(/[\d.]+/g)!.map(Number);
+    expect((y1 / x1) * (300 / ms)).toBeCloseTo(0.5, 2);
+    // Away from the stop, or very fast: it does not run backwards or past 1.
+    expect(glide(300, -0.5, "sanft").ease).toContain("0.3, 0.000");
+    expect(glide(300, 5, "sanft").ease).toContain("0.3, 1.000");
   });
 });

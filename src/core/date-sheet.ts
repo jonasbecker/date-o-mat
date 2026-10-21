@@ -30,6 +30,10 @@ export const SHEET = {
   threshold: 0.35,
   /** Faster than this (px/ms) is a "schubs" – and always goes one stop further. */
   flick: 0.8,
+  /** Held still this long (ms) before letting go: the card stays where it is (until the next tap). */
+  hold: 300,
+  /** …unless it is this close to a stop (share of the way) – then it just goes there. */
+  snapNear: 0.06,
   /** The card's sides: a little wider than the text at zu / mitte, edge to edge at voll. */
   insetZu: 8,
   insetVoll: 20,
@@ -278,4 +282,30 @@ export function release(pos: number, from: Stop, speed: number): { to: Stop; tem
     }
   }
   return { to: STOPS[to], tempo: flick ? "schubs" : "sanft" };
+}
+
+/** The stop closest to a position. */
+export function nearest(pos: number): Stop {
+  return STOPS[Math.max(0, Math.min(STOPS.length - 1, Math.round(pos)))];
+}
+
+/** Letting go after holding still for `heldMs`: the card stays at `pos` – no animation at all. */
+export function parks(pos: number, heldMs: number): boolean {
+  return heldMs >= SHEET.hold && STOPS.every((_, i) => Math.abs(pos - i) > SHEET.snapNear);
+}
+
+/**
+ * How the card glides to its stop: a short way is quick, a long one takes longer (never the same 900 ms for
+ * 20 px), and a sanft glide starts at the speed the finger had – no jolt when letting go. `distance` in px,
+ * `speed` px/ms towards the stop (negative: the finger went the other way). A schubs keeps its overshoot.
+ */
+export function glide(distance: number, speed: number, tempo: Tempo): { ms: number; ease: string } {
+  const d = Math.abs(distance);
+  if (tempo === "schubs") return { ms: Math.round(Math.min(650, Math.max(420, 380 + d * 0.5))), ease: TIMING.schubs.cardEase };
+  const ms = Math.round(Math.min(720, Math.max(340, 300 + d * 1.0)));
+  if (d < 2) return { ms, ease: "cubic-bezier(0.3, 0, 0.2, 1)" };
+  // A cubic-bezier starts with the slope y1 / x1 (in units of distance / duration): match the finger.
+  const x1 = 0.3;
+  const y1 = Math.min(1, Math.max(0, (speed * ms * x1) / d));
+  return { ms, ease: `cubic-bezier(${x1}, ${y1.toFixed(3)}, 0.2, 1)` };
 }
