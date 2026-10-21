@@ -40,6 +40,15 @@ function stillPlanning(step: NextStep["kind"]): boolean {
 function weekday(d: Date) {
   return DateTime.fromJSDate(d, { zone: APP_TIMEZONE }).setLocale("de").toFormat("cccc");
 }
+/** "heute abend" / "morgen" / "Freitag" – a weekday alone reads like next week when it is today. */
+function seeWhen(d: Date, now: Date) {
+  const day = DateTime.fromJSDate(d, { zone: APP_TIMEZONE });
+  const today = DateTime.fromJSDate(now, { zone: APP_TIMEZONE }).startOf("day");
+  const diff = day.startOf("day").diff(today, "days").days;
+  if (diff === 0) return day.hour >= 17 ? "heute abend" : "heute";
+  if (diff === 1) return "morgen";
+  return weekday(d);
+}
 function shortWhen(d: Date) {
   return DateTime.fromJSDate(d, { zone: APP_TIMEZONE }).setLocale("de").toFormat("ccc HH:mm").replace(".", "");
 }
@@ -335,7 +344,7 @@ function viewFor(
         headline: "date\nsteht.",
         sub: date && (
           <>
-            {mine ? `${partner.name} hat zugesagt.` : "Du hast zugesagt."} Ihr seht euch {weekday(date.startsAt)}.
+            {mine ? `${partner.name} hat zugesagt.` : "Du hast zugesagt."} Ihr seht euch {seeWhen(date.startsAt, now)}.
           </>
         ),
         cta: date && (

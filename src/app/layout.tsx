@@ -18,9 +18,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  // An installed app does not pinch-zoom; form fields are 16px+, so iOS never zooms into them either.
-  maximumScale: 1,
-  userScalable: false,
+  // Pinch-zoom stays allowed (small text, eyes); form fields are 16px+, so iOS never zooms into them by itself.
   viewportFit: "cover",
   // Android: shrink the layout when the keyboard opens, so bottom sheets stay visible.
   interactiveWidget: "resizes-content",

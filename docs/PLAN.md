@@ -211,7 +211,7 @@ einmal, Rückfragen beim Entfernen/Trennen, Willkommen-Texte, Manifest dunkel, �
 19. ✅ **Google-Zusage nach Verschieben prüfen**: ein altes „accepted“ darf die neue Zeit nicht
     bestätigen (`responseStatus` zurücksetzen).
 20. **Gießzeit-Auswahl** passend zum Rhythmus und mit der echten Uhrzeit (nicht immer „20:00“).
-21. Kleinkram: „Jetzt lesen“ sagt, wann es wieder geht; Tab „Sam“ → „Sams Herzen“; „keimt!“ mit
+21. ✅ Kleinkram: „Jetzt lesen“ sagt, wann es wieder geht; Tab „Sam“ → „Sams Herzen“; „keimt!“ mit
     Escape/Fokus; Zoomen erlauben; eigener Code beim Beitreten erklärt; „Ihr seht euch Dienstag“ am
     selben Tag → „heute“; Date um 00:30 bekommt „Morgen ist Date-Tag“ zur richtigen Zeit; Fehler
     offline zeigen statt Fehlerseite.

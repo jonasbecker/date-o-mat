@@ -9,6 +9,7 @@ export type JoinState = { error?: string; code?: string };
 
 const JOIN_ERRORS: Record<Exclude<JoinResult, "ok">, string> = {
   invalid: "Diesen Code kennt der Date-O-Mat nicht. Vielleicht ein Tippfehler?",
+  own_code: "Das ist dein eigener Code – den schickst du deinem Schatz, der oder die tritt damit bei.",
   expired: "Der Code ist abgelaufen. Lass dir einen neuen schicken.",
   full: "Zu diesem Code gehören schon zwei. Der Date-O-Mat ist nur für ein Paar.",
   already_paired: "Du bist schon mit jemandem gekoppelt.",

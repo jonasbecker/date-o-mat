@@ -51,7 +51,7 @@ export async function renewInviteCode(coupleId: string): Promise<void> {
   }
 }
 
-export type JoinResult = "ok" | "invalid" | "expired" | "full" | "already_paired";
+export type JoinResult = "ok" | "invalid" | "own_code" | "expired" | "full" | "already_paired";
 
 /**
  * Adds the user to the couple behind `code`. Once two people are in, the code is
@@ -66,7 +66,7 @@ export async function joinCouple(userId: string, code: string): Promise<JoinResu
 
     const members = await tx.select({ id: users.id }).from(users).where(eq(users.coupleId, couple.id));
     if (members.length >= 2) return "full";
-    if (members.some((member) => member.id === userId)) return "invalid";
+    if (members.some((member) => member.id === userId)) return "own_code";
 
     const [me] = await tx.select().from(users).where(eq(users.id, userId)).for("update").limit(1);
     if (me.coupleId) {

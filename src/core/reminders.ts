@@ -38,6 +38,8 @@ export const MAX_LATENESS_MS = 2 * 3_600_000;
 
 const TURN_HOUR = 9; // "Du bist dran" never before 09:00
 const DAY_BEFORE_HOUR = 19; // "Date ist morgen" at 19:00 the day before
+/** Before this hour a date still counts as the night before. */
+const NIGHT_ENDS_HOUR = 5;
 const SOON_HOURS = 2; // "Date in 2 Stunden"
 const DEADLINE_HOURS = 24; // "Deadline naht" 24 h before
 
@@ -87,7 +89,9 @@ export function plannedReminders(params: {
 
   if (date && (date.status === "planned" || date.status === "confirmed")) {
     const ref = `${date.id}@${date.startsAt.toISOString()}`;
-    const dayBefore = local(date.startsAt, zone)
+    // A date in the small hours (Sat 00:30) belongs to the evening before – "morgen" is the day before that.
+    const start = local(date.startsAt, zone);
+    const dayBefore = (start.hour < NIGHT_ENDS_HOUR ? start.minus({ days: 1 }) : start)
       .minus({ days: 1 })
       .set({ hour: DAY_BEFORE_HOUR, minute: 0, second: 0, millisecond: 0 })
       .toJSDate();

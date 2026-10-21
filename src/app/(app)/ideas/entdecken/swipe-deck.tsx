@@ -202,6 +202,12 @@ export function SwipeDeck({
   const [filter, setFilter] = useIdeaFilter();
   const filtered = activeFilterCount(filter) > 0;
   const [match, setMatch] = useState<{ title: string; ideaId: string } | null>(null);
+  useEffect(() => {
+    if (!match) return;
+    const close = (e: KeyboardEvent) => e.key === "Escape" && setMatch(null);
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [match]);
   // What went wrong or what a swipe changed – the flower says it in its bubble (no text under the card).
   const [message, setMessageState] = useState<string | null>(null);
   const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -536,7 +542,8 @@ export function SwipeDeck({
             <Link href={`/plan?idea=${match.ideaId}`} className={buttonClass("primary", "lg", "w-full")}>
               Direkt planen
             </Link>
-            <button type="button" onClick={() => setMatch(null)} className="press h-[52px] rounded-full border-2 border-ink text-base font-bold">
+            {/* Focus lands here (keyboard, screen reader); Escape closes it too. */}
+            <button type="button" autoFocus onClick={() => setMatch(null)} className="press h-[52px] rounded-full border-2 border-ink text-base font-bold">
               Weiter swipen
             </button>
           </div>

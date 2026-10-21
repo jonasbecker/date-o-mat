@@ -162,7 +162,7 @@ async function DateDetail({ params, searchParams }: { params: PageProps<"/dates/
           },
           {
             key: "partner",
-            label: `${partner.name}`,
+            label: `${genitive(partner.name)} Herzen`,
             content: (
               <section aria-labelledby="partner-heading" className="flex flex-col gap-3 rounded-[22px] bg-surface p-4">
                 <h2 id="partner-heading" className="text-lg font-bold">

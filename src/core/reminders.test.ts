@@ -87,6 +87,11 @@ describe("plannedReminders – dates", () => {
     expect(show(list.find((r) => r.type === "date_tomorrow")!.dueAt)).toBe("2026-10-24 19:00");
   });
 
+  it("a date at 00:30 is reminded the evening before the night, not 5 hours ahead", () => {
+    const list = plannedReminders({ cycle: null, date: { ...date, startsAt: at("2026-10-17T00:30") }, userIds: USERS, rules: RULES });
+    expect(show(list.find((r) => r.type === "date_tomorrow")!.dueAt)).toBe("2026-10-15 19:00");
+  });
+
   it("cancelled dates remind nobody", () => {
     expect(plannedReminders({ cycle: null, date: { ...date, status: "cancelled" }, userIds: USERS, rules: RULES })).toEqual([]);
   });

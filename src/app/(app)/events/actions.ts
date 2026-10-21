@@ -96,7 +96,8 @@ export async function removeSourceAction(sourceId: string): Promise<void> {
 }
 
 /** "Jetzt abrufen" – runs after the response; the list shows "wird gelesen …" meanwhile. */
-export async function refreshSourceAction(sourceId: string): Promise<void> {
+/** Reads a source now; `waitMinutes` when it was read too recently (the button says when it works again). */
+export async function refreshSourceAction(sourceId: string): Promise<{ waitMinutes?: number }> {
   const { coupleId } = await requireCouple();
   const id = z.uuid().safeParse(sourceId);
   const now = await nowFor(coupleId);
@@ -105,6 +106,8 @@ export async function refreshSourceAction(sourceId: string): Promise<void> {
   const recent = source?.lastFetchedAt && now.getTime() - source.lastFetchedAt.getTime() < MANUAL_REFRESH_COOLDOWN_MS;
   if (source && !recent) after(() => refreshSource(source.id, now, { force: true }));
   refresh();
+  if (!recent || !source?.lastFetchedAt) return {};
+  return { waitMinutes: Math.max(1, Math.ceil((source.lastFetchedAt.getTime() + MANUAL_REFRESH_COOLDOWN_MS - now.getTime()) / 60_000)) };
 }
 
 /** Puts an event or tip on the wishlist (once). */

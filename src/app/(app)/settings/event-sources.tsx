@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useTransition } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { ConfirmButton } from "@/components/confirm-button";
 import { Button } from "@/components/button";
 import {
@@ -46,6 +46,8 @@ const TONE = {
 export function EventSources({ sources, aiReady }: { sources: SourceView[]; aiReady: boolean }) {
   const [state, action, pending] = useActionState<SourceFormState, FormData>(addSourceAction, { status: "idle" });
   const [busy, startTransition] = useTransition();
+  // "Jetzt lesen" a second time within 10 minutes: say when it works again instead of doing nothing.
+  const [wait, setWait] = useState<{ id: string; minutes: number } | null>(null);
 
   return (
     <div className="flex flex-col gap-4">
@@ -75,11 +77,22 @@ export function EventSources({ sources, aiReady }: { sources: SourceView[]; aiRe
               </div>
               <p className={`self-start text-sm font-bold ${TONE[source.tone]}`}>{source.status}</p>
               <div className="flex gap-4 text-sm font-extrabold">
-                <button type="button" disabled={busy || source.tone === "busy"} className="underline disabled:opacity-50" onClick={() => startTransition(() => refreshSourceAction(source.id))}>
+                <button type="button" disabled={busy || source.tone === "busy"} className="underline disabled:opacity-50" onClick={() =>
+                    startTransition(async () => {
+                      const { waitMinutes } = await refreshSourceAction(source.id);
+                      setWait(waitMinutes ? { id: source.id, minutes: waitMinutes } : null);
+                    })
+                  }
+                >
                   Jetzt lesen
                 </button>
                 <ConfirmButton label="Entfernen" question="Die gelesenen Termine verschwinden mit." yes="Ja, entfernen" action={() => removeSourceAction(source.id)} />
               </div>
+              {wait?.id === source.id && (
+                <p role="status" className="text-sm font-bold text-muted">
+                  Gerade erst gelesen – in {wait.minutes} {wait.minutes === 1 ? "Minute" : "Minuten"} wieder.
+                </p>
+              )}
               <SubPages source={source} />
             </li>
           ))}

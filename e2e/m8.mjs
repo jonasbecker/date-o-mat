@@ -185,7 +185,7 @@ check("detail: note not visible yet", !(await j.getByText("Das Eis am Weiher!").
 await j.getByLabel("5 Herzen").locator("xpath=..").click();
 await j.getByRole("button", { name: "Blatt speichern" }).click();
 await j.getByText("Deine Herzen", { exact: true }).waitFor({ timeout: 10000 });
-await j.getByRole("tab", { name: "Sam" }).click();
+await j.getByRole("tab", { name: "Sams Herzen" }).click();
 await j.getByText("Das Eis am Weiher!").waitFor({ timeout: 10000 });
 check("after reviewing, Sam's note is visible", true);
 await j.screenshot({ path: `${OUT}m8-03-detail.png`, fullPage: true });
@@ -195,7 +195,7 @@ check(`Sam is told both are in (${titles("sam-phone")})`, titles("sam-phone").so
 
 // 4) Change the review: no new push
 const before = inbox.length;
-await j.getByRole("tab", { name: /Herzen/ }).click();
+await j.getByRole("tab", { name: "💗 Herzen" }).click();
 await j.getByText("Meine Bewertung ändern").click();
 await j.locator("label", { has: j.locator('input[value="3"]') }).click();
 await j.getByRole("button", { name: "Speichern" }).click();
