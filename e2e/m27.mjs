@@ -156,6 +156,7 @@ await ctx.setOffline(true);
 await j.reload();
 await j.locator("[data-date-sheet]").waitFor({ timeout: 10000 }).catch(() => {});
 check("offline, the Beet opens with its last state", await j.getByText("Zweizeiler-Schnitzeljagd durch die Altstadt").first().isVisible().catch(() => false));
+await j.locator("[data-offline]").waitFor({ timeout: 10000 }).catch(() => {}); // after hydration – slower in CI
 check("…and says it is offline", await j.locator("[data-offline]").isVisible().catch(() => false));
 await j.screenshot({ path: `${OUT}m27-01-offline.png` });
 await j.goto(`${BASE}/dates`).catch(() => {});

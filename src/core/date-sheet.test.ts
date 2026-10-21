@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bubbleAt, bubbleDots, cardAt, poseAt, position, release, sheetLayout, topAt } from "./date-sheet";
+import { bubbleAt, bubbleDots, cardAt, morphAt, morphTransform, poseAt, position, release, sheetLayout, topAt } from "./date-sheet";
 
 // The reference phone: 390 × 844 → the Beet's area is 350 wide, the card's bottom edge at 704 (764 − 60).
 // The closed card holds a two-line title and when · where (≈ 148 px of text →
@@ -112,5 +112,31 @@ describe("release", () => {
     expect(release(0.15, "zu", 1.2)).toEqual({ to: "mitte", tempo: "schubs" });
     expect(release(1.1, "mitte", 1.2)).toEqual({ to: "voll", tempo: "schubs" });
     expect(release(1.9, "voll", -1.2)).toEqual({ to: "mitte", tempo: "schubs" });
+  });
+});
+
+describe("the bubble grows out of the step bar", () => {
+  it("zu: the bar; mitte: the bubble; voll: back in the bar and gone", () => {
+    expect(morphAt(0)).toEqual({ grow: 0, opacity: 0 });
+    expect(morphAt(0.5)).toEqual({ grow: 0.5, opacity: 1 });
+    expect(morphAt(1)).toEqual({ grow: 1, opacity: 1 });
+    expect(morphAt(1.5).grow).toBeCloseTo(0.5);
+    expect(morphAt(2)).toEqual({ grow: 0, opacity: 0 });
+  });
+
+  it("at 0 it sits on the bar with the bar's size, at 1 on its own box", () => {
+    const box = REF.bubbleMitte.sanft;
+    // The bar's middle by default: the middle of the area, the header row's middle.
+    expect(REF.bar).toEqual({ x: 175, y: -20, w: 58, h: 6 });
+    // x, y, z, rotate, sx, sy
+    const nums = (t: string) => (t.replace("translate3d", "").match(/-?\d+(\.\d+)?/g) ?? []).map(Number);
+    const [x0, y0, , , sx0, sy0] = nums(morphTransform(box, 60, REF.bar, 0));
+    // Its middle (x + w/2, y + h/2) is the bar's middle, scaled to 58 × 6.
+    expect(x0 + box.w / 2).toBeCloseTo(175);
+    expect(y0 + 30).toBeCloseTo(-20);
+    expect(sx0 * box.w).toBeCloseTo(58, 1);
+    expect(sy0 * 60).toBeCloseTo(6, 1);
+    const [x1, y1, , r1, sx1, sy1] = nums(morphTransform(box, 60, REF.bar, 1));
+    expect([x1, y1, r1, sx1, sy1]).toEqual([box.x, box.y, box.rotate, 1, 1]);
   });
 });

@@ -100,9 +100,9 @@ async function overlaps(page) {
       return { left: Math.min(...rects.map((r) => r.left)), top: Math.min(...rects.map((r) => r.top)), right: Math.max(...rects.map((r) => r.right)), bottom: Math.max(...rects.map((r) => r.bottom)), width: 1 };
     };
     const hit = (a, b) => a && b && a.width > 0 && b.width > 0 && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
-    const bubble = box(document.querySelector("[data-sheet-bubble]"));
     const root = document.querySelector("[data-date-sheet]");
     const open = root.getAttribute("data-date-sheet") !== "zu";
+    const bubble = box(document.querySelector(`[data-sheet-bubble="${open ? "mitte" : "zu"}"]`));
     const above = document.querySelector("[data-sheet-above]");
     const header = document.querySelector("header");
     const centerEl = header.querySelector("[data-header-center]");
@@ -142,7 +142,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
   const tag = `${viewport.width}×${viewport.height}`;
   const j = await pageFor(viewport);
   check(`${tag}: no "Details ›" button any more`, (await j.getByRole("link", { name: "Details ›" }).count()) === 0);
-  check(`${tag}: closed – the happy flower, "${await j.locator("[data-sheet-bubble]").innerText()}"`, JSON.stringify(await state(j)) === JSON.stringify({ z: "zu", tempo: "sanft", mood: "froh" }) && (await head(j).getAttribute("aria-expanded")) === "false");
+  check(`${tag}: closed – the happy flower, "${await j.locator('[data-sheet-bubble="zu"]').innerText()}"`, JSON.stringify(await state(j)) === JSON.stringify({ z: "zu", tempo: "sanft", mood: "froh" }) && (await head(j).getAttribute("aria-expanded")) === "false");
   check(
     `${tag}: closed – only the title and when · where, the rest is covered`,
     (await j.locator("[data-sheet-details]").evaluate((el) => getComputedStyle(el).opacity)) === "0" &&
@@ -197,11 +197,30 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
   await settle(j);
   check(`${tag}: a tap on the head closes it, the flower is happy again`, JSON.stringify(await state(j)) === JSON.stringify({ z: "zu", tempo: "sanft", mood: "froh" }));
 
-  // Pulled up slowly past 35 % → open, sanft; pulled down → closed
+  // The bubble up top grows out of the step bar: a little pulled, it still is the bar
   const zu = await head(j).boundingBox();
+  const barBox = await j.locator("[data-header-center]").evaluate((c) => {
+    const r = (c.firstElementChild ?? c).getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width };
+  });
+  await j.mouse.move(zu.x + zu.width / 2, zu.y + 30);
+  await j.mouse.down();
+  for (let i = 1; i <= 4; i++) await j.mouse.move(zu.x + zu.width / 2, zu.y + 30 - i * 3);
+  await j.waitForTimeout(100);
+  const early = await j.locator('[data-sheet-bubble="mitte"]').boundingBox();
+  await j.mouse.up();
+  await settle(j);
+  check(
+    `${tag}: pulled a little, the bubble is still the step bar (${Math.round(early.x + early.width / 2)}/${Math.round(barBox.x)}, ${Math.round(early.width)} wide)`,
+    Math.abs(early.x + early.width / 2 - barBox.x) < 8 && Math.abs(early.y + early.height / 2 - barBox.y) < 8 && early.width < barBox.w + 20,
+  );
+
+  // Pulled up slowly past 35 % → open, sanft; pulled down → closed
   await drag(j, { to: zu.y + 30 - 230, ms: 900, steps: 30 });
   await settle(j);
   check(`${tag}: pulled up slowly → open, sanft (${JSON.stringify(await state(j))})`, (await state(j)).z === "mitte" && (await state(j)).tempo === "sanft");
+  const grown = await j.locator('[data-sheet-bubble="mitte"]').boundingBox();
+  check(`${tag}: at mitte it has grown into the bubble (${Math.round(grown.width)} wide)`, grown.width > 120 && (await j.locator('[data-sheet-bubble="mitte"]').innerText()).length > 3);
   const open = await head(j).boundingBox();
   await drag(j, { to: open.y + 30 + 260, ms: 900, steps: 30 });
   await settle(j);

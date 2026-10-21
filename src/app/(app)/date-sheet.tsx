@@ -11,10 +11,11 @@ import { Bloom } from "@/components/bloom";
 import { useFlowerVoice, VoiceBubble } from "@/components/flower-voice";
 import { bloomSaying, type FlowerPot, type Stimmung } from "@/core/bloom";
 import {
-  bubbleAt,
   bubbleDots,
   cardAt,
   FLY,
+  morphAt,
+  morphTransform,
   poseAt,
   poseTransform,
   position,
@@ -31,6 +32,19 @@ import { cn } from "@/lib/cn";
 
 type Phase = { stop: Stop; tempo: Tempo };
 type Drag = { startY: number; startTop: number; from: Stop; moved: boolean; samples: Array<{ y: number; t: number }>; top?: number };
+
+const BUBBLE_CLASS = "block w-full rounded-[20px] bg-ink px-2.5 pb-[11px] pt-[9px] text-center font-hand font-semibold leading-[1.02] text-[#1B2620]";
+
+/** One of the bubble's two dots (top left at `at`). */
+function Dot({ at, size, glide }: { at: { x: number; y: number }; size: "small" | "big"; glide: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn("absolute left-0 top-0 z-[5] rounded-full bg-ink", size === "small" ? "size-1.5" : "size-2.5")}
+      style={{ transform: `translate3d(${at.x}px, ${at.y}px, 0)`, transition: `transform ${glide}` }}
+    />
+  );
+}
 
 const LABEL: Record<Stop, string> = { zu: "Details öffnen", mitte: "Details schließen", voll: "Weniger Details" };
 
@@ -61,6 +75,7 @@ export function DateSheet({
   const headEl = useRef<HTMLDivElement>(null);
   const flower = useRef<HTMLDivElement>(null);
   const bubbleEl = useRef<HTMLDivElement>(null);
+  const zuBubbleEl = useRef<HTMLDivElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<SheetLayout | null>(null);
   const [phase, setPhase] = useState<Phase>({ stop: "zu", tempo: "sanft" });
@@ -74,6 +89,7 @@ export function DateSheet({
   const glideTimer = useRef<number | null>(null);
   const [words, setWords] = useState<string | null>(null);
   const [bubbleH, setBubbleH] = useState(60);
+  const [zuBubbleH, setZuBubbleH] = useState(70);
   const [more, setMore] = useState(false);
   const [reduced, setReduced] = useState(false);
   const drag = useRef<Drag | null>(null);
@@ -104,7 +120,7 @@ export function DateSheet({
           headerTop: header ? header.top - box.top : undefined,
           headerBottom: header ? header.bottom - box.top : undefined,
           screenTop: main ? main.getBoundingClientRect().top - box.top : undefined,
-          bar: barBox && barBox.width > 0 ? { y: barBox.top + barBox.height / 2 - box.top, w: barBox.width, h: barBox.height } : undefined,
+          bar: barBox && barBox.width > 0 ? { x: barBox.left + barBox.width / 2 - box.left, y: barBox.top + barBox.height / 2 - box.top, w: barBox.width, h: barBox.height } : undefined,
         }),
       );
     };
@@ -128,6 +144,7 @@ export function DateSheet({
   // The dots aim at the bubble's corner: its height depends on the words.
   useLayoutEffect(() => {
     if (bubbleEl.current) setBubbleH(bubbleEl.current.offsetHeight);
+    if (zuBubbleEl.current) setZuBubbleH(zuBubbleEl.current.offsetHeight);
   }, [words, phase, layout]);
 
   const timing = reduced ? { ms: 200, ease: "ease", cardEase: "ease" } : TIMING[phase.tempo];
@@ -338,13 +355,21 @@ export function DateSheet({
   const dragging = dragTop !== null;
   const at = layout && cardTop !== null ? position(cardTop, layout) : 0;
   const pose: Pose | null = !layout ? null : dragging ? poseAt(at, layout) : restPose(layout, phase);
-  const bubble = !layout ? null : dragging ? bubbleAt(at, layout) : phase.stop === "voll" ? { box: layout.bubbleMitte[phase.tempo], opacity: 0 } : bubbleAt(phase.stop === "zu" ? 0 : 1, layout, phase.tempo);
+  // Two bubbles: the flower's own by its head while the card is down; the one at mitte grows out of the header's
+  // step bar as the card comes up (and shrinks back into it on the way to voll).
+  const zuBox = layout?.bubbleZu ?? null;
+  const mitteBox = layout ? layout.bubbleMitte[dragging ? "sanft" : phase.tempo] : null;
+  const morph = dragging ? morphAt(at) : phase.stop === "mitte" ? { grow: 1, opacity: 1 } : { grow: 0, opacity: 0 };
+  const zuOpacity = dragging ? Math.max(0, 1 - at * 4) : phase.stop === "zu" && !moving ? 1 : 0;
+  const wordsOpacity = Math.max(0, Math.min(1, (morph.grow - 0.75) / 0.25));
+  const mitteDotsOpacity = Math.max(0, Math.min(1, (morph.grow - 0.8) / 0.2)) * morph.opacity;
   const look = layout ? cardAt(at, layout) : null;
   const mood: Stimmung = !moving && phase.stop === "zu" ? "froh" : dragging || phase.tempo === "sanft" ? "genervt" : "autsch";
-  const dots = pose && bubble ? bubbleDots(flat(pose), { x: bubble.box.x, y: bubble.box.y, w: bubble.box.w, h: bubbleH }) : null;
+  const zuDots = pose && zuBox ? bubbleDots(flat(pose), { x: zuBox.x, y: zuBox.y, w: zuBox.w, h: zuBubbleH }) : null;
+  const mitteDots = pose && mitteBox ? bubbleDots(flat(pose), { x: mitteBox.x, y: mitteBox.y, w: mitteBox.w, h: bubbleH }) : null;
+  const fade = dragging ? "none" : "opacity 250ms ease";
   const glide = dragging || !gliding ? "none" : `${timing.ms}ms ease`;
   const cardGlide = dragging ? "none" : `${timing.ms}ms ${timing.cardEase}`;
-  const showVoice = !moving && phase.stop === "zu";
   const stop = phase.stop;
   const up = stop !== "zu" && !dragging;
   // From mitte to voll the handle turns into the step bar (the bar's color: ink).
@@ -377,25 +402,44 @@ export function DateSheet({
           <span key={i} aria-hidden="true" className="animate-fade-out pointer-events-none absolute z-[4] h-[3px] -rotate-[40deg] rounded-sm bg-butter opacity-70" style={{ left: l.x, top: l.y, width: l.w }} />
         ))}
 
-      {dots && bubble && (
-        <div aria-hidden={bubble.opacity === 0 ? true : undefined} style={{ opacity: bubble.opacity, transition: dragging ? "none" : "opacity 250ms ease" }} className={cn(bubble.opacity === 0 && "pointer-events-none")}>
-          <span aria-hidden="true" className="absolute left-0 top-0 z-[5] size-1.5 rounded-full bg-ink" style={{ transform: `translate3d(${dots.small.x}px, ${dots.small.y}px, 0)`, transition: `transform ${glide}` }} />
-          <span aria-hidden="true" className="absolute left-0 top-0 z-[5] size-2.5 rounded-full bg-ink" style={{ transform: `translate3d(${dots.big.x}px, ${dots.big.y}px, 0)`, transition: `transform ${glide}` }} />
+      {zuDots && zuBox && (
+        <div aria-hidden={zuOpacity === 0 ? true : undefined} style={{ opacity: zuOpacity, transition: fade }} className={cn(zuOpacity === 0 && "pointer-events-none")}>
+          <Dot at={zuDots.small} size="small" glide={glide} />
+          <Dot at={zuDots.big} size="big" glide={glide} />
+          <div
+            ref={zuBubbleEl}
+            data-sheet-bubble="zu"
+            className="absolute left-0 top-0 z-[5] origin-center"
+            style={{ width: zuBox.w, transform: `translate3d(${zuBox.x}px, ${zuBox.y}px, 0) rotate(${reduced ? 0 : zuBox.rotate}deg)`, transition: `transform ${glide}` }}
+          >
+            <VoiceBubble voice={flowerVoice} className={BUBBLE_CLASS} style={{ fontSize: zuBox.fontSize }} />
+          </div>
+        </div>
+      )}
+      {mitteDots && mitteBox && layout && (
+        <div aria-hidden={morph.opacity === 0 ? true : undefined} className="pointer-events-none">
+          <div style={{ opacity: mitteDotsOpacity, transition: fade }}>
+            <Dot at={mitteDots.small} size="small" glide={glide} />
+            <Dot at={mitteDots.big} size="big" glide={glide} />
+          </div>
+          {/* Grows out of the step bar: same ink, scaled from the bar's size to its own. */}
           <div
             ref={bubbleEl}
-            data-sheet-bubble
-            className="absolute left-0 top-0 z-[5] origin-center"
+            data-sheet-bubble="mitte"
+            className="absolute left-0 top-0 z-[5] origin-center rounded-[20px] bg-ink will-change-transform"
             style={{
-              width: bubble.box.w,
-              transform: `translate3d(${bubble.box.x}px, ${bubble.box.y}px, 0) rotate(${reduced ? 0 : bubble.box.rotate}deg)`,
-              transition: `transform ${glide}`,
+              width: mitteBox.w,
+              opacity: morph.opacity,
+              transform: morphTransform({ ...mitteBox, rotate: reduced ? 0 : mitteBox.rotate }, bubbleH, layout.bar, morph.grow),
+              transition: dragging ? "none" : `transform ${timing.ms}ms ${timing.cardEase}, opacity 250ms ease`,
             }}
           >
-            <VoiceBubble
-              voice={showVoice ? flowerVoice : { words: words ?? saying, hint: null, sheet: null }}
-              className="block w-full rounded-[20px] bg-ink px-2.5 pb-[11px] pt-[9px] text-center font-hand font-semibold leading-[1.02] text-[#1B2620]"
-              style={{ fontSize: bubble.box.fontSize }}
-            />
+            <p
+              className="px-2.5 pb-[11px] pt-[9px] text-center font-hand font-semibold leading-[1.02] text-[#1B2620]"
+              style={{ fontSize: mitteBox.fontSize, opacity: wordsOpacity, transition: dragging ? "none" : `opacity 200ms ease ${morph.grow === 1 ? timing.ms * 0.6 : 0}ms` }}
+            >
+              {words ?? saying}
+            </p>
           </div>
         </div>
       )}

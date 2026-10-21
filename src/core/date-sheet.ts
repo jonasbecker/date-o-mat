@@ -67,6 +67,8 @@ export type SheetLayout = {
   /** The handle at zu / mitte, and at voll (where the header's step bar is). */
   handle: Handle;
   handleVoll: Handle;
+  /** The header's step bar (its middle and size): the bubble at mitte grows out of it. */
+  bar: { x: number; y: number; w: number; h: number };
   /** Padding above the card's text: below the handle, at voll below the header. */
   padTop: Record<"zu" | "voll", number>;
   /** The three motion lines of a kick, around where the flower stood. */
@@ -89,7 +91,7 @@ export function sheetLayout({
   headerTop = -42,
   headerBottom = headerTop + 44,
   screenTop = headerTop - 16,
-  bar = { y: headerTop + 22, w: 58, h: 6 },
+  bar: barIn,
 }: {
   width: number;
   height: number;
@@ -98,8 +100,9 @@ export function sheetLayout({
   headerTop?: number;
   headerBottom?: number;
   screenTop?: number;
-  bar?: { y: number; w: number; h: number };
+  bar?: { x?: number; y: number; w: number; h: number };
 }): SheetLayout {
+  const bar = { x: barIn?.x ?? width / 2, y: barIn?.y ?? headerTop + 22, w: barIn?.w ?? 58, h: barIn?.h ?? 6 };
   const bottom = height + SHEET.overhang;
   const zuTop = Math.round(bottom - (headH + SHEET.headPadding));
   const midTop = Math.min(SHEET.midTop, zuTop - 40);
@@ -138,6 +141,7 @@ export function sheetLayout({
     },
     handle: HANDLE,
     handleVoll: { top: Math.round(bar.y - bar.h / 2 - screenTop), w: bar.w, h: bar.h },
+    bar,
     padTop: { zu: 24, voll: Math.round(headerBottom - screenTop + 14) },
     lines: [
       { x: zu.x + 14 * k, y: zu.y + 67 * k, w: 60 },
@@ -173,6 +177,27 @@ export function mixBubble(a: BubbleBox, b: BubbleBox, p: number): BubbleBox {
 /** The flower at a position: pushed up towards mitte, then flying off the top (and back down, the same way). */
 export function poseAt(pos: number, layout: SheetLayout, tempo: Tempo = "sanft"): Pose {
   return pos <= 1 ? mixPose(layout.zu, layout.mitte[tempo], Math.max(0, pos)) : mixPose(layout.mitte[tempo], layout.voll, Math.min(1, pos - 1));
+}
+
+/**
+ * The bubble at mitte grows out of the header's step bar: 0 = the bar, 1 = the bubble. On the way from zu to
+ * mitte it grows, from mitte to voll it shrinks back into the bar (where the card's handle arrives) and goes.
+ */
+export function morphAt(pos: number): { grow: number; opacity: number } {
+  if (pos <= 1) return { grow: Math.max(0, pos), opacity: pos > 0 ? 1 : 0 };
+  return { grow: Math.max(0, 2 - pos), opacity: Math.min(1, Math.max(0, (2 - pos) / 0.25)) };
+}
+
+/** The bubble's transform for `grow` (its box at mitte, `h` its height) – from the bar's place and size to its own. */
+export function morphTransform(box: BubbleBox, h: number, bar: SheetLayout["bar"], grow: number): string {
+  const g = Math.max(0, Math.min(1, grow));
+  const cx = box.x + box.w / 2;
+  const cy = box.y + h / 2;
+  const x = box.x + (bar.x - cx) * (1 - g);
+  const y = box.y + (bar.y - cy) * (1 - g);
+  const sx = mix(bar.w / box.w, 1, g);
+  const sy = mix(bar.h / Math.max(1, h), 1, g);
+  return `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) rotate(${(box.rotate * g).toFixed(1)}deg) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
 }
 
 /** The bubble at a position, and how visible it is (it fades on the way to voll – no flower, no words). */

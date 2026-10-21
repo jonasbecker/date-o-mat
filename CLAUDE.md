@@ -93,8 +93,9 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   back down with the card). Everything between follows the card's top (`position()` 0…2). Letting go faster than
   0.8 px/ms is a "schubs" (one stop further; zu → mitte kicks the flower: `autsch`, overshoot, motion lines), else
   "sanft" (`genervt`); past 35 % of the way it goes to the next stop. Tap: zu ↔ mitte, voll → mitte ("Weniger
-  Details"). The bubble comes out of the mouth (dots computed), never covers text, card, name or avatars (the header's
-  step bar fades); back gesture closes it. e2e: m25 (both sizes, slow/fast, voll, back, reduced motion). The old `Plant`
+  Details"). Closed, the flower's bubble sits by its head; pulled up, the header's step bar grows into the bubble at
+  mitte (`morphAt` / `morphTransform`: the bar's place and size → the bubble's, words fade in at the end) and shrinks
+  back into it on the way to voll. Dots come out of the mouth, nothing covers text, card, name or avatars; back gesture closes it. e2e: m25 (both sizes, slow/fast, voll, back, reduced motion). The old `Plant`
   (components/plant.tsx) is only the small mark (logo, mascot, empty states).
 - **Rounds and dates:** a date lives in the round it happens in (`cycleForDate()` creates later rounds when a date is
   planned ahead; the current round is the one containing now, never just the newest row). A planned date nobody
