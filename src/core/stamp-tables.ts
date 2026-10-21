@@ -24,7 +24,7 @@ export const STAMPED = {
   date_reviews: "dates",
   suggestions: "cycles",
   event_source_pages: "sources",
-  // All rows but the server errors: a page that keeps failing must not refresh itself in a loop.
+  // All rows but the errors (server and phone): a page that keeps failing must not refresh itself in a loop.
   app_status: "status",
 } as const satisfies Record<string, StampScope>;
 

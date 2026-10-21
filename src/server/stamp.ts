@@ -2,7 +2,7 @@ import "server-only";
 import { sql } from "drizzle-orm";
 import { STAMPED, type StampScope } from "@/core/stamp-tables";
 import { db } from "@/server/db";
-import { ERRORS_KEY } from "@/server/server-errors";
+import { CLIENT_ERRORS_KEY, ERRORS_KEY } from "@/server/server-errors";
 
 /**
  * A fingerprint of everything the couple's pages show: per table the number of rows and the newest row
@@ -22,7 +22,8 @@ export async function coupleStamp(coupleId: string | null, userId: string): Prom
     dates: sql`date_id in ${dates}`,
     cycles: sql`cycle_id in (select id from cycles where couple_id = ${c})`,
     sources: sql`source_id in (select id from event_sources where couple_id = ${c})`,
-    status: sql`key <> ${ERRORS_KEY}`,
+    // Errors are not page data: a failing page must not refresh itself in a loop.
+    status: sql`key not in (${ERRORS_KEY}, ${CLIENT_ERRORS_KEY})`,
   };
   // The people themselves: their own rows, not via user_id.
   const parts = Object.entries(STAMPED).map(([table, scope]) => row(table, table === "users" ? sql`id in ${people}` : where[scope]));

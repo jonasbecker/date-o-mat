@@ -56,6 +56,17 @@ export function nextStep(input: StepInput): NextStep {
   return { kind: "round_done", skipped: cycle.status === "skipped" };
 }
 
+/**
+ * The number on the app icon: what waits for ME – each thing I have to do (connect my calendar, answer the
+ * partner's plan, say whether we did it, plan when it is my turn, say how it was). What we wait for counts 0.
+ */
+export function waitingForMe(input: StepInput): number {
+  const { meId, myCalendar, cycle, upcoming, toReview, unanswered } = input;
+  if (myCalendar !== "connected") return 1;
+  const mine = cycle.status === "open" && (cycle.mode === "suggestion" || cycle.plannerId === meId);
+  return [upcoming?.status === "planned" && upcoming.proposedById !== meId, Boolean(unanswered), mine, Boolean(toReview)].filter(Boolean).length;
+}
+
 /** "Diese Woche", "Diese zwei Wochen", … – friendlier than "Runde 7". */
 export function periodLabel(start: Date, end: Date): string {
   const days = Math.round((end.getTime() - start.getTime()) / 86_400_000);

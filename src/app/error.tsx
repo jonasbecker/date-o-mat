@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useSyncExternalStore } from "react";
 import { Button, buttonClass } from "@/components/button";
+import { reportClientError } from "@/components/error-reporter";
 import { Oops } from "@/components/oops";
 
 export default function ErrorPage({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
@@ -10,6 +11,8 @@ export default function ErrorPage({ error, retry }: { error: Error & { digest?: 
   const offline = useSyncExternalStore(subscribeOnline, () => !navigator.onLine, () => false);
   useEffect(() => {
     console.error(error);
+    // A server error (it has a digest) is counted on the server already.
+    if (!error.digest) reportClientError(error);
     window.addEventListener("online", retry);
     return () => window.removeEventListener("online", retry);
   }, [error, retry]);

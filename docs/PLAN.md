@@ -240,6 +240,16 @@ solange die Blase dort sitzt; eine Spruchwahl pro Bewegung (statt eigener Sprüc
   entfernt). Auch beim ersten Besuch kein Platzhalter mehr: die alte Seite bleibt stehen, bis die neue da ist
   (der Tab leuchtet sofort, oben ein dünner Ladebalken, wenn es dauert). e2e: m26.
 
+## App-Symbol, offline swipen, Fehler im Handy (21.10.2026) ✅
+
+- Das App-Symbol zeigt eine Zahl: was gerade auf dich wartet (Kalender verbinden, Sams Plan beantworten, „habt
+  ihr's gemacht?“, du bist dran, „wie war's?“). Die App setzt sie, solange sie offen ist, jeder Push bringt sie mit
+  (iPhone: installierte App mit erlaubten Mitteilungen).
+- Offline swipen: der Swipe wird im Handy gemerkt („kein netz – ich merk's mir …“) und geht raus, sobald wieder Netz
+  da ist – egal auf welcher Seite man dann ist. ↺ nimmt einen gemerkten Swipe zurück.
+- Abstürze in der App selbst (z. B. nur in Safari) landen wie Serverfehler unter Einstellungen → Status
+  („Fehler im Handy“, mit Gerät und Seite); Netzprobleme zählen nicht.
+
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 
 1. OAuth „In Produktion (unverifiziert)“ statt Testmodus (7-Tage-Token-Ablauf).

@@ -41,11 +41,19 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - **Server errors:** `src/instrumentation.ts` (`onRequestError`) → `server/server-errors.ts`: counted in `app_status`
   (`errors`, left out of the stamp so a failing page cannot refresh itself in a loop), shown as "Fehler" under
   Einstellungen → Status, push type `errors` (off by default, `NOTIFICATIONS_OFF_BY_DEFAULT`) at most once a day.
+  Errors in the app on a phone the same way: `components/error-reporter.tsx` (window errors, rejections, `error.tsx`
+  without digest; network trouble skipped, ≤ 5 per load, each message once per session) → `reportClientErrorAction`
+  → `app_status` `client_errors` with the device (`core/device.ts`), row "Fehler im Handy". e2e: m15.
+- **App icon number:** `waitingForMe()` (`core/next-step.ts`) counts what I have to do (calendar, answer a plan,
+  "habt ihr's gemacht?", my turn, "wie war's?"); `AppBadgeCount` in the (app) layout sets it while the app is open
+  (`data-app-badge`), every push carries it (`badge`, `server/badge.ts`, set in sw.js). e2e: m6.
 - **Gestures and offline:** `components/gestures.tsx` – from the left edge = back where the page has a back arrow
   (mark it `data-back`; installed app only, `localStorage["dom-gestures"]="1"` elsewhere), pull down at the top =
   `router.refresh()` (not on `[data-sheet-card]`, the swipe card, dialogs, fields, `[data-no-pull]`). `public/sw.js`
   keeps the pages you opened (network first; offline: their last state, `/` → the Beet, else `offline.html`) and the
-  `/_next/static` files; the login page forgets the pages (`forget-pages.tsx`). `offline-note.tsx` says so. e2e: m27
+  `/_next/static` files; the login page forgets the pages (`forget-pages.tsx`). Swiping offline keeps the swipe on the
+  phone (`ideas/entdecken/swipe-queue.ts`, localStorage) and `SwipeQueueFlusher` (layout) sends it once there is network
+  (start, foreground, `online`, every 30 s); the card stays off the deck meanwhile, ↺ takes a kept one back. `offline-note.tsx` says so (it asks the server – `navigator.onLine` can lie). e2e: m27
   (Playwright's `setOffline` does not reach the service worker – cut the network with `context.route` and
   `PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS=1`, see m7/m27).
 - **Smooth on phones:** what follows a finger moves with `transform` only and renders at most once per frame – the swipe

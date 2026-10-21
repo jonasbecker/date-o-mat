@@ -33,6 +33,8 @@ export type StatusFacts = {
   photos: "blob" | "local" | null;
   /** Server errors (instrumentation.ts): how many, the last one. */
   errors: { count: number; lastAt: Date; lastMessage: string; lastPath: string | null } | null;
+  /** Errors in the app on a phone (components/error-reporter.tsx), with the device. */
+  clientErrors?: { count: number; lastAt: Date; lastMessage: string; lastPath: string | null; lastDevice: string | null } | null;
 };
 
 /** A server error this recent still counts as a warning. */
@@ -99,8 +101,16 @@ function errorsRow(facts: StatusFacts): StatusRow {
   return { key: "errors", label, level: "warn", detail: `Zuletzt ${agoLabel(facts.now, e.lastAt)}${where}: ${e.lastMessage} – ${e.count} insgesamt, Details in den Vercel-Logs.` };
 }
 
+function clientErrorsRow(facts: StatusFacts): StatusRow {
+  const label = "Fehler im Handy";
+  const e = facts.clientErrors;
+  if (!e || facts.now.getTime() - e.lastAt.getTime() > ERROR_RECENT_DAYS * 24 * 60 * 60_000) return { key: "client_errors", label, level: "ok", detail: "Keine in den letzten 7 Tagen" };
+  const where = [e.lastDevice, e.lastPath].filter(Boolean).join(", ");
+  return { key: "client_errors", label, level: "warn", detail: `Zuletzt ${agoLabel(facts.now, e.lastAt)}${where ? ` (${where})` : ""}: ${e.lastMessage} – ${e.count} insgesamt.` };
+}
+
 export function statusRows(facts: StatusFacts): StatusRow[] {
-  return [tickRow(facts), ...facts.calendars.map(calendarRow), pushRow(facts), sourcesRow(facts), aiRow(facts), photosRow(facts), errorsRow(facts)];
+  return [tickRow(facts), ...facts.calendars.map(calendarRow), pushRow(facts), sourcesRow(facts), aiRow(facts), photosRow(facts), errorsRow(facts), clientErrorsRow(facts)];
 }
 
 /** "Alles läuft" unless something needs attention ("off" = feature not set up, which is fine). */

@@ -182,6 +182,22 @@ await db.query(
 await j.goto(`${BASE}/settings?t=status`);
 await status(j).getByText(/Fehler/).first().waitFor({ timeout: 15000 });
 check("a recent server error is named in the status", await status(j).getByText(/\(\/plan\): connect ECONNREFUSED – 2 insgesamt/).isVisible());
+// An error in the app on the phone: sent to the status as "Fehler im Handy" (network trouble is not one)
+await j.evaluate(() => {
+  setTimeout(() => {
+    throw new Error("e2e: Handy-Absturz");
+  });
+  void Promise.reject(new TypeError("Failed to fetch"));
+});
+let phoneError = null;
+for (let i = 0; i < 40 && !phoneError; i++) {
+  await j.waitForTimeout(250);
+  phoneError = (await db.query("SELECT value FROM app_status WHERE key = 'client_errors'")).rows[0]?.value ?? null;
+}
+check(`an error in the app is counted (${JSON.stringify(phoneError)})`, phoneError?.count === 1 && phoneError.lastMessage === "e2e: Handy-Absturz" && phoneError.lastPath === "/settings" && /Chrome/.test(phoneError.lastDevice ?? ""));
+await j.goto(`${BASE}/settings?t=status`);
+await status(j).getByText(/Fehler im Handy/).first().waitFor({ timeout: 15000 }).catch(() => {});
+check("…and named in the status", await status(j).getByText(/e2e: Handy-Absturz – 1 insgesamt/).isVisible().catch(() => false));
 const { rows: [errPref] } = await db.query("SELECT count(*)::int AS c FROM notification_prefs WHERE type = 'errors' AND enabled");
 check("nobody gets the technical push unless they switch it on", errPref.c === 0);
 

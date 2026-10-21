@@ -135,12 +135,18 @@ await new Promise((r) => setTimeout(r, 1500));
 check(`Sam: "Jonas hat ein Date geplant 🎉" (${titles("sam-phone")})`, titles("sam-phone").includes("Jonas hat ein Date geplant 🎉"));
 const planned = inbox.find((m) => m.title.startsWith("Jonas hat"));
 check(`…with what and when (${planned?.body})`, planned?.body.startsWith("Picknick im Stadtwald ·") && planned.body.endsWith("passt dir das?"));
+check(`…and puts a 1 on Sam's app icon: she has to answer (${planned?.badge})`, planned?.badge === 1);
+await j.goto(`${BASE}/plan`);
+await j.locator("[data-app-badge]").waitFor({ state: "attached", timeout: 10000 });
+check(`Jonas' own app icon: nothing waits for him now (${await j.locator("[data-app-badge]").getAttribute("data-app-badge")})`, (await j.locator("[data-app-badge]").getAttribute("data-app-badge")) === "0");
 const gone = (await db.query("SELECT count(*)::int AS n FROM push_subscriptions WHERE endpoint LIKE '%/gone'")).rows[0].n;
 check("subscription answered with 410 is removed", gone === 0);
 
 // 4) Sam confirms → Jonas is told
 const s = await pageFor(sam.token);
 await s.goto(`${BASE}/`);
+await s.locator("[data-app-badge]").waitFor({ state: "attached", timeout: 10000 });
+check(`Sam's app icon in the app: 1 (${await s.locator("[data-app-badge]").getAttribute("data-app-badge")})`, (await s.locator("[data-app-badge]").getAttribute("data-app-badge")) === "1");
 await s.getByRole("button", { name: "Zusagen" }).click();
 await s.getByRole("heading", { name: "date steht." }).waitFor({ timeout: 10000 });
 await new Promise((r) => setTimeout(r, 1500));

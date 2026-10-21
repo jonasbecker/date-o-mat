@@ -8,6 +8,8 @@ import { notificationPrefs, pushSubscriptions } from "@/server/db/schema";
 import { env } from "@/server/env";
 
 export type PushPayload = { title: string; body: string; url: string; tag?: string };
+/** What the service worker gets: the payload plus the app icon's number (null: leave it). */
+type PushMessage = PushPayload & { badge: number | null };
 
 export type BrowserSubscription = { endpoint: string; keys: { p256dh: string; auth: string } };
 
@@ -70,12 +72,16 @@ export async function sendToUser(userId: string, payload: PushPayload, type: Not
   if (type !== "test" && !(await getPrefs(userId))[type]) return 0;
 
   const subscriptions = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+  if (subscriptions.length === 0) return 0;
+  // Every push brings the app icon's number up to date (loaded lazily: badge.ts reads modules that send pushes).
+  const badge = await import("@/server/badge").then(({ badgeForUser }) => badgeForUser(userId)).catch(() => null);
+  const message: PushMessage = { ...payload, badge };
   let delivered = 0;
   for (const sub of subscriptions) {
     try {
       await webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-        JSON.stringify(payload),
+        JSON.stringify(message),
         { TTL: 6 * 60 * 60, urgency: type === "date_soon" ? "high" : "normal", timeout: 10_000 },
       );
       delivered++;

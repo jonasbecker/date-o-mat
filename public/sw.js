@@ -101,6 +101,17 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
+/** The number on the app icon: what waits for you (the server counts it for every push). */
+async function setBadge(count) {
+  if (typeof count !== "number" || !self.navigator.setAppBadge) return;
+  try {
+    if (count > 0) await self.navigator.setAppBadge(count);
+    else await self.navigator.clearAppBadge();
+  } catch {
+    // no permission – nothing to show
+  }
+}
+
 self.addEventListener("push", (event) => {
   let data = {};
   try {
@@ -109,14 +120,17 @@ self.addEventListener("push", (event) => {
     data = { title: "Zweisamen", body: event.data ? event.data.text() : "" };
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "Zweisamen", {
-      body: data.body || "",
-      icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
-      tag: data.tag,
-      renotify: Boolean(data.tag),
-      data: { url: data.url || "/" },
-    }),
+    Promise.all([
+      self.registration.showNotification(data.title || "Zweisamen", {
+        body: data.body || "",
+        icon: "/icons/icon-192.png",
+        badge: "/icons/icon-192.png",
+        tag: data.tag,
+        renotify: Boolean(data.tag),
+        data: { url: data.url || "/" },
+      }),
+      setBadge(data.badge),
+    ]),
   );
 });
 

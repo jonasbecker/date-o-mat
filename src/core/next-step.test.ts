@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextStep, periodLabel, type StepInput } from "./next-step";
+import { nextStep, periodLabel, waitingForMe, type StepInput } from "./next-step";
 
 const base: StepInput = {
   meId: "jonas",
@@ -59,5 +59,26 @@ describe("periodLabel", () => {
     expect(step({ unanswered })).toBe("did_it");
     expect(step({ unanswered, myCalendar: "missing" })).toBe("connect_calendar");
     expect(step({ unanswered, upcoming: { id: "d1", status: "planned", proposedById: "sam" } })).toBe("confirm");
+  });
+});
+
+describe("waitingForMe (the app icon's number)", () => {
+  const count = (patch: Partial<StepInput>) => waitingForMe({ ...base, ...patch });
+
+  it("my turn to plan: 1; the partner's turn or a done round: 0", () => {
+    expect(count({})).toBe(1);
+    expect(count({ cycle: { status: "open", mode: "alternating", plannerId: "sam" } })).toBe(0);
+    expect(count({ cycle: { status: "done", mode: "alternating", plannerId: "jonas" } })).toBe(0);
+  });
+
+  it("adds up what I have to answer – but not my own proposal", () => {
+    const done = { cycle: { status: "done" as const, mode: "alternating" as const, plannerId: "jonas" } };
+    expect(count({ ...done, upcoming: { id: "d", status: "planned", proposedById: "sam" }, toReview: { id: "r", title: "Kino" } })).toBe(2);
+    expect(count({ ...done, upcoming: { id: "d", status: "planned", proposedById: "jonas" } })).toBe(0);
+    expect(count({ ...done, unanswered: { id: "u", title: "Picknick" } })).toBe(1);
+  });
+
+  it("without my calendar nothing else works: just that one", () => {
+    expect(count({ myCalendar: "missing", toReview: { id: "r", title: "Kino" } })).toBe(1);
   });
 });

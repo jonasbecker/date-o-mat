@@ -1,9 +1,12 @@
 import { Suspense } from "react";
+import { AppBadgeCount } from "@/components/app-badge-count";
 import { BottomNav, BottomNavBar } from "@/components/bottom-nav";
 import { CelebrationProvider } from "@/components/celebration";
+import { ErrorReporter } from "@/components/error-reporter";
 import { Gestures } from "@/components/gestures";
 import { NavPending } from "@/components/nav-pending";
 import { OfflineNote } from "@/components/offline-note";
+import { SwipeQueueFlusher } from "./ideas/entdecken/swipe-queue-flusher";
 import { BeetSkeleton, WishlistCount } from "@/components/app-header";
 
 // Shell for all signed-in pages. Static on purpose: everything that reads the
@@ -24,6 +27,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <NavPending />
           <Gestures />
           <OfflineNote />
+          <SwipeQueueFlusher />
+          <ErrorReporter />
+        </Suspense>
+        <Suspense fallback={null}>
+          <AppBadgeCount />
         </Suspense>
         {/* The path is only known at runtime: the bar is there from the start, the active item follows. */}
         <Suspense fallback={<BottomNavBar path="" />}>

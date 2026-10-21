@@ -87,3 +87,12 @@ describe("server errors", () => {
     expect(overallLevel(statusRows(f))).toBe("warn");
   });
 });
+
+describe("errors in the app on a phone", () => {
+  it("none: fine; a recent one names the phone, the page and what", () => {
+    expect(row(facts(), "client_errors")).toMatchObject({ level: "ok", label: "Fehler im Handy" });
+    const f = facts({ clientErrors: { count: 1, lastAt: minutesAgo(5), lastMessage: "x is undefined", lastPath: "/ideas/entdecken", lastDevice: "iPhone · Safari" } });
+    expect(row(f, "client_errors")).toMatchObject({ level: "warn" });
+    expect(row(f, "client_errors").detail).toContain("(iPhone · Safari, /ideas/entdecken): x is undefined – 1 insgesamt.");
+  });
+});

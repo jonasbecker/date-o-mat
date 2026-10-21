@@ -17,6 +17,7 @@ import { useIdeaFilter } from "@/components/idea-filter";
 import { cn } from "@/lib/cn";
 import { moreCardsAction, swipeAction, undoSwipeAction } from "./actions";
 import { useShareDeck } from "./deck-chrome";
+import { queuedSwipes, queueSwipe, SWIPE_SENT_EVENT, unqueueSwipe, type SwipeSent } from "./swipe-queue";
 
 type Verdict = "like" | "nope";
 
@@ -268,6 +269,26 @@ export function SwipeDeck({
   }
   const width = useRef(320);
   const verdicts = useRef<Verdict[]>([]);
+  // The last swipe kept on the phone (no network): ↺ takes it back right here.
+  const lastQueued = useRef<DeckCardView | null>(null);
+  // Swipes kept from before stay off the deck until they are sent (a reload offline shows the old cards).
+  useEffect(() => {
+    const kept = queuedSwipes();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only there after mount
+    if (kept.length > 0) setHandled((prev) => new Set([...prev, ...kept.map((q) => q.cardId)]));
+  }, []);
+  // Sent later (SwipeQueueFlusher): a match is celebrated now, the flower says they arrived.
+  useEffect(() => {
+    const onSent = (e: Event) => {
+      const { result } = (e as CustomEvent<SwipeSent>).detail;
+      if (result.ok && result.match) {
+        celebrate();
+        setMatch(result.match);
+      } else setMessage("deine offline-swipes sind angekommen 💌");
+    };
+    window.addEventListener(SWIPE_SENT_EVENT, onSent);
+    return () => window.removeEventListener(SWIPE_SENT_EVENT, onSent);
+  }, [celebrate]);
   // The fly-out of the last swipe; an undo right after must not be overtaken by it.
   const flyTimer = useRef<{ timer: ReturnType<typeof setTimeout>; id: string } | null>(null);
 
@@ -327,15 +348,13 @@ export function SwipeDeck({
     startBusy(async () => {
       const result = await swipeAction(card.id, verdict).catch(() => null);
       if (!result) {
-        setHandled((prev) => {
-          const copy = new Set(prev);
-          copy.delete(card.id);
-          return copy;
-        });
-        forget();
-        setMessage("hoppla – bist du offline?");
+        // No network: the swipe is kept on the phone and sent once there is network again (swipe-queue.ts).
+        queueSwipe({ cardId: card.id, verdict });
+        lastQueued.current = card;
+        setMessage("kein netz – ich merk's mir und schick's nach.");
         return;
       }
+      lastQueued.current = null;
       if (!result.ok) {
         forget();
         setMessage(`die ist schon weg – ${partnerName.toLowerCase()} war schneller.`);
@@ -372,6 +391,21 @@ export function SwipeDeck({
     if (undoing) return;
     if (flyTimer.current) landed(flyTimer.current.id);
     setMessage(null);
+    // The last swipe never left the phone: taken back right here.
+    const kept = lastQueued.current;
+    if (kept && unqueueSwipe(kept.id)) {
+      lastQueued.current = null;
+      const undone = verdicts.current.pop();
+      if (undone) setStats((s) => ({ swiped: Math.max(0, s.swiped - 1), liked: Math.max(0, s.liked - (undone === "like" ? 1 : 0)) }));
+      setHandled((prev) => {
+        const copy = new Set(prev);
+        copy.delete(kept.id);
+        return copy;
+      });
+      setRestored((prev) => [kept, ...prev.filter((c) => c.id !== kept.id)]);
+      setPinned(kept);
+      return;
+    }
     startUndo(async () => {
       const result = await undoSwipeAction().catch(() => null);
       if (!result) return setMessage("hoppla – bist du offline?");
