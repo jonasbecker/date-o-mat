@@ -33,11 +33,14 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - **Tabs feel like an app:** `staleTimes.dynamic` (next.config) keeps visited pages for 5 minutes – a tab comes back
   at once. A `router.refresh()` drops all those copies, so `AutoRefresh` (a server component: it renders the couple's
   fingerprint, `server/stamp.ts` – row counts + `xmin` per table, bookkeeping columns left out – plus a 5-minute
-  bucket) only refreshes when `stampAction()` returns a different one (on show, foreground, every 15 s). New tables a
-  page shows go into the stamp. Actions that `redirect()` call `refresh()` first. No page fade-in (no `template.tsx`).
+  bucket) only refreshes when `stampAction()` returns a different one (on show, foreground, every 15 s). A new table goes
+  into `core/stamp-tables.ts` (or `NOT_STAMPED` with a reason) – `stamp-tables.test.ts` fails otherwise. Actions that `redirect()` call `refresh()` first. No page fade-in (no `template.tsx`).
   Because the loading boundary sits in the layout, a first visit keeps the old page until the new one is there (the
   tab lights up at once via `useLinkStatus`, `nav-pending.tsx` shows a thin bar after 150 ms). e2e: m26 (first visits
   too).
+- **Server errors:** `src/instrumentation.ts` (`onRequestError`) → `server/server-errors.ts`: counted in `app_status`
+  (`errors`, left out of the stamp so a failing page cannot refresh itself in a loop), shown as "Fehler" under
+  Einstellungen → Status, push type `errors` (off by default, `NOTIFICATIONS_OFF_BY_DEFAULT`) at most once a day.
 - **Navigation (M40):** `BottomNav` in the `(app)` layout: Archiv (`/dates`) · Swipen (`/ideas/entdecken`) · **Beet** (`/plan`,
   the big green circle, always on top – the bar is `z-30`) · Ideen · Einstellungen. `AppHeader` is the small name plus the page's
   own thing on the right (avatars, "36 Ideen", matches pill). The four dots are one path: the Beet is dot 1, the

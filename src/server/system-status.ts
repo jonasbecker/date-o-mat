@@ -10,6 +10,7 @@ import { calendarStates } from "@/server/availability";
 import { db } from "@/server/db";
 import { appStatus, eventSources, pushSubscriptions } from "@/server/db/schema";
 import { env } from "@/server/env";
+import { lastServerErrors } from "@/server/server-errors";
 
 const TICK_KEY = "tick";
 type TickValue = { at: string; couples: number; errors: number };
@@ -38,7 +39,7 @@ export async function lastTick(): Promise<{ at: Date; errors: number } | null> {
 export async function systemStatus(ctx: CoupleContext, coupleNow: Date): Promise<StatusRow[]> {
   const e = env();
   const people = [ctx.user, ctx.partner];
-  const [tick, calendars, devices, sources, used] = await Promise.all([
+  const [tick, calendars, devices, sources, used, errors] = await Promise.all([
     lastTick(),
     calendarStates(ctx),
     db
@@ -48,6 +49,7 @@ export async function systemStatus(ctx: CoupleContext, coupleNow: Date): Promise
       .groupBy(pushSubscriptions.userId),
     db.select({ lastStatus: eventSources.lastStatus }).from(eventSources).where(and(eq(eventSources.coupleId, ctx.coupleId))),
     Promise.all(AI_REQUEST_KINDS.map(async (kind) => [kind, e.ai ? await aiRequestsToday(ctx.coupleId, kind, coupleNow) : 0] as const)),
+    lastServerErrors(),
   ]);
   const facts: StatusFacts = {
     now: new Date(),
@@ -58,6 +60,7 @@ export async function systemStatus(ctx: CoupleContext, coupleNow: Date): Promise
     sources: { count: sources.length, failing: sources.filter((s) => s.lastStatus === "error").length },
     ai: { configured: e.ai, used: Object.fromEntries(used) as Record<AiRequestKind, number>, limits: AI_LIMITS },
     photos: e.photoStorage,
+    errors: errors ? { count: errors.count, lastAt: new Date(errors.lastAt), lastMessage: errors.lastMessage, lastPath: errors.lastPath } : null,
   };
   return statusRows(facts);
 }

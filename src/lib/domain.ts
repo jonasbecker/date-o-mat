@@ -67,8 +67,12 @@ export const NOTIFICATION_TYPES = [
   "prep",
   // "Anstupsen" on the Beet: the one waiting reminds the one with the watering can.
   "nudge",
+  // Technical: the server hit an error (at most once a day) – for whoever looks after the app.
+  "errors",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+/** Off until a person switches them on (all others are on by default). */
+export const NOTIFICATIONS_OFF_BY_DEFAULT: readonly NotificationType[] = ["errors"];
 
 export const CONNECTION_STATUSES = ["ok", "needs_reauth"] as const;
 export type ConnectionStatus = (typeof CONNECTION_STATUSES)[number];

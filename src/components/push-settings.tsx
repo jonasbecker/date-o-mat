@@ -50,6 +50,7 @@ export function PushSettings({
     story: "Eure Date-Story ist fertig (Ende Dezember)",
     prep: "Vorbereitung: offene Punkte am Vortag (18 Uhr)",
     nudge: `${partnerName} stupst dich an (Gießkanne bei dir)`,
+    errors: "Technik: die App hatte einen Fehler (höchstens 1× am Tag)",
   };
 
   if (!publicKey) {

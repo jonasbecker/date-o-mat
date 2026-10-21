@@ -2,7 +2,7 @@
 import "server-only";
 import { and, eq, sql } from "drizzle-orm";
 import webpush from "web-push";
-import { NOTIFICATION_TYPES, type NotificationType } from "@/lib/domain";
+import { NOTIFICATION_TYPES, NOTIFICATIONS_OFF_BY_DEFAULT, type NotificationType } from "@/lib/domain";
 import { db } from "@/server/db";
 import { notificationPrefs, pushSubscriptions } from "@/server/db/schema";
 import { env } from "@/server/env";
@@ -47,7 +47,7 @@ export async function countSubscriptions(userId: string): Promise<number> {
 /** All notification types with their on/off state (no row = on). */
 export async function getPrefs(userId: string): Promise<Record<NotificationType, boolean>> {
   const rows = await db.select().from(notificationPrefs).where(eq(notificationPrefs.userId, userId));
-  return Object.fromEntries(NOTIFICATION_TYPES.map((type) => [type, rows.find((r) => r.type === type)?.enabled ?? true])) as Record<
+  return Object.fromEntries(NOTIFICATION_TYPES.map((type) => [type, rows.find((r) => r.type === type)?.enabled ?? !NOTIFICATIONS_OFF_BY_DEFAULT.includes(type)])) as Record<
     NotificationType,
     boolean
   >;

@@ -31,7 +31,12 @@ export type StatusFacts = {
   sources: { count: number; failing: number };
   ai: { configured: boolean; used: Record<AiRequestKind, number>; limits: Record<AiRequestKind, number> };
   photos: "blob" | "local" | null;
+  /** Server errors (instrumentation.ts): how many, the last one. */
+  errors: { count: number; lastAt: Date; lastMessage: string; lastPath: string | null } | null;
 };
+
+/** A server error this recent still counts as a warning. */
+export const ERROR_RECENT_DAYS = 7;
 
 function tickRow(facts: StatusFacts): StatusRow {
   const label = "Automatik";
@@ -86,8 +91,16 @@ function photosRow(facts: StatusFacts): StatusRow {
   return { key: "photos", label, level: "off", detail: "Nicht eingerichtet (BLOB_READ_WRITE_TOKEN fehlt)" };
 }
 
+function errorsRow(facts: StatusFacts): StatusRow {
+  const label = "Fehler";
+  const e = facts.errors;
+  if (!e || facts.now.getTime() - e.lastAt.getTime() > ERROR_RECENT_DAYS * 24 * 60 * 60_000) return { key: "errors", label, level: "ok", detail: "Keine in den letzten 7 Tagen" };
+  const where = e.lastPath ? ` (${e.lastPath})` : "";
+  return { key: "errors", label, level: "warn", detail: `Zuletzt ${agoLabel(facts.now, e.lastAt)}${where}: ${e.lastMessage} – ${e.count} insgesamt, Details in den Vercel-Logs.` };
+}
+
 export function statusRows(facts: StatusFacts): StatusRow[] {
-  return [tickRow(facts), ...facts.calendars.map(calendarRow), pushRow(facts), sourcesRow(facts), aiRow(facts), photosRow(facts)];
+  return [tickRow(facts), ...facts.calendars.map(calendarRow), pushRow(facts), sourcesRow(facts), aiRow(facts), photosRow(facts), errorsRow(facts)];
 }
 
 /** "Alles läuft" unless something needs attention ("off" = feature not set up, which is fine). */

@@ -27,6 +27,7 @@ const facts = (over: Partial<StatusFacts> = {}): StatusFacts => ({
   sources: { count: 4, failing: 0 },
   ai: { configured: true, used: { ideas: 2, events: 5, links: 1, deck: 1, art: 0 }, limits: { ideas: 20, events: 40, links: 30, deck: 6, art: 30 } },
   photos: "blob",
+  errors: null,
   ...over,
 });
 const row = (f: StatusFacts, key: string) => statusRows(f).find((r) => r.key === key)!;
@@ -69,5 +70,20 @@ describe("statusRows", () => {
     expect(row(facts({ ai: { ...facts().ai, used: { ideas: 20, events: 0, links: 0, deck: 0, art: 0 } } }), "ai").level).toBe("warn");
     expect(row(facts({ sources: { count: 4, failing: 1 } }), "sources").detail).toBe("4 Seiten, 1 mit Fehler");
     expect(row(facts({ push: { configured: true, devices: [{ name: "Jonas", count: 0 }, { name: "Sam", count: 1 }] } }), "push").level).toBe("warn");
+  });
+});
+
+describe("server errors", () => {
+  it("none, or only old ones: fine", () => {
+    expect(row(facts(), "errors")).toMatchObject({ level: "ok", detail: "Keine in den letzten 7 Tagen" });
+    const old = { count: 3, lastAt: minutesAgo(8 * 24 * 60), lastMessage: "boom", lastPath: "/plan" };
+    expect(row(facts({ errors: old }), "errors").level).toBe("ok");
+  });
+
+  it("a recent one is a warning that names where and what", () => {
+    const f = facts({ errors: { count: 2, lastAt: minutesAgo(30), lastMessage: "connect ECONNREFUSED", lastPath: "/plan" } });
+    expect(row(f, "errors")).toMatchObject({ level: "warn" });
+    expect(row(f, "errors").detail).toContain("(/plan): connect ECONNREFUSED – 2 insgesamt");
+    expect(overallLevel(statusRows(f))).toBe("warn");
   });
 });

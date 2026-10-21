@@ -174,6 +174,17 @@ await j.waitForURL(/\/(plan|dates)$/, { timeout: 15000 });
 await j.locator("[data-next-step], h1:not(.sr-only)").filter({ visible: true }).first().waitFor({ timeout: 15000 });
 check("banner gone after the next tick", (await j.getByText(/Die Automatik ist zuletzt/).count()) === 0);
 
+// 7) A server error: named in the status (not refreshing the pages in a loop), the push for it is off by default
+await db.query(
+  `INSERT INTO app_status (key, value) VALUES ('errors', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+  [JSON.stringify({ count: 2, lastAt: new Date(Date.now() - 20 * 60_000).toISOString(), lastMessage: "connect ECONNREFUSED", lastPath: "/plan", alertedAt: null })],
+);
+await j.goto(`${BASE}/settings?t=status`);
+await status(j).getByText(/Fehler/).first().waitFor({ timeout: 15000 });
+check("a recent server error is named in the status", await status(j).getByText(/\(\/plan\): connect ECONNREFUSED – 2 insgesamt/).isVisible());
+const { rows: [errPref] } = await db.query("SELECT count(*)::int AS c FROM notification_prefs WHERE type = 'errors' AND enabled");
+check("nobody gets the technical push unless they switch it on", errPref.c === 0);
+
 console.log(failures ? `\n${failures} check(s) failed` : "\nAll checks passed");
 await browser.close();
 await db.end();

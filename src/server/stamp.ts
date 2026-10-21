@@ -1,12 +1,14 @@
 import "server-only";
 import { sql } from "drizzle-orm";
+import { STAMPED, type StampScope } from "@/core/stamp-tables";
 import { db } from "@/server/db";
+import { ERRORS_KEY } from "@/server/server-errors";
 
 /**
  * A fingerprint of everything the couple's pages show: per table the number of rows and the newest row
  * version (Postgres' `xmin` changes with every insert and update, the count with every delete). AutoRefresh
  * compares it instead of re-rendering the page every few seconds – a refresh drops the browser's copies of
- * all visited pages, so it should only happen when something really changed.
+ * all visited pages, so it should only happen when something really changed. Which tables: core/stamp-tables.ts.
  */
 export async function coupleStamp(coupleId: string | null, userId: string): Promise<string> {
   const c = coupleId ?? "00000000-0000-0000-0000-000000000000";
@@ -14,27 +16,16 @@ export async function coupleStamp(coupleId: string | null, userId: string): Prom
     sql`select ${table}::text as t, count(*)::text || '.' || coalesce(max(xmin::text::bigint), 0)::text as v from ${sql.raw(table)} where ${where}`;
   const people = sql`(select id from users where couple_id = ${c} or id = ${userId})`;
   const dates = sql`(select id from date_plans where couple_id = ${c})`;
-  const parts = [
-    row("users", sql`id in ${people}`),
-    row("google_connections", sql`user_id in ${people}`),
-    row("push_subscriptions", sql`user_id in ${people}`),
-    row("notification_prefs", sql`user_id in ${people}`),
-    row("deck_swipes", sql`user_id in ${people}`),
-    row("ideas", sql`couple_id = ${c}`),
-    row("cycles", sql`couple_id = ${c}`),
-    row("date_plans", sql`couple_id = ${c}`),
-    row("date_photos", sql`couple_id = ${c}`),
-    row("event_sources", sql`couple_id = ${c}`),
-    row("events", sql`couple_id = ${c}`),
-    row("budget_months", sql`couple_id = ${c}`),
-    row("special_days", sql`couple_id = ${c}`),
-    row("deck_cards", sql`couple_id = ${c}`),
-    row("date_tasks", sql`date_id in ${dates}`),
-    row("date_reviews", sql`date_id in ${dates}`),
-    row("suggestions", sql`cycle_id in (select id from cycles where couple_id = ${c})`),
-    row("event_source_pages", sql`source_id in (select id from event_sources where couple_id = ${c})`),
-    row("app_status", sql`true`),
-  ];
+  const where: Record<StampScope, ReturnType<typeof sql>> = {
+    people: sql`user_id in ${people}`,
+    couple: sql`couple_id = ${c}`,
+    dates: sql`date_id in ${dates}`,
+    cycles: sql`cycle_id in (select id from cycles where couple_id = ${c})`,
+    sources: sql`source_id in (select id from event_sources where couple_id = ${c})`,
+    status: sql`key <> ${ERRORS_KEY}`,
+  };
+  // The people themselves: their own rows, not via user_id.
+  const parts = Object.entries(STAMPED).map(([table, scope]) => row(table, table === "users" ? sql`id in ${people}` : where[scope]));
   // The settings row also holds bookkeeping: of a deck refill only whether one runs counts ("Neue Ideen werden
   // gemischt"), not when it started.
   parts.push(
