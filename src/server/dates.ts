@@ -377,7 +377,9 @@ export async function syncDate(dateId: string): Promise<boolean> {
       const hidden = shown !== date;
       const body = buildEventBody({ ...shown, costEur: hidden ? null : (idea?.costEur ?? null) }, partnerEmail, env().appUrl);
       const created = date.googleEventId ? false : await insertEvent(date.organizerId, eventId, body);
-      if (!created) await patchEvent(date.organizerId, eventId, body);
+      // Still waiting for the guest's yes (e.g. just moved): an old "accepted" in Google must not confirm the new time.
+      const waiting = date.status === "planned" && date.proposedById === date.organizerId;
+      if (!created) await patchEvent(date.organizerId, eventId, waiting ? { ...body, attendees: [{ email: partnerEmail, responseStatus: "needsAction" }] } : body);
     }
     await db
       .update(datePlans)

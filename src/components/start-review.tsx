@@ -22,12 +22,12 @@ export function StartReview({ date, photoId, small = false }: { date: Pick<DateP
             {formatShortDate(date.startsAt)} · {formatTimeRange(date.startsAt, date.endsAt)} Uhr
           </p>
         </div>
-        <div className="flex gap-0.5" role="group" aria-label="Wie viele Herzen?">
+        <div className="flex" role="group" aria-label="Wie viele Herzen?">
           {Array.from({ length: RATING_MAX }, (_, i) => {
             const value = i + 1;
             return (
-              <Link key={value} href={`/dates/${date.id}?herzen=${value}`} aria-label={`${value} ${value === 1 ? "Herz" : "Herzen"}`} className="press rounded-full p-0.5">
-                <HeartShape filled={false} size={small ? 26 : 34} />
+              <Link key={value} href={`/dates/${date.id}?herzen=${value}`} aria-label={`${value} ${value === 1 ? "Herz" : "Herzen"}`} className="press rounded-full p-1.5">
+                <HeartShape filled={false} size={small ? 30 : 34} />
               </Link>
             );
           })}

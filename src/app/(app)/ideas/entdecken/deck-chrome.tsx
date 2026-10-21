@@ -68,7 +68,7 @@ export function DeckInfoButton({ partnerName, taste }: { partnerName: string; ta
         type="button"
         aria-label="So geht Swipen"
         onClick={() => sheet.current?.open()}
-        className="tap flex size-8 shrink-0 items-center justify-center rounded-full bg-surface font-display text-[15px] font-bold italic text-ink"
+        className="tap hit flex size-8 shrink-0 items-center justify-center rounded-full bg-surface font-display text-[15px] font-bold italic text-ink"
       >
         i
       </button>

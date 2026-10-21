@@ -64,7 +64,7 @@ export function FilterButton({ className, round = false }: { className?: string;
         aria-label={count ? `Filter: ${filterSummary(filter)}` : "Filter"}
         className={cn(
           "tap inline-flex shrink-0 items-center rounded-full text-[13px] font-semibold",
-          round ? "relative size-11 justify-center" : "h-8 gap-1.5 px-3",
+          round ? "relative size-11 justify-center" : "hit h-8 gap-1.5 px-3",
           count ? "bg-ink text-bg" : "bg-surface text-ink",
           className,
         )}

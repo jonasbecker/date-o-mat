@@ -125,6 +125,20 @@
   border: 0;
 }
 
+/* A small control whose finger target is still 44 px (an invisible layer around it, the look stays) */
+@utility hit {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    translate: -50% -50%;
+  }
+}
+
 /* Things give way a little when tapped */
 @utility tap {
   transition: scale 100ms ease-out;

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { PageSkeleton } from "@/components/app-header";
@@ -7,6 +7,7 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { Avatar } from "@/components/avatar";
 import { Hearts } from "@/components/hearts";
 import { BackIcon, CloseIcon } from "@/components/icons";
+import { buttonClass } from "@/components/button";
 import { AGAIN_LABEL } from "@/lib/domain";
 import { visibleReviews, type ReviewView } from "@/core/reviews";
 import { formatShortDate, formatTimeRange, genitive } from "@/lib/format";
@@ -65,6 +66,29 @@ async function DateDetail({ params, searchParams }: { params: PageProps<"/dates/
       </div>
     );
   }
+  // An old link (a push, the calendar) to a date that was called off: say so instead of "Hier ist nichts".
+  if (upcoming?.status === "cancelled") {
+    const shown = dateForViewer(upcoming, user.id, [user, partner], now);
+    return (
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <Link href="/plan" aria-label="Zum Beet" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
+            <BackIcon width={20} height={20} />
+          </Link>
+          <span className="meta">Details</span>
+        </div>
+        <h1 className="headline text-[clamp(40px,12vw,54px)]">abgesagt.</h1>
+        <p className="text-base text-muted" data-cancelled-date>
+          <span className="font-semibold text-ink">{shown.title}</span> · {formatShortDate(shown.startsAt)}, {formatTimeRange(shown.startsAt, shown.endsAt)} – dieses Date wurde abgesagt.
+        </p>
+        <Link href="/plan" className={buttonClass("primary", "md", "mt-auto w-full")}>
+          Zum Beet
+        </Link>
+      </div>
+    );
+  }
+  // Over but nobody said yes: the Beet asks "habt ihr's gemacht?".
+  if (upcoming?.status === "planned") redirect("/plan");
   const date = valid ? await pastDate(coupleId, id) : undefined;
   if (!date) notFound();
   const { mine, partner: theirs, partnerHidden } = visibleReviews(date.reviews, user.id);

@@ -2,7 +2,7 @@
 // Busy times are only held in memory for this request, never stored.
 import "server-only";
 import { connection } from "next/server";
-import type { TimeRange } from "@/core/ranges";
+import { subtractRanges, type TimeRange } from "@/core/ranges";
 import { findSlots, type Slot } from "@/core/slots";
 import type { SlotLists } from "@/core/slot-modes";
 import type { CoupleContext } from "@/server/auth/dal";
@@ -41,7 +41,8 @@ export type SlotSearch =
   | { status: "not_connected"; people: PersonCalendar[] }
   | { status: "google_error" };
 
-export async function searchSlots(ctx: CoupleContext, now: Date, until?: Date): Promise<SlotSearch> {
+/** `ignore`: a date being moved – its own old time is not busy (its Google event would block itself). */
+export async function searchSlots(ctx: CoupleContext, now: Date, until?: Date, ignore?: TimeRange): Promise<SlotSearch> {
   // Live Google data: stop prefetch/prerender here, before any error handling below.
   await connection();
   const people = await calendarStates(ctx);
@@ -67,7 +68,7 @@ export async function searchSlots(ctx: CoupleContext, now: Date, until?: Date): 
       console.error("[slots] FreeBusy failed", result.reason);
       return { status: "google_error" };
     }
-    busy.push(...result.value.busy);
+    busy.push(...(ignore ? result.value.busy.flatMap((range) => subtractRanges(range, [ignore])) : result.value.busy));
     failedCalendars += result.value.failedCalendarIds.length;
   }
 

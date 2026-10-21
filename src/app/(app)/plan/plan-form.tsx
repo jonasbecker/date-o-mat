@@ -112,13 +112,14 @@ export function PlanFlow({
   // The free times are loaded here, not by the page: the start page itself never waits for Google.
   const [times, setTimes] = useState<{ result: FreeTimes; at: number } | null>(null);
   const [loadingTimes, startLoadingTimes] = useTransition();
+  const rescheduleId = mode.kind === "reschedule" ? mode.date.dateId : undefined;
   const loadTimes = useCallback(() => {
     if (mode.kind === "swap") return;
     startLoadingTimes(async () => {
-      const result = await freeTimesAction({ later, events: withEvents }).catch((): FreeTimes => ({ status: "google_error" }));
+      const result = await freeTimesAction({ later, events: withEvents, rescheduleId }).catch((): FreeTimes => ({ status: "google_error" }));
       setTimes({ result, at: Date.now() });
     });
-  }, [mode.kind, later, withEvents]);
+  }, [mode.kind, later, withEvents, rescheduleId]);
   useEffect(() => loadTimes(), [loadTimes]);
   const ok = times?.result.status === "ok" ? times.result : null;
   // Outdoor ideas get their own ranking: daylight and weather count (see core/outdoor.ts).
@@ -278,11 +279,11 @@ export function PlanFlow({
 
   const pager = ok && slots.length > 0 && (
     <div className="flex items-center justify-between gap-2 text-[13px] font-semibold">
-      <button type="button" disabled={slotPage === 0} onClick={() => setSlotPage((p) => p - 1)} className={cn("underline", slotPage === 0 && "invisible")}>
+      <button type="button" disabled={slotPage === 0} onClick={() => setSlotPage((p) => p - 1)} className={cn("hit underline", slotPage === 0 && "invisible")}>
         ← Frühere
       </button>
       <span className="font-mono text-[11px] text-muted">{ok && `Gesucht bis ${ok.untilLabel}`}</span>
-      <button type="button" disabled={slotPage >= pageCount - 1} onClick={() => setSlotPage((p) => p + 1)} className={cn("underline", slotPage >= pageCount - 1 && "invisible")}>
+      <button type="button" disabled={slotPage >= pageCount - 1} onClick={() => setSlotPage((p) => p + 1)} className={cn("hit underline", slotPage >= pageCount - 1 && "invisible")}>
         Weitere Zeiten →
       </button>
     </div>
@@ -296,7 +297,7 @@ export function PlanFlow({
           type="button"
           aria-pressed={size === option}
           onClick={() => selectSize(option)}
-          className={cn("rounded-full px-3 py-1 font-mono text-[11px]", size === option ? "bg-ink text-bg" : "text-muted")}
+          className={cn("hit rounded-full px-3 py-1 font-mono text-[11px]", size === option ? "bg-ink text-bg" : "text-muted")}
         >
           {SIZE_LABEL[option].label}
         </button>

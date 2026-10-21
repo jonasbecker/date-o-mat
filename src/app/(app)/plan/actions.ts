@@ -81,14 +81,17 @@ export type FreeTimes =
  * The free times of both – loaded by the flow when it needs them (not on every
  * view and refresh of the start page). With `events`: events where both are free.
  */
-export async function freeTimesAction(input: { later?: boolean; events?: boolean }): Promise<FreeTimes> {
+export async function freeTimesAction(input: { later?: boolean; events?: boolean; rescheduleId?: string }): Promise<FreeTimes> {
   const ctx = await requireCouple();
   const settings = await getCoupleSettings(ctx.coupleId);
   const now = coupleNow(settings);
   const cycle = await ensureCurrentCycle(ctx.coupleId, now);
   // Normally only within the current round; "later" searches the whole horizon.
   const until = cycle && !input.later ? searchUntil(cycle, now, settings.horizonDays) : undefined;
-  const search = await searchSlots(ctx, now, until);
+  // Moving a date: its own old time is free for the new one.
+  const moving = input.rescheduleId ? await getDate(ctx.coupleId, input.rescheduleId) : undefined;
+  const ignore = moving && (moving.status === "planned" || moving.status === "confirmed") ? { start: moving.startsAt.getTime(), end: moving.endsAt.getTime() } : undefined;
+  const search = await searchSlots(ctx, now, until, ignore);
   if (search.status !== "ok") return { status: search.status };
 
   let events: EventView[] | null = null;

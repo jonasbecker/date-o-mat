@@ -242,17 +242,17 @@ function viewFor(
   { me, partner, date, swappable, o, now }: { me: User; partner: User; date?: DatePlan; swappable: boolean; o: Overview; now: Date },
 ): View {
   const details = date && (
-    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm font-semibold">
-      <Link href={`/dates/${date.id}`} className="underline">
+    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-sm font-semibold">
+      <Link href={`/dates/${date.id}`} className="hit underline">
         Details ›
       </Link>
       {o.dateExtras?.isToday && (
-        <Link href="/fragen" className="underline">
+        <Link href="/fragen" className="hit underline">
           💬 Gesprächskarten
         </Link>
       )}
       {swappable && (
-        <Link href="/plan?pick=1" className="flex items-center gap-1.5 underline">
+        <Link href="/plan?pick=1" className="hit flex items-center gap-1.5 underline">
           <SwapIcon width={15} height={15} /> Lieber was anderes?
         </Link>
       )}

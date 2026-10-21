@@ -96,7 +96,7 @@ export function startMock(port = 4010) {
         if (req.method === "PATCH") {
           const patch = JSON.parse(body);
           const prev = store.get(id);
-          const attendees = patch.attendees ? patch.attendees.map((a) => ({ ...a, responseStatus: prev.attendees.find((p) => p.email === a.email)?.responseStatus ?? "needsAction" })) : prev.attendees;
+          const attendees = patch.attendees ? patch.attendees.map((a) => ({ ...a, responseStatus: a.responseStatus ?? prev.attendees.find((p) => p.email === a.email)?.responseStatus ?? "needsAction" })) : prev.attendees;
           store.set(id, { ...prev, ...patch, attendees });
           return res.end(JSON.stringify(store.get(id)));
         }

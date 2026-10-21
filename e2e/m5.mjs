@@ -182,6 +182,8 @@ await j.getByRole("heading", { name: "du bist dran." }).waitFor({ timeout: 10000
 check("no date left: the start page plans again", j.url() === `${BASE}/plan`);
 const cancelled = (await db.query("SELECT status FROM date_plans WHERE id = $1", [date.id])).rows[0];
 check("date cancelled and round open again", cancelled.status === "cancelled" && (await cycleStatus()) === "open");
+await j.goto(`${BASE}/dates/${date.id}`);
+check("an old link to it says it was cancelled (not 404)", await j.getByRole("heading", { name: "abgesagt." }).waitFor({ timeout: 10000 }).then(() => true, () => false));
 check("Google event deleted with notification", events["token-jonas"].get(date.google_event_id).status === "cancelled" && requests.some((r) => r.method === "DELETE" && r.url.includes("sendUpdates=all")));
 
 // 7) Suggestion mode: Sam takes the proposal → Sam is organizer, Jonas invited
@@ -200,6 +202,15 @@ check("event is in Sam's calendar, inviting Jonas", events["token-sam"].get(acce
 events["token-sam"].get(accepted.google_event_id).attendees[0].responseStatus = "accepted";
 await tick();
 check("accepting in Google confirms the date in the app", (await theDate()).status === "confirmed");
+
+// 8b) Sam (the organizer) moves it: the old "accepted" in Google must not confirm the new time
+await openPlan(s, `?reschedule=${accepted.id}`);
+await s.locator("ol li button").nth(1).click();
+await s.getByRole("button", { name: "Termin ändern" }).click();
+await backAtStart(s, BASE);
+check("moving resets Jonas' answer in Google", events["token-sam"].get(accepted.google_event_id).attendees[0].responseStatus === "needsAction");
+await tick();
+check("…so the tick does not confirm the new time", (await theDate()).status === "planned");
 
 // 9) Organizer deletes the event in Google Calendar → cancelled in the app
 events["token-sam"].get(accepted.google_event_id).status = "cancelled";
