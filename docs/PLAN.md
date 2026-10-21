@@ -167,6 +167,55 @@ Abweichungen in V2:
     wählbar (himmel = Blau, mandarine = Rosé). „Anstupsen“ schickt höchstens einmal pro Stunde einen
     Push (`notification_log`, Typ `nudge`).
 
+## Review-Runde (21.10.2026) – offen, nach Wirkung sortiert
+
+Aus dem kritischen Durchgang durch die ganze App (alle Screens auf fünf Handy-Größen + Code-Review).
+Schon erledigt: Swipe-Karte passt immer (misst sich selbst, auch wenn der Platz später schrumpft),
+oberste Karte bleibt liegen, Tasten-Wächter, „hat doch nicht geklappt“ mit Rückfrage, Kanne abgeben
+ohne Hin-und-her + Push, Anstupsen ehrlich, „wann?“ fängt sich, Kosten nur wenn geändert, Merken
+einmal, Rückfragen beim Entfernen/Trennen, Willkommen-Texte, Manifest dunkel, „1.000 €“.
+
+1. **Dev-Tools in Produktion aus** (`ENABLE_DEV_TOOLS`): die verschobene Dev-Uhr hat schon eine
+   falsche Runde erzeugt; die Pille „dev-uhr“ steht auf dem Beet.
+2. **Dates über die Rundengrenze** („Auch danach suchen“): das Date gehört in die Runde, in der es
+   stattfindet – sonst zeigt das Beet nächste Woche „du bist dran.“, versteckt das Date, und die Runde
+   welkt, obwohl ihr eins hattet.
+3. **Nur zugesagte Dates zählen als erlebt**: ein nie bestätigter Vorschlag wird heute nach Ablauf
+   „done“ (Blatt, Budget, „Wie war's?“). Stattdessen: zählt nicht oder wird nachgefragt.
+4. **Gleichzeitig handeln**: „Zusagen“ bestätigt nur die Zeit, die man gesehen hat; eine Verschiebung
+   holt kein gerade abgesagtes Date zurück (Status-Wächter, eigene Meldung „wurde abgesagt“).
+5. **Eingeladene Person kann absagen** (heute nur „Zusagen“ oder „Anderer Termin“).
+6. **Push einmal, nicht dreimal**: ein gemeinsamer Push-Zustand in den Einstellungen (Banner und
+   Schalter widersprechen sich), der Hinweis auf dem Beet nur noch als Sprechblase der Blume.
+7. **Beet aufräumen**: zu viele Zeilen machen die Blume winzig; die Blume sagt Passendes (nicht „wer
+   gießt?“, wenn du dran bist); „sam ist dran.“ nach dem Gießen → „wartet auf sam.“; Blumengröße
+   über alle Zustände gleich.
+8. **„Anderer Termin“** bietet auch Zeiten an, die das alte Date überlappen (es blockiert sich selbst).
+9. **Sams Kalender fehlt und du bist dran**: Anstupsen + Kanne abgeben statt Sackgasse.
+10. **Abgesagtes Date** zeigt „wurde abgesagt“ statt „Hier ist nichts“; Absage-Text je nach Rolle,
+    Fehler sichtbar.
+11. **Rückgängig beim Swipen**: Idee nicht hart löschen (Vorschläge, Änderungen der anderen Person);
+    ein geplanter Swipe blockiert nicht alle früheren.
+12. **„Meine Likes“** zeigt auch die Likes der anderen Person – verrät das blinde Swipen. Nur eigene
+    zeigen oder umbenennen.
+13. **Ein Name pro Ort**: Tab „Einstellungen“ / Seite „setup.“ / „der gartenschuppen“; Archiv heißt
+    „unser beet.“, obwohl der Start-Tab „Beet“ ist.
+14. **„wann?“**: große Lücke zwischen Zeiten und Senden-Kasten; der Senden-Knopf ist blau statt der
+    hellen Haupt-Pille.
+15. **Tipp-Ziele ≥ 44 px**: Details ›, Lieber was anderes?, Weitere Zeiten, ⓘ, Filter,
+    Matchlinge-Pille, Größen-Umschalter, Herzen klein.
+16. **Karte ohne freien Abend**: kein großes Wochenend-Datum, das wie ein Vorschlag aussieht.
+17. **„Was läuft“ auffindbar machen** (heute ein kleiner Link oben auf /ideas).
+18. **Weniger Google-Abfragen**: doppelte Vorschläge im Vorschlag-Modus (eindeutig pro Runde),
+    FreeBusy der Swipe-Seite ein paar Minuten zwischenspeichern.
+19. **Google-Zusage nach Verschieben prüfen**: ein altes „accepted“ darf die neue Zeit nicht
+    bestätigen (`responseStatus` zurücksetzen).
+20. **Gießzeit-Auswahl** passend zum Rhythmus und mit der echten Uhrzeit (nicht immer „20:00“).
+21. Kleinkram: „Jetzt lesen“ sagt, wann es wieder geht; Tab „Sam“ → „Sams Herzen“; „keimt!“ mit
+    Escape/Fokus; Zoomen erlauben; eigener Code beim Beitreten erklärt; „Ihr seht euch Dienstag“ am
+    selben Tag → „heute“; Date um 00:30 bekommt „Morgen ist Date-Tag“ zur richtigen Zeit; Fehler
+    offline zeigen statt Fehlerseite.
+
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 
 1. OAuth „In Produktion (unverifiziert)“ statt Testmodus (7-Tage-Token-Ablauf).

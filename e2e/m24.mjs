@@ -167,6 +167,34 @@ for (const viewport of [
   await audit(page, `${tag} swipe card`);
   await ctx.close();
 }
+// The box shrinks after the first fit (an iPhone: safe areas, the page settling): the card fits again.
+// And grows back when there is room.
+{
+  const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: 1, locale: "de-DE", colorScheme: "dark" });
+  await ctx.addCookies([{ name: "dom_session", value: jonas.token, url: BASE }]);
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/ideas/entdecken`);
+  await page.locator("[data-card-info]").first().waitFor({ timeout: 20000 });
+  await page.waitForTimeout(500);
+  const whole = () =>
+    page.evaluate(() => {
+      const card = [...document.querySelectorAll("[data-card-dense]")].find((el) => el.getBoundingClientRect().height > 0);
+      const info = card?.querySelector("[data-card-info]");
+      if (!card || !info) return null;
+      return { whole: info.getBoundingClientRect().bottom <= card.getBoundingClientRect().bottom - 4, dense: Number(card.getAttribute("data-card-dense")) };
+    });
+  const roomy = await whole();
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.waitForTimeout(600);
+  const shrunk = await whole();
+  await page.screenshot({ path: `${OUT}m24-card-shrunk.png` });
+  check(`swipe card refits when its box shrinks (step ${roomy?.dense} → ${shrunk?.dense})`, shrunk?.whole === true && shrunk.dense > (roomy?.dense ?? 0));
+  await page.setViewportSize({ width: 430, height: 932 });
+  await page.waitForTimeout(600);
+  const grown = await whole();
+  check(`…and is roomy again when it grows (step ${grown?.dense})`, grown?.whole === true && grown.dense === roomy?.dense);
+  await ctx.close();
+}
 // The five moods of the flower side by side (/dev/blume), to compare with BloomStates.html
 const wide = await browser.newContext({ viewport: { width: 1800, height: 720 }, locale: "de-DE", colorScheme: "dark" });
 await wide.addCookies([{ name: "dom_session", value: jonas.token, url: BASE }]);

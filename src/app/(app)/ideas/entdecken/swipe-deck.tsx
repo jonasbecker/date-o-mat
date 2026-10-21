@@ -64,29 +64,34 @@ function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: str
   const when = card.when;
   const box = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
-  const [dense, setDense] = useState(0);
+  // `run` counts the fits: starting over must measure again even when the card is already roomiest
+  // (setting 0 to 0 would not render – the card stayed cut when the box shrank after the first fit).
+  const [{ dense, run }, setFit] = useState({ dense: 0, run: 0 });
   // Before paint: one more step while the content is taller than its box.
   useLayoutEffect(() => {
     const el = body.current;
-    if (el && dense < DENSEST && el.scrollHeight > el.clientHeight + 1) setDense(dense + 1);
-  }, [dense]);
-  // The box changes height (rotation, Safari's bars come and go) or the fonts arrive (the fallback is
-  // wider): start over from the roomiest.
+    if (el && dense < DENSEST && el.scrollHeight > el.clientHeight + 1) setFit((f) => ({ ...f, dense: f.dense + 1 }));
+  }, [dense, run]);
+  // The box changes height (rotation, Safari's bars, the page settling after the first paint) or the
+  // fonts arrive (other line breaks): start over from the roomiest.
   useEffect(() => {
     const el = box.current;
     if (!el) return;
+    const refit = () => setFit((f) => ({ dense: 0, run: f.run + 1 }));
     let last = el.clientHeight;
     const ro = new ResizeObserver(() => {
       if (Math.abs(el.clientHeight - last) < 2) return;
       last = el.clientHeight;
-      setDense(0);
+      refit();
     });
     ro.observe(el);
     let live = true;
-    void document.fonts?.ready.then(() => live && setDense(0));
+    void document.fonts?.ready.then(() => live && refit());
+    document.fonts?.addEventListener?.("loadingdone", refit);
     return () => {
       live = false;
       ro.disconnect();
+      document.fonts?.removeEventListener?.("loadingdone", refit);
     };
   }, []);
   const d = (n: number) => dense >= n;
