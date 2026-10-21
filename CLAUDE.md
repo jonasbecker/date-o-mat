@@ -28,6 +28,12 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   (`bg-tile-*`, `bg-rose`, `bg-zitrone-soft` …) reset the tokens to light values, so `text-ink` on them stays readable
   – `bg-cta`/`bg-butter` are NOT in that list (their text is dark by design). Garden words: Ideen = Samen, Like =
   einpflanzen, Nein = Kompost, Match = keimt / Matchlinge, Frist = Gießzeit, Rhythmus = Gießrhythmus, Planen = gießen.
+- **Tabs feel like an app:** `staleTimes.dynamic` (next.config) keeps visited pages for 5 minutes – a tab comes back
+  at once. A `router.refresh()` drops all those copies, so `AutoRefresh` (a server component: it renders the couple's
+  fingerprint, `server/stamp.ts` – row counts + `xmin` per table, bookkeeping columns left out – plus a 5-minute
+  bucket) only refreshes when `stampAction()` returns a different one (on show, foreground, every 15 s). New tables a
+  page shows go into the stamp. Actions that `redirect()` call `refresh()` first. No page fade-in (no `template.tsx`).
+  e2e: m26.
 - **Navigation (M40):** `BottomNav` in the `(app)` layout: Archiv (`/dates`) · Swipen (`/ideas/entdecken`) · **Beet** (`/plan`,
   the big green circle, always on top – the bar is `z-30`) · Ideen · Einstellungen. `AppHeader` is the small name plus the page's
   own thing on the right (avatars, "36 Ideen", matches pill). The four dots are one path: the Beet is dot 1, the
@@ -63,10 +69,15 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   "Anstupsen", "Zusagen"). The pot has no face. All moods side by side: `/dev/blume` (seven: the round's five +
   `genervt` / `autsch` for the date sheet).
   **"date steht."** (`docs/design/garten/date-steht/`, `date-sheet.tsx`, geometry `core/date-sheet.ts`): no "Details ›" – the
-  card is a sheet (bottom edge fixed, only its top moves). Tap or pull up; letting go faster than 0.8 px/ms is a
-  "schubs" (flower kicked: `autsch`, overshoot, motion lines), else "sanft" (`genervt`); past 35 % it opens. The bubble
-  comes out of the mouth (dots computed), never covers text, card, name or avatars (the header's step bar fades);
-  back gesture / tap on the head / pulling down closes it. e2e: m25 (both sizes, slow/fast, back, reduced motion). The old `Plant`
+  card is a sheet (bottom edge fixed, only its top moves) with three stops (`data-date-sheet`): `zu` (only title and
+  when · where – the closed card is as high as that text), `mitte` (the reference's open card, the rest cut off with a
+  fade; if the browser scrolls it – focus, a link further down – it goes to voll) and `voll` (covers the screen under
+  the header, all without scrolling, the handle becomes the header's step bar, the flower flies off the top and comes
+  back down with the card). Everything between follows the card's top (`position()` 0…2). Letting go faster than
+  0.8 px/ms is a "schubs" (one stop further; zu → mitte kicks the flower: `autsch`, overshoot, motion lines), else
+  "sanft" (`genervt`); past 35 % of the way it goes to the next stop. Tap: zu ↔ mitte, voll → mitte ("Weniger
+  Details"). The bubble comes out of the mouth (dots computed), never covers text, card, name or avatars (the header's
+  step bar fades); back gesture closes it. e2e: m25 (both sizes, slow/fast, voll, back, reduced motion). The old `Plant`
   (components/plant.tsx) is only the small mark (logo, mascot, empty states).
 - **Rounds and dates:** a date lives in the round it happens in (`cycleForDate()` creates later rounds when a date is
   planned ahead; the current round is the one containing now, never just the newest row). A planned date nobody

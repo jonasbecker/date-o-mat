@@ -224,11 +224,24 @@ nur für „date steht.“ (nicht „wartet auf …“). Abweichungen: Maße rel
 geschlossene Blume wird auf kleinen Handys kleiner statt den Text zu verdecken; die Rundenleiste oben blendet aus,
 solange die Blase dort sitzt; eine Spruchwahl pro Bewegung (statt eigener Sprüche für „mitte“).
 
+## Drei Stufen und App-Gefühl beim Tab-Wechsel (21.10.2026) ✅
+
+- Die Date-Karte hat drei Stufen: **zu** (nur Titel und Datum · Ort, alles andere verdeckt), **mitte** (die
+  bisherige offene Karte, der Rest weich ausgeblendet) und **voll** (die Karte deckt den Bildschirm, alles ohne
+  Scrollen; ihr Griff wird zum Strich oben im Kopf, die Blume fliegt oben raus und kommt beim Runterziehen
+  wieder herunter – je nachdem, wie weit man zieht). Tippen: zu ↔ mitte, voll → mitte; ein Schubs geht immer eine
+  Stufe weiter; Zurück-Geste schließt.
+- Tabs: besuchte Seiten kommen 5 Minuten lang sofort aus dem Browser (`staleTimes.dynamic`); AutoRefresh lädt nur
+  neu, wenn sich der Fingerabdruck der Daten geändert hat (`server/stamp.ts`); kein Einblenden mehr (`template.tsx`
+  entfernt). Ein Tab, der zum ersten Mal
+  geöffnet wird, zeigt noch kurz den Platzhalter. e2e: m26.
+
 ## Bewusste Abweichungen vom ursprünglichen Auftrag
 
 1. OAuth „In Produktion (unverifiziert)“ statt Testmodus (7-Tage-Token-Ablauf).
 2. Externer Cron (cron-job.org), weil Vercel Hobby nur tägliche Crons erlaubt.
-3. „Sofort sichtbar“ über Neuladen bei Fokus + alle 15 s statt Websockets.
+3. „Sofort sichtbar“ ohne Websockets: alle 15 s (und bei Fokus) ein kleiner Fingerabdruck der Daten,
+   neu geladen wird nur, wenn er sich geändert hat (sonst gingen die gemerkten Seiten verloren).
 4. Ganztägige Termine blockieren nur, wenn sie in Google auf „Beschäftigt“ stehen (FreeBusy-only-Scope).
 5. Das Google-Event entsteht schon bei „geplant“, nicht erst bei „bestätigt“.
 6. Dev-Uhr (nur in Dev-Builds) zum Vorspulen über mehrere Zyklen.

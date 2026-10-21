@@ -1,26 +1,11 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { stampAction } from "@/app/stamp-action";
+import { AutoRefreshClient } from "./auto-refresh-client";
 
 /**
- * Keeps server-rendered data fresh without websockets: re-renders the page
- * when the app comes back to the foreground and every `intervalMs` while visible.
+ * Keeps the page fresh (see AutoRefreshClient): it carries the couple's fingerprint it was rendered with, so
+ * a change right after rendering – or while the page waited as the browser's copy – is not missed.
+ * Reads the session: render it inside the page's <Suspense>.
  */
-export function AutoRefresh({ intervalMs = 15_000 }: { intervalMs?: number }) {
-  const router = useRouter();
-
-  useEffect(() => {
-    const refresh = () => {
-      if (document.visibilityState === "visible") router.refresh();
-    };
-    const timer = setInterval(refresh, intervalMs);
-    document.addEventListener("visibilitychange", refresh);
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener("visibilitychange", refresh);
-    };
-  }, [router, intervalMs]);
-
-  return null;
+export async function AutoRefresh({ intervalMs = 15_000 }: { intervalMs?: number }) {
+  return <AutoRefreshClient stamp={await stampAction()} intervalMs={intervalMs} />;
 }

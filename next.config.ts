@@ -34,6 +34,9 @@ const nextConfig: NextConfig = {
   experimental: {
     // Photo uploads (already resized in the browser, ~0.5 MB each). Vercel caps requests at 4.5 MB.
     serverActions: { bodySizeLimit: "4mb" },
+    // Tabs feel like an app: a page visited in the last 5 minutes comes back at once from the browser's copy
+    // (no loading skeleton); AutoRefresh fetches the fresh one quietly, own changes clear it via refresh().
+    staleTimes: { dynamic: 300 },
   },
   partialPrefetching: true,
   turbopack: {

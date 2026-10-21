@@ -108,7 +108,8 @@ await j.getByRole("button", { name: "Wirklich löschen" }).click();
 await j.locator('img[alt="Foto 2"]').waitFor({ state: "detached", timeout: 10000 });
 // The photo is gone at once (optimistic) – the server may still be on it.
 let left = await db.query("SELECT count(*)::int AS c FROM date_photos");
-for (let i = 0; i < 40 && left.rows[0].c > 1; i++) {
+const filesGone = () => !existsSync(`${DATA}/${photos[1].full_path}`) && !existsSync(`${DATA}/${photos[1].thumb_path}`);
+for (let i = 0; i < 40 && (left.rows[0].c > 1 || !filesGone()); i++) {
   await new Promise((r) => setTimeout(r, 250));
   left = await db.query("SELECT count(*)::int AS c FROM date_photos");
 }

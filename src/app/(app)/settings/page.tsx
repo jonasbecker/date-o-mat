@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { AppHeader, PageSkeleton } from "@/components/app-header";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
@@ -303,6 +304,8 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
   const calendarsReady = people.every((person) => person.state === "connected");
   return (
     <div className="flex flex-col gap-2.5">
+      {/* Back from the browser's copy, the shed shows what the other one changed meanwhile. */}
+      <AutoRefresh intervalMs={300_000} />
       <PageTitle title="einstellungen." />
       <GardenBanner calendarsMissing={!calendarsReady} otherProblem={!statusOk} />
       <Card size="md" className="flex flex-col gap-1">

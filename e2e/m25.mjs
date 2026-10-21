@@ -82,7 +82,7 @@ async function pageFor(viewport, options = {}) {
 const sheet = (page) => page.locator("[data-date-sheet]");
 const state = async (page) => ({ z: await sheet(page).getAttribute("data-date-sheet"), tempo: await sheet(page).getAttribute("data-tempo"), mood: await page.locator("[data-sheet-flower] [data-bloom]").getAttribute("data-bloom") });
 const settle = (page, ms = 1100) => page.waitForTimeout(ms);
-const head = (page) => page.getByRole("button", { name: /^Details (öffnen|schließen)$/ });
+const head = (page) => page.getByRole("button", { name: /^(Details (öffnen|schließen)|Weniger Details)$/ });
 
 /** Nothing the bubble (and the closed flower) may cover: headline, subtitle, card, name, avatars, step bar. */
 async function overlaps(page) {
@@ -102,7 +102,7 @@ async function overlaps(page) {
     const hit = (a, b) => a && b && a.width > 0 && b.width > 0 && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
     const bubble = box(document.querySelector("[data-sheet-bubble]"));
     const root = document.querySelector("[data-date-sheet]");
-    const open = root.getAttribute("data-date-sheet") === "offen";
+    const open = root.getAttribute("data-date-sheet") !== "zu";
     const above = document.querySelector("[data-sheet-above]");
     const header = document.querySelector("header");
     const centerEl = header.querySelector("[data-header-center]");
@@ -143,6 +143,19 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
   const j = await pageFor(viewport);
   check(`${tag}: no "Details ›" button any more`, (await j.getByRole("link", { name: "Details ›" }).count()) === 0);
   check(`${tag}: closed – the happy flower, "${await j.locator("[data-sheet-bubble]").innerText()}"`, JSON.stringify(await state(j)) === JSON.stringify({ z: "zu", tempo: "sanft", mood: "froh" }) && (await head(j).getAttribute("aria-expanded")) === "false");
+  check(
+    `${tag}: closed – only the title and when · where, the rest is covered`,
+    (await j.locator("[data-sheet-details]").evaluate((el) => getComputedStyle(el).opacity)) === "0" &&
+      (await j.getByText("✓ in beiden Kalendern").isVisible()) &&
+      (await j.locator("[data-sheet-card]").evaluate((card) => {
+        const chip = [...card.querySelectorAll("span")].find((e) => e.textContent.includes("in beiden Kalendern")).getBoundingClientRect();
+        const meta = [...card.querySelectorAll("p")].find((e) => e.textContent.includes("Alter Markt")).getBoundingClientRect();
+        const box = card.getBoundingClientRect();
+        // The meta line inside, the chip already below the card's visible part (behind the tab bar).
+        const nav = document.querySelector('nav[aria-label="Hauptmenü"]').getBoundingClientRect();
+        return meta.bottom <= Math.min(box.bottom, nav.top) && chip.top >= nav.top - 20;
+      })),
+  );
   check(`${tag}: closed – nothing covered (${(await overlaps(j)).join(", ")})`, (await overlaps(j)).length === 0);
   const cardBox = await j.locator("[data-sheet-card]").boundingBox();
   const nav = await j.getByRole("navigation", { name: "Hauptmenü" }).boundingBox();
@@ -152,21 +165,17 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
   // Tap → open, gently
   await head(j).click();
   await settle(j);
-  check(`${tag}: a tap opens it gently (${JSON.stringify(await state(j))})`, JSON.stringify(await state(j)) === JSON.stringify({ z: "offen", tempo: "sanft", mood: "genervt" }) && (await head(j).getAttribute("aria-expanded")) === "true");
+  check(`${tag}: a tap opens it gently (${JSON.stringify(await state(j))})`, JSON.stringify(await state(j)) === JSON.stringify({ z: "mitte", tempo: "sanft", mood: "genervt" }) && (await head(j).getAttribute("aria-expanded")) === "true");
   check(`${tag}: open – nothing covered (${(await overlaps(j)).join(", ")})`, (await overlaps(j)).length === 0);
   // The Beet circle sticks up out of the tab bar (its ring even more) – the card must never cover it: pushed a bit
-  // lower, the card still has to go behind the circle. Without the page's fade-in (Chromium keeps a layer for it,
-  // Safari does not – there the card was in front).
+  // lower, the card still has to go behind the circle.
   const beetOnTop = await j.evaluate(() => {
     const card = document.querySelector("[data-sheet-card]");
     const beet = document.querySelector('nav[aria-label="Hauptmenü"] a[aria-label="Beet"]');
-    const page = card.closest(".animate-page-in");
-    page.style.animation = "none";
     card.style.translate = "0 12px";
     const r = beet.getBoundingClientRect();
     const hit = beet.contains(document.elementFromPoint(r.left + r.width / 2, r.top + 4));
     card.style.translate = "";
-    page.style.animation = "";
     return hit;
   });
   check(`${tag}: the Beet circle stays in front of the open card`, beetOnTop);
@@ -192,7 +201,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
   const zu = await head(j).boundingBox();
   await drag(j, { to: zu.y + 30 - 230, ms: 900, steps: 30 });
   await settle(j);
-  check(`${tag}: pulled up slowly → open, sanft (${JSON.stringify(await state(j))})`, (await state(j)).z === "offen" && (await state(j)).tempo === "sanft");
+  check(`${tag}: pulled up slowly → open, sanft (${JSON.stringify(await state(j))})`, (await state(j)).z === "mitte" && (await state(j)).tempo === "sanft");
   const open = await head(j).boundingBox();
   await drag(j, { to: open.y + 30 + 260, ms: 900, steps: 30 });
   await settle(j);
@@ -208,9 +217,58 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
   await j.waitForTimeout(120);
   const lines = await j.locator(".animate-fade-out").count();
   await settle(j);
-  check(`${tag}: a flick kicks the flower (${JSON.stringify(await state(j))}, ${lines} lines)`, JSON.stringify(await state(j)) === JSON.stringify({ z: "offen", tempo: "schubs", mood: "autsch" }) && lines === 3);
+  check(`${tag}: a flick kicks the flower (${JSON.stringify(await state(j))}, ${lines} lines)`, JSON.stringify(await state(j)) === JSON.stringify({ z: "mitte", tempo: "schubs", mood: "autsch" }) && lines === 3);
   check(`${tag}: kicked – nothing covered (${(await overlaps(j)).join(", ")})`, (await overlaps(j)).length === 0);
   if (viewport.width === 390) await j.screenshot({ path: `${OUT}m25-03-offen-schubs.png` });
+
+  // Pulled on up → voll: the card covers the screen, its handle is the header's step bar, the flower is gone
+  const mid = await head(j).boundingBox();
+  await drag(j, { to: 12, ms: 900, steps: 30 });
+  await settle(j, 1300);
+  const full = await j.evaluate(() => {
+    const r = (el) => el.getBoundingClientRect();
+    const card = r(document.querySelector("[data-sheet-card]"));
+    const handle = r(document.querySelector("[data-sheet-handle]"));
+    const center = document.querySelector("[data-header-center]");
+    const bar = r(center.firstElementChild ?? center);
+    const flower = r(document.querySelector("[data-sheet-flower]"));
+    const scroller = document.querySelector("[data-sheet-details]").parentElement;
+    const cancel = [...document.querySelectorAll("[data-sheet-details] button")].find((b) => b.textContent.trim() === "Absagen");
+    const nav = r(document.querySelector('nav[aria-label="Hauptmenü"]'));
+    return {
+      cardTop: Math.round(card.top),
+      handle: [Math.round(handle.left + handle.width / 2 - (bar.left + bar.width / 2)), Math.round(handle.top + handle.height / 2 - (bar.top + bar.height / 2)), Math.round(handle.width - bar.width)],
+      flowerGone: flower.bottom < 0,
+      fits: scroller.scrollHeight <= scroller.clientHeight + 1,
+      cancelVisible: !!cancel && r(cancel).bottom <= nav.top,
+    };
+  });
+  check(`${tag}: pulled on up → voll (${(await state(j)).z})`, (await state(j)).z === "voll" && (await head(j).getAttribute("aria-label")) === "Weniger Details");
+  check(`${tag}: voll – the card covers the screen, the handle sits on the step bar (${JSON.stringify(full)})`, full.cardTop <= 0 && full.handle.every((d) => Math.abs(d) <= 1));
+  check(`${tag}: voll – the flower has flown off the top`, full.flowerGone);
+  check(`${tag}: voll – everything there without scrolling, Absagen above the tab bar`, (viewport.height < 800 || full.fits) && full.cancelVisible);
+  check(`${tag}: voll – name and avatars stay on top`, await j.getByRole("link", { name: "Zweisamen – zum Start" }).evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return el.contains(document.elementFromPoint(r.left + 4, r.top + r.height / 2));
+  }));
+  if (viewport.width === 390) await j.screenshot({ path: `${OUT}m25-04-voll.png` });
+
+  // Down a bit → back to mitte, the flower flies back in and lands next to the headline
+  const fullHead = await head(j).boundingBox();
+  await drag(j, { to: fullHead.y + 30 + (mid.y - fullHead.y), ms: 900, steps: 30 });
+  await j.waitForTimeout(300);
+  const landing = await j.locator("[data-sheet-flower]").boundingBox();
+  await settle(j, 1300);
+  const landed = await j.locator("[data-sheet-flower]").boundingBox();
+  check(`${tag}: down from voll → mitte, the flower comes back down (${Math.round(landing.y)} → ${Math.round(landed.y)})`, (await state(j)).z === "mitte" && landed.y > -40 && landed.y + landed.height > 0);
+  check(`${tag}: back at mitte – nothing covered (${(await overlaps(j)).join(", ")})`, (await overlaps(j)).length === 0);
+
+  // voll again, a tap on the head → mitte
+  await drag(j, { to: 12, ms: 600, steps: 20 });
+  await settle(j, 1300);
+  await head(j).click();
+  await settle(j, 1300);
+  check(`${tag}: at voll a tap on the head goes back to mitte`, (await state(j)).z === "mitte");
 
   // Back gesture closes it and stays on the Beet
   await j.goBack();
@@ -230,7 +288,7 @@ const turned = await calm.locator("[data-sheet-flower]").evaluate((el) => {
   const m = new DOMMatrix(getComputedStyle(el).transform);
   return Math.abs(m.b) > 0.001;
 });
-check(`reduced motion: opens without rotation or lines (${calmLines} lines, rotated ${turned})`, (await state(calm)).z === "offen" && !turned && calmLines === 0);
+check(`reduced motion: opens without rotation or lines (${calmLines} lines, rotated ${turned})`, (await state(calm)).z === "mitte" && !turned && calmLines === 0);
 await calm.context().close();
 
 await browser.close();

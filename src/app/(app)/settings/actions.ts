@@ -36,12 +36,14 @@ export async function saveBusyCalendarsAction(formData: FormData) {
   const known = await listCalendars(user.id);
   const ids = known.filter((c) => !c.primary && chosen.has(c.id)).map((c) => c.id);
   await setBusyCalendars(user.id, ["primary", ...ids]);
+  refresh();
   redirect("/settings?calendar=saved");
 }
 
 export async function disconnectCalendarAction() {
   const { user } = await requireCouple();
   await disconnect(user.id);
+  refresh();
   redirect("/settings?calendar=disconnected");
 }
 

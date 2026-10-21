@@ -83,7 +83,8 @@ export async function cancelDateAction(dateId: string): Promise<ActionResult> {
   const ok = id.success && (await cancelDate(ctx, id.data, now));
   if (ok) {
     await tellPartner(ctx, "cancelled", id.data);
-    // "Absagen" sits on the date's own page – which is gone now: back to the start.
+    // "Absagen" sits on the date's own page – which is gone now: back to the start (fresh, not the browser's copy).
+    refresh();
     redirect("/plan");
   }
   refresh();

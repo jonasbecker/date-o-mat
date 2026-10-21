@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { normalizeInviteCode } from "@/lib/invite-code";
 import { requireUser } from "@/server/auth/dal";
@@ -20,6 +21,8 @@ export async function createCoupleAction() {
   if (!user.coupleId) {
     await createCouple(user.id);
   }
+  // The browser keeps visited pages a while (staleTimes): drop them, the next one shows the new state.
+  refresh();
   redirect("/pair");
 }
 
@@ -28,6 +31,7 @@ export async function renewInviteAction() {
   if (user.coupleId && (await countMembers(user.coupleId)) < 2) {
     await renewInviteCode(user.coupleId);
   }
+  refresh();
   redirect("/pair");
 }
 
@@ -43,5 +47,6 @@ export async function joinCoupleAction(_prev: JoinState, formData: FormData): Pr
     return { error: JOIN_ERRORS[result], code: input };
   }
   // Straight to the introduction (not via "/"), so the browser never caches "/" as a redirect.
+  refresh();
   redirect(user.onboardedAt ? "/" : "/welcome");
 }

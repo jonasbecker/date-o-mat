@@ -1,30 +1,37 @@
 "use client";
 
 // "date steht." (docs/design/garten/date-steht/DATE-STEHT.md): the date card is a sheet – tap it or pull it
-// up. Its bottom edge stays put, only its top moves; the flower above it gets pushed up gently ("sanft")
-// or kicked away ("schubs", a fast flick), and its thought bubble always comes out of its mouth.
+// up. Its bottom edge stays put, only its top moves; three stops: "zu" (just the title and when · where),
+// "mitte" (the flower is pushed up next to the headline, gently – "sanft" – or kicked away – "schubs", a fast
+// flick – its thought bubble always comes out of its mouth) and "voll" (the card covers the screen, its handle
+// becomes the header's step bar, the flower flies off the top and comes back down when the card goes down).
 // The geometry is core/date-sheet.ts; the server renders the texts, the card's head and its details.
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Bloom } from "@/components/bloom";
 import { useFlowerVoice, VoiceBubble } from "@/components/flower-voice";
 import { bloomSaying, type FlowerPot, type Stimmung } from "@/core/bloom";
 import {
+  bubbleAt,
   bubbleDots,
-  mixBubble,
-  mixPose,
+  cardAt,
+  FLY,
+  poseAt,
   poseTransform,
-  progress,
+  position,
   release,
   sheetLayout,
   TIMING,
   type Pose,
   type SheetLayout,
+  type Stop,
   type Tempo,
 } from "@/core/date-sheet";
 import { cn } from "@/lib/cn";
 
-type Phase = { open: boolean; tempo: Tempo };
-type Drag = { startY: number; startTop: number; startedOpen: boolean; moved: boolean; samples: Array<{ y: number; t: number }> };
+type Phase = { stop: Stop; tempo: Tempo };
+type Drag = { startY: number; startTop: number; from: Stop; moved: boolean; samples: Array<{ y: number; t: number }> };
+
+const LABEL: Record<Stop, string> = { zu: "Details öffnen", mitte: "Details schließen", voll: "Weniger Details" };
 
 export function DateSheet({
   headline,
@@ -39,9 +46,9 @@ export function DateSheet({
   headline: ReactNode;
   /** Week bar, subtitle, notices – they fade once the card moves. */
   above: ReactNode;
-  /** Title, time and place, the calendar chip: what the closed card shows. */
+  /** Title and when · where: all the closed card shows. */
   head: ReactNode;
-  /** Map, rows, Route / Verschieben / Absagen: a faded preview while closed. */
+  /** Calendar chip, map, rows, Route / Verschieben / Absagen: covered while closed. */
   details: ReactNode;
   /** What the happy flower says while the card is closed. */
   saying: string;
@@ -50,17 +57,20 @@ export function DateSheet({
 }) {
   const root = useRef<HTMLDivElement>(null);
   const flow = useRef<HTMLDivElement>(null);
+  const headEl = useRef<HTMLDivElement>(null);
   const flower = useRef<HTMLDivElement>(null);
   const bubbleEl = useRef<HTMLDivElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<SheetLayout | null>(null);
-  const [phase, setPhase] = useState<Phase>({ open: false, tempo: "sanft" });
+  const [phase, setPhase] = useState<Phase>({ stop: "zu", tempo: "sanft" });
+  const stopNow = useRef<Stop>("zu");
   // While a finger moves the card: its top (px); null = at rest.
   const [dragTop, setDragTop] = useState<number | null>(null);
   const [moving, setMoving] = useState(false);
   const [kick, setKick] = useState(false);
   const [words, setWords] = useState<string | null>(null);
   const [bubbleH, setBubbleH] = useState(60);
+  const [more, setMore] = useState(false);
   const [reduced, setReduced] = useState(false);
   const drag = useRef<Drag | null>(null);
   const pushed = useRef(false);
@@ -74,14 +84,30 @@ export function DateSheet({
       const box = el.getBoundingClientRect();
       if (box.width === 0 || box.height === 0) return;
       const textEnd = flow.current ? flow.current.getBoundingClientRect().bottom - box.top : 200;
-      // The page's header (name, avatars): the open bubble sits in it.
-      const header = el.closest("main")?.querySelector("header");
-      const headerTop = header ? header.getBoundingClientRect().top - box.top : undefined;
-      setLayout(sheetLayout({ width: box.width, height: box.height, flowBottom: textEnd, headerTop }));
+      const main = el.closest("main");
+      // The page's header (name, avatars): the bubble at mitte sits in it, the handle ends on its step bar.
+      const header = main?.querySelector("header")?.getBoundingClientRect();
+      const center = main?.querySelector("[data-header-center]");
+      const barBox = (center?.firstElementChild ?? center)?.getBoundingClientRect();
+      setLayout(
+        sheetLayout({
+          width: box.width,
+          height: box.height,
+          flowBottom: textEnd,
+          headH: headEl.current?.offsetHeight,
+          headerTop: header ? header.top - box.top : undefined,
+          headerBottom: header ? header.bottom - box.top : undefined,
+          screenTop: main ? main.getBoundingClientRect().top - box.top : undefined,
+          bar: barBox && barBox.width > 0 ? { y: barBox.top + barBox.height / 2 - box.top, w: barBox.width, h: barBox.height } : undefined,
+        }),
+      );
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
+    // The text above (fonts, a notice) and the card's head can grow without the area changing.
+    if (flow.current) observer.observe(flow.current);
+    if (headEl.current) observer.observe(headEl.current);
     return () => observer.disconnect();
   }, []);
 
@@ -100,10 +126,11 @@ export function DateSheet({
 
   const timing = reduced ? { ms: 200, ease: "ease", cardEase: "ease" } : TIMING[phase.tempo];
   const flat = (p: Pose): Pose => (reduced ? { ...p, r: 0 } : p);
+  const restPose = (l: SheetLayout, { stop, tempo }: Phase): Pose => (stop === "zu" ? l.zu : stop === "mitte" ? l.mitte[tempo] : l.voll);
 
-  /** Moves the flower to `to`; a kick goes through the "mitte" pose with an overshoot. */
+  /** Moves the flower to `to`: a kick goes through the "via" pose with an overshoot, off the top it speeds up, back down it lands softly. */
   const animateFlower = useCallback(
-    (to: Pose, tempo: Tempo, opening: boolean) => {
+    (to: Pose, tempo: Tempo, how: "plain" | "kick" | "out" | "back") => {
       const el = flower.current;
       if (!el || !layout || typeof el.animate !== "function") return;
       const from = getComputedStyle(el).transform;
@@ -112,12 +139,12 @@ export function DateSheet({
         el.animate([{ transform: from === "none" ? undefined : from }, { transform: poseTransform(flat(to)) }], { duration: 200, easing: "ease" });
         return;
       }
-      const t = TIMING[tempo];
+      const t = how === "out" ? FLY.out : how === "back" ? FLY.back : TIMING[tempo];
       const frames: Keyframe[] =
-        opening && tempo === "schubs"
+        how === "kick"
           ? [
               { transform: from, easing: "cubic-bezier(0.2, 0.8, 0.4, 1)" },
-              { transform: poseTransform(layout.mitte.schubs), offset: 0.4, easing: t.ease },
+              { transform: poseTransform(layout.via.schubs), offset: 0.4, easing: TIMING.schubs.ease },
               { transform: poseTransform(to) },
             ]
           : [{ transform: from, easing: t.ease }, { transform: poseTransform(to) }];
@@ -128,25 +155,30 @@ export function DateSheet({
     [layout, reduced],
   );
 
+  /** Lets the card come to rest at `to`; `at`: where it was (0 … 2) – coming down from above voll the flower flies back in. */
   const settle = useCallback(
-    (open: boolean, tempo: Tempo) => {
+    (to: Stop, tempo: Tempo, at?: number) => {
       if (!layout) return;
+      const from = stopNow.current;
+      const was = at ?? (from === "zu" ? 0 : from === "mitte" ? 1 : 2);
+      stopNow.current = to;
       setDragTop(null);
-      setPhase({ open, tempo });
-      setMoving(open);
+      setPhase({ stop: to, tempo });
+      setMoving(to !== "zu");
       const pool: Stimmung = tempo === "schubs" ? "autsch" : "genervt";
-      setWords(open ? bloomSaying(pool, Math.floor(Math.random() * 1000), { partner: voice.partnerName }) : null);
-      animateFlower(open ? layout.offen[tempo] : layout.zu, tempo, open);
-      if (open && tempo === "schubs" && !reduced) {
+      if (to === "mitte" || to === "zu") setWords(to === "mitte" ? bloomSaying(pool, Math.floor(Math.random() * 1000), { partner: voice.partnerName }) : null);
+      const how = to === "voll" ? "out" : was > 1 ? "back" : to === "mitte" && tempo === "schubs" && was < 1 ? "kick" : "plain";
+      animateFlower(restPose(layout, { stop: to, tempo }), tempo, how);
+      if (how === "kick" && !reduced) {
         setKick(true);
         window.setTimeout(() => setKick(false), 400);
       }
-      // The back gesture closes the open card (one history entry while it is open).
-      if (open && !pushed.current) {
+      // The back gesture closes the card (one history entry while it is up).
+      if (to !== "zu" && !pushed.current) {
         window.history.pushState({ dateSheet: true }, "");
         pushed.current = true;
       }
-      if (!open && pushed.current) {
+      if (to === "zu" && pushed.current) {
         pushed.current = false;
         if (window.history.state?.dateSheet) window.history.back();
       }
@@ -158,18 +190,18 @@ export function DateSheet({
     const onPop = () => {
       if (!pushed.current) return;
       pushed.current = false;
-      settle(false, "sanft");
+      settle("zu", "sanft");
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, [settle]);
 
   // --- The gesture -------------------------------------------------------------------------------
-  const cardTop = !layout ? null : dragTop ?? (phase.open ? layout.cardTopOpen : layout.cardTopZu);
+  const cardTop = !layout ? null : (dragTop ?? layout.tops[phase.stop]);
 
   const start = (y: number) => {
     if (!layout) return;
-    drag.current = { startY: y, startTop: cardTop ?? layout.cardTopZu, startedOpen: phase.open, moved: false, samples: [{ y, t: performance.now() }] };
+    drag.current = { startY: y, startTop: cardTop ?? layout.tops.zu, from: phase.stop, moved: false, samples: [{ y, t: performance.now() }] };
   };
   const move = (y: number): boolean => {
     const d = drag.current;
@@ -181,7 +213,7 @@ export function DateSheet({
       setMoving(true);
       setWords(bloomSaying("genervt", 0, { partner: voice.partnerName }));
     }
-    const top = Math.max(layout.cardTopOpen - 30, Math.min(layout.cardTopZu + 30, d.startTop + (y - d.startY)));
+    const top = Math.max(layout.tops.voll, Math.min(layout.tops.zu + 30, d.startTop + (y - d.startY)));
     d.samples.push({ y, t: performance.now() });
     if (d.samples.length > 6) d.samples.shift();
     setDragTop(top);
@@ -196,13 +228,13 @@ export function DateSheet({
     const last = d.samples.at(-1)!;
     // Upwards is positive.
     const speed = (first.y - last.y) / Math.max(1, last.t - first.t);
-    const p = progress(dragTop ?? d.startTop, layout);
-    const { open, tempo } = release(p, d.startedOpen, speed);
-    settle(open, tempo);
+    const at = position(dragTop ?? d.startTop, layout);
+    const { to, tempo } = release(at, d.from, speed);
+    settle(to, tempo, at);
     return true;
   };
 
-  // A tap toggles (keyboard: Enter / Space on the same button).
+  // A tap: zu → mitte → zu, voll → mitte (keyboard: Enter / Space on the same button).
   const tapped = useRef(false);
   const onHeadPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0) return;
@@ -217,23 +249,25 @@ export function DateSheet({
       tapped.current = false;
       return;
     }
-    settle(!phase.open, "sanft");
+    settle(phase.stop === "zu" ? "mitte" : phase.stop === "mitte" ? "zu" : "mitte", "sanft");
   };
 
-  // Inside the open card the content scrolls; at the top, pulling down closes it.
+  // Inside the card: at mitte the content does not scroll – a pull moves the card (up to voll, down to zu);
+  // at voll it scrolls only if it has to, and at its top pulling down brings the card down.
   useEffect(() => {
     const el = scroller.current;
-    if (!el || !phase.open) return;
+    if (!el || phase.stop === "zu") return;
     let from: number | null = null;
     const onStart = (e: TouchEvent) => {
-      from = el.scrollTop <= 0 ? e.touches[0].clientY : null;
+      from = e.touches[0].clientY;
     };
     const onMove = (e: TouchEvent) => {
       if (from === null) return;
       const y = e.touches[0].clientY;
       if (!drag.current) {
-        if (y - from < 8) {
-          if (y < from) from = null; // scrolling up: the content's turn
+        if (Math.abs(y - from) < 8) return;
+        if (phase.stop === "voll" && (y < from || el.scrollTop > 0)) {
+          from = null; // the content's turn
           return;
         }
         start(from);
@@ -257,22 +291,43 @@ export function DateSheet({
     };
   });
 
+  // At mitte the rest is cut off (a soft fade says there is more). Should the browser scroll it anyway – the
+  // keyboard focus moved into it, or a link further down was looked for – the card goes up to voll.
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el || phase.stop !== "mitte" || dragTop !== null) return;
+    const timer = window.setTimeout(() => setMore(el.scrollHeight > el.clientHeight + 4), timing.ms);
+    const onScroll = () => {
+      if (el.scrollTop > 0 && stopNow.current === "mitte") settle("voll", "sanft");
+    };
+    el.addEventListener("scroll", onScroll);
+    return () => {
+      window.clearTimeout(timer);
+      el.removeEventListener("scroll", onScroll);
+    };
+  }, [phase.stop, dragTop, settle, timing.ms]);
+
   // --- What to draw --------------------------------------------------------------------------------
-  const p = layout && cardTop !== null ? progress(cardTop, layout) : 0;
   const dragging = dragTop !== null;
-  const pose: Pose | null = !layout ? null : dragging ? mixPose(layout.zu, layout.offen.sanft, p) : phase.open ? layout.offen[phase.tempo] : layout.zu;
-  const bubble = !layout ? null : dragging ? mixBubble(layout.bubbleZu, layout.bubbleOffen.sanft, p) : phase.open ? layout.bubbleOffen[phase.tempo] : layout.bubbleZu;
-  const mood: Stimmung = !moving && !phase.open ? "froh" : dragging || phase.tempo === "sanft" ? "genervt" : "autsch";
-  const dots = pose && bubble ? bubbleDots(flat(pose), { x: bubble.x, y: bubble.y, w: bubble.w, h: bubbleH }) : null;
+  const at = layout && cardTop !== null ? position(cardTop, layout) : 0;
+  const pose: Pose | null = !layout ? null : dragging ? poseAt(at, layout) : restPose(layout, phase);
+  const bubble = !layout ? null : dragging ? bubbleAt(at, layout) : phase.stop === "voll" ? { box: layout.bubbleMitte[phase.tempo], opacity: 0 } : bubbleAt(phase.stop === "zu" ? 0 : 1, layout, phase.tempo);
+  const look = layout ? cardAt(at, layout) : null;
+  const mood: Stimmung = !moving && phase.stop === "zu" ? "froh" : dragging || phase.tempo === "sanft" ? "genervt" : "autsch";
+  const dots = pose && bubble ? bubbleDots(flat(pose), { x: bubble.box.x, y: bubble.box.y, w: bubble.box.w, h: bubbleH }) : null;
   const glide = dragging ? "none" : `${timing.ms}ms ease`;
-  const showVoice = !moving && !phase.open;
-  const open = phase.open && !dragging;
+  const cardGlide = dragging ? "none" : `${timing.ms}ms ${timing.cardEase}`;
+  const showVoice = !moving && phase.stop === "zu";
+  const stop = phase.stop;
+  const up = stop !== "zu" && !dragging;
+  // From mitte to voll the handle turns into the step bar (the bar's color: ink).
+  const ink = Math.max(0, Math.min(1, at - 1));
 
   return (
-    <div ref={root} data-date-sheet={open ? "offen" : "zu"} data-tempo={phase.tempo} data-moving={moving || phase.open ? "" : undefined} className="relative min-h-0 flex-1">
+    <div ref={root} data-date-sheet={stop} data-tempo={phase.tempo} data-moving={moving || phase.stop !== "zu" ? "" : undefined} className="relative min-h-0 flex-1">
       <div ref={flow}>
         {headline}
-        <div data-sheet-above className="transition-opacity duration-300" style={{ opacity: moving || phase.open ? 0 : 1 }} aria-hidden={moving || phase.open ? true : undefined}>
+        <div data-sheet-above className="transition-opacity duration-300" style={{ opacity: moving || phase.stop !== "zu" ? 0 : 1 }} aria-hidden={moving || phase.stop !== "zu" ? true : undefined}>
           {above}
         </div>
       </div>
@@ -296,57 +351,92 @@ export function DateSheet({
         ))}
 
       {dots && bubble && (
-        <>
+        <div aria-hidden={bubble.opacity === 0 ? true : undefined} style={{ opacity: bubble.opacity, transition: dragging ? "none" : "opacity 250ms ease" }} className={cn(bubble.opacity === 0 && "pointer-events-none")}>
           <span aria-hidden="true" className="absolute z-[5] size-1.5 rounded-full bg-ink" style={{ left: dots.small.x, top: dots.small.y, transition: `left ${glide}, top ${glide}` }} />
           <span aria-hidden="true" className="absolute z-[5] size-2.5 rounded-full bg-ink" style={{ left: dots.big.x, top: dots.big.y, transition: `left ${glide}, top ${glide}` }} />
           <div
             ref={bubbleEl}
             data-sheet-bubble
             className="absolute z-[5]"
-            style={{ left: bubble.x, top: bubble.y, width: bubble.w, transform: `rotate(${reduced ? 0 : bubble.rotate}deg)`, transition: `left ${glide}, top ${glide}, transform ${glide}` }}
+            style={{ left: bubble.box.x, top: bubble.box.y, width: bubble.box.w, transform: `rotate(${reduced ? 0 : bubble.box.rotate}deg)`, transition: `left ${glide}, top ${glide}, transform ${glide}` }}
           >
             <VoiceBubble
               voice={showVoice ? flowerVoice : { words: words ?? saying, hint: null, sheet: null }}
               className="block w-full rounded-[20px] bg-ink px-2.5 pb-[11px] pt-[9px] text-center font-hand font-semibold leading-[1.02] text-[#1B2620]"
-              style={{ fontSize: bubble.fontSize }}
+              style={{ fontSize: bubble.box.fontSize }}
             />
           </div>
-        </>
+        </div>
       )}
       {flowerVoice.sheet}
 
       <div
         data-sheet-card
-        className={cn("absolute -inset-x-2 z-[2] flex flex-col overflow-hidden rounded-[26px] bg-surface shadow-[0_-10px_30px_rgba(0,0,0,0.35)]", !layout && "bottom-[-20px] h-[192px]")}
-        style={layout && cardTop !== null ? { top: cardTop, bottom: -20, transition: dragging ? "none" : `top ${timing.ms}ms ${timing.cardEase}` } : undefined}
+        className={cn("absolute z-[2] flex flex-col overflow-hidden bg-surface shadow-[0_-10px_30px_rgba(0,0,0,0.35)]", !layout && "-inset-x-2 bottom-[-20px] rounded-[26px]")}
+        style={
+          layout && cardTop !== null && look
+            ? {
+                top: cardTop,
+                bottom: -look.bottom,
+                left: -look.inset,
+                right: -look.inset,
+                borderRadius: `${look.radius}px ${look.radius}px ${look.radius}px ${look.radius}px`,
+                transition: `top ${cardGlide}, bottom ${cardGlide}, left ${cardGlide}, right ${cardGlide}, border-radius ${cardGlide}`,
+              }
+            : undefined
+        }
       >
         <button
           type="button"
-          aria-expanded={open}
-          aria-label={open ? "Details schließen" : "Details öffnen"}
+          aria-expanded={stop !== "zu"}
+          aria-label={LABEL[stop]}
           onPointerDown={onHeadPointerDown}
           onPointerMove={(e) => move(e.clientY)}
           onPointerUp={onHeadPointerUp}
           onPointerCancel={onHeadPointerUp}
           onClick={onHeadClick}
-          className={cn("absolute inset-x-0 top-0 z-[2] touch-none bg-transparent", open ? "h-[120px]" : "h-full")}
+          className="absolute inset-x-0 top-0 z-[2] touch-none bg-transparent"
+          style={{ height: stop === "zu" || !look ? "100%" : look.padTop + (layout?.headH ?? 80) }}
         />
-        <span aria-hidden="true" className="absolute left-1/2 top-2 h-1 w-[38px] -translate-x-1/2 rounded-sm bg-[#3A4A40]" />
-        <div ref={scroller} className={cn("flex min-h-0 flex-1 flex-col gap-2.5 overscroll-contain px-[22px] pb-[18px] pt-6", open ? "overflow-y-auto" : "overflow-hidden")}>
-          {head}
+        <span
+          aria-hidden="true"
+          data-sheet-handle
+          className="absolute left-1/2 -translate-x-1/2 rounded-[3px]"
+          style={
+            look
+              ? {
+                  top: look.handle.top,
+                  width: look.handle.w,
+                  height: look.handle.h,
+                  backgroundColor: `color-mix(in srgb, var(--color-ink) ${Math.round(ink * 100)}%, #3A4A40)`,
+                  transition: dragging ? "none" : `top ${cardGlide}, width ${cardGlide}, height ${cardGlide}, background-color ${cardGlide}`,
+                }
+              : { top: 8, width: 38, height: 4, backgroundColor: "#3A4A40" }
+          }
+        />
+        <div
+          ref={scroller}
+          className={cn("flex min-h-0 flex-1 flex-col gap-2.5 overscroll-contain px-[22px] pb-[18px]", up && phase.stop === "voll" ? "overflow-y-auto" : "overflow-hidden")}
+          style={{ paddingTop: look?.padTop ?? 24, paddingInline: look ? 22 + look.inset - 8 : 22, transition: dragging ? "none" : `padding ${cardGlide}` }}
+        >
+          <div ref={headEl} className="flex flex-col gap-2.5">
+            {head}
+          </div>
           <div
             data-sheet-details
-            inert={!open}
-            className="flex flex-col gap-2.5"
+            inert={!up}
+            className={cn("flex flex-col gap-2.5", !layout && "hidden")}
             style={{
-              opacity: open ? 1 : 0.35,
-              transform: open ? "none" : "translateY(16px)",
-              transition: `opacity 400ms ease ${open ? 250 : 0}ms, transform 400ms ease ${open ? 250 : 0}ms`,
+              opacity: up ? 1 : 0,
+              transform: up ? "none" : "translateY(16px)",
+              transition: `opacity 400ms ease ${up ? 250 : 0}ms, transform 400ms ease ${up ? 250 : 0}ms`,
             }}
           >
             {details}
           </div>
         </div>
+        {/* At mitte the rest is cut off: a soft fade, pull up for all of it. */}
+        <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-surface to-transparent transition-opacity duration-300" style={{ opacity: more && up && stop === "mitte" ? 1 : 0 }} />
       </div>
     </div>
   );

@@ -144,7 +144,7 @@ export function Beet({
               {notices && <div className="mt-3 flex flex-col gap-2">{notices}</div>}
             </>
           }
-          head={<SheetHead date={date} surprise={o.dateExtras?.surprise ?? null} partner={partner} />}
+          head={<SheetHead date={date} />}
           details={<SheetDetails date={date} me={me} partner={partner} o={o} swappable={swappable} />}
           saying={saying}
           voice={{ publicKey: o.push.publicKey, myDevices: o.push.mine, partnerDevices: o.push.partner, partnerName: partner.name }}
@@ -496,7 +496,8 @@ function Invitation({ date, partner, surprise }: { date: DatePlan; partner: User
 }
 
 /** The closed card (MBestaetigt): title, time and place, the calendar chip. */
-function SheetHead({ date, surprise, partner }: { date: DatePlan; surprise: "hidden" | "organizer" | null; partner: User }) {
+/** The closed card: only the title and when · where. */
+function SheetHead({ date }: { date: DatePlan }) {
   return (
     <div data-date-card={date.id} className="flex flex-col gap-2.5">
       <p className="text-[21px] font-extrabold leading-[1.12] tracking-[-0.02em]">{date.title}</p>
@@ -504,23 +505,24 @@ function SheetHead({ date, surprise, partner }: { date: DatePlan; surprise: "hid
         {formatShortDate(date.startsAt)} · {formatTimeRange(date.startsAt, date.endsAt)}
         {date.location ? ` · ${date.location}` : ""}
       </p>
-      {surprise === "hidden" && <p className="text-[15px] text-muted">🤫 Eine Überraschung von {partner.name}</p>}
-      {surprise === "organizer" && <p className="text-[15px] text-muted">🎁 {partner.name} sieht bis zum Tag nur die Zeit.</p>}
-      {date.syncStatus === "synced" && <span className="inline-flex h-[30px] items-center self-start rounded-full bg-soft px-3 text-[13px] font-semibold">✓ in beiden Kalendern</span>}
     </div>
   );
 }
 
 const ROW_LABEL = "meta pt-0.5 text-[11px] uppercase text-muted";
 
-/** The open card: where (a drawn map that opens the route), what to bring, the note – then Route, Verschieben, Absagen. */
+/** The card pulled up: the calendar chip, where (a drawn map that opens the route), what to bring, the note – then Route, Verschieben, Absagen. */
 function SheetDetails({ date, me, partner, o, swappable }: { date: DatePlan; me: User; partner: User; o: Overview; swappable: boolean }) {
   const route = date.location ? routeUrl(date.location, me.startLocation) : null;
   const tasks = o.dateExtras?.tasks ?? null;
   const fromPartner = date.proposedById === partner.id;
-  const noteLabel = o.dateExtras?.surprise === "hidden" ? "HINWEIS" : fromPartner ? `VON ${partner.name.toUpperCase()}` : "DEINE NOTIZ";
+  const surprise = o.dateExtras?.surprise ?? null;
+  const noteLabel = surprise === "hidden" ? "HINWEIS" : fromPartner ? `VON ${partner.name.toUpperCase()}` : "DEINE NOTIZ";
   return (
     <>
+      {surprise === "hidden" && <p className="text-[15px] text-muted">🤫 Eine Überraschung von {partner.name}</p>}
+      {surprise === "organizer" && <p className="text-[15px] text-muted">🎁 {partner.name} sieht bis zum Tag nur die Zeit.</p>}
+      {date.syncStatus === "synced" && <span className="inline-flex h-[30px] items-center self-start rounded-full bg-soft px-3 text-[13px] font-semibold">✓ in beiden Kalendern</span>}
       {route && (
         <a href={route} target="_blank" rel="noopener noreferrer" aria-label={`Route zu ${date.location}`} className="relative mt-1 block h-32 overflow-hidden rounded-[18px] bg-soft">
           <span aria-hidden="true" className="absolute -left-5 top-[70px] h-3.5 w-[420px] -rotate-[8deg] bg-[#2F4036]" />
