@@ -148,7 +148,20 @@ await j.goto(`${BASE}/dates`);
 await j.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 20000 });
 await j.goto(`${BASE}/plan`);
 await j.locator("[data-date-sheet] [data-sheet-flower]").waitFor({ timeout: 20000 });
-await j.waitForTimeout(800); // the copy is written after the page
+// The copies are written after the page: wait until the page and all its code files are kept (slower in CI) –
+// without them the offline page could not start and would never say it is offline.
+for (let i = 0; i < 60; i++) {
+  const kept = await j.evaluate(async () => {
+    const pages = await caches.open("dom-pages-v1");
+    if (!(await pages.match(location.href, { ignoreVary: true }))) return false;
+    const code = await caches.open("dom-static-v1");
+    const files = [...document.querySelectorAll("script[src]")].map((s) => s.src).filter((src) => src.includes("/_next/static/"));
+    for (const src of files) if (!(await code.match(src))) return false;
+    return true;
+  });
+  if (kept) break;
+  await j.waitForTimeout(250);
+}
 // No network at all – for the page and for the service worker.
 const cut = (route) => route.abort("internetdisconnected");
 await ctx.route("**/*", cut);
@@ -157,7 +170,9 @@ await j.reload();
 await j.locator("[data-date-sheet]").waitFor({ timeout: 10000 }).catch(() => {});
 check("offline, the Beet opens with its last state", await j.getByText("Zweizeiler-Schnitzeljagd durch die Altstadt").first().isVisible().catch(() => false));
 await j.locator("[data-offline]").waitFor({ timeout: 10000 }).catch(() => {}); // after hydration – slower in CI
-check("…and says it is offline", await j.locator("[data-offline]").isVisible().catch(() => false));
+const saysOffline = await j.locator("[data-offline]").isVisible().catch(() => false);
+check("…and says it is offline", saysOffline);
+if (!saysOffline) console.log("    offline page:", await j.evaluate(() => ({ onLine: navigator.onLine, hydrated: Boolean(document.querySelector("main [data-date-sheet]") && Object.keys(document.querySelector("main") ?? {}).some((k) => k.startsWith("__react"))) })).catch((e) => e.message));
 await j.screenshot({ path: `${OUT}m27-01-offline.png` });
 await j.goto(`${BASE}/dates`).catch(() => {});
 await j.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 10000 }).catch(() => {});
