@@ -31,14 +31,13 @@ async function Discover() {
   const [deck, taste] = await Promise.all([deckFor(ctx, now), deckTaste(ctx)]);
   // Running low: the next batch is made in the background, AutoRefresh brings it in.
   // (Without the AI the hand-picked Köln ideas still come in.)
-  if (!deck.generating && deck.cards.length < DECK_REFILL_BELOW) {
-    after(() => refillDeck(ctx.coupleId, now));
-  }
+  const refilling = !deck.generating && deck.cards.length < DECK_REFILL_BELOW;
+  if (refilling) after(() => refillDeck(ctx.coupleId, now));
   return (
     <DeckChrome>
-      {/* Fast only while a batch is being made; a low deck that cannot be refilled (limit, no AI) must not
-          ask Google every few seconds. */}
-      <AutoRefresh intervalMs={deck.generating ? 6_000 : deck.cards.length < DECK_REFILL_BELOW ? 15_000 : 30_000} />
+      {/* Fast while a batch is being made or ordered: the check is only the small fingerprint – the page (and its
+          Google query) renders again only when the cards really change. */}
+      <AutoRefresh intervalMs={deck.generating || refilling ? 6_000 : 30_000} />
       <AppHeader
         action={
           // Matches are seedlings (DESIGN-GARTEN.md §5.2) – the pill leads to them; ⓘ explains the page.
