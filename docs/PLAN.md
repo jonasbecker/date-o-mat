@@ -187,7 +187,7 @@ einmal, Rückfragen beim Entfernen/Trennen, Willkommen-Texte, Manifest dunkel, �
 5. ✅ **Eingeladene Person kann absagen** (heute nur „Zusagen“ oder „Anderer Termin“).
 6. ✅ **Push einmal, nicht dreimal** (21.10.: nur die Blume auf dem Beet + der Schalter im Setup): ein gemeinsamer Push-Zustand in den Einstellungen (Banner und
    Schalter widersprechen sich), der Hinweis auf dem Beet nur noch als Sprechblase der Blume.
-7. **Beet aufräumen**: zu viele Zeilen machen die Blume winzig; die Blume sagt Passendes (nicht „wer
+7. ✅ **Beet aufräumen** (Blume begrenzt auf eine Größe, sagt „du gießt!“ / „sam gießt.“): zu viele Zeilen machen die Blume winzig; die Blume sagt Passendes (nicht „wer
    gießt?“, wenn du dran bist); „sam ist dran.“ nach dem Gießen → „wartet auf sam.“ ✅; Blumengröße
    über alle Zustände gleich.
 8. ✅ **„Anderer Termin“** bietet auch Zeiten an, die das alte Date überlappen (es blockiert sich selbst).

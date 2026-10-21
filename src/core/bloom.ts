@@ -157,9 +157,14 @@ const SAYINGS: Record<Stimmung, readonly string[]> = {
   traurig: ["psst … letztes mal fiel's aus. heute vielleicht?", "ich hab durst … nur noch kurz zeit.", "nicht vergessen: die frist läuft ab."],
 };
 
-/** What the flower says in its thought bubble – fits the mood and changes now and then (`seed`, e.g. the day). */
-export function bloomSaying(stimmung: Stimmung, seed: number, words: { partner: string; day?: string; missed?: boolean }): string {
-  const options = SAYINGS[stimmung];
+/**
+ * What the flower says in its thought bubble – fits the mood and changes now and then (`seed`, e.g. the day).
+ * `turn`: whose move it is – the flower never asks "wer gießt?" when it knows.
+ */
+export function bloomSaying(stimmung: Stimmung, seed: number, words: { partner: string; day?: string; missed?: boolean; turn?: "me" | "partner" }): string {
+  const options = SAYINGS[stimmung].map((o) =>
+    o.endsWith("wer gießt?") && words.turn ? o.replace("wer gießt?", words.turn === "me" ? "du gießt!" : "{partner} gießt.") : o,
+  );
   // Sad because the last round was missed: that's what it talks about; with time running out the others.
   const pick = stimmung === "traurig" ? (words.missed ? 0 : 1 + (Math.abs(seed) % (options.length - 1))) : Math.abs(seed) % options.length;
   return options[pick].replaceAll("{partner}", words.partner.toLowerCase()).replaceAll("{day}", (words.day ?? "bald").toLowerCase());

@@ -69,6 +69,10 @@ describe("bloomStimmung (§3)", () => {
 });
 
 describe("bloomSaying", () => {
+  it("knows whose move it is: no 'wer gießt?'", () => {
+    expect(bloomSaying("schlaeft", 0, { partner: "Lotte", turn: "me" })).toBe("neue woche, neues glück. du gießt!");
+    expect(bloomSaying("schlaeft", 0, { partner: "Lotte", turn: "partner" })).toBe("neue woche, neues glück. lotte gießt.");
+  });
   it("speaks of the missed round when that is why it is sad", () => {
     expect(bloomSaying("traurig", 4, { partner: "Lotte", missed: true })).toBe("psst … letztes mal fiel's aus. heute vielleicht?");
     expect(bloomSaying("traurig", 4, { partner: "Lotte", missed: false })).not.toContain("fiel's aus");

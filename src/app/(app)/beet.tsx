@@ -116,7 +116,7 @@ export function Beet({
     hoursLeft,
   });
   const dayOfYear = DateTime.fromJSDate(now, { zone: APP_TIMEZONE }).ordinal;
-  const saying = bloomSaying(stimmung, dayOfYear, { partner: partner.name, day: date ? weekday(date.startsAt) : undefined, missed });
+  const saying = bloomSaying(stimmung, dayOfYear, { partner: partner.name, day: date ? weekday(date.startsAt) : undefined, missed, turn: onTurn ?? undefined });
 
   return (
     <div data-next-step={step.kind} className="flex min-h-0 flex-1 flex-col">
@@ -143,7 +143,8 @@ export function Beet({
       {view.invitation && date ? (
         <Invitation date={date} partner={partner} surprise={o.dateExtras?.surprise === "hidden"} />
       ) : (
-        <div className="relative min-h-28 flex-1" data-onturn={onTurn ?? undefined}>
+        // One flower size for every step (capped); it only gets smaller when a step needs the room.
+        <div className="relative my-auto min-h-28 w-full flex-1 basis-0 max-h-[min(40svh,340px)]" data-onturn={onTurn ?? undefined}>
           {/* The flower box keeps the mockup's 300×420 proportions; the bubble sits by its head. */}
           <div className="absolute inset-y-0 left-1/2 aspect-[300/420] max-w-full -translate-x-1/2 [container-type:size]">
             <Bloom stimmung={stimmung} blaetter={blaetter} welk={welk} topf={pot} className="absolute inset-0 size-full" />
