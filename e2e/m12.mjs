@@ -256,7 +256,7 @@ check(`date created at the event's time (${JSON.stringify(dates[0])})`,
 check("Google event created", googleEvents["token-jonas"].size === 1);
 await card("Kino unterm Sternenhimmel").getByRole("button", { name: "Als Date planen" }).click();
 await card("Kino unterm Sternenhimmel").getByRole("button", { name: "Ja, planen 🎉" }).click();
-await card("Kino unterm Sternenhimmel").getByText("schon ein Date geplant").waitFor({ timeout: 15000 });
+await card("Kino unterm Sternenhimmel").getByText("In dieser Runde steht schon ein Date.").waitFor({ timeout: 15000 });
 check("second date in the same round is refused with a message", true);
 
 // 6) Dark mode + tabs

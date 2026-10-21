@@ -63,7 +63,8 @@ async function addDate(title, day, status, estimate) {
   return rows[0].id;
 }
 const kino = await addDate("Kino", 10, "done", 30);
-await addDate("Bowling", 20, "planned", 20);
+// Confirmed: a past date nobody confirmed would make the Beet ask "habt ihr's gemacht?" first.
+await addDate("Bowling", 20, "confirmed", 20);
 await addDate("Abgesagt", 22, "cancelled", 50);
 
 let failures = 0;
