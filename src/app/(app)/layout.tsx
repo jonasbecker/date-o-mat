@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { AppBadgeCount } from "@/components/app-badge-count";
+import { AppBadge } from "@/components/app-badge";
 import { BottomNav, BottomNavBar } from "@/components/bottom-nav";
 import { CelebrationProvider } from "@/components/celebration";
 import { ErrorReporter } from "@/components/error-reporter";
@@ -29,9 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <OfflineNote />
           <SwipeQueueFlusher />
           <ErrorReporter />
-        </Suspense>
-        <Suspense fallback={null}>
-          <AppBadgeCount />
+          <AppBadge />
         </Suspense>
         {/* The path is only known at runtime: the bar is there from the start, the active item follows. */}
         <Suspense fallback={<BottomNavBar path="" />}>

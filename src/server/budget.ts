@@ -18,7 +18,7 @@ import {
 } from "@/core/budget";
 import { APP_TIMEZONE } from "@/lib/domain";
 import { db } from "@/server/db";
-import { budgetMonths, coupleSettings, datePlans, notificationLog, users, type DatePlan } from "@/server/db/schema";
+import { budgetMonths, coupleSettings, datePlans, notificationLog, users, type CoupleSettings, type DatePlan } from "@/server/db/schema";
 import { sendToUser } from "@/server/push";
 import { getCoupleSettings } from "@/server/settings";
 
@@ -51,8 +51,8 @@ async function lastClosed(coupleId: string) {
 }
 
 /** Null when the couple has no budget. */
-export async function budgetState(coupleId: string, now: Date): Promise<BudgetState | null> {
-  const settings = await getCoupleSettings(coupleId);
+export async function budgetState(coupleId: string, now: Date, loaded?: CoupleSettings): Promise<BudgetState | null> {
+  const settings = loaded ?? (await getCoupleSettings(coupleId));
   const budget = settings.monthlyBudgetEur;
   if (!budget) return null;
   const month = monthKey(now);

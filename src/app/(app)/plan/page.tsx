@@ -43,7 +43,7 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
   const [settings, params] = await Promise.all([getCoupleSettings(ctx.coupleId), searchParams]);
   const now = coupleNow(settings);
   // The round rolls over first (once) – everything after reads it.
-  const cycle = await ensureCurrentCycle(ctx.coupleId, now);
+  const cycle = await ensureCurrentCycle(ctx.coupleId, now, settings);
   // "Selbst aussuchen" in suggestion mode is the flow too.
   const self = params.self === "1";
   const later = params.later === "1";

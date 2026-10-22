@@ -45,17 +45,22 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   without digest; network trouble skipped, ≤ 5 per load, each message once per session) → `reportClientErrorAction`
   → `app_status` `client_errors` with the device (`core/device.ts`), row "Fehler im Handy". e2e: m15.
 - **App icon number:** `waitingForMe()` (`core/next-step.ts`) counts what I have to do (calendar, answer a plan,
-  "habt ihr's gemacht?", my turn, "wie war's?"); `AppBadgeCount` in the (app) layout sets it while the app is open
-  (`data-app-badge`), every push carries it (`badge`, `server/badge.ts`, set in sw.js). e2e: m6.
+  "habt ihr's gemacht?", my turn, "wie war's?"); `AppBadge` (client, (app) layout) asks `badgeAction()` after the page is
+  there (open, foreground, each navigation – never while a page renders) and sets it (`data-app-badge`); it is read
+  only (`currentCycleReadOnly`), and every push carries it (`badge`, `server/badge.ts`, set in sw.js). e2e: m6.
 - **Gestures and offline:** `components/gestures.tsx` – from the left edge = back where the page has a back arrow
   (mark it `data-back`; installed app only, `localStorage["dom-gestures"]="1"` elsewhere), pull down at the top =
   `router.refresh()` (not on `[data-sheet-card]`, the swipe card, dialogs, fields, `[data-no-pull]`). `public/sw.js`
   keeps the pages you opened (network first; offline: their last state, `/` → the Beet, else `offline.html`) and the
   `/_next/static` files; the login page forgets the pages (`forget-pages.tsx`). Swiping offline keeps the swipe on the
   phone (`ideas/entdecken/swipe-queue.ts`, localStorage) and `SwipeQueueFlusher` (layout) sends it once there is network
-  (start, foreground, `online`, every 30 s); the card stays off the deck meanwhile, ↺ takes a kept one back. `offline-note.tsx` says so (it asks the server – `navigator.onLine` can lie). e2e: m27
+  (start, foreground, `online`, and again after 2 s, 5 s, 15 s, 30 s … while some wait); the card stays off the deck meanwhile, ↺ takes a kept one back. `offline-note.tsx` says so (it asks the server – `navigator.onLine` can lie). e2e: m27
   (Playwright's `setOffline` does not reach the service worker – cut the network with `context.route` and
   `PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS=1`, see m7/m27).
+- **Database round trips:** every page is measured (m28: statements per page, with budgets – a page that suddenly needs
+  twice as many is a slowdown on phones). Reads that do not depend on each other go in one `Promise.all`; a function
+  that needs the couple's settings takes them as an optional parameter (`ensureCurrentCycle`, `budgetState`) instead of
+  reading them again.
 - **Smooth on phones:** what follows a finger moves with `transform` only and renders at most once per frame – the swipe
   card is moved straight in the DOM (React hears only the stamp), the date sheet's frame moves around content of one
   fixed size (never re-wrapped), bubble and dots are translated; `Bloom` and the swipe `Card` are memoized.
@@ -129,7 +134,8 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
 - **e2e:** `npm run e2e [-- m5 m9]` needs no env vars: it reads `E2E_DATABASE_URL` (environment or
   `.env.local`), finds the container's Chromium, checks Postgres and rebuilds when `src/`,
   `drizzle/` or `public/` changed. While iterating run only the suites that touch the change; run
-  the full suite once before the push.
+  the full suite once before the push. CI runs it in four jobs (`--shard=k/4`, each on its own machine and database –
+  the suites share ports, so not side by side locally); a new suite goes into `ALL` and `WEIGHT` in `e2e/run.mjs`.
 - **UI changes:** grep `e2e/*.mjs` for the labels/headings you rename or move before running –
   every renamed button breaks a locator somewhere. Look at the screenshots in `e2e/shots/`
   (light and dark) instead of trusting green checks alone.

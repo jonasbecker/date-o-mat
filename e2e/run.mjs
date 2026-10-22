@@ -18,11 +18,32 @@ import webpush from "web-push";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const HERE = fileURLToPath(new URL(".", import.meta.url));
-const ALL = ["m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "m10", "m11", "m12", "m13", "m14", "m15", "m17", "m18", "m19", "m20", "m21", "m22", "m23", "m24", "m25", "m26", "m27"];
+const ALL = ["m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "m10", "m11", "m12", "m13", "m14", "m15", "m17", "m18", "m19", "m20", "m21", "m22", "m23", "m24", "m25", "m26", "m27", "m28"];
+// Rough run times in seconds (CI), only to spread the suites evenly over the shards.
+const WEIGHT = { m1: 15, m2: 27, m3: 15, m4: 22, m5: 26, m6: 20, m7: 5, m8: 11, m9: 5, m10: 17, m11: 7, m12: 21, m13: 24, m14: 9, m15: 12, m17: 24, m18: 12, m19: 13, m20: 6, m21: 20, m22: 14, m23: 14, m24: 56, m25: 63, m26: 100, m27: 47, m28: 21 };
 const args = process.argv.slice(2);
 const skipBuild = args.includes("--no-build");
 const named = args.filter((a) => !a.startsWith("--"));
-const suites = named.length ? named : ALL;
+// `--shard=2/4`: only the second of four fairly even parts of the suites (each CI job runs one, on its own machine
+// and database – the suites share ports, so they cannot run side by side on one).
+const shard = args.find((a) => a.startsWith("--shard="))?.slice("--shard=".length).split("/").map(Number);
+let suites = named.length ? named : ALL;
+if (shard) {
+  const [index, total] = shard;
+  if (!(index >= 1 && index <= total)) {
+    console.error(`--shard=${shard.join("/")} is not a part (e.g. --shard=2/4)`);
+    process.exit(2);
+  }
+  const loads = Array.from({ length: total }, () => ({ seconds: 0, names: [] }));
+  // Longest first onto the lightest shard.
+  for (const name of [...suites].sort((a, b) => (WEIGHT[b] ?? 20) - (WEIGHT[a] ?? 20))) {
+    const lightest = loads.reduce((best, l) => (l.seconds < best.seconds ? l : best));
+    lightest.seconds += WEIGHT[name] ?? 20;
+    lightest.names.push(name);
+  }
+  suites = ALL.filter((name) => loads[index - 1].names.includes(name));
+  console.log(`Shard ${index}/${total}: ${suites.join(" ")} (≈ ${loads[index - 1].seconds}s)`);
+}
 const unknown = suites.filter((s) => !ALL.includes(s));
 if (unknown.length) {
   console.error(`Unknown suite(s): ${unknown.join(", ")} – known: ${ALL.join(" ")}`);

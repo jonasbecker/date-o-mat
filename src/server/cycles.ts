@@ -57,8 +57,10 @@ async function refreshStatuses(coupleId: string, now: Date): Promise<void> {
     .select()
     .from(cycles)
     .where(and(eq(cycles.coupleId, coupleId), inArray(cycles.status, ["open", "planned", "confirmed"])));
-  for (const cycle of active) {
-    const date = await activeDateOf(cycle.id);
+  // Each round's date at once instead of one query after the other.
+  const dates = await Promise.all(active.map((cycle) => activeDateOf(cycle.id)));
+  for (const [i, cycle] of active.entries()) {
+    const date = dates[i];
     const status = cycleStatus({ current: cycle.status, date: date ?? null, cycleEnd: cycle.endsAt, now });
     const closed = cycle.endsAt <= now && !cycle.closedAt;
     if (status !== cycle.status || closed) {
@@ -78,10 +80,10 @@ async function refreshStatuses(coupleId: string, now: Date): Promise<void> {
  * and after the end of a round the next one (rhythm keeps running, even
  * if a round passed without a date). Returns the current round.
  */
-export async function ensureCurrentCycle(coupleId: string, now: Date): Promise<Cycle | null> {
-  const memberIds = await members(coupleId);
+export async function ensureCurrentCycle(coupleId: string, now: Date, loaded?: CoupleSettings): Promise<Cycle | null> {
+  // Both reads at once (the caller may already have the settings).
+  const [memberIds, settings] = await Promise.all([members(coupleId), loaded ?? getCoupleSettings(coupleId)]);
   if (memberIds.length < 2) return null;
-  const settings = await getCoupleSettings(coupleId);
 
   let latest = await latestCycle(coupleId);
   if (!latest) {
@@ -102,6 +104,11 @@ export async function ensureCurrentCycle(coupleId: string, now: Date): Promise<C
   }
 
   await refreshStatuses(coupleId, now);
+  return (await cycleAt(coupleId, now)) ?? (await latestCycle(coupleId)) ?? null;
+}
+
+/** The round containing `now` as it is stored – read only, nothing is created or moved on (the app icon's number). */
+export async function currentCycleReadOnly(coupleId: string, now: Date): Promise<Cycle | null> {
   return (await cycleAt(coupleId, now)) ?? (await latestCycle(coupleId)) ?? null;
 }
 

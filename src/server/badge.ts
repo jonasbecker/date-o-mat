@@ -6,16 +6,17 @@ import { waitingForMe } from "@/core/next-step";
 import type { CoupleContext } from "@/server/auth/dal";
 import { calendarStates } from "@/server/availability";
 import { coupleNow } from "@/server/clock";
-import { ensureCurrentCycle } from "@/server/cycles";
+import { currentCycleReadOnly } from "@/server/cycles";
 import { unansweredDate, upcomingDate } from "@/server/dates";
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema";
 import { dateToReview } from "@/server/reviews";
 import { getCoupleSettings } from "@/server/settings";
 
+/** Read only: it runs next to every page and after every push, so it must not move rounds on or write. */
 export async function badgeFor(ctx: CoupleContext): Promise<number> {
   const now = coupleNow(await getCoupleSettings(ctx.coupleId));
-  const cycle = await ensureCurrentCycle(ctx.coupleId, now);
+  const cycle = await currentCycleReadOnly(ctx.coupleId, now);
   if (!cycle) return 0;
   const [calendars, upcoming, toReview, unanswered] = await Promise.all([calendarStates(ctx), upcomingDate(ctx.coupleId, now), dateToReview(ctx, now), unansweredDate(ctx.coupleId, now)]);
   return waitingForMe({
