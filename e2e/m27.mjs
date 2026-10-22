@@ -198,7 +198,12 @@ await j.goto(`${BASE}/budget`).catch(() => {});
 await j.getByRole("heading", { name: /Gerade offline/ }).waitFor({ timeout: 10000 }).catch(() => {});
 check("a page never seen gets the offline page", await j.getByRole("heading", { name: /Gerade offline/ }).isVisible().catch(() => false));
 // Swiping offline: the swipe is kept on the phone, the card stays gone (also after a reload) and goes out with the network
-const navError = await j.goto(`${BASE}/ideas/entdecken`).then(() => null, (e) => e.message.split("\n")[0]);
+// (A navigation can be overtaken by the page's own reload while the network is gone – so: until we are there.)
+let navError = null;
+for (let attempt = 0; attempt < 3; attempt++) {
+  navError = await j.goto(`${BASE}/ideas/entdecken`).then(() => null, (e) => e.message.split("\n")[0]);
+  if (j.url() === `${BASE}/ideas/entdecken`) break;
+}
 await j.locator("[data-offline]").waitFor({ timeout: 10000 }).catch(() => {}); // hydrated
 const kompost = j.getByRole("button", { name: "Auf den Kompost" });
 const hasDeck = await kompost.waitFor({ state: "attached", timeout: 15000 }).then(() => true, () => false);
