@@ -236,6 +236,9 @@ solange die Blase dort sitzt; eine Spruchwahl pro Bewegung (statt eigener Sprüc
   mit dem Tempo des Fingers. Blume, Blase, Griff und Details hängen an derselben Zahl (der Oberkante der Karte) und
   bewegen sich darum genau im Takt; die Blume neigt sich mit dem Tempo um ihren Topf. Mitten in der Bewegung
   gegriffen, bleibt die Karte unter dem Finger stehen.
+- Überall ziehen (22.10.2026): man muss den Kopf der Karte nicht treffen – hochwischen auf der Blume, der
+  Überschrift oder der freien Fläche nimmt die Karte mit; ist sie oben, bringt Runterwischen überall sie wieder runter.
+  Geschlossen bleibt Runterziehen das Neuladen der Seite.
 - Tabs: besuchte Seiten kommen 5 Minuten lang sofort aus dem Browser (`staleTimes.dynamic`); AutoRefresh lädt nur
   neu, wenn sich der Fingerabdruck der Daten geändert hat (`server/stamp.ts`); kein Einblenden mehr (`template.tsx`
   entfernt). Auch beim ersten Besuch kein Platzhalter mehr: die alte Seite bleibt stehen, bis die neue da ist

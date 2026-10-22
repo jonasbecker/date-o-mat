@@ -232,6 +232,32 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
   await settle(j);
   check(`${tag}: pulled up a little → springs back`, (await state(j)).z === "zu");
 
+  // Anywhere on the Beet: pulled up on the flower (not the card) the card comes along under the finger → open;
+  // pulled down on the headline → closed.
+  {
+    const top = () => j.locator("[data-sheet-card]").evaluate((el) => el.getBoundingClientRect().top);
+    const start = await top();
+    const fl = await j.locator("[data-sheet-flower]").boundingBox();
+    const x = fl.x + fl.width / 2;
+    const y = fl.y + fl.height * 0.45;
+    await j.mouse.move(x, y);
+    await j.mouse.down();
+    for (let i = 1; i <= 10; i++) await j.mouse.move(x, y - 12 * i);
+    await j.waitForTimeout(60);
+    const along = (await top()) - start;
+    for (let i = 1; i <= 15; i++) await j.mouse.move(x, y - 120 - 10 * i);
+    await j.mouse.up();
+    await settle(j);
+    check(`${tag}: pulled up on the flower – the card follows (${Math.round(along)} for −120) and opens (${(await state(j)).z})`, Math.abs(along + 120) <= 1 && (await state(j)).z === "mitte");
+    const h = await j.locator("[data-date-sheet] h2").boundingBox();
+    await j.mouse.move(h.x + 30, h.y + h.height / 2);
+    await j.mouse.down();
+    for (let i = 1; i <= 20; i++) await j.mouse.move(h.x + 30, h.y + h.height / 2 + 13 * i);
+    await j.mouse.up();
+    await settle(j);
+    check(`${tag}: pulled down on the headline → closed (${(await state(j)).z})`, (await state(j)).z === "zu");
+  }
+
   // The card stays right under the finger – up and down without letting go – and the flower moves in time with it:
   // its pot (which it leans around) is exactly as far along its way as the card.
   const snap = () =>
@@ -376,6 +402,35 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
   await settle(j);
   check(`${tag}: back closes the card and stays on the Beet (${j.url()})`, (await state(j)).z === "zu" && j.url() === `${BASE}/plan`);
   await j.context().close();
+}
+
+// A real finger (touch events): up on the empty room beside the flower → open; then down on the card's content →
+// closed (the gesture survives the re-render it causes); at zu a pull down is the page's own, the card stays.
+{
+  const t = await pageFor({ width: 390, height: 844 }, { hasTouch: true });
+  const cdp = await t.context().newCDPSession(t);
+  const swipe = async (x, y, dy) => {
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
+    for (let i = 1; i <= 12; i++) {
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x, y: y + (dy * i) / 12 }] });
+      await t.waitForTimeout(20);
+    }
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await settle(t);
+  };
+  const fl = await t.locator("[data-sheet-flower]").boundingBox();
+  const y = fl.y + fl.height * 0.6;
+  await swipe(40, y, -260);
+  check(`touch: pulled up beside the flower → open (${(await state(t)).z})`, (await state(t)).z === "mitte");
+  const content = await t.locator("[data-sheet-details]").boundingBox();
+  await swipe(200, content.y + 40, 280);
+  check(`touch: pulled down on the open card's content → closed (${(await state(t)).z})`, (await state(t)).z === "zu");
+  const before = await t.locator("[data-sheet-card]").evaluate((el) => Math.round(el.getBoundingClientRect().top));
+  await swipe(40, fl.y + 40, 120);
+  await t.waitForTimeout(800);
+  const after = await t.locator("[data-sheet-card]").evaluate((el) => Math.round(el.getBoundingClientRect().top));
+  check(`touch: at zu a pull down leaves the card alone (${before} → ${after})`, (await state(t)).z === "zu" && Math.abs(after - before) <= 1);
+  await t.context().close();
 }
 
 // Reduced motion: no kick, no rotation, no lines

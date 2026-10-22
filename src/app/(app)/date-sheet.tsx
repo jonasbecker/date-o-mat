@@ -424,44 +424,113 @@ export function DateSheet({
     settle(phase.stop === "zu" ? "mitte" : phase.stop === "mitte" ? "zu" : "mitte", "sanft");
   };
 
-  // Inside the card: at mitte the content does not scroll – a pull moves the card (up to voll, down to zu);
-  // at voll it scrolls only if it has to, and at its top pulling down brings the card down.
-  useEffect(() => {
-    const el = scroller.current;
-    if (!el || phase.stop === "zu") return;
-    let from: number | null = null;
-    const onStart = (e: TouchEvent) => {
-      from = e.touches[0].clientY;
-    };
-    const onMove = (e: TouchEvent) => {
-      if (from === null) return;
-      const y = e.touches[0].clientY;
-      if (!drag.current) {
-        if (Math.abs(y - from) < 8) return;
-        if (phase.stop === "voll" && (y < from || el.scrollTop > 0)) {
-          from = null; // the content's turn
-          return;
-        }
-        start(from);
-      }
-      e.preventDefault();
-      move(y);
-    };
-    const onEnd = () => {
-      from = null;
-      end();
-    };
-    el.addEventListener("touchstart", onStart, { passive: true });
-    el.addEventListener("touchmove", onMove, { passive: false });
-    el.addEventListener("touchend", onEnd);
-    el.addEventListener("touchcancel", onEnd);
-    return () => {
-      el.removeEventListener("touchstart", onStart);
-      el.removeEventListener("touchmove", onMove);
-      el.removeEventListener("touchend", onEnd);
-      el.removeEventListener("touchcancel", onEnd);
-    };
+  // Anywhere on the Beet, not only on the card's head: pull up – on the flower, the headline, the empty room – and
+  // the card comes with the finger; once it is up, pulling down anywhere brings it down. At zu a pull down stays the
+  // page's own (refresh, gestures.tsx). Inside the card at mitte the content does not scroll – a pull moves the card;
+  // at voll it scrolls only if it has to, and at its top pulling down brings the card down. The listeners stay put
+  // for the whole gesture (a re-render mid-way must not lose it): they call the newest handlers through a ref.
+  const gesture = useRef({ start, move, end });
+  useLayoutEffect(() => {
+    gesture.current = { start, move, end };
   });
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    let from: { x: number; y: number; target: Element } | null = null;
+    // A mouse drag that moved the card must not end in a click on what it started on.
+    let swallow = false;
+    /** Whether a pull from `target` in direction `dy` (down positive) moves the card. */
+    const takes = (target: Element, dy: number): boolean => {
+      const { stop } = live.current;
+      const content = scroller.current;
+      if (content && content.contains(target)) return stop === "mitte" || (stop === "voll" && dy > 0 && content.scrollTop === 0);
+      if (target.closest("[data-sheet-card]")) return false;
+      if (stop !== "zu") return true;
+      // Closed: only up – and not while the page itself can still scroll that way (a small phone).
+      const main = el.closest("main");
+      return dy < 0 && (!main || main.scrollTop + main.clientHeight >= main.scrollHeight - 1);
+    };
+    const begin = (x: number, y: number, target: Element) => {
+      // The card's head has its own handlers (and its tap).
+      from = target.closest("[data-sheet-card] button[aria-expanded]") ? null : { x, y, target };
+    };
+    /** Returns true while the card is the finger's. */
+    const follow = (x: number, y: number): boolean => {
+      if (!from) return false;
+      if (!drag.current) {
+        const dx = x - from.x;
+        const dy = y - from.y;
+        if (Math.abs(dy) < 8 && Math.abs(dx) < 8) return false;
+        if (Math.abs(dy) <= Math.abs(dx) || !takes(from.target, dy)) {
+          from = null;
+          return false;
+        }
+        gesture.current.start(from.y);
+      }
+      gesture.current.move(y);
+      return true;
+    };
+    const finish = () => {
+      const had = Boolean(from && drag.current);
+      from = null;
+      if (had) gesture.current.end();
+      return had;
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      begin(e.touches[0].clientX, e.touches[0].clientY, e.target as Element);
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (follow(e.touches[0].clientX, e.touches[0].clientY)) e.preventDefault();
+    };
+    const onTouchEnd = () => {
+      finish();
+    };
+    // A mouse (desktop, tests): the same, with the pointer captured once the card is taken.
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" || e.button !== 0) return;
+      begin(e.clientX, e.clientY, e.target as Element);
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" || !from) return;
+      const had = Boolean(drag.current);
+      if (follow(e.clientX, e.clientY) && !had) el.setPointerCapture(e.pointerId);
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      if (finish()) {
+        swallow = true;
+        window.setTimeout(() => (swallow = false), 0);
+      }
+    };
+    const onClick = (e: MouseEvent) => {
+      if (!swallow) return;
+      swallow = false;
+      e.stopPropagation();
+      e.preventDefault();
+    };
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd);
+    el.addEventListener("touchcancel", onTouchEnd);
+    el.addEventListener("pointerdown", onPointerDown);
+    el.addEventListener("pointermove", onPointerMove);
+    el.addEventListener("pointerup", onPointerUp);
+    el.addEventListener("pointercancel", onPointerUp);
+    el.addEventListener("click", onClick, true);
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchEnd);
+      el.removeEventListener("pointerdown", onPointerDown);
+      el.removeEventListener("pointermove", onPointerMove);
+      el.removeEventListener("pointerup", onPointerUp);
+      el.removeEventListener("pointercancel", onPointerUp);
+      el.removeEventListener("click", onClick, true);
+    };
+  }, []);
 
   // At mitte the rest is cut off (a soft fade says there is more). Should the browser scroll it anyway – the
   // keyboard focus moved into it, or a link further down was looked for – the card goes up to voll.
@@ -494,7 +563,7 @@ export function DateSheet({
   const mood: Stimmung = !moving && stop === "zu" ? "froh" : dragging || phase.tempo === "sanft" ? "genervt" : "autsch";
 
   return (
-    <div ref={root} data-date-sheet={stop} data-tempo={phase.tempo} data-moving={moving || up ? "" : undefined} className="relative min-h-0 flex-1">
+    <div ref={root} data-date-sheet={stop} data-tempo={phase.tempo} data-moving={moving || up ? "" : undefined} data-no-pull={moving || up ? "" : undefined} className="relative min-h-0 flex-1">
       <div ref={flow}>
         {headline}
         <div data-sheet-above className="transition-opacity duration-300" style={{ opacity: moving || up ? 0 : 1 }} aria-hidden={moving || up ? true : undefined}>

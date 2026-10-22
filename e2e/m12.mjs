@@ -22,7 +22,8 @@ const encrypt = (text) => {
 };
 const local = (d) => d.toFormat("yyyy-LL-dd'T'HH:mm");
 const { friday, saturday } = DAYS;
-const sunday = saturday.plus({ days: 1 });
+// The Sunday after "next Friday" (on a Friday, "next Saturday" is tomorrow – a round earlier than that Friday).
+const sunday = friday.plus({ days: 2 });
 
 // --- fake event website -----------------------------------------------------------------
 const pages = {

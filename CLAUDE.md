@@ -115,10 +115,10 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   finger's speed; every frame `paint()` draws card, flower (leaning around its pot with the card's speed, `leaned()`),
   bubbles, dots, handle and details from it straight into the DOM (React only hears the stop). Faster than 0.8 px/ms
   is a "schubs" (the next stop in that direction; zu → mitte: `autsch`, the spring swings past, motion lines), else
-  "sanft" (`genervt`). Grabbed while it moves, it stops under the finger (let go: nearest stop). Tap: zu ↔ mitte, voll → mitte ("Weniger
+  "sanft" (`genervt`). Grabbed while it moves, it stops under the finger (let go: nearest stop). It can be pulled anywhere on the Beet, not only by its head (flower, headline, empty room – up at zu, both ways once it is up; a pull down at zu stays the page refresh, `data-no-pull` while it is up); the listeners sit on the sheet's root and call the newest handlers through a ref, so a re-render mid-gesture cannot drop it. Tap: zu ↔ mitte, voll → mitte ("Weniger
   Details"). Closed, the flower's bubble sits by its head; pulled up, the header's step bar grows into the bubble at
   mitte (`morphAt` / `morphTransform`: the bar's place and size → the bubble's, words fade in at the end) and shrinks
-  back into it on the way to voll. Dots come out of the mouth, nothing covers text, card, name or avatars; back gesture closes it. e2e: m25 (both sizes, slow/fast, under the finger, flower in time, held still, caught, voll, back, reduced motion). The old `Plant`
+  back into it on the way to voll. Dots come out of the mouth, nothing covers text, card, name or avatars; back gesture closes it. e2e: m25 (both sizes, slow/fast, under the finger, flower in time, held still, caught, anywhere – mouse and touch, voll, back, reduced motion). The old `Plant`
   (components/plant.tsx) is only the small mark (logo, mascot, empty states).
 - **Rounds and dates:** a date lives in the round it happens in (`cycleForDate()` creates later rounds when a date is
   planned ahead; the current round is the one containing now, never just the newest row). A planned date nobody
