@@ -13,7 +13,7 @@ describe("card dates", () => {
   });
 
   it("shows a combo card's event and whether both are free", () => {
-    expect(eventWhen({ startsAt: at("2026-10-31T20:00"), allDay: false }, true)).toEqual({ day: "Sa 31.10.", time: "20:00 Uhr", free: true, note: "✓ ihr habt beide Zeit" });
+    expect(eventWhen({ startsAt: at("2026-10-31T20:00"), allDay: false }, true)).toEqual({ day: "Sa 31.10.", time: "20:00 Uhr", free: true, note: "" });
     expect(eventWhen({ startsAt: at("2026-10-31T00:00"), allDay: true }, false).note).toBe("✗ da habt ihr was vor");
     expect(eventWhen({ startsAt: at("2026-10-31T20:00"), allDay: false }, null).note).toBe("kalender fehlt");
   });
@@ -28,7 +28,7 @@ describe("card dates", () => {
 
 
   it("builds the line under the day", () => {
-    expect(freeWhen(slot("2026-10-23T18:00"), true)).toEqual({ day: "Fr 23.10.", time: "ab 18:00", free: true, note: "✓ ihr habt beide Zeit" });
+    expect(freeWhen(slot("2026-10-23T18:00"), true)).toEqual({ day: "Fr 23.10.", time: "ab 18:00", free: true, note: "" });
     expect(freeWhen(null, false)).toEqual({ day: "irgendwann.", time: "", free: null, note: "kalender fehlt" });
     expect(freeWhen(null, true).note).toBe("gerade nichts frei");
   });

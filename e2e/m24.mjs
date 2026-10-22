@@ -139,7 +139,7 @@ for (const [size, viewport] of [["", { width: 390, height: 844 }], ["small-", { 
   await ctx.close();
 }
 // The swipe card on the phones people really have (Safari with its bars, SE, Pro Max, a PWA with
-// safe areas): the info box (WO · DAUER · KOSTEN) is always whole, the card tightens instead.
+// safe areas): the bottom box (where · how long · cost, the day) is always whole, the card tightens instead.
 for (const viewport of [
   { width: 390, height: 664 },
   { width: 375, height: 667 },
@@ -184,11 +184,12 @@ for (const viewport of [
       return { whole: info.getBoundingClientRect().bottom <= card.getBoundingClientRect().bottom - 4, dense: Number(card.getAttribute("data-card-dense")) };
     });
   const roomy = await whole();
-  await page.setViewportSize({ width: 390, height: 664 });
+  await page.setViewportSize({ width: 360, height: 500 });
   await page.waitForTimeout(600);
   const shrunk = await whole();
   await page.screenshot({ path: `${OUT}m24-card-shrunk.png` });
-  check(`swipe card refits when its box shrinks (step ${roomy?.dense} → ${shrunk?.dense})`, shrunk?.whole === true && shrunk.dense > (roomy?.dense ?? 0));
+  // The picture gives way first (plain CSS), the steps only follow when that is not enough.
+check(`swipe card refits when its box shrinks (step ${roomy?.dense} → ${shrunk?.dense})`, shrunk?.whole === true && shrunk.dense >= (roomy?.dense ?? 0));
   await page.setViewportSize({ width: 430, height: 932 });
   await page.waitForTimeout(600);
   const grown = await whole();
@@ -197,14 +198,14 @@ for (const viewport of [
   // changes meanwhile, back on Swipen the card must fit what it has now.
   await page.getByRole("link", { name: "Beet" }).click();
   await page.waitForURL(`${BASE}/plan`);
-  await page.setViewportSize({ width: 390, height: 664 });
+  await page.setViewportSize({ width: 360, height: 500 });
   await page.waitForTimeout(400);
   await page.getByRole("link", { name: "Swipen" }).click();
   await page.waitForURL(`${BASE}/ideas/entdecken`);
   await page.waitForTimeout(800);
   const back = await whole();
   await page.screenshot({ path: `${OUT}m24-card-back.png` });
-  check(`back on Swipen after the screen changed while it was hidden: whole (step ${back?.dense})`, back?.whole === true && back.dense > 0);
+  check(`back on Swipen after the screen changed while it was hidden: whole (step ${back?.dense})`, back?.whole === true);
   await ctx.close();
 }
 // Without the measuring (before hydration, or should it fail on some browser): on an iPhone as an app

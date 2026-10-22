@@ -17,6 +17,7 @@ import { StartReview } from "@/components/start-review";
 import { SuggestionCard } from "@/components/suggestion-card";
 import { ArrowIcon, SwapIcon } from "@/components/icons";
 import { Info } from "@/components/info";
+import { MapEmbed } from "@/components/map-embed";
 import { bloomLeaves, bloomSaying, bloomStimmung, type BloomRound, type FlowerPot } from "@/core/bloom";
 import { periodLabel, type NextStep } from "@/core/next-step";
 import { APP_TIMEZONE } from "@/lib/domain";
@@ -511,7 +512,7 @@ function SheetHead({ date }: { date: DatePlan }) {
 
 const ROW_LABEL = "meta pt-0.5 text-[11px] uppercase text-muted";
 
-/** The card pulled up: the calendar chip, where (a drawn map that opens the route), what to bring, the note – then Route, Verschieben, Absagen. */
+/** The card pulled up: the calendar chip, where (the Google map – a tap opens the route), what to bring, the note – then Route, Verschieben, Absagen. */
 function SheetDetails({ date, me, partner, o, swappable }: { date: DatePlan; me: User; partner: User; o: Overview; swappable: boolean }) {
   const route = date.location ? routeUrl(date.location, me.startLocation) : null;
   const tasks = o.dateExtras?.tasks ?? null;
@@ -524,12 +525,7 @@ function SheetDetails({ date, me, partner, o, swappable }: { date: DatePlan; me:
       {surprise === "organizer" && <p className="text-[15px] text-muted">🎁 {partner.name} sieht bis zum Tag nur die Zeit.</p>}
       {date.syncStatus === "synced" && <span className="inline-flex h-[30px] items-center self-start rounded-full bg-soft px-3 text-[13px] font-semibold">✓ in beiden Kalendern</span>}
       {route && (
-        <a href={route} target="_blank" rel="noopener noreferrer" aria-label={`Route zu ${date.location}`} className="relative mt-1 block h-32 overflow-hidden rounded-[18px] bg-soft">
-          <span aria-hidden="true" className="absolute -left-5 top-[70px] h-3.5 w-[420px] -rotate-[8deg] bg-[#2F4036]" />
-          <span aria-hidden="true" className="absolute -top-2.5 left-[140px] h-40 w-3.5 rotate-[14deg] bg-[#2F4036]" />
-          <span aria-hidden="true" className="absolute left-[196px] top-10 size-[22px] -rotate-45 rounded-[50%_50%_50%_0] bg-like" />
-          <span className="meta absolute bottom-2.5 left-3 text-[10px] text-muted">Treffpunkt: {date.location}</span>
-        </a>
+        <MapEmbed place={date.location!} href={route} label={`Route zu ${date.location}`} className="mt-1 h-32" />
       )}
       <dl className="grid grid-cols-[84px_minmax(0,1fr)] gap-y-2 text-sm">
         {date.location && (

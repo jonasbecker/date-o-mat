@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CONVERSATION_CARDS, isSurpriseHidden, maskSurprise, nextCard, prepReminderAt, routeUrl, shareKeyFromHeader, suggestTasks, surpriseRevealAt } from "./date-extras";
+import { CONVERSATION_CARDS, isSurpriseHidden, mapEmbedUrl, mapSearchUrl, maskSurprise, nextCard, placeQuery, prepReminderAt, routeUrl, shareKeyFromHeader, suggestTasks, surpriseRevealAt } from "./date-extras";
 
 const date = {
   surprise: true,
@@ -70,4 +70,20 @@ describe("share key", () => {
     ["Bearer something-else", null],
     [null, null],
   ])("%s", (header, key) => expect(shareKeyFromHeader(header)).toBe(key));
+});
+
+describe("maps", () => {
+  it("looks places up in Köln unless they name their city", () => {
+    expect(placeQuery("Alter Markt")).toBe("Alter Markt, Köln");
+    expect(placeQuery("Bonn Hbf")).toBe("Bonn Hbf");
+    expect(placeQuery("Venloer Str. 1, 50672")).toBe("Venloer Str. 1, 50672");
+  });
+
+  it("embeds the place (no key) and opens it in Maps", () => {
+    const embed = new URL(mapEmbedUrl("Alter Markt"));
+    expect(embed.host).toBe("maps.google.com");
+    expect(embed.searchParams.get("output")).toBe("embed");
+    expect(embed.searchParams.get("q")).toBe("Alter Markt, Köln");
+    expect(new URL(mapSearchUrl("Stadtgarten")).searchParams.get("query")).toBe("Stadtgarten, Köln");
+  });
 });

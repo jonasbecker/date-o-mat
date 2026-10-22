@@ -6,7 +6,7 @@ import pg from "pg";
 import { fitsScreen } from "./flow.mjs";
 import { chromium } from "playwright";
 import { eventEvenings, tuesdayMorningOffset } from "./clock.mjs";
-import { startMock } from "./google-mock.mjs";
+import { DAYS, startMock } from "./google-mock.mjs";
 import { resetDb } from "./db.mjs";
 import { answerArt } from "./claude-art.mjs";
 
@@ -146,8 +146,52 @@ check("no ✕/♥ buttons – swiping only (the two stay for the keyboard)", (aw
 await j.screenshot({ path: `${OUT}m17-01-deck.png` });
 check("swipe deck fits the screen", await fitsScreen(j));
 
-// 2) Swipe with buttons, keyboard and a drag
+// 1b) Tapped, the card opens to the full screen: "swipen." goes up and the flower down (both fold away), ↺ moves up
+// into the header, the whole description and – where it has a place – a real map. Swiping works there too; tapped
+// again it is small again. (The map is Google's embed – here a stand-in page.)
+await j.context().route("https://maps.google.com/**", (r) => r.fulfill({ contentType: "text/html", body: "<html><body style='margin:0;background:#cfe3d0'></body></html>" }));
 await j.waitForTimeout(800); // hydration
+{
+  const small = await topCard(j).boundingBox();
+  await j.mouse.click(small.x + small.width / 2, small.y + 60);
+  await j.locator("[data-swipe-deck][data-full]").waitFor({ timeout: 5000 });
+  await j.waitForTimeout(500);
+  const big = await topCard(j).boundingBox();
+  const folded = await j.evaluate(() => ["up", "down"].map((k) => getComputedStyle(document.querySelector(`[data-deck-fold="${k}"]`)).visibility));
+  const headUndo = j.locator('header [data-deck-head="full"]').getByRole("button", { name: "Rückgängig" });
+  check(`tapped, the card opens to the full screen (${Math.round(small.height)} → ${Math.round(big.height)}, folded ${folded})`, big.height > small.height + 100 && folded.every((v) => v === "hidden") && (await headUndo.isVisible()) && (await j.getByRole("heading", { name: "swipen." }).count()) === 0);
+  // Somewhere in the deck there is a card with a place (every other AI card, the combos): swipe to it in full.
+  let mapped = 0;
+  const passed = [];
+  for (let i = 0; i < 6 && (i === 0 || !(mapped = await topCard(j).locator("[data-map-embed]").count())); i++) {
+    const t = await topTitle(j);
+    const b = await topCard(j).boundingBox();
+    await j.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await j.mouse.down();
+    await j.mouse.move(b.x + b.width / 2 - 90, b.y + b.height / 2, { steps: 4 });
+    await j.mouse.move(b.x + b.width / 2 - 200, b.y + b.height / 2, { steps: 4 });
+    await j.mouse.up();
+    passed.push(t);
+    await nextTop(j, t);
+  }
+  check(`in full the card swipes too, the next one stays full (${passed.length} swiped)`, passed.length > 0 && (await j.locator("[data-swipe-deck][data-full]").count()) === 1);
+  await j.waitForTimeout(400);
+  check("full: a card with a place shows its map", mapped === 1 && (await topCard(j).locator('[data-map-embed="loaded"] iframe').count()) === 1);
+  await j.screenshot({ path: `${OUT}m17-01b-vollbild.png` });
+  // ↺ up in the header takes the swipes back.
+  for (const t of passed.reverse()) {
+    await headUndo.click();
+    await j.waitForFunction((title) => document.querySelector('[aria-roledescription="Karte"]')?.getAttribute("aria-label") === title, t, { timeout: 10000 });
+  }
+  const b = await topCard(j).boundingBox();
+  await j.mouse.click(b.x + b.width / 2, b.y + 60);
+  await j.waitForTimeout(500);
+  check("tapped again it is small, swipen. and the flower are back", (await j.locator("[data-swipe-deck][data-full]").count()) === 0 && (await j.getByRole("heading", { name: "swipen." }).isVisible()) && (await j.locator("[data-quip]").isVisible()));
+  check("…and no swipe was left behind", (await db.query("SELECT count(*)::int AS n FROM deck_swipes WHERE user_id = $1", [jonas.id])).rows[0].n === 0);
+}
+
+// 2) Swipe with buttons, keyboard and a drag
+await j.waitForTimeout(300);
 const first = await topTitle(j);
 await j.getByRole("button", { name: "Einpflanzen" }).dispatchEvent("click");
 const second = await nextTop(j, first);
@@ -287,8 +331,18 @@ for (let attempt = 0; attempt < 5 && !comboTitle.startsWith("Kombi"); attempt++)
   if (!comboTitle.startsWith("Kombi")) await s.waitForTimeout(1500);
 }
 check(`combo card shows its event (${comboTitle})`, comboTitle.startsWith("Kombi") && (await topCard(s).getByText("Konzert: Annenmaykantereit", { exact: true }).isVisible()));
-check("combo knows you are both free", await topCard(s).getByText("✓ ihr habt beide Zeit").isVisible());
+// Every card on the deck fits both calendars – no "ihr habt beide Zeit" on it any more.
+check("combo shows its day, no 'beide Zeit' line", (await topCard(s).locator("[data-card-when]").count()) === 1 && (await topCard(s).getByText("beide Zeit").count()) === 0);
 await s.screenshot({ path: `${OUT}m17-04-combo.png` });
+// Moved to Saturday evening, when Sam has something on all day: it stays off the deck (and comes back once it fits).
+const { rows: [{ event_starts_at: was }] } = await db.query("SELECT event_starts_at FROM deck_cards WHERE id = $1", [combo.id]);
+await db.query("UPDATE deck_cards SET event_starts_at = $2 WHERE id = $1", [combo.id, DAYS.saturday.set({ hour: 20 }).toJSDate()]);
+await s.reload();
+await s.locator("[data-swipe-deck]").waitFor({ timeout: 15000 });
+await s.waitForTimeout(500);
+const busyTop = (await topCard(s).count()) ? await topTitle(s) : "(leer)";
+check(`a combo when one of you is busy is not on the deck (${busyTop})`, !busyTop.startsWith("Kombi"));
+await db.query("UPDATE deck_cards SET event_starts_at = $2 WHERE id = $1", [combo.id, was]);
 await db.query("UPDATE deck_cards SET status = 'open' WHERE id = ANY($1::uuid[])", [others.map((r) => r.id)]);
 if (comboCopy) await db.query("DELETE FROM deck_cards WHERE id = $1", [comboCopy]);
 

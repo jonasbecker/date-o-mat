@@ -48,6 +48,10 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   "habt ihr's gemacht?", my turn, "wie war's?"); `AppBadge` (client, (app) layout) asks `badgeAction()` after the page is
   there (open, foreground, each navigation – never while a page renders) and sets it (`data-app-badge`); it is read
   only (`currentCycleReadOnly`), and every push carries it (`badge`, `server/badge.ts`, set in sw.js). e2e: m6.
+- **Maps:** `components/map-embed.tsx` is Google's embed (`mapEmbedUrl()`, no key; places in Köln unless they name a
+  city, `placeQuery()`) – it loads only once it is on screen (a closed date card or a compact swipe card never fetches
+  it), takes no fingers (a drag over it still moves the card) and a tap opens Maps. e2e answers `maps.google.com` with a
+  stand-in page (m17, m25).
 - **Gestures and offline:** `components/gestures.tsx` – from the left edge = back where the page has a back arrow
   (mark it `data-back`; installed app only, `localStorage["dom-gestures"]="1"` elsewhere), pull down at the top =
   `router.refresh()` (not on `[data-sheet-card]`, the swipe card, dialogs, fields, `[data-no-pull]`). `public/sw.js`
@@ -80,11 +84,18 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   switch; calendars + "Freie Abende ab"; `flower-card.tsx`: the flower's name and pot – `couple_settings.flower_name`,
   `flower_pot`, pots unlock at 10/25 lived dates, `core/bloom.ts`). `garden-banner.tsx` shows only when something is
   missing (calendar, status – push is only the switch). The page is "einstellungen." (no "gartenschuppen"). "Mehr" (`?t=mehr`) lists the other topics.
-- **Swipen (C2 card, `docs/design/garten/swipe-karte/`):** `swipe-deck.tsx` – the light card with a picture strip
-  (`components/illustrations.tsx`, all of them on `/dev/illustrationen`), the day big (combo: the event; else the next
-  free evening / half day from one FreeBusy query per page, `core/card-when.ts`; none → "irgendwann.", never a made-up date), WO · DAUER · KOSTEN (never cut: in plain CSS the picture gives way first – `flex-shrink`, text `flex 1 0 auto`;
-  then `fitCard()` measures where the info box ends – geometry, not scrollHeight, Safari differs – on every size change
-  and sets the steps `data-d1…5` styled in globals.css `.swipe-card`; m24 checks five heights, a hidden tab, no measuring); swiping only,
+- **Swipen (C2 card, `docs/design/garten/swipe-karte/`):** `swipe-deck.tsx` / `swipe-card.tsx` – the light card, calm enough to decide in a second:
+  the picture strip (`components/illustrations.tsx`, all of them on `/dev/illustrationen`; it takes the spare room), the sort
+  small, the title big, two lines on what it is, then where · how long · cost as chips and the day last and small (combo:
+  the event; else the next free evening / half day from one FreeBusy query per page, `core/card-when.ts`; none →
+  "irgendwann.", never a made-up date). The deck only holds what fits both calendars – a combo whose event clashes stays
+  off (`deckFor`, `bothFree === false`) – so no "ihr habt beide Zeit" line. The bottom box is never cut (in plain CSS the
+  picture gives way first; then `fitCard()` measures where it ends – geometry, not scrollHeight, Safari differs – and sets
+  the steps `data-d1…5` styled in globals.css `.swipe-card`; m24 checks five heights, a hidden tab, no measuring). A tap
+  (not a drag) opens the card to the full screen (`data-full`, `Card full`): the whole description, the event, a Google
+  map of the place (`components/map-embed.tsx`); "swipen." folds away up, the flower down, ↺ comes up into the
+  header's top right (globals.css `data-deck-fold` / `data-deck-head`); swiping works there too, a tap (or Escape)
+  makes it small again. e2e: m17. Swiping only,
   with the EINPFLANZEN / KOMPOST stamp; the flower (a new quip every 10 s; tap = "sam hat n geswipt." + "deine likes ›" for 5 s – no line under the title) reacts happy / sad and also says what a swipe
   changed or what went wrong – no small text under the card. ⓘ next to the Matchlinge (how it works, "n geswipt · n
   übrig", Mehr Ideen, Euer Ding) and ↺ next to the filter live in `deck-chrome.tsx`. For keyboard / screen readers the

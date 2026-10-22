@@ -72,6 +72,8 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 async function pageFor(viewport, options = {}) {
   const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2, locale: "de-DE", ...options });
   await ctx.addCookies([{ name: "dom_session", value: jonas.token, url: BASE }]);
+  // The map in the open card is Google's embed – here a stand-in page.
+  await ctx.route("https://maps.google.com/**", (r) => r.fulfill({ contentType: "text/html", body: "<html><body style='margin:0;background:#cfe3d0'></body></html>" }));
   const page = await ctx.newPage();
   page.on("pageerror", (e) => console.log("PAGEERROR", e.message));
   await page.goto(`${BASE}/plan`);
@@ -163,11 +165,14 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
   check(`${tag}: the card ends just above the tab bar (${Math.round(cardBox.y + cardBox.height)} / ${Math.round(nav.y)})`, cardBox.y + cardBox.height <= nav.y && nav.y - (cardBox.y + cardBox.height) < 30);
   await j.screenshot({ path: `${OUT}m25-01-zu${viewport.width === 390 ? "" : "-small"}.png` });
 
+  const mapState = () => j.locator("[data-map-embed]").getAttribute("data-map-embed");
+  check(`${tag}: closed – the map is not loaded yet (${await mapState()})`, (await mapState()) === "waiting");
   // Tap → open, gently
   await head(j).click();
   await settle(j);
   check(`${tag}: a tap opens it gently (${JSON.stringify(await state(j))})`, JSON.stringify(await state(j)) === JSON.stringify({ z: "mitte", tempo: "sanft", mood: "genervt" }) && (await head(j).getAttribute("aria-expanded")) === "true");
   check(`${tag}: open – nothing covered (${(await overlaps(j)).join(", ")})`, (await overlaps(j)).length === 0);
+  check(`${tag}: open – the Google map of the meeting point is there (${await mapState()})`, (await mapState()) === "loaded" && (await j.locator("[data-map-embed] iframe").getAttribute("src")).includes("Alter+Markt"));
   // The Beet circle sticks up out of the tab bar (its ring even more) – the card must never cover it: pushed a bit
   // lower, the card still has to go behind the circle.
   const beetOnTop = await j.evaluate(() => {

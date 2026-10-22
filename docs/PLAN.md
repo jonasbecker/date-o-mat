@@ -274,3 +274,14 @@ solange die Blase dort sitzt; eine Spruchwahl pro Bewegung (statt eigener Sprüc
   Minuten, spätestens nach 24 Std.). Braucht eine Spalte für die Batch-ID und einen
   Abhol-Schritt im Tick. „Jetzt lesen“ bleibt eine normale Anfrage. Lohnt sich erst bei
   deutlich mehr Quellen – heute kostet das Lesen weniger als 1 € im Monat.
+
+## Swipe-Karte aufgeräumt, Vollbild, Karte von Google (23.10.2026) ✅
+
+- Die Karte sagt sofort, worum es geht: Titel groß, zwei Zeilen dazu, dann Ort · Dauer · Kosten als kleine Chips, das
+  Datum klein zuletzt. Kein „Nº“, keine Tabelle, kein „ihr habt beide Zeit“ – im Stapel liegt nur, was in beide
+  Kalender passt (Events, bei denen einer was vorhat, bleiben draußen) oder keine eigene Zeit hat.
+- Antippen öffnet die Karte im Vollbild: ganze Beschreibung, das Event, eine echte Google-Karte des Orts; „swipen.“
+  fährt nach oben weg, die Blume nach unten, ↺ wandert oben rechts in den Kopf. Swipen geht auch dort, erneutes
+  Tippen macht sie wieder klein.
+- Die geplante Date-Karte auf dem Beet zeigt statt der gemalten Karte Google Maps (lädt erst, wenn die Karte offen
+  ist; Tippen öffnet die Route).

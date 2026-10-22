@@ -122,7 +122,9 @@ export async function deckFor(ctx: CoupleContext, now: Date): Promise<DeckState>
   }
   const refillAt = settings.deckRefillStartedAt;
   return {
-    cards: views,
+    // Only what fits both of you: an event at a time one of you has something on stays off the deck (still open –
+    // once the calendar is free it comes back). Ideas without a time of their own always fit.
+    cards: views.filter((v) => v.bothFree !== false),
     maybes,
     superLeft: superLikeLeft(lastSuper, new Date()),
     generating: Boolean(refillAt && Date.now() - refillAt.getTime() < STALE_REFILL_MS),

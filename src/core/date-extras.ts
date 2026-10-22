@@ -59,8 +59,23 @@ export function prepReminderAt(startsAt: Date, zone = APP_TIMEZONE): Date {
 // --- Route --------------------------------------------------------------------------------------------------
 
 /** Google Maps with public transport; the app adds "Köln" unless the place already names a city. */
+/** A place as Google should look it up: in Köln unless it names its city (or a postcode). */
+export function placeQuery(place: string): string {
+  return /köln|cologne|bonn|düsseldorf|aachen|\d{5}/i.test(place) ? place.trim() : `${place.trim()}, Köln`;
+}
+
+/** The map shown right in the app (Google's embed, no key needed): the place with its pin. */
+export function mapEmbedUrl(place: string): string {
+  return `https://maps.google.com/maps?${new URLSearchParams({ q: placeQuery(place), z: "15", hl: "de", output: "embed" })}`;
+}
+
+/** Google Maps on the phone (the app if installed): the place itself. */
+export function mapSearchUrl(place: string): string {
+  return `https://www.google.com/maps/search/?${new URLSearchParams({ api: "1", query: placeQuery(place) })}`;
+}
+
 export function routeUrl(destination: string, origin: string | null): string {
-  const place = /köln|cologne|bonn|düsseldorf|aachen|\d{5}/i.test(destination) ? destination : `${destination}, Köln`;
+  const place = placeQuery(destination);
   const params = new URLSearchParams({ api: "1", destination: place, travelmode: "transit" });
   if (origin?.trim()) params.set("origin", /köln|cologne|\d{5}/i.test(origin) ? origin.trim() : `${origin.trim()}, Köln`);
   return `https://www.google.com/maps/dir/?${params}`;

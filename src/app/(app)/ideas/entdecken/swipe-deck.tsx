@@ -95,6 +95,9 @@ export function SwipeDeck({
   const [undoing, startUndo] = useTransition();
   const [loading, startLoading] = useTransition();
   const start = useRef<{ x: number; y: number } | null>(null);
+  // Tapped (not dragged), the card opens to the full screen – description, event, map – and closes again.
+  const [full, setFull] = useState(false);
+  const tap = useRef<{ x: number; y: number; on: boolean } | null>(null);
   const topEl = useRef<HTMLDivElement | null>(null);
   // What this visit has done so far – the deck shows its progress.
   const [stats, setStats] = useState({ swiped: 0, liked: 0 });
@@ -102,7 +105,7 @@ export function SwipeDeck({
   const [reaction, setReaction] = useState<{ verdict: Verdict; quip: string } | null>(null);
   const reactionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Left alone, the flower moves on to the next quip about the top card every few seconds.
-  const [tap, setTap] = useState(0);
+  const [quipTurn, setQuipTurn] = useState(0);
   // Tapped, it tells how far you two are (and leads to my likes) for a moment.
   const [status, setStatus] = useState(false);
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -155,8 +158,8 @@ export function SwipeDeck({
   const next = cards[1];
   // Remembered while rendering (React's "adjust state on change"), so the very next refresh sees it.
   if (top && top.id !== pinned?.id) setPinned(top);
-  // "3 / 12": how far this visit got.
-  const position = stats.swiped + 1;
+  // Nothing left to show full.
+  if (!top && full) setFull(false);
   const canUndo = stats.swiped > 0 && !busy && !undoing;
 
   function decide(verdict: Verdict) {
@@ -174,7 +177,7 @@ export function SwipeDeck({
     setReaction({ verdict, quip: pickQuip(quips, card.id) });
     if (reactionTimer.current) clearTimeout(reactionTimer.current);
     reactionTimer.current = setTimeout(() => setReaction(null), REACTION_MS);
-    setTap(0);
+    setQuipTurn(0);
     setStats((s) => ({ swiped: s.swiped + 1, liked: s.liked + (verdict === "like" ? 1 : 0) }));
     // A like is felt: the 💚 flies to the 💡 (Android also buzzes); a pass is a short tick.
     if (verdict === "like") {
@@ -288,7 +291,8 @@ export function SwipeDeck({
     keyHandler.current = (event: KeyboardEvent) => {
       // Not while typing, while "keimt!" or a sheet (Filter, ⓘ) is open – the card is behind it.
       if (match || document.querySelector("dialog[open]") || (event.target as HTMLElement | null)?.closest("input, textarea, select, dialog")) return;
-      if (event.key === "ArrowLeft") decide("nope");
+      if (event.key === "Escape" && full) setFull(false);
+      else if (event.key === "ArrowLeft") decide("nope");
       else if (event.key === "ArrowRight") decide("like");
       // Like ↺: only what this visit swiped (not a like from days ago).
       else if (event.key === "Backspace" && canUndo) undo();
@@ -305,6 +309,8 @@ export function SwipeDeck({
   function onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
     if (flying) return;
     start.current = { x: event.clientX, y: event.clientY };
+    // A tap on a link or the map does what it says – it does not open or close the card.
+    tap.current = { x: event.clientX, y: event.clientY, on: !(event.target as Element).closest("a, button") };
     width.current = event.currentTarget.getBoundingClientRect().width || 320;
     event.currentTarget.setPointerCapture(event.pointerId);
   }
@@ -312,6 +318,7 @@ export function SwipeDeck({
     if (!start.current) return;
     const dx = event.clientX - start.current.x;
     const dy = event.clientY - start.current.y;
+    if (tap.current && Math.hypot(dx, dy) > 6) tap.current = null;
     // Only sideways counts: a mostly vertical move lets go (the page stays calm), the card never leaves its row.
     if (dragX.current === null && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 12) {
       start.current = null;
@@ -335,7 +342,14 @@ export function SwipeDeck({
   }
   function onPointerUp() {
     const x = dragX.current;
+    const tapped = tap.current?.on && (x === null || Math.abs(x) <= 6);
+    tap.current = null;
     start.current = null;
+    if (tapped) {
+      if (x !== null) endDrag(true);
+      setFull((f) => !f);
+      return;
+    }
     if (x === null) return;
     const threshold = width.current * THRESHOLD;
     if (x > threshold) decide("like");
@@ -355,18 +369,18 @@ export function SwipeDeck({
       : { transform: "none", transition: "transform 180ms ease-out" };
   const stamp = dragging ? dragStamp : (flying?.verdict ?? null);
   // What the flower says: its reaction, or about the top card (another one with every tap).
-  const quip = message ?? reaction?.quip ?? (top ? pickQuip(top.art.quips.neutral, top.id, tap) : "");
+  const quip = message ?? reaction?.quip ?? (top ? pickQuip(top.art.quips.neutral, top.id, quipTurn) : "");
   const idle = !message && !reaction && !status && !!top;
   useEffect(() => {
     if (!idle) return;
-    const timer = setInterval(() => setTap((n) => n + 1), QUIP_MS);
+    const timer = setInterval(() => setQuipTurn((n) => n + 1), QUIP_MS);
     return () => clearInterval(timer);
   }, [idle]);
   const swipedWords = partnerSwiped > 0 ? `${partnerName.toLowerCase()} hat ${partnerSwiped} geswipt.` : `${partnerName.toLowerCase()} hat noch nix geswipt.`;
   const mood = reaction ? (reaction.verdict === "like" ? "froh" : "traurig") : "wartet";
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3" data-swipe-deck="page">
+    <div className="flex min-h-0 flex-1 flex-col gap-3" data-swipe-deck="page" data-full={full ? "" : undefined}>
       {/* The card takes what the screen has left – no scrolling. A stack: the next one peeks out, tilted. */}
       <div className="relative min-h-[280px] flex-1">
         {next && (
@@ -386,10 +400,11 @@ export function SwipeDeck({
             onPointerUp={onPointerUp}
             onPointerCancel={() => {
               start.current = null;
+              tap.current = null;
               endDrag(true);
             }}
           >
-            <Card card={top} partnerName={partnerName} pos={`${position} / ${position + cards.length - 1}`} />
+            <Card card={top} partnerName={partnerName} full={full} />
             {stamp && <Stamp verdict={stamp} />}
             {/* Swiping only – for the keyboard and screen readers the two choices stay as buttons, seen when focused. */}
             <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2">
@@ -405,6 +420,14 @@ export function SwipeDeck({
                   {v === "like" ? "einpflanzen →" : "← kompost"}
                 </button>
               ))}
+              <button
+                type="button"
+                aria-expanded={full}
+                onClick={() => setFull((f) => !f)}
+                className="sr-only whitespace-nowrap rounded-full bg-[#1B2620] text-sm font-bold text-[#E7EEDF] focus-visible:not-sr-only focus-visible:px-4 focus-visible:py-2"
+              >
+                {full ? "Kleiner" : "Alles zeigen"}
+              </button>
             </div>
           </div>
         ) : (
@@ -434,8 +457,10 @@ export function SwipeDeck({
         )}
       </div>
 
-      {/* Under the card only the flower (tap: how far you two are) and its bubble – ⓘ and ↺ sit at the top. */}
-      <div className="grid shrink-0 grid-cols-[76px_minmax(0,1fr)] items-center gap-x-2">
+      {/* Under the card only the flower (tap: how far you two are) and its bubble – ⓘ and ↺ sit at the top. The card
+          open to the full screen pushes them down and away. */}
+      <div data-deck-fold="down" className="shrink-0">
+      <div className="grid grid-cols-[76px_minmax(0,1fr)] items-center gap-x-2">
         <button
           type="button"
           onClick={showStatus}
@@ -456,6 +481,7 @@ export function SwipeDeck({
             {quip || "na, was meinst du?"}
           </p>
         )}
+      </div>
       </div>
 
       {match && (

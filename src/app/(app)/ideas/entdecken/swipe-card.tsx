@@ -1,34 +1,48 @@
 "use client";
 
-// The swipe card: one idea as a light card with its picture strip, day and WO · DAUER · KOSTEN, and the stamp
-// that shows while it is dragged. It tightens itself step by step until everything fits (fitCard).
+// The swipe card: one idea, calm enough to decide in a second – what it is first (big title, one or two lines
+// on what you do), then where · how long · what it costs, the day last and small. Tapped, it opens to the full
+// screen with all of its description, the event and a real map of the place; tapped again it is small again.
+// The compact card tightens itself step by step until everything fits (fitCard); the full one scrolls.
 import { memo, useLayoutEffect, useRef } from "react";
 import { IllustrationStrip } from "@/components/illustrations";
+import { MapEmbed } from "@/components/map-embed";
+import { mapSearchUrl } from "@/core/date-extras";
 import type { DeckCardView } from "@/core/deck";
 import { cn } from "@/lib/cn";
 
 export type Verdict = "like" | "nope";
 
-const DAUER = { small: { v: "ein Abend", s: "ca. 2–3 Stunden" }, large: { v: "halber Tag", s: "ca. 5 Stunden" } } as const;
+const DAUER = { small: "ein Abend", large: "halber Tag" } as const;
 const SETTING = { indoor: "drinnen", outdoor: "draußen" } as const;
 
-function costRow(cost: number | null): { v: string; s: string } {
-  if (cost === null) return { v: "offen", s: "schätzt selbst" };
-  if (cost === 0) return { v: "gratis", s: "kostet nix" };
-  return { v: `~${cost} €`, s: "für euch zwei" };
+function costLabel(cost: number | null): string | null {
+  if (cost === null) return null;
+  return cost === 0 ? "gratis" : `~${cost} €`;
 }
 
-/** The rows of the white box at the bottom of the card: WO · (EVENT) · DAUER · KOSTEN. */
-function infoRows(card: DeckCardView) {
-  const where = card.location ?? card.event?.venue ?? (card.setting ? SETTING[card.setting] : "sucht's euch aus");
-  const rows = [{ icon: "⌖", bg: "#DCEBD9", k: "WO", v: where, s: card.setting && card.location ? SETTING[card.setting] : "" }];
-  if (card.event) rows.push({ icon: "♪", bg: "#F6DFD3", k: "EVENT", v: card.event.title, s: [card.event.venue, card.when?.time].filter(Boolean).join(", ") });
-  rows.push({ icon: "◷", bg: "#F7EBC4", k: "DAUER", ...DAUER[card.size] });
-  rows.push({ icon: "€", bg: "#DCE7F5", k: "KOSTEN", ...costRow(card.costEur) });
-  return rows;
+/** Where · how long · what it costs – three small facts in one row. */
+function facts(card: DeckCardView) {
+  const where = card.location ?? card.event?.venue ?? (card.setting ? SETTING[card.setting] : null);
+  const cost = costLabel(card.costEur);
+  return [where && { k: "wo", icon: "⌖", v: where }, { k: "dauer", icon: "◷", v: DAUER[card.size] }, cost && { k: "kosten", icon: "", v: cost }].filter(
+    (f): f is { k: string; icon: string; v: string } => Boolean(f),
+  );
 }
 
-/** How many steps the card can tighten to fit its box (see `Card`, the rules are in globals.css). */
+/** The day, small: "Sa 31.10. · ab 18:00" (an event: its own day and time). */
+function whenLine(card: DeckCardView): string | null {
+  const w = card.when;
+  if (!w) return null;
+  return [w.day, w.time, w.note].filter(Boolean).join(" · ");
+}
+
+/** The place a map can show: the idea's own, else the event's venue. */
+function mapPlace(card: DeckCardView): string | null {
+  return card.location ?? card.event?.venue ?? null;
+}
+
+/** How many steps the compact card can tighten to fit its box (the rules are in globals.css). */
 const DENSEST = 5;
 
 /**
@@ -51,18 +65,17 @@ function fitCard(card: HTMLElement, info: HTMLElement) {
 }
 
 /**
- * One idea as a card (SWIPE-KARTE.md §2, SwipeC.html variant 2): the picture strip in its pastel, the sort
- * and number, the day big (the event's or the next free evening), the title, and WO · DAUER · KOSTEN.
- * The card is light in the dark app – its colors are fixed, not tokens.
+ * One idea as a card. Compact: the picture strip in its pastel, the sort small, the title big, a line or two on
+ * what it is, and at the bottom where · how long · cost and the day. Full (`full`): the same, with all of the
+ * description, the event and the map – it scrolls if it has to.
  *
- * Phones differ by 300 px in height (Safari's bars, safe areas), and a card by a row (event) or a chip:
- * the card tightens step by step until everything fits (`fitCard`) – the picture first, then the small
- * lines, then the type, the title's second line last; the info box is never cut.
- * 1: smaller picture · 2: no sub-lines · 3: small picture, smaller type · 4: no picture, no Sorte · 5: title on one line.
+ * Phones differ by 300 px in height: the compact card tightens step by step until everything fits (`fitCard`) –
+ * 1: smaller picture · 2: one line of description · 3: small picture, smaller title · 4: no picture, no sort ·
+ * 5: no description, the title on two lines. The bottom box is never cut. The card is light in the dark app – its
+ * colors are fixed, not tokens.
  */
 // Memoized: the deck renders again while a card is dragged (the stamp), the card itself does not change.
-export const Card = memo(function Card({ card, partnerName, pos }: { card: DeckCardView; partnerName: string; pos?: string }) {
-  const when = card.when;
+export const Card = memo(function Card({ card, partnerName, full = false }: { card: DeckCardView; partnerName: string; full?: boolean }) {
   const box = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
   const info = useRef<HTMLDivElement>(null);
@@ -71,6 +84,11 @@ export const Card = memo(function Card({ card, partnerName, pos }: { card: DeckC
     const inner = body.current;
     const rows = info.current;
     if (!el || !inner || !rows) return;
+    if (full) {
+      for (let step = 1; step <= DENSEST; step++) el.removeAttribute(`data-d${step}`);
+      el.dataset.cardDense = "0";
+      return;
+    }
     let frame = 0;
     const fit = () => fitCard(el, rows);
     const later = () => {
@@ -95,52 +113,64 @@ export const Card = memo(function Card({ card, partnerName, pos }: { card: DeckC
       window.removeEventListener("pageshow", later);
       document.removeEventListener("visibilitychange", later);
     };
-  }, [card]);
+  }, [card, full]);
+  const when = whenLine(card);
+  const place = mapPlace(card);
   return (
-    <div ref={box} data-card-dense={0} className="swipe-card relative flex h-full flex-col overflow-hidden rounded-[28px] bg-[#E7EEDF] text-[#1B2620] shadow-[0_18px_30px_rgba(0,0,0,0.4)]">
-      <IllustrationStrip names={card.art.illustrations} hex={card.art.hex} className="sc-strip -mb-2.5 min-h-8 shrink basis-[110px] overflow-hidden" />
-      {/* The text never shrinks (flex 1 0 auto): when room is short the picture gives way first – plain CSS. */}
-      <div ref={body} className="sc-body relative flex flex-[1_0_auto] flex-col gap-3.5 p-5">
-        <div className="sc-sorte flex items-center justify-between gap-2">
-          <span className="inline-flex h-[26px] items-center truncate rounded-full bg-white px-2.5 font-mono text-[11px]">Sorte: {card.sorte}</span>
-          {pos && <span className="shrink-0 font-mono text-[11px] text-[#6A7566]">Nº {pos}</span>}
+    <div
+      ref={box}
+      data-card-dense={0}
+      data-card-full={full ? "" : undefined}
+      className={cn("swipe-card relative flex h-full flex-col rounded-[28px] bg-[#E7EEDF] text-[#1B2620] shadow-[0_18px_30px_rgba(0,0,0,0.4)]", full ? "overflow-y-auto overscroll-contain" : "overflow-hidden")}
+    >
+      <IllustrationStrip names={card.art.illustrations} hex={card.art.hex} className={cn("sc-strip -mb-2.5 overflow-hidden rounded-t-[28px]", full ? "h-[120px] shrink-0" : "min-h-8 flex-[1_1_96px]")} />
+      {/* The text never shrinks: a tall screen gives the picture more room, a short one takes it first – plain CSS. */}
+      <div ref={body} className={cn("sc-body relative flex flex-col gap-2.5 p-5", full ? "flex-[1_0_auto]" : "flex-[0_0_auto]")}>
+        <div className="sc-sorte flex flex-wrap items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.06em] text-[#6A7566]">
+          <span>{card.sorte}</span>
+          {card.partnerSuper && <span className="rounded-full bg-[#F6DFD3] px-2 py-0.5 normal-case tracking-normal text-[#1B2620]">★ {partnerName} findet das super</span>}
+          {card.kind === "revisit" && <span className="rounded-full bg-[#E6E0F2] px-2 py-0.5 normal-case tracking-normal text-[#1B2620]">🕰️ Liegt {card.waitingSince ?? "lange"} im Regal</span>}
         </div>
-        {(card.partnerSuper || card.kind === "revisit") && (
-          <div className="sc-chips -mt-1.5 flex flex-wrap gap-1.5 font-mono text-[10px]">
-            {card.partnerSuper && <span className="rounded-full bg-[#F6DFD3] px-2.5 py-1">★ {partnerName} findet das super</span>}
-            {card.kind === "revisit" && <span className="rounded-full bg-[#E6E0F2] px-2.5 py-1">🕰️ Liegt {card.waitingSince ?? "lange"} im Regal</span>}
+        <h2 className={cn("sc-title text-[30px] font-extrabold leading-[1.02] tracking-[-0.035em]", !full && "line-clamp-3")}>{card.title}</h2>
+        {card.note && <p className={cn("sc-note text-[15px] leading-snug text-[#3E4A3F]", !full && "line-clamp-2")}>{card.note}</p>}
+        {full && card.event && (
+          <div data-card-event className="flex flex-col gap-0.5 rounded-[18px] bg-[#F6DFD3] px-4 py-3">
+            <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-[#6A7566]">Event</span>
+            <span className="text-[17px] font-bold leading-tight">{card.event.title}</span>
+            <span className="text-sm text-[#3E4A3F]">{[card.event.venue, card.event.when].filter(Boolean).join(" · ")}</span>
+            {card.event.url && (
+              <a href={card.event.url} target="_blank" rel="noopener noreferrer" className="mt-1 self-start text-sm font-bold underline">
+                Zum Event ›
+              </a>
+            )}
           </div>
         )}
-        {when && (
-          <div className="sc-when flex flex-col gap-1" data-card-when>
-            <span className="sc-day text-[42px] font-extrabold leading-[0.92] tracking-[-0.055em]">{when.day}</span>
-            <span className={cn("sc-time flex flex-wrap items-center gap-x-2 text-[17px] font-bold", when.free === true ? "text-[#2E7D46]" : when.free === false ? "text-[#A0522D]" : "text-[#6A7566]")}>
-              {when.time && (
+        {full && place && <MapEmbed place={place} href={mapSearchUrl(place)} label={`${place} in Google Maps`} className="h-44 shrink-0 bg-[#DCEBD9]" />}
+        <div ref={info} data-card-info className="mt-auto flex shrink-0 flex-col gap-2">
+          <ul className="flex flex-wrap gap-1.5">
+            {facts(card).map((f) => (
+              <li key={f.k} data-fact={f.k} className="inline-flex h-7 max-w-full items-center gap-1 rounded-full bg-white px-2.5 text-[13px] font-bold">
+                {f.icon && (
+                  <span aria-hidden="true" className="text-[11px] text-[#6A7566]">
+                    {f.icon}
+                  </span>
+                )}
+                <span className="truncate">{f.v}</span>
+              </li>
+            ))}
+          </ul>
+          {(when || card.event) && (
+            <p data-card-when className="sc-when flex min-w-0 items-center gap-1.5 font-mono text-[12px] text-[#6A7566]">
+              {card.event && !full && (
                 <>
-                  <span>{when.time}</span>
-                  <span aria-hidden="true">·</span>
+                  <span aria-hidden="true">♪</span>
+                  <span className="truncate">{card.event.title}</span>
+                  {when && <span aria-hidden="true">·</span>}
                 </>
               )}
-              <span>{when.note}</span>
-            </span>
-          </div>
-        )}
-        <div className="sc-rule border-t-[1.5px] border-[#C9D4C4] pt-3">
-          <h2 className="sc-title line-clamp-2 text-2xl font-extrabold leading-[1.05] tracking-[-0.03em]">{card.title}</h2>
-        </div>
-        <div ref={info} data-card-info className="mt-auto shrink-0 overflow-hidden rounded-[18px] bg-white">
-          {infoRows(card).map((r, i) => (
-            <div key={r.k} className={cn("sc-row grid grid-cols-[30px_minmax(0,1fr)_auto] items-center gap-2.5 px-3.5 py-[9px]", i > 0 && "border-t border-[#EDF3EA]")}>
-              <span aria-hidden="true" className="sc-icon flex size-7 items-center justify-center rounded-[9px] text-[13px] font-extrabold" style={{ background: r.bg }}>
-                {r.icon}
-              </span>
-              <span className="flex min-w-0 flex-col">
-                <span className="truncate text-[15px] font-bold leading-[1.15]">{r.v}</span>
-                {r.s && <span className="sc-sub truncate text-xs text-[#6A7566]">{r.s}</span>}
-              </span>
-              <span className="font-mono text-[10px] text-[#6A7566]">{r.k}</span>
-            </div>
-          ))}
+              {when && <span className="shrink-0">{when}</span>}
+            </p>
+          )}
         </div>
       </div>
     </div>

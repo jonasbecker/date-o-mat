@@ -40,8 +40,10 @@ async function Discover() {
       <AutoRefresh intervalMs={deck.generating || refilling ? 6_000 : 30_000} />
       <AppHeader
         action={
-          // Matches are seedlings (DESIGN-GARTEN.md §5.2) – the pill leads to them; ⓘ explains the page.
-          <span className="flex items-center gap-2">
+          // Matches are seedlings (DESIGN-GARTEN.md §5.2) – the pill leads to them; ⓘ explains the page. With the card
+          // opened to the full screen, ↺ takes their place up here (globals.css, data-deck-head).
+          <span className="relative flex items-center">
+          <span data-deck-head="normal" className="flex items-center gap-2">
           <Link href="/ideas?ansicht=match" className="tap hit inline-flex h-8 items-center gap-1.5 rounded-full bg-surface px-3 text-[13px] font-bold">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6DBA74" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
               <path d="M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 14c0-3-2-5-6-5 0 3 2 5 6 5z" />
@@ -50,17 +52,24 @@ async function Discover() {
           </Link>
           <DeckInfoButton partnerName={ctx.partner.name} taste={taste} />
           </span>
+          <span data-deck-head="full" className="absolute right-0 top-1/2 -mt-[22px]">
+            <DeckUndoButton />
+          </span>
+          </span>
         }
       />
-      {/* SwipeC.html: "swipen.", the round filter on the right (how far you two are: tap the flower). */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-col">
-          <h1 className="text-[40px] font-extrabold leading-[0.92] tracking-[-0.05em]">swipen.</h1>
+      {/* SwipeC.html: "swipen.", the round filter on the right (how far you two are: tap the flower). It folds away
+          upwards while the card is open to the full screen. */}
+      <div data-deck-fold="up">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-col">
+            <h1 className="text-[40px] font-extrabold leading-[0.92] tracking-[-0.05em]">swipen.</h1>
+          </div>
+          <span className="flex shrink-0 gap-2">
+            <DeckUndoButton />
+            <FilterButton round />
+          </span>
         </div>
-        <span className="flex shrink-0 gap-2">
-          <DeckUndoButton />
-          <FilterButton round />
-        </span>
       </div>
       <SwipeDeck {...deck} partnerName={ctx.partner.name} people={[ctx.user, ctx.partner]} />
     </DeckChrome>

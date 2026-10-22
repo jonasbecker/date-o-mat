@@ -13,7 +13,7 @@ export type CardWhen = {
   time: string;
   /** true: both free · false: someone has something on · null: unknown (no calendars). */
   free: boolean | null;
-  /** The line under the day: "✓ ihr habt beide Zeit", "✗ da habt ihr was vor", "kalender fehlt". */
+  /** A word after the day when it is not simply free for both: "kalender fehlt", "gerade nichts frei" ("" when free). */
   note: string;
 };
 
@@ -29,7 +29,8 @@ function timeLabel(date: Date, zone: string): string {
   return DateTime.fromJSDate(date, { zone }).toFormat("HH:mm");
 }
 
-const NOTE = { true: "✓ ihr habt beide Zeit", false: "✗ da habt ihr was vor" } as const;
+// Both free needs no words: the deck only shows what fits both calendars (or has no time of its own).
+const NOTE = { true: "", false: "✗ da habt ihr was vor" } as const;
 
 /** A combo card's event: its day and time, and whether both are free then. */
 export function eventWhen(event: { startsAt: Date; allDay: boolean }, free: boolean | null, zone = APP_TIMEZONE): CardWhen {
