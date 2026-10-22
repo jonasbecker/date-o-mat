@@ -151,7 +151,8 @@ for (let i = 0; i < 2; i++) {
   await j.goto(`${BASE}/ideas/entdecken`);
   await j.getByRole("button", { name: "Auf den Kompost" }).waitFor({ state: "attached", timeout: 20000 });
   await j.waitForLoadState("networkidle").catch(() => {});
-  await keptOffline();
+  const kept = await keptOffline(30);
+  check(`the swipe page is kept for offline (${kept.seconds}s)`, kept.ok);
 }
 await j.goto(`${BASE}/dates`);
 await j.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 20000 });
@@ -159,19 +160,23 @@ await j.goto(`${BASE}/plan`);
 await j.locator("[data-date-sheet] [data-sheet-flower]").waitFor({ timeout: 20000 });
 // The copies are written after the page: wait until the page and all its code files are kept (slower in CI) –
 // without them the offline page could not start and would never say it is offline.
-async function keptOffline() {
-  for (let i = 0; i < 60; i++) {
+async function keptOffline(seconds = 15) {
+  const t0 = Date.now();
+  for (let i = 0; i < seconds * 4; i++) {
     const kept = await j.evaluate(async () => {
       const pages = await caches.open("dom-pages-v1");
       if (!(await pages.match(location.href, { ignoreVary: true }))) return false;
       const code = await caches.open("dom-static-v1");
-      const files = [...document.querySelectorAll("script[src]")].map((s) => s.src).filter((src) => src.includes("/_next/static/"));
+      const files = [...document.querySelectorAll("script[src]")].filter((s) => !s.noModule).map((s) => s.src).filter((src) => src.includes("/_next/static/"));
       for (const src of files) if (!(await code.match(src))) return false;
       return true;
     });
-    if (kept) return;
+    if (kept) return { ok: true, seconds: (Date.now() - t0) / 1000 };
     await j.waitForTimeout(250);
   }
+  const keys = await j.evaluate(async () => (await (await caches.open("dom-pages-v1")).keys()).map((r) => new URL(r.url).pathname + new URL(r.url).search)).catch((e) => [e.message]);
+  console.log(`    not kept after ${seconds}s: ${j.url()} – kept pages: ${JSON.stringify(keys)}`);
+  return { ok: false, seconds };
 }
 await keptOffline();
 // No network at all – for the page and for the service worker.
@@ -193,11 +198,12 @@ await j.goto(`${BASE}/budget`).catch(() => {});
 await j.getByRole("heading", { name: /Gerade offline/ }).waitFor({ timeout: 10000 }).catch(() => {});
 check("a page never seen gets the offline page", await j.getByRole("heading", { name: /Gerade offline/ }).isVisible().catch(() => false));
 // Swiping offline: the swipe is kept on the phone, the card stays gone (also after a reload) and goes out with the network
-await j.goto(`${BASE}/ideas/entdecken`).catch(() => {});
+const navError = await j.goto(`${BASE}/ideas/entdecken`).then(() => null, (e) => e.message.split("\n")[0]);
 await j.locator("[data-offline]").waitFor({ timeout: 10000 }).catch(() => {}); // hydrated
 const kompost = j.getByRole("button", { name: "Auf den Kompost" });
 const hasDeck = await kompost.waitFor({ state: "attached", timeout: 15000 }).then(() => true, () => false);
 check("offline, the swipe page opens with its deck", hasDeck);
+if (!hasDeck) console.log("    navigation:", navError ?? "ok", "– now at", j.url());
 if (!hasDeck) console.log("    the page shows:", JSON.stringify(await j.evaluate(() => document.body.innerText.slice(0, 160)).catch((e) => e.message)));
 let swipedTitle;
 if (hasDeck) {
