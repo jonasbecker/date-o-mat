@@ -59,11 +59,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # apt on the runners sometimes hangs for minutes (it did in a quarter of the jobs): a time limit and a retry.
+      # Only the browser, no `--with-deps`: the runner already has Chromium's system libraries, and the apt step
+      # (it would add fonts only) sometimes hangs for minutes – and a time limit would leave apt's lock behind.
       - run: |
           for attempt in 1 2 3; do
-            timeout 150 npx playwright install --with-deps chromium && exit 0
-            echo "playwright install did not finish (attempt $attempt) – again"
+            timeout 120 npx playwright install chromium && exit 0
+            echo "browser download did not finish (attempt $attempt) – again"
           done
           exit 1
       - run: npm run build
