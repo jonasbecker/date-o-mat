@@ -59,7 +59,13 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # apt on the runners sometimes hangs for minutes (it did in a quarter of the jobs): a time limit and a retry.
+      - run: |
+          for attempt in 1 2 3; do
+            timeout 150 npx playwright install --with-deps chromium && exit 0
+            echo "playwright install did not finish (attempt $attempt) – again"
+          done
+          exit 1
       - run: npm run build
       - run: npm run e2e -- --shard=${{ matrix.shard }}/4
       - name: Screenshots of the run
