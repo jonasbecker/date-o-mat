@@ -81,6 +81,8 @@ await ctx.addCookies([{ name: "dom_session", value: jonas.token, url: BASE }]);
 await ctx.addInitScript(() => localStorage.setItem("dom-gestures", "1"));
 const j = await ctx.newPage();
 j.on("pageerror", (e) => console.log("PAGEERROR", e.message));
+const consoleLog = [];
+j.on("console", (m) => consoleLog.push(`${m.type()}: ${m.text().slice(0, 160)}`));
 const cdp = await ctx.newCDPSession(j);
 
 /** A finger from one point to another in `steps` moves over `ms`. */
@@ -144,9 +146,13 @@ check("pulling the date card down does not refresh the page", await noPull);
 // 5) Offline: the pages seen before are still there (their last state), a new one gets the offline page
 for (let i = 0; i < 40 && !(await j.evaluate(() => Boolean(navigator.serviceWorker?.controller))); i++) await j.waitForTimeout(250);
 check("the service worker looks after the pages", await j.evaluate(() => Boolean(navigator.serviceWorker?.controller)));
-await j.goto(`${BASE}/ideas/entdecken`);
-await j.getByRole("button", { name: "Auf den Kompost" }).waitFor({ state: "attached", timeout: 20000 });
-await keptOffline();
+// Twice, and until the network is quiet: every chunk of the page has then come through the service worker.
+for (let i = 0; i < 2; i++) {
+  await j.goto(`${BASE}/ideas/entdecken`);
+  await j.getByRole("button", { name: "Auf den Kompost" }).waitFor({ state: "attached", timeout: 20000 });
+  await j.waitForLoadState("networkidle").catch(() => {});
+  await keptOffline();
+}
 await j.goto(`${BASE}/dates`);
 await j.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 20000 });
 await j.goto(`${BASE}/plan`);
@@ -189,29 +195,46 @@ check("a page never seen gets the offline page", await j.getByRole("heading", { 
 // Swiping offline: the swipe is kept on the phone, the card stays gone (also after a reload) and goes out with the network
 await j.goto(`${BASE}/ideas/entdecken`).catch(() => {});
 await j.locator("[data-offline]").waitFor({ timeout: 10000 }).catch(() => {}); // hydrated
-const titlesShown = () => j.locator("[aria-roledescription='Karte'] h2").allInnerTexts();
-const before = await titlesShown();
-await j.getByRole("button", { name: "Auf den Kompost" }).dispatchEvent("click");
-await j.getByText(/kein netz – ich merk's mir/).waitFor({ timeout: 10000 }).catch(() => {});
-check("offline swipe: the flower says it keeps it", await j.getByText(/kein netz – ich merk's mir/).isVisible().catch(() => false));
-const queued = await j.evaluate(() => JSON.parse(localStorage.getItem("dom-swipe-queue") ?? "[]"));
-check(`…and it is kept on the phone (${queued.length})`, queued.length === 1 && queued[0].verdict === "nope");
-await j.reload().catch(() => {});
-await j.locator("[data-offline]").waitFor({ timeout: 10000 }).catch(() => {});
-await j.waitForTimeout(500);
-const gone = await titlesShown();
-const swipedTitle = (await db.query("SELECT title FROM deck_cards WHERE id = $1", [queued[0]?.cardId])).rows[0]?.title;
-check(`offline reload: the swiped card stays off the deck (${swipedTitle})`, Boolean(swipedTitle) && before.includes(swipedTitle) && !gone.includes(swipedTitle));
-await ctx.setOffline(false);
-await ctx.unroute("**/*", cut);
-await j.evaluate(() => window.dispatchEvent(new Event("online")));
-let arrived = [];
-for (let i = 0; i < 40 && arrived.length === 0; i++) {
-  await j.waitForTimeout(250);
-  arrived = (await db.query("SELECT c.title, s.verdict FROM deck_swipes s JOIN deck_cards c ON c.id = s.card_id WHERE s.user_id = $1", [jonas.id])).rows;
+const kompost = j.getByRole("button", { name: "Auf den Kompost" });
+const hasDeck = await kompost.waitFor({ state: "attached", timeout: 15000 }).then(() => true, () => false);
+check("offline, the swipe page opens with its deck", hasDeck);
+if (!hasDeck) console.log("    the page shows:", JSON.stringify(await j.evaluate(() => document.body.innerText.slice(0, 160)).catch((e) => e.message)));
+let swipedTitle;
+if (hasDeck) {
+  const titlesShown = () => j.locator("[aria-roledescription='Karte'] h2").allInnerTexts();
+  const before = await titlesShown();
+  await j.getByRole("button", { name: "Auf den Kompost" }).dispatchEvent("click");
+  await j.getByText(/kein netz – ich merk's mir/).waitFor({ timeout: 10000 }).catch(() => {});
+  check("offline swipe: the flower says it keeps it", await j.getByText(/kein netz – ich merk's mir/).isVisible().catch(() => false));
+  const queued = await j.evaluate(() => JSON.parse(localStorage.getItem("dom-swipe-queue") ?? "[]"));
+  check(`…and it is kept on the phone (${queued.length})`, queued.length === 1 && queued[0].verdict === "nope");
+  await j.reload().catch(() => {});
+  await j.locator("[data-offline]").waitFor({ timeout: 10000 }).catch(() => {});
+  await j.waitForTimeout(500);
+  const gone = await titlesShown();
+  swipedTitle = (await db.query("SELECT title FROM deck_cards WHERE id = $1", [queued[0]?.cardId])).rows[0]?.title;
+  check(`offline reload: the swiped card stays off the deck (${swipedTitle})`, Boolean(swipedTitle) && before.includes(swipedTitle) && !gone.includes(swipedTitle));
 }
-check(`back online, the kept swipe is sent (${JSON.stringify(arrived)})`, arrived.length === 1 && arrived[0].title === swipedTitle && arrived[0].verdict === "nope");
-check("…and the phone forgets it", (await j.evaluate(() => localStorage.getItem("dom-swipe-queue"))) === null);
+// Order matters: a request that the route handler is holding when the route goes away is never answered (and Next
+// runs server actions one after the other, so it would block the rest) – first the route, then the network.
+await ctx.unroute("**/*", cut);
+await j.waitForTimeout(300);
+await ctx.setOffline(false);
+await j.evaluate(() => window.dispatchEvent(new Event("online")));
+if (hasDeck) {
+  let arrived = [];
+  for (let i = 0; i < 60 && arrived.length === 0; i++) {
+    await j.waitForTimeout(250);
+    arrived = (await db.query("SELECT c.title, s.verdict FROM deck_swipes s JOIN deck_cards c ON c.id = s.card_id WHERE s.user_id = $1", [jonas.id])).rows;
+  }
+  if (arrived.length === 0) {
+    console.log("    queue:", await j.evaluate(() => localStorage.getItem("dom-swipe-queue")).catch((e) => e.message));
+    console.log("    page:", j.url(), "online:", await j.evaluate(() => navigator.onLine).catch((e) => e.message));
+    console.log("    console:", JSON.stringify(consoleLog.slice(-8)));
+  }
+  check(`back online, the kept swipe is sent (${JSON.stringify(arrived)})`, arrived.length === 1 && arrived[0].title === swipedTitle && arrived[0].verdict === "nope");
+  check("…and the phone forgets it", (await j.evaluate(() => localStorage.getItem("dom-swipe-queue"))) === null);
+}
 // Signed out (the login page): the kept pages are gone
 await db.query("DELETE FROM sessions WHERE user_id = $1", [jonas.id]);
 await j.goto(`${BASE}/login`);

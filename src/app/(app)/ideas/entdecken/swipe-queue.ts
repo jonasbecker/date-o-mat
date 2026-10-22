@@ -12,6 +12,7 @@ export type QueuedSwipe = { cardId: string; verdict: "like" | "nope"; at: number
 const KEY = "dom-swipe-queue";
 /** Older than this, a kept swipe is dropped (the card is long gone or the deck was renewed). */
 const MAX_AGE_MS = 3 * 24 * 60 * 60_000;
+const SEND_TIMEOUT_MS = 8_000;
 /** Told after each send: `result` (null: still no network – it stays queued). */
 export const SWIPE_SENT_EVENT = "dom-swipe-sent";
 export type SwipeSent = { swipe: QueuedSwipe; result: SwipeResult };
@@ -50,14 +51,24 @@ export function forgetSwipes() {
 }
 
 let sending: Promise<number> | null = null;
+/** Counts the runs, so a run left behind does not clear a newer one. */
+let runs = 0;
 
-/** Sends what was kept, one after the other; stops at the first that still has no network. Returns how many went. */
-export function sendQueuedSwipes(): Promise<number> {
-  sending ??= (async () => {
+/**
+ * Sends what was kept, one after the other; stops at the first that still has no network. Returns how many went.
+ * Only one run at a time – except `fresh`: the network just came back, so a run that began while it was gone (and may
+ * hang until its timeout) is left behind and a new one starts at once. Should the old one still get through, the card
+ * is swiped already by then and the second send only clears the queue.
+ */
+export function sendQueuedSwipes({ fresh = false }: { fresh?: boolean } = {}): Promise<number> {
+  if (sending && !fresh) return sending;
+  const mine = ++runs;
+  const run = (async () => {
     let sent = 0;
     try {
       for (const swipe of queuedSwipes()) {
-        const result = await swipeAction(swipe.cardId, swipe.verdict).catch(() => null);
+        // A request that hangs while the network flips must not block the queue for good: after 8 s it counts as failed.
+        const result = await Promise.race([swipeAction(swipe.cardId, swipe.verdict).catch(() => null), new Promise<null>((resolve) => setTimeout(() => resolve(null), SEND_TIMEOUT_MS))]);
         if (!result) break;
         // Done either way: counted, or the card was gone meanwhile (nothing to send any more).
         unqueueSwipe(swipe.cardId);
@@ -66,9 +77,10 @@ export function sendQueuedSwipes(): Promise<number> {
         window.dispatchEvent(new CustomEvent<SwipeSent>(SWIPE_SENT_EVENT, { detail: { swipe, result } }));
       }
     } finally {
-      sending = null;
+      if (runs === mine) sending = null;
     }
     return sent;
   })();
-  return sending;
+  sending = run;
+  return run;
 }

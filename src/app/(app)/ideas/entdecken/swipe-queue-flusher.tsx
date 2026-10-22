@@ -12,13 +12,13 @@ export function SwipeQueueFlusher() {
     let timer: number | undefined;
     let tries = 0;
     let alive = true;
-    const flush = async () => {
+    const flush = async (fresh = false) => {
       window.clearTimeout(timer);
       if (queuedSwipes().length === 0) {
         tries = 0;
         return;
       }
-      await sendQueuedSwipes();
+      await sendQueuedSwipes({ fresh });
       if (!alive) return;
       if (queuedSwipes().length === 0) {
         tries = 0;
@@ -26,18 +26,19 @@ export function SwipeQueueFlusher() {
       }
       timer = window.setTimeout(flush, RETRY_MS[Math.min(tries++, RETRY_MS.length - 1)]);
     };
-    const fresh = () => {
+    // The network is (maybe) back: a try that began without it does not hold the new one up.
+    const again = () => {
       tries = 0;
-      void flush();
+      void flush(true);
     };
-    const onShow = () => document.visibilityState === "visible" && fresh();
-    fresh();
-    window.addEventListener("online", fresh);
+    const onShow = () => document.visibilityState === "visible" && again();
+    void flush();
+    window.addEventListener("online", again);
     document.addEventListener("visibilitychange", onShow);
     return () => {
       alive = false;
       window.clearTimeout(timer);
-      window.removeEventListener("online", fresh);
+      window.removeEventListener("online", again);
       document.removeEventListener("visibilitychange", onShow);
     };
   }, []);
