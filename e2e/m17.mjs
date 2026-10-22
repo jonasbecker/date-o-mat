@@ -311,7 +311,8 @@ await db.query("UPDATE couple_settings SET deck_refill_started_at = now() WHERE 
 await j.goto(`${BASE}/ideas/entdecken`);
 await j.getByText("Neue Ideen werden gemischt").waitFor({ timeout: 10000 });
 await db.query("UPDATE couple_settings SET deck_refill_started_at = NULL WHERE couple_id = $1", [couple.id]);
-await topCard(j).waitFor({ timeout: 30000 });
+// The page notices the end of the refill at its next 6 s poll, then the batch is made: slow on a busy CI machine.
+await topCard(j).waitFor({ timeout: 60000 });
 const { rows: batch2 } = await db.query("SELECT count(*)::int AS n, count(*) FILTER (WHERE kind = 'combo')::int AS combos FROM deck_cards WHERE batch = 2");
 check(`second batch, no repeats of the first (${batch2[0].n} cards, ${batch2[0].combos} combos – the two events are used already)`, claudeCalls.length === callsBefore + 1 && batch2[0].n === 23 && batch2[0].combos === 0);
 check("second prompt excludes the first batch and knows the taste", claudeCalls.at(-1).messages[0].content.includes(first) && /They liked: .+/.test(claudeCalls.at(-1).messages[0].content));

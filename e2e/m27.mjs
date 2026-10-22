@@ -194,9 +194,6 @@ await j.screenshot({ path: `${OUT}m27-01-offline.png` });
 await j.goto(`${BASE}/dates`).catch(() => {});
 await j.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 10000 }).catch(() => {});
 check("offline, the Archiv opens too", await j.getByRole("heading", { name: "archiv." }).isVisible().catch(() => false));
-await j.goto(`${BASE}/budget`).catch(() => {});
-await j.getByRole("heading", { name: /Gerade offline/ }).waitFor({ timeout: 10000 }).catch(() => {});
-check("a page never seen gets the offline page", await j.getByRole("heading", { name: /Gerade offline/ }).isVisible().catch(() => false));
 // Swiping offline: the swipe is kept on the phone, the card stays gone (also after a reload) and goes out with the network
 // (A navigation can be overtaken by the page's own reload while the network is gone – so: until we are there.)
 let navError = null;
@@ -246,6 +243,16 @@ if (hasDeck) {
   check(`back online, the kept swipe is sent (${JSON.stringify(arrived)})`, arrived.length === 1 && arrived[0].title === swipedTitle && arrived[0].verdict === "nope");
   check("…and the phone forgets it", (await j.evaluate(() => localStorage.getItem("dom-swipe-queue"))) === null);
 }
+// A page never opened has nothing to show offline – the network goes again for this one (never leaving an offline
+// page by navigating: it is its own document, and in CI the next navigation did not always start from it).
+await ctx.route("**/*", cut);
+await ctx.setOffline(true);
+await j.goto(`${BASE}/budget`).catch(() => {});
+await j.getByRole("heading", { name: /Gerade offline/ }).waitFor({ timeout: 10000 }).catch(() => {});
+check("a page never seen gets the offline page", await j.getByRole("heading", { name: /Gerade offline/ }).isVisible().catch(() => false));
+await ctx.unroute("**/*", cut);
+await j.waitForTimeout(300);
+await ctx.setOffline(false);
 // Signed out (the login page): the kept pages are gone
 await db.query("DELETE FROM sessions WHERE user_id = $1", [jonas.id]);
 await j.goto(`${BASE}/login`);
