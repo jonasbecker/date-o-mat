@@ -1,5 +1,6 @@
-// "date steht." (docs/design/garten/date-steht): the date card is a sheet – tap or pull it up, the flower
-// gets pushed (sanft) or kicked (schubs), its bubble never covers anything; back closes it.
+// "date steht." (docs/design/garten/date-steht): the date card is a sheet – tap or pull it up, it follows the
+// finger and springs to the nearest stop, the flower moves in time with it (sanft) or gets kicked (schubs), its
+// bubble never covers anything; back closes it.
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { DateTime } from "luxon";
@@ -215,7 +216,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
     Math.abs(early.x + early.width / 2 - barBox.x) < 8 && Math.abs(early.y + early.height / 2 - barBox.y) < 8 && early.width < barBox.w + 20,
   );
 
-  // Pulled up slowly past 35 % → open, sanft; pulled down → closed
+  // Pulled up slowly past half way → open, sanft; pulled down → closed
   await drag(j, { to: zu.y + 30 - 230, ms: 900, steps: 30 });
   await settle(j);
   check(`${tag}: pulled up slowly → open, sanft (${JSON.stringify(await state(j))})`, (await state(j)).z === "mitte" && (await state(j)).tempo === "sanft");
@@ -231,40 +232,89 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
   await settle(j);
   check(`${tag}: pulled up a little → springs back`, (await state(j)).z === "zu");
 
-  // Held still, then let go → it stays right there (no animation) until the next tap
-  const cardTop = () => j.locator("[data-sheet-card]").evaluate((el) => Math.round(el.getBoundingClientRect().top));
-  const closedTop = await cardTop();
+  // The card stays right under the finger – up and down without letting go – and the flower moves in time with it:
+  // its pot (which it leans around) is exactly as far along its way as the card.
+  const snap = () =>
+    j.evaluate(() => {
+      const m = new DOMMatrix(getComputedStyle(document.querySelector("[data-sheet-flower]")).transform);
+      const area = document.querySelector("[data-date-sheet]").getBoundingClientRect();
+      return { pot: m.b * 150 + m.d * 410 + m.f, card: document.querySelector("[data-sheet-card]").getBoundingClientRect().top - area.top };
+    });
+  const rest = { zu: await snap() };
+  await head(j).click();
+  await settle(j);
+  rest.mitte = await snap();
+  await head(j).click();
+  await settle(j);
+  const inTime = (s) => {
+    const card = (s.card - rest.zu.card) / (rest.mitte.card - rest.zu.card);
+    const pot = (s.pot - rest.zu.pot) / (rest.mitte.pot - rest.zu.pot);
+    return { card: +card.toFixed(3), pot: +pot.toFixed(3), ok: Math.abs(card - pot) < 0.02 };
+  };
   {
+    const b = await head(j).boundingBox();
+    const x = b.x + b.width / 2;
+    const y = b.y + 30;
+    const way = rest.zu.card - rest.mitte.card;
+    await j.mouse.move(x, y);
+    await j.mouse.down();
+    const seen = [];
+    for (const share of [0.1, 0.35, 0.7, 0.45, 0.8, 0.2, 0.6]) {
+      for (let i = 1; i <= 4; i++) await j.mouse.move(x, y - way * share + ((4 - i) * 3));
+      await j.waitForTimeout(60);
+      const s = await snap();
+      seen.push({ share, under: Math.round(s.card - (rest.zu.card - way * share)), ...inTime(s) });
+    }
+    check(`${tag}: up and down without letting go – the card stays under the finger (${JSON.stringify(seen.map((s) => s.under))})`, seen.every((s) => Math.abs(s.under) <= 1));
+    check(`${tag}: …and the flower moves in time with it (${JSON.stringify(seen.map((s) => [s.card, s.pot]))})`, seen.every((s) => s.ok));
+    // Held still at 60 %, then let go → the nearest stop (mitte), no parking.
+    await j.waitForTimeout(400);
+    await j.mouse.up();
+    const going = [];
+    for (const wait of [50, 70, 90]) {
+      await j.waitForTimeout(wait);
+      going.push(inTime(await snap()));
+    }
+    await settle(j);
+    check(`${tag}: held still at 60 % and let go → mitte (${(await state(j)).z})`, (await state(j)).z === "mitte" && (await j.locator("[data-date-sheet]").getAttribute("data-parked")) === null);
+    check(`${tag}: on the way there the flower stays in time (${JSON.stringify(going.map((s) => [s.card, s.pot]))})`, going.every((s) => s.ok) && going.some((s) => s.card > 0.62 && s.card < 0.98));
+  }
+  {
+    // Held still at 30 % → back down to zu.
     const b = await head(j).boundingBox();
     const x = b.x + b.width / 2;
     const y = b.y + 30;
     await j.mouse.move(x, y);
     await j.mouse.down();
-    for (let i = 1; i <= 20; i++) {
-      await j.mouse.move(x, y - ((zu.y - open.y) * 0.7 * i) / 20);
-      await j.waitForTimeout(25);
-    }
-    await j.waitForTimeout(450);
-    const held = await cardTop();
+    for (let i = 1; i <= 10; i++) await j.mouse.move(x, y + ((rest.zu.card - rest.mitte.card) * 0.7 * i) / 10);
+    await j.waitForTimeout(400);
     await j.mouse.up();
-    await j.waitForTimeout(900);
-    const after = await cardTop();
-    const parked = await j.locator("[data-date-sheet]").getAttribute("data-parked");
-    check(`${tag}: held still and let go → the card stays where it was (${closedTop} → ${held} → ${after})`, parked === "" && Math.abs(after - held) <= 2 && closedTop - after > (zu.y - open.y) * 0.6);
-    const words = await j.locator('[data-sheet-bubble="mitte"]').evaluate((el) => ({ w: Math.round(el.getBoundingClientRect().width), text: el.innerText.trim(), shown: getComputedStyle(el.querySelector("p")).opacity }));
-    check(`${tag}: parked – the bubble has grown all the way, words and all (${JSON.stringify(words)})`, words.w > 120 && words.text.length > 3 && words.shown === "1");
-    check(`${tag}: parked – nothing covered (${(await overlaps(j)).join(", ")})`, (await overlaps(j)).length === 0);
-    if (viewport.width === 390) await j.screenshot({ path: `${OUT}m25-02b-geparkt.png` });
-    await head(j).click({ position: { x: 40, y: 20 } });
     await settle(j);
-    const st = await state(j);
-    check(`${tag}: a tap on the parked card takes it to the nearest stop (${st.z})`, st.z === "mitte" && (await j.locator("[data-date-sheet]").getAttribute("data-parked")) === null);
+    check(`${tag}: held still at 30 % and let go → zu (${(await state(j)).z})`, (await state(j)).z === "zu");
+  }
+  {
+    // Grabbed while it moves: it stops right there, under the finger; let go, it goes on to the nearest stop.
     await head(j).click();
+    await j.waitForTimeout(150);
+    const b = await head(j).boundingBox();
+    await j.mouse.move(b.x + 40, b.y + 20);
+    await j.mouse.down();
+    const caught = await snap();
+    await j.waitForTimeout(200);
+    const held = await snap();
+    await j.mouse.up();
     await settle(j);
+    check(`${tag}: grabbed on its way up it stops under the finger (${Math.round(caught.card)} → ${Math.round(held.card)})`, Math.abs(held.card - caught.card) <= 2 && caught.card < rest.zu.card - 20 && caught.card > rest.mitte.card + 20);
+    check(`${tag}: …and let go it goes to the nearest stop (${(await state(j)).z})`, (await state(j)).z === (caught.card < (rest.zu.card + rest.mitte.card) / 2 ? "mitte" : "zu"));
+    if (viewport.width === 390) await j.screenshot({ path: `${OUT}m25-02b-gefangen.png` });
+    if ((await state(j)).z !== "zu") {
+      await head(j).click();
+      await settle(j);
+    }
   }
 
   // A flick → schubs: kicked away, motion lines
-  await drag(j, { to: zu.y + 30 - 260, ms: 120, steps: 4 });
+  await drag(j, { to: zu.y + 30 - 200, ms: 60, steps: 4 });
   await j.waitForTimeout(120);
   const lines = await j.locator(".animate-fade-out").count();
   await settle(j);

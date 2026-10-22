@@ -68,7 +68,8 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   fatal error) – `next` and `eslint-config-next` are pinned to the same exact version.
 - **Smooth on phones:** what follows a finger moves with `transform` only and renders at most once per frame – the swipe
   card is moved straight in the DOM (React hears only the stamp), the date sheet's frame moves around content of one
-  fixed size (never re-wrapped), bubble and dots are translated; `Bloom` and the swipe `Card` are memoized.
+  fixed size (never re-wrapped) and everything on it is drawn per frame from the card's top (no CSS transitions that
+  could drift apart), bubble and dots are translated; `Bloom` and the swipe `Card` are memoized.
 - **Navigation (M40):** `BottomNav` in the `(app)` layout: Archiv (`/dates`) · Swipen (`/ideas/entdecken`) · **Beet** (`/plan`,
   the big green circle, always on top – the bar is `z-30`) · Ideen · Einstellungen. `AppHeader` is the small name plus the page's
   own thing on the right (avatars, "36 Ideen", matches pill). The four dots are one path: the Beet is dot 1, the
@@ -108,15 +109,16 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   when · where – the closed card is as high as that text; the flower fills the room between the text and the card), `mitte` (the reference's open card, the rest cut off with a
   fade; if the browser scrolls it – focus, a link further down – it goes to voll) and `voll` (covers the screen under
   the header, all without scrolling, the handle becomes the header's step bar, the flower flies off the top and comes
-  back down with the card). Everything between follows the card's top (`position()` 0…2). Letting go faster than
-  0.8 px/ms is a "schubs" (one stop further; zu → mitte kicks the flower: `autsch`, overshoot, motion lines), else
-  "sanft" (`genervt`); past 35 % of the way it goes to the next stop. Held still ≥ 300 ms before letting go, the card
-  stays right there (`data-parked`, `parks()`; the bubble finishes growing) until the next tap takes it to the nearest
-  stop. The glide to a stop takes as long as its way needs and starts at the finger's speed (`glide()`); the flower
-  sways as it stops and gives a little on landing from above. Tap: zu ↔ mitte, voll → mitte ("Weniger
+  back down with the card). Everything between follows the card's top (`position()` 0…2). One number drives it all: the card's top –
+  the finger sets it 1:1 (`follow()`, only below zu it gives way), letting go a spring (`springStep()`, `SPRING`) takes
+  it to the stop nearest to where it would be a moment later (`release()` – also after holding still), starting at the
+  finger's speed; every frame `paint()` draws card, flower (leaning around its pot with the card's speed, `leaned()`),
+  bubbles, dots, handle and details from it straight into the DOM (React only hears the stop). Faster than 0.8 px/ms
+  is a "schubs" (the next stop in that direction; zu → mitte: `autsch`, the spring swings past, motion lines), else
+  "sanft" (`genervt`). Grabbed while it moves, it stops under the finger (let go: nearest stop). Tap: zu ↔ mitte, voll → mitte ("Weniger
   Details"). Closed, the flower's bubble sits by its head; pulled up, the header's step bar grows into the bubble at
   mitte (`morphAt` / `morphTransform`: the bar's place and size → the bubble's, words fade in at the end) and shrinks
-  back into it on the way to voll. Dots come out of the mouth, nothing covers text, card, name or avatars; back gesture closes it. e2e: m25 (both sizes, slow/fast, parked, voll, back, reduced motion). The old `Plant`
+  back into it on the way to voll. Dots come out of the mouth, nothing covers text, card, name or avatars; back gesture closes it. e2e: m25 (both sizes, slow/fast, under the finger, flower in time, held still, caught, voll, back, reduced motion). The old `Plant`
   (components/plant.tsx) is only the small mark (logo, mascot, empty states).
 - **Rounds and dates:** a date lives in the round it happens in (`cycleForDate()` creates later rounds when a date is
   planned ahead; the current round is the one containing now, never just the newest row). A planned date nobody

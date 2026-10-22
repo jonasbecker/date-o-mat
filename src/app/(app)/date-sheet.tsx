@@ -5,30 +5,30 @@
 // "mitte" (the flower is pushed up next to the headline, gently – "sanft" – or kicked away – "schubs", a fast
 // flick – its thought bubble always comes out of its mouth) and "voll" (the card covers the screen, its handle
 // becomes the header's step bar, the flower flies off the top and comes back down when the card goes down).
-// Held still before letting go, the card stays right there ("parked") – the next tap takes it to the nearest stop.
-// The geometry is core/date-sheet.ts; the server renders the texts, the card's head and its details.
+// One number moves it all: the card's top. The finger sets it directly, letting go a spring takes it to the
+// nearest stop (starting at the finger's speed), and every frame the flower, its bubble, the handle and the
+// details are drawn from it – straight into the DOM, React only hears the stop. Grabbed while it moves, it stops
+// under the finger. The geometry is core/date-sheet.ts; the server renders the texts, the card's head and its details.
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Bloom } from "@/components/bloom";
 import { useFlowerVoice, VoiceBubble } from "@/components/flower-voice";
 import { bloomSaying, type FlowerPot, type Stimmung } from "@/core/bloom";
 import {
+  atRest,
   bubbleDots,
   cardAt,
-  FLY,
-  glide as glideRun,
+  follow,
+  leaned,
+  leanFor,
   morphAt,
   morphTransform,
-  nearest,
-  parks,
   poseAt,
   poseTransform,
   position,
   release,
   SHEET,
   sheetLayout,
-  TIMING,
-  topAt,
-  type Pose,
+  springStep,
   type SheetLayout,
   type Stop,
   type Tempo,
@@ -39,26 +39,25 @@ type Phase = { stop: Stop; tempo: Tempo };
 type Drag = {
   startY: number;
   startTop: number;
-  from: Stop;
   moved: boolean;
+  /** It was on its way when the finger caught it: let go without moving, it goes to the nearest stop (not a tap). */
+  caught: boolean;
+  /** Where the finger wants the card. */
+  top: number;
   samples: Array<{ y: number; t: number }>;
-  top?: number;
-  /** Where and when the finger last really moved: held still long enough, the card stays where it is. */
-  lastY: number;
-  lastMoved: number;
 };
 
 const BUBBLE_CLASS = "block w-full rounded-[20px] bg-ink px-2.5 pb-[11px] pt-[9px] text-center font-hand font-semibold leading-[1.02] text-[#1B2620]";
+const DOT = "absolute left-0 top-0 z-[5] rounded-full bg-ink";
+/** Reduced motion: a short plain glide instead of the spring. */
+const CALM_MS = 200;
 
-/** One of the bubble's two dots (top left at `at`). */
-function Dot({ at, size, glide }: { at: { x: number; y: number }; size: "small" | "big"; glide: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn("absolute left-0 top-0 z-[5] rounded-full bg-ink", size === "small" ? "size-1.5" : "size-2.5")}
-      style={{ transform: `translate3d(${at.x}px, ${at.y}px, 0)`, transition: `transform ${glide}` }}
-    />
-  );
+/** The finger's speed over its last moments (px/ms, downwards positive) – 0 once it rested. */
+function fingerSpeed(samples: Drag["samples"], now: number): number {
+  const last = samples.at(-1);
+  if (!last || now - last.t > 80) return 0;
+  const first = samples.find((p) => p.t >= last.t - 100) ?? last;
+  return last.t > first.t ? (last.y - first.y) / (last.t - first.t) : 0;
 }
 
 const LABEL: Record<Stop, string> = { zu: "Details öffnen", mitte: "Details schließen", voll: "Weniger Details" };
@@ -90,33 +89,164 @@ export function DateSheet({
   const headEl = useRef<HTMLDivElement>(null);
   const flower = useRef<HTMLDivElement>(null);
   const bubbleEl = useRef<HTMLDivElement>(null);
+  const wordsEl = useRef<HTMLParagraphElement>(null);
+  const mitteWrap = useRef<HTMLDivElement>(null);
+  const mitteDotsEl = useRef<HTMLDivElement>(null);
+  const zuWrap = useRef<HTMLDivElement>(null);
   const zuBubbleEl = useRef<HTMLDivElement>(null);
+  const clip = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  const headButton = useRef<HTMLButtonElement>(null);
+  const handleEl = useRef<HTMLSpanElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
+  const detailsEl = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<SheetLayout | null>(null);
   const [phase, setPhase] = useState<Phase>({ stop: "zu", tempo: "sanft" });
-  const stopNow = useRef<Stop>("zu");
-  const parkedNow = useRef<number | null>(null);
-  // While a finger moves the card: its top (px); null = at rest.
-  const [dragTop, setDragTop] = useState<number | null>(null);
-  // Let go after holding still: where it stays (0 … 2) until the next tap; null = at a stop.
-  const [parked, setParked] = useState<number | null>(null);
-  // How the last glide to a stop runs (its time follows the way, it starts at the finger's speed).
-  const [motion, setMotion] = useState<{ ms: number; ease: string }>({ ms: TIMING.sanft.ms, ease: TIMING.sanft.cardEase });
+  // Not resting at zu (a finger has it, or it is up): the text above fades, the step bar steps aside.
   const [moving, setMoving] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [kick, setKick] = useState(false);
-  // Bubble and dots glide only while the card settles – new measurements (a notice appeared) put them right away.
-  const [gliding, setGliding] = useState(false);
-  const glideTimer = useRef<number | null>(null);
   const [words, setWords] = useState<string | null>(null);
-  const [bubbleH, setBubbleH] = useState(60);
-  const [zuBubbleH, setZuBubbleH] = useState(70);
   const [more, setMore] = useState(false);
   const [reduced, setReduced] = useState(false);
-  const drag = useRef<Drag | null>(null);
-  const dragFrame = useRef<number | null>(null);
-  const clip = useRef<HTMLDivElement>(null);
-  const pushed = useRef(false);
   const flowerVoice = useFlowerVoice({ text: saying, ...voice });
+
+  // What every frame reads (the animation runs outside React).
+  const live = useRef({ layout: null as SheetLayout | null, stop: "zu" as Stop, tempo: "sanft" as Tempo, reduced: false, bubbleH: 60, zuBubbleH: 70 });
+  /** The card's top (px) and speed (px/ms, downwards positive); `lean`: the speed the flower feels (a little behind). */
+  const motion = useRef({ top: null as number | null, v: 0, lean: 0, last: 0, calm: { from: 0, t0: 0 } });
+  const frame = useRef<number | null>(null);
+  const drag = useRef<Drag | null>(null);
+  const pushed = useRef(false);
+
+  /** Draws everything that follows the card for its current top. */
+  const paint = useCallback(() => {
+    const { layout: l, stop, reduced: still, bubbleH, zuBubbleH } = live.current;
+    const top = motion.current.top;
+    if (!l || top === null) return;
+    const at = position(top, l);
+    const look = cardAt(at, l);
+    const base = poseAt(at, l);
+    // Below zu (pulled down, or a schubs swinging past) the pot stays on the card.
+    const sunk = { ...base, y: base.y + Math.max(0, top - l.tops.zu) };
+    const pose = still ? { ...sunk, r: 0 } : leaned(sunk, leanFor(motion.current.lean));
+
+    const card = clip.current;
+    if (card) {
+      card.style.top = `${top}px`;
+      card.style.bottom = `${-look.bottom}px`;
+      card.style.left = card.style.right = `${-look.inset}px`;
+      card.style.borderRadius = `${look.radius}px`;
+    }
+    if (inner.current) inner.current.style.left = `${-(SHEET.insetVoll - look.inset)}px`;
+    if (headButton.current) headButton.current.style.height = stop === "zu" ? "100%" : `${look.padTop + l.headH}px`;
+    const handle = handleEl.current;
+    if (handle) {
+      handle.style.top = `${look.handle.top}px`;
+      handle.style.width = `${look.handle.w}px`;
+      handle.style.height = `${look.handle.h}px`;
+      // From mitte to voll the handle turns into the step bar (the bar's color: ink).
+      handle.style.backgroundColor = `color-mix(in srgb, var(--color-ink) ${Math.round(Math.max(0, Math.min(1, at - 1)) * 100)}%, #3A4A40)`;
+    }
+    if (scroller.current) scroller.current.style.paddingTop = `${look.padTop}px`;
+    // The details come up with the card.
+    const shown = Math.max(0, Math.min(1, (at - 0.3) / 0.5));
+    if (detailsEl.current) {
+      detailsEl.current.style.opacity = String(shown);
+      detailsEl.current.style.transform = shown === 1 ? "none" : `translate3d(0, ${((1 - shown) * 16).toFixed(1)}px, 0)`;
+    }
+    if (flower.current) flower.current.style.transform = poseTransform(pose);
+
+    // The flower's own bubble by its head while the card is down.
+    const zu = l.bubbleZu;
+    const zuOpacity = Math.max(0, 1 - at * 4);
+    const zuEl = zuWrap.current;
+    if (zuEl) {
+      zuEl.style.opacity = String(zuOpacity);
+      zuEl.style.pointerEvents = zuOpacity === 0 ? "none" : "";
+      zuEl.toggleAttribute("aria-hidden", zuOpacity === 0);
+      const dots = bubbleDots(pose, { x: zu.x, y: zu.y, w: zu.w, h: zuBubbleH });
+      const [small, big] = zuEl.querySelectorAll<HTMLElement>("[data-dot]");
+      small.style.transform = `translate3d(${dots.small.x.toFixed(1)}px, ${dots.small.y.toFixed(1)}px, 0)`;
+      big.style.transform = `translate3d(${dots.big.x.toFixed(1)}px, ${dots.big.y.toFixed(1)}px, 0)`;
+    }
+    // The one at mitte grows out of the header's step bar as the card comes up (and shrinks back into it on the way to voll).
+    const box = l.bubbleMitte;
+    const morph = morphAt(at);
+    if (mitteWrap.current) mitteWrap.current.toggleAttribute("aria-hidden", morph.opacity === 0);
+    if (bubbleEl.current) {
+      bubbleEl.current.style.opacity = String(morph.opacity);
+      bubbleEl.current.style.transform = morphTransform({ ...box, rotate: still ? 0 : box.rotate }, bubbleH, l.bar, morph.grow);
+    }
+    if (wordsEl.current) wordsEl.current.style.opacity = String(Math.max(0, Math.min(1, (morph.grow - 0.75) / 0.25)));
+    const dotsEl = mitteDotsEl.current;
+    if (dotsEl) {
+      dotsEl.style.opacity = String(Math.max(0, Math.min(1, (morph.grow - 0.8) / 0.2)) * morph.opacity);
+      const dots = bubbleDots(pose, { x: box.x, y: box.y, w: box.w, h: bubbleH });
+      const [small, big] = dotsEl.querySelectorAll<HTMLElement>("[data-dot]");
+      small.style.transform = `translate3d(${dots.small.x.toFixed(1)}px, ${dots.small.y.toFixed(1)}px, 0)`;
+      big.style.transform = `translate3d(${dots.big.x.toFixed(1)}px, ${dots.big.y.toFixed(1)}px, 0)`;
+    }
+  }, []);
+
+  /** Came to rest at its stop. */
+  const rested = useCallback(() => {
+    if (live.current.stop === "zu") setMoving(false);
+  }, []);
+
+  /** Runs the frames (once – a second call while it runs does nothing): the finger's top while it holds the card, else the spring towards the stop. */
+  const run = useCallback(() => {
+    if (frame.current !== null) return;
+    motion.current.last = performance.now();
+    const step = (now: number) => {
+      frame.current = null;
+      const l = live.current.layout;
+      const m = motion.current;
+      if (!l || m.top === null) return;
+      const dt = Math.min(48, Math.max(1, now - m.last));
+      m.last = now;
+      const d = drag.current;
+      const target = l.tops[live.current.stop];
+      if (d) {
+        if (d.moved) m.top = d.top;
+        m.v = d.moved ? fingerSpeed(d.samples, now) : 0;
+      } else if (live.current.reduced) {
+        const p = Math.min(1, (now - m.calm.t0) / CALM_MS);
+        m.top = m.calm.from + (target - m.calm.from) * (1 - (1 - p) ** 3);
+        m.v = 0;
+      } else {
+        const next = springStep(m.top, m.v, target, dt, live.current.tempo);
+        m.top = next.top;
+        m.v = next.v;
+      }
+      // Never above the screen's top (a schubs to voll just stops there).
+      if (m.top < l.tops.voll) {
+        m.top = l.tops.voll;
+        m.v = Math.max(0, m.v);
+      }
+      m.lean += (m.v - m.lean) * Math.min(1, dt / 70);
+      // Held still, nothing left to draw: wait for the next move (which starts it again).
+      const done = Math.abs(m.lean) < 0.003 && (d ? m.v === 0 : atRest(m.top, m.v, target));
+      if (done) {
+        m.lean = 0;
+        if (!d) {
+          m.top = target;
+          m.v = 0;
+        }
+      }
+      paint();
+      if (done) {
+        if (!d) rested();
+        return;
+      }
+      frame.current = requestAnimationFrame(step);
+    };
+    frame.current = requestAnimationFrame(step);
+  }, [paint, rested]);
+
+  useEffect(() => () => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+  }, []);
 
   // Measure the area (also when it comes back from a hidden tab or the phone turns).
   useLayoutEffect(() => {
@@ -153,70 +283,33 @@ export function DateSheet({
     return () => observer.disconnect();
   }, []);
 
+  // A new layout: at rest the card sits on its stop's new place; moving, the next frame uses it.
+  useLayoutEffect(() => {
+    live.current.layout = layout;
+    if (!layout) return;
+    const m = motion.current;
+    if (m.top === null || (frame.current === null && !drag.current)) m.top = layout.tops[live.current.stop];
+    paint();
+  }, [layout, paint]);
+
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReduced(query.matches);
+    const update = () => {
+      setReduced(query.matches);
+      live.current.reduced = query.matches;
+      paint();
+    };
     update();
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
-  }, []);
+  }, [paint]);
 
   // The dots aim at the bubble's corner: its height depends on the words.
   useLayoutEffect(() => {
-    if (bubbleEl.current) setBubbleH(bubbleEl.current.offsetHeight);
-    if (zuBubbleEl.current) setZuBubbleH(zuBubbleEl.current.offsetHeight);
-  }, [words, phase, layout]);
-
-  const timing = reduced ? { ms: 200, ease: "ease", cardEase: "ease" } : { ms: motion.ms, ease: TIMING[phase.tempo].ease, cardEase: motion.ease };
-  const flat = (p: Pose): Pose => (reduced ? { ...p, r: 0 } : p);
-  const restPose = (l: SheetLayout, { stop, tempo }: Phase): Pose => (stop === "zu" ? l.zu : stop === "mitte" ? l.mitte[tempo] : l.voll);
-
-  /** Moves the flower to `to`: a kick goes through the "via" pose with an overshoot, off the top it speeds up, back down it lands softly. */
-  const animateFlower = useCallback(
-    (to: Pose, tempo: Tempo, how: "plain" | "kick" | "out" | "back", run: { ms: number; ease: string }) => {
-      const el = flower.current;
-      if (!el || !layout || typeof el.animate !== "function") return;
-      const from = getComputedStyle(el).transform;
-      el.getAnimations().forEach((a) => a.cancel());
-      if (reduced) {
-        el.animate([{ transform: from === "none" ? undefined : from }, { transform: poseTransform(flat(to)) }], { duration: 200, easing: "ease" });
-        return;
-      }
-      const end = poseTransform(to);
-      let frames: Keyframe[];
-      let ms: number;
-      if (how === "kick") {
-        ms = TIMING.schubs.ms;
-        frames = [
-          { transform: from, easing: "cubic-bezier(0.2, 0.8, 0.4, 1)" },
-          { transform: poseTransform(layout.via.schubs), offset: 0.4, easing: TIMING.schubs.ease },
-          { transform: end },
-        ];
-      } else if (how === "out") {
-        ms = FLY.out.ms;
-        frames = [{ transform: from, easing: FLY.out.ease }, { transform: end }];
-      } else if (how === "back") {
-        // Comes down, lands a touch too low (the stem gives) and straightens up.
-        ms = FLY.back.ms;
-        frames = [
-          { transform: from, easing: FLY.back.ease },
-          { transform: poseTransform({ ...to, y: to.y + 7 * to.s / 0.32, r: to.r + 3 }), offset: 0.78, easing: "cubic-bezier(0.3, 0, 0.3, 1)" },
-          { transform: end },
-        ];
-      } else {
-        // With the card (same time, same start speed), and a small sway as it stops.
-        const sway = tempo === "schubs" ? 0 : 2.5;
-        ms = Math.max(run.ms, 360);
-        frames = sway
-          ? [{ transform: from, easing: run.ease }, { transform: poseTransform({ ...to, r: to.r - sway }), offset: 0.86, easing: "ease-in-out" }, { transform: end }]
-          : [{ transform: from, easing: run.ease }, { transform: end }];
-      }
-      el.animate(frames, { duration: ms });
-    },
-    // flat() only depends on `reduced`
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [layout, reduced],
-  );
+    if (bubbleEl.current) live.current.bubbleH = bubbleEl.current.offsetHeight;
+    if (zuBubbleEl.current) live.current.zuBubbleH = zuBubbleEl.current.offsetHeight;
+    paint();
+  }, [words, layout, flowerVoice.words, paint]);
 
   /** The back gesture closes the card: one history entry while it is up. */
   const remember = useCallback((up: boolean) => {
@@ -230,57 +323,28 @@ export function DateSheet({
     }
   }, []);
 
-  /**
-   * Lets the card come to rest at `to`; `at`: where it was (0 … 2) – coming down from above voll the flower flies
-   * back in; `speed`: the finger's (px/ms, upwards positive) – the glide starts with it.
-   */
+  /** Sends the card to `to` (the spring starts at the speed it has now). */
   const settle = useCallback(
-    (to: Stop, tempo: Tempo, at?: number, speed = 0) => {
-      if (!layout) return;
-      const from = stopNow.current;
-      const was = at ?? parkedNow.current ?? (from === "zu" ? 0 : from === "mitte" ? 1 : 2);
-      parkedNow.current = null;
-      const way = topAt(was, layout) - layout.tops[to];
-      const run = glideRun(way, way > 0 ? speed : -speed, tempo);
-      stopNow.current = to;
-      setDragTop(null);
-      setParked(null);
-      setMotion(run);
+    (to: Stop, tempo: Tempo) => {
+      const l = live.current.layout;
+      const m = motion.current;
+      if (!l || m.top === null) return;
+      const was = position(m.top, l);
+      live.current.stop = to;
+      live.current.tempo = tempo;
+      m.calm = { from: m.top, t0: performance.now() };
       setPhase({ stop: to, tempo });
-      setGliding(true);
-      if (glideTimer.current) window.clearTimeout(glideTimer.current);
-      glideTimer.current = window.setTimeout(() => setGliding(false), (reduced ? 200 : run.ms) + 50);
-      setMoving(to !== "zu");
+      if (to !== "zu") setMoving(true);
       const pool: Stimmung = tempo === "schubs" ? "autsch" : "genervt";
-      if (to === "mitte" || to === "zu") setWords(to === "mitte" ? bloomSaying(pool, Math.floor(Math.random() * 1000), { partner: voice.partnerName }) : null);
-      const how = to === "voll" ? "out" : was > 1 ? "back" : to === "mitte" && tempo === "schubs" && was < 1 ? "kick" : "plain";
-      animateFlower(restPose(layout, { stop: to, tempo }), tempo, how, run);
-      if (how === "kick" && !reduced) {
+      setWords((now) => (to === "mitte" ? bloomSaying(pool, Math.floor(Math.random() * 1000), { partner: voice.partnerName }) : to === "zu" ? null : now));
+      if (to === "mitte" && tempo === "schubs" && was < 1 && !live.current.reduced) {
         setKick(true);
         window.setTimeout(() => setKick(false), 400);
       }
       remember(to !== "zu");
+      run();
     },
-    [layout, animateFlower, reduced, voice.partnerName, remember],
-  );
-
-  /** Let go after holding still: everything stays where the finger left it – nothing animates. */
-  const park = useCallback(
-    (at: number) => {
-      const stop = nearest(at);
-      stopNow.current = stop;
-      parkedNow.current = at;
-      setDragTop(null);
-      setParked(at);
-      // Only the bubble moves: it grows the rest of the way, with a little spring.
-      setMotion({ ms: 420, ease: "cubic-bezier(0.2, 0.9, 0.3, 1.15)" });
-      setGliding(true);
-      if (glideTimer.current) window.clearTimeout(glideTimer.current);
-      glideTimer.current = window.setTimeout(() => setGliding(false), 470);
-      setPhase({ stop, tempo: "sanft" });
-      remember(true);
-    },
-    [remember],
+    [voice.partnerName, remember, run],
   );
 
   useEffect(() => {
@@ -294,65 +358,55 @@ export function DateSheet({
   }, [settle]);
 
   // --- The gesture -------------------------------------------------------------------------------
-  const cardTop = !layout ? null : (dragTop ?? (parked !== null ? topAt(parked, layout) : layout.tops[phase.stop]));
-
   const start = (y: number) => {
-    if (!layout) return;
-    const now = performance.now();
-    drag.current = { startY: y, startTop: cardTop ?? layout.tops.zu, from: phase.stop, moved: false, samples: [{ y, t: now }], lastY: y, lastMoved: now };
+    const m = motion.current;
+    if (!live.current.layout || m.top === null) return;
+    // Grabbed while it moves: it stops right under the finger.
+    const caught = Math.abs(m.top - live.current.layout.tops[live.current.stop]) > 1;
+    m.v = 0;
+    drag.current = { startY: y, startTop: m.top, moved: false, caught, top: m.top, samples: [{ y, t: performance.now() }] };
+    run();
   };
   const move = (y: number): boolean => {
     const d = drag.current;
-    if (!d || !layout) return false;
+    const l = live.current.layout;
+    if (!d || !l) return false;
     if (!d.moved && Math.abs(y - d.startY) < 6) return false;
     if (!d.moved) {
       d.moved = true;
-      flower.current?.getAnimations().forEach((a) => a.cancel());
+      setDragging(true);
       setMoving(true);
       setWords(bloomSaying("genervt", 0, { partner: voice.partnerName }));
     }
-    const top = Math.max(layout.tops.voll, Math.min(layout.tops.zu + 30, d.startTop + (y - d.startY)));
-    const now = performance.now();
-    d.samples.push({ y, t: now });
-    if (Math.abs(y - d.lastY) >= 2) {
-      d.lastY = y;
-      d.lastMoved = now;
-    }
-    if (d.samples.length > 6) d.samples.shift();
-    // At most one render per frame (a 120 Hz phone sends twice as many moves as it shows).
-    d.top = top;
-    if (dragFrame.current === null) {
-      dragFrame.current = requestAnimationFrame(() => {
-        dragFrame.current = null;
-        if (drag.current) setDragTop(drag.current.top ?? null);
-      });
-    }
+    // Right under the finger, from the very first pixel.
+    d.top = follow(d.startTop + (y - d.startY), l);
+    d.samples.push({ y, t: performance.now() });
+    if (d.samples.length > 12) d.samples.shift();
+    run();
     return true;
   };
   const end = (): boolean => {
     const d = drag.current;
     drag.current = null;
-    if (dragFrame.current !== null) cancelAnimationFrame(dragFrame.current);
-    dragFrame.current = null;
-    if (!d || !layout) return false;
-    if (!d.moved) return false;
-    const first = d.samples[0];
-    const last = d.samples.at(-1)!;
-    const held = performance.now() - d.lastMoved;
-    const at = position(d.top ?? dragTop ?? d.startTop, layout);
-    // Held still: it stays right there.
-    if (parks(at, held)) {
-      park(at);
+    const l = live.current.layout;
+    const m = motion.current;
+    if (!d || !l || m.top === null) return false;
+    if (!d.moved) {
+      if (!d.caught) return false;
+      // Caught on its way and let go: the nearest stop.
+      settle(release(m.top, 0, l).to, "sanft");
       return true;
     }
-    // Upwards is positive; a finger that rested a moment has no speed left.
-    const speed = held > 120 ? 0 : (first.y - last.y) / Math.max(1, last.t - first.t);
-    const { to, tempo } = release(at, d.from, speed);
-    settle(to, tempo, at, speed);
+    setDragging(false);
+    // Upwards is positive; a finger that rested a moment has no speed left – then it is just the nearest stop.
+    const speed = -fingerSpeed(d.samples, performance.now());
+    m.v = -speed;
+    const { to, tempo } = release(m.top, speed, l);
+    settle(to, tempo);
     return true;
   };
 
-  // A tap: zu → mitte → zu, voll → mitte; parked: to the nearest stop (keyboard: Enter / Space on the same button).
+  // A tap: zu → mitte → zu, voll → mitte (keyboard: Enter / Space on the same button).
   const tapped = useRef(false);
   const onHeadPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0) return;
@@ -367,8 +421,7 @@ export function DateSheet({
       tapped.current = false;
       return;
     }
-    if (parked !== null) settle(nearest(parked), "sanft", parked);
-    else settle(phase.stop === "zu" ? "mitte" : phase.stop === "mitte" ? "zu" : "mitte", "sanft");
+    settle(phase.stop === "zu" ? "mitte" : phase.stop === "mitte" ? "zu" : "mitte", "sanft");
   };
 
   // Inside the card: at mitte the content does not scroll – a pull moves the card (up to voll, down to zu);
@@ -414,17 +467,17 @@ export function DateSheet({
   // keyboard focus moved into it, or a link further down was looked for – the card goes up to voll.
   useEffect(() => {
     const el = scroller.current;
-    if (!el || phase.stop !== "mitte" || dragTop !== null || parked !== null) return;
+    if (!el || phase.stop !== "mitte" || dragging) return;
     // The content box is as high as at voll; what shows at mitte is the card's frame (clip).
     const visibleHeight = () => clip.current?.clientHeight ?? el.clientHeight;
-    const timer = window.setTimeout(() => setMore(el.scrollHeight > visibleHeight() + 4), timing.ms);
+    const timer = window.setTimeout(() => setMore(el.scrollHeight > visibleHeight() + 4), 700);
     const onScroll = () => {
-      if (el.scrollTop > 0 && stopNow.current === "mitte") settle("voll", "sanft");
+      if (el.scrollTop > 0 && live.current.stop === "mitte") settle("voll", "sanft");
     };
     const onFocus = (e: FocusEvent) => {
       const frame = clip.current?.getBoundingClientRect();
       const target = (e.target as Element).getBoundingClientRect();
-      if (frame && target.bottom > frame.bottom && stopNow.current === "mitte") settle("voll", "sanft");
+      if (frame && target.bottom > frame.bottom && live.current.stop === "mitte") settle("voll", "sanft");
     };
     el.addEventListener("scroll", onScroll);
     el.addEventListener("focusin", onFocus);
@@ -433,53 +486,24 @@ export function DateSheet({
       el.removeEventListener("scroll", onScroll);
       el.removeEventListener("focusin", onFocus);
     };
-  }, [phase.stop, dragTop, parked, settle, timing.ms]);
+  }, [phase.stop, dragging, settle]);
 
-  // --- What to draw --------------------------------------------------------------------------------
-  const dragging = dragTop !== null;
-  // Following the card: while a finger moves it, and where it was left.
-  const free = dragging || parked !== null;
-  const at = layout && cardTop !== null ? position(cardTop, layout) : 0;
-  const pose: Pose | null = !layout ? null : free ? poseAt(at, layout) : restPose(layout, phase);
-  // Two bubbles: the flower's own by its head while the card is down; the one at mitte grows out of the header's
-  // step bar as the card comes up (and shrinks back into it on the way to voll).
-  const zuBox = layout?.bubbleZu ?? null;
-  const mitteBox = layout ? layout.bubbleMitte[free ? "sanft" : phase.tempo] : null;
-  // Parked, the bubble does not stay half grown: it finishes growing (words and all) – or, near zu, the flower's own one is back.
-  const parkedBubble = parked !== null ? (parked < 0.25 ? "zu" : parked > 1.75 ? "none" : "mitte") : null;
-  const morph = parkedBubble ? (parkedBubble === "mitte" ? { grow: 1, opacity: 1 } : { grow: 0, opacity: 0 }) : free ? morphAt(at) : phase.stop === "mitte" ? { grow: 1, opacity: 1 } : { grow: 0, opacity: 0 };
-  const zuOpacity = parkedBubble ? (parkedBubble === "zu" ? 1 : 0) : free ? Math.max(0, 1 - at * 4) : phase.stop === "zu" && !moving ? 1 : 0;
-  const wordsOpacity = Math.max(0, Math.min(1, (morph.grow - 0.75) / 0.25));
-  const mitteDotsOpacity = Math.max(0, Math.min(1, (morph.grow - 0.8) / 0.2)) * morph.opacity;
-  const look = layout ? cardAt(at, layout) : null;
-  const mood: Stimmung = !moving && phase.stop === "zu" ? "froh" : free || phase.tempo === "sanft" ? "genervt" : "autsch";
-  const zuDots = pose && zuBox ? bubbleDots(flat(pose), { x: zuBox.x, y: zuBox.y, w: zuBox.w, h: zuBubbleH }) : null;
-  const mitteDots = pose && mitteBox ? bubbleDots(flat(pose), { x: mitteBox.x, y: mitteBox.y, w: mitteBox.w, h: bubbleH }) : null;
-  const fade = dragging ? "none" : "opacity 250ms ease";
-  const glide = dragging || !gliding ? "none" : `${timing.ms}ms ease`;
-  const cardGlide = dragging ? "none" : `${timing.ms}ms ${timing.cardEase}`;
+  // --- What to draw (what follows the card is set by paint()) -----------------------------------
   const stop = phase.stop;
-  const up = stop !== "zu" && !dragging;
-  // From mitte to voll the handle turns into the step bar (the bar's color: ink).
-  const ink = Math.max(0, Math.min(1, at - 1));
+  const up = stop !== "zu";
+  const mood: Stimmung = !moving && stop === "zu" ? "froh" : dragging || phase.tempo === "sanft" ? "genervt" : "autsch";
 
   return (
-    <div ref={root} data-date-sheet={stop} data-parked={parked !== null ? "" : undefined} data-tempo={phase.tempo} data-moving={moving || phase.stop !== "zu" ? "" : undefined} className="relative min-h-0 flex-1">
+    <div ref={root} data-date-sheet={stop} data-tempo={phase.tempo} data-moving={moving || up ? "" : undefined} className="relative min-h-0 flex-1">
       <div ref={flow}>
         {headline}
-        <div data-sheet-above className="transition-opacity duration-300" style={{ opacity: moving || phase.stop !== "zu" ? 0 : 1 }} aria-hidden={moving || phase.stop !== "zu" ? true : undefined}>
+        <div data-sheet-above className="transition-opacity duration-300" style={{ opacity: moving || up ? 0 : 1 }} aria-hidden={moving || up ? true : undefined}>
           {above}
         </div>
       </div>
 
-      {layout && pose && (
-        <div
-          ref={flower}
-          aria-hidden="true"
-          data-sheet-flower
-          className="pointer-events-none absolute left-0 top-0 z-[3] h-[420px] w-[300px] origin-top-left"
-          style={{ transform: poseTransform(flat(pose)) }}
-        >
+      {layout && (
+        <div ref={flower} aria-hidden="true" data-sheet-flower className="pointer-events-none absolute left-0 top-0 z-[3] h-[420px] w-[300px] origin-top-left will-change-transform">
           <Bloom stimmung={mood} blaetter={bloom.blaetter} welk={bloom.welk} topf={bloom.pot} className="size-full" />
         </div>
       )}
@@ -490,42 +514,29 @@ export function DateSheet({
           <span key={i} aria-hidden="true" className="animate-fade-out pointer-events-none absolute z-[4] h-[3px] -rotate-[40deg] rounded-sm bg-butter opacity-70" style={{ left: l.x, top: l.y, width: l.w }} />
         ))}
 
-      {zuDots && zuBox && (
-        <div aria-hidden={zuOpacity === 0 ? true : undefined} style={{ opacity: zuOpacity, transition: fade }} className={cn(zuOpacity === 0 && "pointer-events-none")}>
-          <Dot at={zuDots.small} size="small" glide={glide} />
-          <Dot at={zuDots.big} size="big" glide={glide} />
+      {layout && (
+        <div ref={zuWrap}>
+          <span aria-hidden="true" data-dot className={cn(DOT, "size-1.5")} />
+          <span aria-hidden="true" data-dot className={cn(DOT, "size-2.5")} />
           <div
             ref={zuBubbleEl}
             data-sheet-bubble="zu"
             className="absolute left-0 top-0 z-[5] origin-center"
-            style={{ width: zuBox.w, transform: `translate3d(${zuBox.x}px, ${zuBox.y}px, 0) rotate(${reduced ? 0 : zuBox.rotate}deg)`, transition: `transform ${glide}` }}
+            style={{ width: layout.bubbleZu.w, transform: `translate3d(${layout.bubbleZu.x}px, ${layout.bubbleZu.y}px, 0) rotate(${reduced ? 0 : layout.bubbleZu.rotate}deg)` }}
           >
-            <VoiceBubble voice={flowerVoice} className={BUBBLE_CLASS} style={{ fontSize: zuBox.fontSize }} />
+            <VoiceBubble voice={flowerVoice} className={BUBBLE_CLASS} style={{ fontSize: layout.bubbleZu.fontSize }} />
           </div>
         </div>
       )}
-      {mitteDots && mitteBox && layout && (
-        <div aria-hidden={morph.opacity === 0 ? true : undefined} className="pointer-events-none">
-          <div style={{ opacity: mitteDotsOpacity, transition: fade }}>
-            <Dot at={mitteDots.small} size="small" glide={glide} />
-            <Dot at={mitteDots.big} size="big" glide={glide} />
+      {layout && (
+        <div ref={mitteWrap} className="pointer-events-none">
+          <div ref={mitteDotsEl}>
+            <span aria-hidden="true" data-dot className={cn(DOT, "size-1.5")} />
+            <span aria-hidden="true" data-dot className={cn(DOT, "size-2.5")} />
           </div>
           {/* Grows out of the step bar: same ink, scaled from the bar's size to its own. */}
-          <div
-            ref={bubbleEl}
-            data-sheet-bubble="mitte"
-            className="absolute left-0 top-0 z-[5] origin-center rounded-[20px] bg-ink will-change-transform"
-            style={{
-              width: mitteBox.w,
-              opacity: morph.opacity,
-              transform: morphTransform({ ...mitteBox, rotate: reduced ? 0 : mitteBox.rotate }, bubbleH, layout.bar, morph.grow),
-              transition: dragging ? "none" : `transform ${timing.ms}ms ${timing.cardEase}, opacity 250ms ease`,
-            }}
-          >
-            <p
-              className="px-2.5 pb-[11px] pt-[9px] text-center font-hand font-semibold leading-[1.02] text-[#1B2620]"
-              style={{ fontSize: mitteBox.fontSize, opacity: wordsOpacity, transition: dragging ? "none" : `opacity 200ms ease ${morph.grow === 1 ? timing.ms * 0.6 : 0}ms` }}
-            >
+          <div ref={bubbleEl} data-sheet-bubble="mitte" className="absolute left-0 top-0 z-[5] origin-center rounded-[20px] bg-ink will-change-transform" style={{ width: layout.bubbleMitte.w }}>
+            <p ref={wordsEl} className="px-2.5 pb-[11px] pt-[9px] text-center font-hand font-semibold leading-[1.02] text-[#1B2620]" style={{ fontSize: layout.bubbleMitte.fontSize }}>
               {words ?? saying}
             </p>
           </div>
@@ -539,75 +550,40 @@ export function DateSheet({
         ref={clip}
         data-sheet-card
         className={cn("absolute z-[2] bg-surface shadow-[0_-10px_30px_rgba(0,0,0,0.35)] overflow-clip", !layout && "-inset-x-2 bottom-[-20px] flex flex-col rounded-[26px]")}
-        style={
-          layout && cardTop !== null && look
-            ? {
-                top: cardTop,
-                bottom: -look.bottom,
-                left: -look.inset,
-                right: -look.inset,
-                borderRadius: `${look.radius}px ${look.radius}px ${look.radius}px ${look.radius}px`,
-                transition: `top ${cardGlide}, bottom ${cardGlide}, left ${cardGlide}, right ${cardGlide}, border-radius ${cardGlide}`,
-              }
-            : undefined
-        }
       >
         <div
+          ref={inner}
           className={cn("flex flex-col", layout ? "absolute top-0" : "contents")}
-          style={layout && look ? { left: -(SHEET.insetVoll - look.inset), width: layout.width + 2 * SHEET.insetVoll, height: layout.height + SHEET.overhangVoll - layout.tops.voll, transition: dragging ? "none" : `left ${cardGlide}` } : undefined}
+          style={layout ? { width: layout.width + 2 * SHEET.insetVoll, height: layout.height + SHEET.overhangVoll - layout.tops.voll } : undefined}
         >
         <button
+          ref={headButton}
           type="button"
-          aria-expanded={stop !== "zu"}
+          aria-expanded={up}
           aria-label={LABEL[stop]}
           onPointerDown={onHeadPointerDown}
           onPointerMove={(e) => move(e.clientY)}
           onPointerUp={onHeadPointerUp}
           onPointerCancel={onHeadPointerUp}
           onClick={onHeadClick}
-          className="absolute inset-x-0 top-0 z-[2] touch-none bg-transparent"
-          style={{ height: stop === "zu" || !look ? "100%" : look.padTop + (layout?.headH ?? 80) }}
+          className="absolute inset-x-0 top-0 z-[2] h-full touch-none bg-transparent"
         />
-        <span
-          aria-hidden="true"
-          data-sheet-handle
-          className="absolute left-1/2 -translate-x-1/2 rounded-[3px]"
-          style={
-            look
-              ? {
-                  top: look.handle.top,
-                  width: look.handle.w,
-                  height: look.handle.h,
-                  backgroundColor: `color-mix(in srgb, var(--color-ink) ${Math.round(ink * 100)}%, #3A4A40)`,
-                  transition: dragging ? "none" : `top ${cardGlide}, width ${cardGlide}, height ${cardGlide}, background-color ${cardGlide}`,
-                }
-              : { top: 8, width: 38, height: 4, backgroundColor: "#3A4A40" }
-          }
-        />
+        <span ref={handleEl} aria-hidden="true" data-sheet-handle className={cn("absolute left-1/2 -translate-x-1/2 rounded-[3px]", !layout && "top-2 h-1 w-[38px] bg-[#3A4A40]")} />
         <div
           ref={scroller}
-          className={cn("flex min-h-0 flex-1 flex-col gap-2.5 overscroll-contain px-[22px] pb-[18px]", up && phase.stop === "voll" ? "overflow-y-auto" : "overflow-hidden")}
-          style={{ paddingTop: look?.padTop ?? 24, paddingInline: layout ? 22 + SHEET.insetVoll - SHEET.insetZu : 22, transition: dragging ? "none" : `padding-top ${cardGlide}` }}
+          className={cn("flex min-h-0 flex-1 flex-col gap-2.5 overscroll-contain px-[22px] pb-[18px]", !layout && "pt-6", stop === "voll" && !dragging ? "overflow-y-auto" : "overflow-hidden")}
+          style={layout ? { paddingInline: 22 + SHEET.insetVoll - SHEET.insetZu } : undefined}
         >
           <div ref={headEl} className="flex flex-col gap-2.5">
             {head}
           </div>
-          <div
-            data-sheet-details
-            inert={!up}
-            className={cn("flex flex-col gap-2.5", !layout && "hidden")}
-            style={{
-              opacity: up ? 1 : 0,
-              transform: up ? "none" : "translateY(16px)",
-              transition: `opacity 400ms ease ${up ? 250 : 0}ms, transform 400ms ease ${up ? 250 : 0}ms`,
-            }}
-          >
+          <div ref={detailsEl} data-sheet-details inert={!up || dragging} className={cn("flex flex-col gap-2.5", !layout && "hidden")}>
             {details}
           </div>
         </div>
         </div>
         {/* At mitte the rest is cut off: a soft fade, pull up for all of it. */}
-        <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-surface to-transparent transition-opacity duration-300" style={{ opacity: more && up && stop === "mitte" ? 1 : 0 }} />
+        <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-surface to-transparent transition-opacity duration-300" style={{ opacity: more && up && !dragging && stop === "mitte" ? 1 : 0 }} />
       </div>
     </div>
   );

@@ -4,7 +4,8 @@
 //
 // Three stops: "zu" (only the title and when · where), "mitte" (the reference's open card, the flower pushed
 // up next to the headline) and "voll" (the card covers the screen, its handle becomes the header's step bar,
-// the flower has flown off the top). Between them everything follows the card's top.
+// the flower has flown off the top). Between them everything follows the card's top – while the finger moves it
+// and while it springs to a stop – so the flower, the bubble and the handle are always in time with the card.
 
 /** Where the flower's 300 × 420 box sits: translate(x, y) scale(s) rotate(r) with the origin top left. */
 export type Pose = { x: number; y: number; s: number; r: number };
@@ -26,26 +27,26 @@ export const SHEET = {
   overhangVoll: 28,
   /** Gap between the closed card and the flower's pot. */
   potGap: 7,
-  /** Past this share of the way to the next stop the card goes there. */
-  threshold: 0.35,
   /** Faster than this (px/ms) is a "schubs" – and always goes one stop further. */
   flick: 0.8,
-  /** Held still this long (ms) before letting go: the card stays where it is (until the next tap). */
-  hold: 300,
-  /** …unless it is this close to a stop (share of the way) – then it just goes there. */
-  snapNear: 0.06,
+  /** Letting go, the card counts as where it would be this much later (ms) at the finger's speed. */
+  project: 150,
+  /** Pulled down below zu the card gives way less and less, at most this far (px). */
+  stretch: 40,
   /** The card's sides: a little wider than the text at zu / mitte, edge to edge at voll. */
   insetZu: 8,
   insetVoll: 20,
   radius: 26,
 } as const;
 
-export const TIMING: Record<Tempo, { ms: number; ease: string; cardEase: string }> = {
-  sanft: { ms: 900, ease: "cubic-bezier(0.4, 0, 0.2, 1)", cardEase: "cubic-bezier(0.4, 0, 0.2, 1)" },
-  schubs: { ms: 650, ease: "cubic-bezier(0.2, 1.7, 0.4, 1)", cardEase: "cubic-bezier(0.25, 1.2, 0.4, 1)" },
+/**
+ * The spring the card settles with (`response`: seconds per swing, `damping`: 1 = no overshoot). Sanft lands
+ * softly, a schubs swings a little past and back – the flower, bubble and handle follow the card, so they swing too.
+ */
+export const SPRING: Record<Tempo, { response: number; damping: number }> = {
+  sanft: { response: 0.42, damping: 0.86 },
+  schubs: { response: 0.46, damping: 0.66 },
 };
-/** Flying off the top speeds up; coming back down it lands softly. */
-export const FLY = { out: { ms: 550, ease: "cubic-bezier(0.5, 0, 0.9, 0.6)" }, back: { ms: 1100, ease: "cubic-bezier(0.15, 0.6, 0.3, 1)" } } as const;
 
 /** Reference sizes: the flower is drawn at 0.72 when closed (216 × 302) – it grows or shrinks with the room it has. */
 const ZU_SCALE = 0.72;
@@ -61,13 +62,11 @@ export type SheetLayout = {
   /** The card's top at each stop. */
   tops: Record<Stop, number>;
   zu: Pose;
-  /** A kick goes through this pose on its way up. */
-  via: Record<Tempo, Pose>;
-  mitte: Record<Tempo, Pose>;
+  mitte: Pose;
   /** Above the screen. */
   voll: Pose;
   bubbleZu: BubbleBox;
-  bubbleMitte: Record<Tempo, BubbleBox>;
+  bubbleMitte: BubbleBox;
   /** The handle at zu / mitte, and at voll (where the header's step bar is). */
   handle: Handle;
   handleVoll: Handle;
@@ -118,10 +117,7 @@ export function sheetLayout({
   const zu: Pose = { x: Math.round((width - 300 * s) / 2 - 5 * k), y: Math.round(zuTop - SHEET.potGap - 420 * s), s, r: 0 };
   // At mitte the head sits right of the headline, under the avatars (reference ≈ 310, 88).
   const right = width - REF_WIDTH;
-  const mitte: Record<Tempo, Pose> = {
-    sanft: { x: 242 + right, y: -8, s: ZU_SCALE * 0.444, r: 0 },
-    schubs: { x: 235 + right, y: 5, s: ZU_SCALE * 0.444, r: -14 },
-  };
+  const mitte: Pose = { x: 242 + right, y: -8, s: ZU_SCALE * 0.444, r: 0 };
   const bubbleW = Math.min(150, width - 147);
   return {
     width,
@@ -129,20 +125,13 @@ export function sheetLayout({
     headH,
     tops: { zu: zuTop, mitte: midTop, voll: screenTop },
     zu,
-    via: {
-      sanft: { x: zu.x + 60 * k, y: zu.y - 60 * k, s: s * 0.8, r: 8 },
-      schubs: { x: zu.x + 120 * k, y: zu.y - 150 * k, s: s * 0.62, r: -38 },
-    },
     mitte,
     // Off the top, a little to the right and tumbling.
-    voll: { x: mitte.sanft.x + 40, y: screenTop - 420 * mitte.sanft.s - 40, s: mitte.sanft.s, r: -28 },
+    voll: { x: mitte.x + 40, y: screenTop - 420 * mitte.s - 40, s: mitte.s, r: -28 },
     // Right of the head – never above where the text ends.
     bubbleZu: { x: Math.min(zu.x + 184 * k, width + 6 - 110), y: Math.max(zu.y + 5 * k, flowBottom + 6), w: 110, fontSize: 20, rotate: -3 },
     // Between the name and the avatars of the header.
-    bubbleMitte: {
-      sanft: { x: 92, y: headerTop - 10, w: bubbleW, fontSize: 17, rotate: -2 },
-      schubs: { x: 92, y: headerTop - 10, w: bubbleW, fontSize: 17, rotate: 2 },
-    },
+    bubbleMitte: { x: 92, y: headerTop - 10, w: bubbleW, fontSize: 17, rotate: -2 },
     handle: HANDLE,
     handleVoll: { top: Math.round(bar.y - bar.h / 2 - screenTop), w: bar.w, h: bar.h },
     bar,
@@ -179,8 +168,8 @@ export function mixBubble(a: BubbleBox, b: BubbleBox, p: number): BubbleBox {
 }
 
 /** The flower at a position: pushed up towards mitte, then flying off the top (and back down, the same way). */
-export function poseAt(pos: number, layout: SheetLayout, tempo: Tempo = "sanft"): Pose {
-  return pos <= 1 ? mixPose(layout.zu, layout.mitte[tempo], Math.max(0, pos)) : mixPose(layout.mitte[tempo], layout.voll, Math.min(1, pos - 1));
+export function poseAt(pos: number, layout: SheetLayout): Pose {
+  return pos <= 1 ? mixPose(layout.zu, layout.mitte, Math.max(0, pos)) : mixPose(layout.mitte, layout.voll, Math.min(1, pos - 1));
 }
 
 /**
@@ -205,9 +194,9 @@ export function morphTransform(box: BubbleBox, h: number, bar: SheetLayout["bar"
 }
 
 /** The bubble at a position, and how visible it is (it fades on the way to voll – no flower, no words). */
-export function bubbleAt(pos: number, layout: SheetLayout, tempo: Tempo = "sanft"): { box: BubbleBox; opacity: number } {
-  if (pos <= 1) return { box: mixBubble(layout.bubbleZu, layout.bubbleMitte[tempo], Math.max(0, pos)), opacity: 1 };
-  return { box: layout.bubbleMitte[tempo], opacity: Math.max(0, 1 - (pos - 1) * 2.5) };
+export function bubbleAt(pos: number, layout: SheetLayout): { box: BubbleBox; opacity: number } {
+  if (pos <= 1) return { box: mixBubble(layout.bubbleZu, layout.bubbleMitte, Math.max(0, pos)), opacity: 1 };
+  return { box: layout.bubbleMitte, opacity: Math.max(0, 1 - (pos - 1) * 2.5) };
 }
 
 /**
@@ -264,24 +253,17 @@ export function bubbleDots(pose: Pose, bubble: { x: number; y: number; w: number
 }
 
 /**
- * Letting go at `pos` after starting at `from`: past 35 % of the way to the next stop the card goes there
- * (and on, if it was pulled even further); faster than 0.8 px/ms is a "schubs", which always goes at
- * least one stop on in the direction of the flick. `speed`: upwards is positive.
+ * Letting go at `top` with the finger's `speed` (px/ms, upwards positive): the card goes to the stop nearest to
+ * where it would be a moment later. Faster than 0.8 px/ms is a "schubs", which goes to the next stop in the
+ * direction of the flick (from just before a stop: the one after it).
  */
-export function release(pos: number, from: Stop, speed: number): { to: Stop; tempo: Tempo } {
-  const start = STOPS.indexOf(from);
-  const flick = Math.abs(speed) > SHEET.flick;
-  const dir = pos > start ? 1 : pos < start ? -1 : 0;
-  let to = start;
-  if (dir !== 0) {
-    for (let next = to + dir; next >= 0 && next < STOPS.length; next = to + dir) {
-      const far = (pos - to) * dir > SHEET.threshold;
-      const flung = flick && to === start && Math.sign(speed) === dir;
-      if (!far && !flung) break;
-      to = next;
-    }
+export function release(top: number, speed: number, layout: Pick<SheetLayout, "tops">): { to: Stop; tempo: Tempo } {
+  const pos = position(top, layout);
+  if (Math.abs(speed) > SHEET.flick) {
+    const next = speed > 0 ? Math.ceil(pos + 0.05) : Math.floor(pos - 0.05);
+    return { to: STOPS[Math.max(0, Math.min(STOPS.length - 1, next))], tempo: "schubs" };
   }
-  return { to: STOPS[to], tempo: flick ? "schubs" : "sanft" };
+  return { to: nearest(position(top - speed * SHEET.project, layout)), tempo: "sanft" };
 }
 
 /** The stop closest to a position. */
@@ -289,23 +271,53 @@ export function nearest(pos: number): Stop {
   return STOPS[Math.max(0, Math.min(STOPS.length - 1, Math.round(pos)))];
 }
 
-/** Letting go after holding still for `heldMs`: the card stays at `pos` – no animation at all. */
-export function parks(pos: number, heldMs: number): boolean {
-  return heldMs >= SHEET.hold && STOPS.every((_, i) => Math.abs(pos - i) > SHEET.snapNear);
+/** Where the finger puts the card: right under it, only below zu it gives way less and less (and never above voll). */
+export function follow(top: number, layout: Pick<SheetLayout, "tops">): number {
+  const { zu, voll } = layout.tops;
+  if (top <= zu) return Math.max(voll, top);
+  return zu + SHEET.stretch * (1 - Math.exp(-(top - zu) / SHEET.stretch));
 }
 
 /**
- * How the card glides to its stop: a short way is quick, a long one takes longer (never the same 900 ms for
- * 20 px), and a sanft glide starts at the speed the finger had – no jolt when letting go. `distance` in px,
- * `speed` px/ms towards the stop (negative: the finger went the other way). A schubs keeps its overshoot.
+ * One step of the card's spring towards `target` (`dt` in ms, `v` in px/ms): it starts at the speed the finger
+ * had – no jolt when letting go – and takes as long as its way needs.
  */
-export function glide(distance: number, speed: number, tempo: Tempo): { ms: number; ease: string } {
-  const d = Math.abs(distance);
-  if (tempo === "schubs") return { ms: Math.round(Math.min(650, Math.max(420, 380 + d * 0.5))), ease: TIMING.schubs.cardEase };
-  const ms = Math.round(Math.min(720, Math.max(340, 300 + d * 1.0)));
-  if (d < 2) return { ms, ease: "cubic-bezier(0.3, 0, 0.2, 1)" };
-  // A cubic-bezier starts with the slope y1 / x1 (in units of distance / duration): match the finger.
-  const x1 = 0.3;
-  const y1 = Math.min(1, Math.max(0, (speed * ms * x1) / d));
-  return { ms, ease: `cubic-bezier(${x1}, ${y1.toFixed(3)}, 0.2, 1)` };
+export function springStep(top: number, v: number, target: number, dt: number, tempo: Tempo): { top: number; v: number } {
+  const { response, damping } = SPRING[tempo];
+  const w = (2 * Math.PI) / (response * 1000);
+  // Small steps keep it stable on a slow frame.
+  const steps = Math.max(1, Math.ceil(dt / 4));
+  const h = dt / steps;
+  let x = top;
+  let u = v;
+  for (let i = 0; i < steps; i++) {
+    u += (-w * w * (x - target) - 2 * damping * w * u) * h;
+    x += u * h;
+  }
+  return { top: x, v: u };
+}
+
+/** At rest: closer than half a pixel and slower than a pixel per second. */
+export function atRest(top: number, v: number, target: number): boolean {
+  return Math.abs(top - target) < 0.5 && Math.abs(v) < 0.001;
+}
+
+/**
+ * The flower leans with the card's speed (`v` px/ms, downwards positive), around the bottom of its pot: pushed up
+ * it tips back, when the card stops it swings upright again – always in time with the card. Degrees.
+ */
+export function leanFor(v: number): number {
+  return Math.max(-14, Math.min(14, v * 9));
+}
+
+/** The pot's bottom in the flower's 300 × 420 box: it leans around it. */
+const POT = { x: 150, y: 410 };
+
+/** The pose with a lean around the pot (as one pose, so the bubble's dots know where the head is). */
+export function leaned(pose: Pose, lean: number): Pose {
+  if (lean === 0) return pose;
+  const pot = place(pose, POT.x, POT.y);
+  const turned = { ...pose, x: 0, y: 0, r: pose.r + lean };
+  const off = place(turned, POT.x, POT.y);
+  return { x: pot.x - off.x, y: pot.y - off.y, s: pose.s, r: pose.r + lean };
 }

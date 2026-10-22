@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bubbleAt, bubbleDots, cardAt, glide, morphAt, nearest, parks, morphTransform, poseAt, position, release, sheetLayout, topAt } from "./date-sheet";
+import { atRest, bubbleAt, bubbleDots, cardAt, follow, leaned, leanFor, morphAt, morphTransform, nearest, poseAt, position, release, sheetLayout, springStep, topAt, type Pose, type Tempo } from "./date-sheet";
 
 // The reference phone: 390 × 844 → the Beet's area is 350 wide, the card's bottom edge at 704 (764 − 60).
 // The closed card holds a two-line title and when · where (≈ 148 px of text →
@@ -19,12 +19,10 @@ describe("sheetLayout", () => {
     expect(short.zu.y + 420 * short.zu.s).toBeCloseTo(short.tops.zu - 7, 0);
   });
 
-  it("mitte poses are the table's transforms on the closed one", () => {
-    // translate(180px, -211px) scale(.444) and translate(173px, -198px) scale(.444) rotate(-14deg)
-    expect(REF.mitte.sanft).toMatchObject({ x: 62 + 180, y: 203 - 211, r: 0 });
-    expect(REF.mitte.schubs).toMatchObject({ x: 62 + 173, y: 203 - 198, r: -14 });
-    expect(REF.mitte.sanft.s).toBeCloseTo(0.72 * 0.444);
-    expect(REF.via.schubs).toMatchObject({ x: 62 + 120, y: 203 - 150, r: -38 });
+  it("the mitte pose is the table's transform on the closed one", () => {
+    // translate(180px, -211px) scale(.444)
+    expect(REF.mitte).toMatchObject({ x: 62 + 180, y: 203 - 211, r: 0 });
+    expect(REF.mitte.s).toBeCloseTo(0.72 * 0.444);
   });
 
   it("voll: the flower is above the screen, the handle sits on the header's step bar", () => {
@@ -53,7 +51,7 @@ describe("sheetLayout", () => {
 
   it("the bubbles stay inside: closed right of the head, at mitte between name and avatars", () => {
     expect(REF.bubbleZu).toMatchObject({ x: 246, y: 208, w: 110 });
-    expect(REF.bubbleMitte.sanft).toMatchObject({ x: 92, y: -52, w: 150 });
+    expect(REF.bubbleMitte).toMatchObject({ x: 92, y: -52, w: 150 });
   });
 });
 
@@ -67,10 +65,10 @@ describe("following the card", () => {
 
   it("the flower is pushed up, then flies off and comes back down the same way", () => {
     expect(poseAt(0, REF)).toEqual(REF.zu);
-    expect(poseAt(1, REF)).toEqual(REF.mitte.sanft);
+    expect(poseAt(1, REF)).toEqual(REF.mitte);
     expect(poseAt(2, REF)).toEqual(REF.voll);
     const half = poseAt(1.5, REF);
-    expect(half.y).toBeLessThan(REF.mitte.sanft.y);
+    expect(half.y).toBeLessThan(REF.mitte.y);
     expect(half.y).toBeGreaterThan(REF.voll.y);
   });
 
@@ -94,24 +92,109 @@ describe("bubbleDots", () => {
 });
 
 describe("release", () => {
-  it("goes to the next stop past 35 %, else back", () => {
-    expect(release(0.3, "zu", 0.2)).toEqual({ to: "zu", tempo: "sanft" });
-    expect(release(0.4, "zu", 0.2)).toEqual({ to: "mitte", tempo: "sanft" });
-    expect(release(1.4, "mitte", 0.2)).toEqual({ to: "voll", tempo: "sanft" });
-    expect(release(1.2, "mitte", 0.2)).toEqual({ to: "mitte", tempo: "sanft" });
-    expect(release(1.5, "voll", -0.3)).toEqual({ to: "mitte", tempo: "sanft" });
-    expect(release(0.6, "mitte", -0.3)).toEqual({ to: "zu", tempo: "sanft" });
+  const at = (pos: number) => topAt(pos, REF);
+
+  it("goes to the nearest stop – also after holding still", () => {
+    expect(release(at(0.3), 0, REF)).toEqual({ to: "zu", tempo: "sanft" });
+    expect(release(at(0.6), 0, REF)).toEqual({ to: "mitte", tempo: "sanft" });
+    expect(release(at(1.4), 0, REF)).toEqual({ to: "mitte", tempo: "sanft" });
+    expect(release(at(1.6), 0, REF)).toEqual({ to: "voll", tempo: "sanft" });
+    // Pulled past mitte in one go it is voll; down from voll past mitte it is zu.
+    expect(release(at(1.8), 0, REF)).toEqual({ to: "voll", tempo: "sanft" });
+    expect(release(at(0.2), 0, REF)).toEqual({ to: "zu", tempo: "sanft" });
   });
 
-  it("pulled past mitte in one go it carries on to voll", () => {
-    expect(release(1.5, "zu", 0.3)).toEqual({ to: "voll", tempo: "sanft" });
-    expect(release(0.3, "voll", -0.3)).toEqual({ to: "zu", tempo: "sanft" });
+  it("the finger's speed carries it a little further", () => {
+    // 0.45 alone is zu; moving up at 0.3 px/ms it would be at ≈ 0.58 a moment later.
+    expect(release(at(0.45), 0, REF).to).toBe("zu");
+    expect(release(at(0.45), 0.3, REF)).toEqual({ to: "mitte", tempo: "sanft" });
+    expect(release(at(1.55), -0.3, REF)).toEqual({ to: "mitte", tempo: "sanft" });
   });
 
-  it("a flick is a schubs and goes one stop on even when short", () => {
-    expect(release(0.15, "zu", 1.2)).toEqual({ to: "mitte", tempo: "schubs" });
-    expect(release(1.1, "mitte", 1.2)).toEqual({ to: "voll", tempo: "schubs" });
-    expect(release(1.9, "voll", -1.2)).toEqual({ to: "mitte", tempo: "schubs" });
+  it("a flick is a schubs and goes to the next stop in its direction", () => {
+    expect(release(at(0.15), 1.2, REF)).toEqual({ to: "mitte", tempo: "schubs" });
+    expect(release(at(0.62), 2, REF)).toEqual({ to: "mitte", tempo: "schubs" });
+    // From right before a stop: the one after it.
+    expect(release(at(0.97), 1.2, REF)).toEqual({ to: "voll", tempo: "schubs" });
+    expect(release(at(0.9), 1.2, REF)).toEqual({ to: "mitte", tempo: "schubs" });
+    expect(release(at(1.9), -1.2, REF)).toEqual({ to: "mitte", tempo: "schubs" });
+    expect(release(at(0.05), -1.2, REF)).toEqual({ to: "zu", tempo: "schubs" });
+    expect(release(at(2), 3, REF)).toEqual({ to: "voll", tempo: "schubs" });
+  });
+
+  it("nearest", () => {
+    expect([nearest(0.3), nearest(0.6), nearest(1.4), nearest(1.7), nearest(2.4)]).toEqual(["zu", "mitte", "mitte", "voll", "voll"]);
+  });
+});
+
+describe("the finger and the spring", () => {
+  it("the card stays right under the finger; below zu it gives way less and less, never above voll", () => {
+    expect(follow(300, REF)).toBe(300);
+    expect(follow(-58, REF)).toBe(-58);
+    expect(follow(-200, REF)).toBe(-58);
+    expect(follow(512 + 10, REF)).toBeGreaterThan(512 + 8);
+    expect(follow(512 + 1000, REF)).toBeLessThanOrEqual(512 + 40);
+  });
+
+  const springTo = (from: number, v: number, target: number, tempo: Tempo) => {
+    let top = from;
+    let speed = v;
+    let t = 0;
+    let past = 0;
+    const path: number[] = [];
+    while (!atRest(top, speed, target) && t < 3000) {
+      ({ top, v: speed } = springStep(top, speed, target, 16, tempo));
+      t += 16;
+      path.push(top);
+      past = Math.max(past, (top - target) * Math.sign(target - from));
+    }
+    return { t, past, path };
+  };
+
+  it("sanft: lands softly in about half a second, hardly past the stop", () => {
+    const { t, past } = springTo(512, 0, 176, "sanft");
+    expect(t).toBeGreaterThan(350);
+    expect(t).toBeLessThan(800);
+    expect(past).toBeLessThan(3);
+  });
+
+  it("schubs: swings past the stop and back", () => {
+    const { t, past } = springTo(400, -1.5, 176, "schubs");
+    expect(past).toBeGreaterThan(8);
+    expect(t).toBeLessThan(1200);
+  });
+
+  it("starts at the finger's speed: no jolt when letting go", () => {
+    const first = springStep(400, -1, 176, 16, "sanft");
+    expect(400 - first.top).toBeGreaterThan(14);
+    expect(first.v).toBeLessThan(-0.9);
+  });
+
+  it("a slow frame does not make it jump past", () => {
+    const { top } = springStep(512, 0, 176, 48, "sanft");
+    expect(top).toBeGreaterThan(176);
+  });
+});
+
+describe("the flower leans with the card", () => {
+  it("leans with the speed, upright at rest, never too far", () => {
+    expect(leanFor(0)).toBe(0);
+    expect(leanFor(-0.5)).toBeLessThan(0);
+    expect(Math.abs(leanFor(-10))).toBeLessThanOrEqual(14);
+  });
+
+  it("around the bottom of its pot", () => {
+    const pot = (p: Pose) => {
+      const a = (p.r * Math.PI) / 180;
+      const x = 150 * p.s;
+      const y = 410 * p.s;
+      return { x: p.x + x * Math.cos(a) - y * Math.sin(a), y: p.y + x * Math.sin(a) + y * Math.cos(a) };
+    };
+    const tipped = leaned(REF.zu, -10);
+    expect(tipped.r).toBe(-10);
+    expect(pot(tipped).x).toBeCloseTo(pot(REF.zu).x);
+    expect(pot(tipped).y).toBeCloseTo(pot(REF.zu).y);
+    expect(leaned(REF.zu, 0)).toEqual(REF.zu);
   });
 });
 
@@ -125,7 +208,7 @@ describe("the bubble grows out of the step bar", () => {
   });
 
   it("at 0 it sits on the bar with the bar's size, at 1 on its own box", () => {
-    const box = REF.bubbleMitte.sanft;
+    const box = REF.bubbleMitte;
     // The bar's middle by default: the middle of the area, the header row's middle.
     expect(REF.bar).toEqual({ x: 175, y: -20, w: 58, h: 6 });
     // x, y, z, rotate, sx, sy
@@ -138,37 +221,5 @@ describe("the bubble grows out of the step bar", () => {
     expect(sy0 * 60).toBeCloseTo(6, 1);
     const [x1, y1, , r1, sx1, sy1] = nums(morphTransform(box, 60, REF.bar, 1));
     expect([x1, y1, r1, sx1, sy1]).toEqual([box.x, box.y, box.rotate, 1, 1]);
-  });
-});
-
-describe("holding still parks the card", () => {
-  it("held for 300 ms between the stops it stays; a quick let-go or right at a stop does not", () => {
-    expect(parks(0.5, 400)).toBe(true);
-    expect(parks(1.6, 300)).toBe(true);
-    expect(parks(0.5, 120)).toBe(false);
-    expect(parks(0.03, 800)).toBe(false);
-    expect(parks(1.97, 800)).toBe(false);
-  });
-
-  it("a tap then goes to the nearest stop", () => {
-    expect([nearest(0.3), nearest(0.6), nearest(1.4), nearest(1.7), nearest(2.4)]).toEqual(["zu", "mitte", "mitte", "voll", "voll"]);
-  });
-});
-
-describe("glide", () => {
-  it("takes longer for a longer way, within bounds", () => {
-    expect(glide(20, 0, "sanft").ms).toBe(340);
-    expect(glide(336, 0, "sanft").ms).toBe(636);
-    expect(glide(900, 0, "sanft").ms).toBe(720);
-    expect(glide(100, 0, "schubs").ms).toBe(430);
-  });
-
-  it("starts at the finger's speed: slope y1 / x1 · distance / ms = speed", () => {
-    const { ms, ease } = glide(300, 0.5, "sanft");
-    const [x1, y1] = ease.match(/[\d.]+/g)!.map(Number);
-    expect((y1 / x1) * (300 / ms)).toBeCloseTo(0.5, 2);
-    // Away from the stop, or very fast: it does not run backwards or past 1.
-    expect(glide(300, -0.5, "sanft").ease).toContain("0.3, 0.000");
-    expect(glide(300, 5, "sanft").ease).toContain("0.3, 1.000");
   });
 });

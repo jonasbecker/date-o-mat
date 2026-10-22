@@ -231,10 +231,11 @@ solange die Blase dort sitzt; eine Spruchwahl pro Bewegung (statt eigener Sprüc
   Scrollen; ihr Griff wird zum Strich oben im Kopf, die Blume fliegt oben raus und kommt beim Runterziehen
   wieder herunter – je nachdem, wie weit man zieht). Tippen: zu ↔ mitte, voll → mitte; ein Schubs geht immer eine
   Stufe weiter; Zurück-Geste schließt.
-- Festhalten: wer die Karte zieht, kurz stillhält (≥ 300 ms) und dann loslässt, lässt sie genau dort stehen – ohne
-  Animation, die Blase oben wächst fertig; der nächste Tipp bringt sie zur nächsten Stufe. Die übrigen Bewegungen
-  dauern so lange, wie ihr Weg ist (kurz = schnell), starten mit dem Tempo des Fingers, die Blume wiegt beim
-  Anhalten nach und federt beim Landen von oben.
+- Ziehen (22.10.2026, ersetzt das „Festhalten“ vom Vortag): die Karte klebt am Daumen – hoch und runter, ohne
+  loszulassen –, beim Loslassen federt sie zur nächsten Stufe (wo sie ist bzw. gleich wäre; auch nach Stillhalten),
+  mit dem Tempo des Fingers. Blume, Blase, Griff und Details hängen an derselben Zahl (der Oberkante der Karte) und
+  bewegen sich darum genau im Takt; die Blume neigt sich mit dem Tempo um ihren Topf. Mitten in der Bewegung
+  gegriffen, bleibt die Karte unter dem Finger stehen.
 - Tabs: besuchte Seiten kommen 5 Minuten lang sofort aus dem Browser (`staleTimes.dynamic`); AutoRefresh lädt nur
   neu, wenn sich der Fingerabdruck der Daten geändert hat (`server/stamp.ts`); kein Einblenden mehr (`template.tsx`
   entfernt). Auch beim ersten Besuch kein Platzhalter mehr: die alte Seite bleibt stehen, bis die neue da ist
