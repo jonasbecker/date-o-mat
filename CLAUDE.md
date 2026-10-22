@@ -61,6 +61,11 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   twice as many is a slowdown on phones). Reads that do not depend on each other go in one `Promise.all`; a function
   that needs the couple's settings takes them as an optional parameter (`ensureCurrentCycle`, `budgetState`) instead of
   reading them again.
+- **Big files:** the swipe deck's server side is `server/deck.ts` (reading, swiping, undo, "Vielleicht"), `deck-open.ts` (which cards
+  one person can still swipe), `deck-refill.ts` (Claude / Köln batches) and `deck-notify.ts` (match, nudges, expiry) – `deck.ts`
+  re-exports their public parts, callers keep importing `@/server/deck`. The swipe card itself is `swipe-card.tsx`.
+- **Next.js updates:** `npm audit` must stay at 0; `next build` itself warns about known vulnerabilities (and once stopped with a
+  fatal error) – `next` and `eslint-config-next` are pinned to the same exact version.
 - **Smooth on phones:** what follows a finger moves with `transform` only and renders at most once per frame – the swipe
   card is moved straight in the DOM (React hears only the stamp), the date sheet's frame moves around content of one
   fixed size (never re-wrapped), bubble and dots are translated; `Bloom` and the swipe `Card` are memoized.
