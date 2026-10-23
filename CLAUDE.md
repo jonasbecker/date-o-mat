@@ -50,7 +50,8 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   only (`currentCycleReadOnly`), and every push carries it (`badge`, `server/badge.ts`, set in sw.js). e2e: m6.
 - **Maps:** `components/map-embed.tsx` is Google's embed (`mapEmbedUrl()`, no key; places in Köln unless they name a
   city, `placeQuery()`) – it loads only once it is on screen (a closed date card or a compact swipe card never fetches
-  it), takes no fingers (a drag over it still moves the card) and a tap opens Maps. e2e answers `maps.google.com` with a
+  it), takes no fingers (a drag over it still moves the card) and with `href` a tap opens Maps (without, it is
+  only a picture – the full swipe card, where a tap means smaller). e2e answers `maps.google.com` with a
   stand-in page (m17, m25).
 - **Gestures and offline:** `components/gestures.tsx` – from the left edge = back where the page has a back arrow
   (mark it `data-back`; installed app only, `localStorage["dom-gestures"]="1"` elsewhere), pull down at the top =
@@ -95,7 +96,10 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   (not a drag) opens the card to the full screen (`data-full`, `Card full`): the whole description, the event, a Google
   map of the place (`components/map-embed.tsx`); "swipen." folds away up, the flower down, ↺ comes up into the
   header's top right (globals.css `data-deck-fold` / `data-deck-head`); swiping works there too, a tap (or Escape)
-  makes it small again. e2e: m17. Swiping only,
+  makes it small again – the full card scrolls, and a scroll container starts a new touch-action, so it carries
+  `touch-pan-y` itself (else the browser takes a sideways swipe: the drag is cancelled, Chrome even goes back). Its
+  map is only a picture (a tap on it makes the card small too), "In Google Maps öffnen" is a button of its own.
+  e2e: m17, m30 (real touch events: small, full, shaky swipes, scrolling, map tap). Swiping only,
   with the EINPFLANZEN / KOMPOST stamp; the flower (a new quip every 10 s; tap = "sam hat n geswipt." + "deine likes ›" for 5 s – no line under the title) reacts happy / sad and also says what a swipe
   changed or what went wrong – no small text under the card. ⓘ next to the Matchlinge (how it works, "n geswipt · n
   übrig", Mehr Ideen, Euer Ding) and ↺ next to the filter live in `deck-chrome.tsx`. For keyboard / screen readers the

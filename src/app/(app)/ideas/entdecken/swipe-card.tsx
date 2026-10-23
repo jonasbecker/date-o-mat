@@ -121,7 +121,7 @@ export const Card = memo(function Card({ card, partnerName, full = false }: { ca
       ref={box}
       data-card-dense={0}
       data-card-full={full ? "" : undefined}
-      className={cn("swipe-card relative flex h-full flex-col rounded-[28px] bg-[#E7EEDF] text-[#1B2620] shadow-[0_18px_30px_rgba(0,0,0,0.4)]", full ? "overflow-y-auto overscroll-contain" : "overflow-hidden")}
+      className={cn("swipe-card relative flex h-full flex-col rounded-[28px] bg-[#E7EEDF] text-[#1B2620] shadow-[0_18px_30px_rgba(0,0,0,0.4)]", full ? "touch-pan-y overflow-y-auto overscroll-contain" : "overflow-hidden")}
     >
       <IllustrationStrip names={card.art.illustrations} hex={card.art.hex} className={cn("sc-strip -mb-2.5 overflow-hidden rounded-t-[28px]", full ? "h-[120px] shrink-0" : "min-h-8 flex-[1_1_96px]")} />
       {/* The text never shrinks: a tall screen gives the picture more room, a short one takes it first – plain CSS. */}
@@ -145,7 +145,21 @@ export const Card = memo(function Card({ card, partnerName, full = false }: { ca
             )}
           </div>
         )}
-        {full && place && <MapEmbed place={place} href={mapSearchUrl(place)} label={`${place} in Google Maps`} className="h-44 shrink-0 bg-[#DCEBD9]" />}
+        {full && place && (
+          // The map is only a picture here – a tap on it makes the card small like anywhere else; Maps has its own button.
+          <div className="flex shrink-0 flex-col gap-2">
+            <MapEmbed place={place} className="h-44 bg-[#DCEBD9]" />
+            <a
+              href={mapSearchUrl(place)}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-maps-link
+              className="press inline-flex h-11 items-center justify-center gap-2 rounded-full border-2 border-[#1B2620] px-4 text-[15px] font-bold"
+            >
+              <span aria-hidden="true">📍</span> In Google Maps öffnen
+            </a>
+          </div>
+        )}
         <div ref={info} data-card-info className="mt-auto flex shrink-0 flex-col gap-2">
           <ul className="flex flex-wrap gap-1.5">
             {facts(card).map((f) => (
