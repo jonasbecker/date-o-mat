@@ -63,14 +63,14 @@ async function pageFor(token, scheme = "light") {
 // 1) Upload two big photos
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/dates/${d1.id}`);
-await j.getByRole("tab", { name: /Fotos/ }).click({ timeout: 15000 });
-await j.getByRole("button", { name: "📷 Fotos hinzufügen" }).waitFor({ timeout: 15000 });
-await j.screenshot({ path: `${OUT}m9-01-empty.png`, fullPage: true });
-await j.locator("#photo-input").setInputFiles([`${FIX}strand.jpg`, `${FIX}eis.jpg`]);
-await j.locator('img[alt="Foto 2"]').waitFor({ timeout: 30000 });
+// The leaf (ARCHIV.md §2): without photos the idea's banner; "+" adds them.
+await j.getByRole("button", { name: "Foto hinzufügen" }).waitFor({ timeout: 15000 });
+await j.screenshot({ path: `${OUT}m9-01-empty.png` });
+await j.locator("[data-photo-input]").setInputFiles([`${FIX}strand.jpg`, `${FIX}eis.jpg`]);
+await j.getByRole("button", { name: "Foto 2", exact: true }).waitFor({ timeout: 30000 });
 const { rows: photos } = await db.query("SELECT id, width, height, bytes, full_path, thumb_path FROM date_photos ORDER BY created_at");
 check(`two photos stored (${photos.map((p) => `${p.width}x${p.height}`)})`, photos.length === 2);
-check("resized to max 1600 px, orientation kept", photos[0].width === 1600 && photos[0].height === 1200 && photos[1].width === 1200 && photos[1].height === 1600);
+check(`resized to max 2000 px, orientation kept (${photos.map((p) => `${p.width}x${p.height}`)})`, Math.max(photos[0].width, photos[0].height, photos[1].width, photos[1].height) <= 2000 && photos[0].width > photos[0].height && photos[1].width < photos[1].height);
 check(`small files (${photos.map((p) => Math.round(p.bytes / 1024) + " KB")})`, photos.every((p) => p.bytes < 600 * 1024));
 check("paths are per couple and random", photos.every((p) => p.full_path.startsWith(`couples/${couple}/dates/${d1.id}/`)));
 const stored = readFileSync(`${DATA}/${photos[0].full_path}`);
@@ -89,23 +89,21 @@ const foreign = await e.request.get(`${BASE}/api/photos/${photos[0].id}`);
 check(`other couple: ${foreign.status()}`, foreign.status() === 404);
 
 // 3) Not an image
-await j.locator("#photo-input").setInputFiles([`${FIX}fake.jpg`]);
+await j.locator("[data-photo-input]").setInputFiles([`${FIX}fake.jpg`]);
 await j.getByText("„fake.jpg“ konnte nicht gelesen werden.").waitFor({ timeout: 10000 });
 check("a non-image is refused with a message", (await db.query("SELECT count(*)::int AS c FROM date_photos")).rows[0].c === 2);
 
-// 4) Lightbox, next, delete
+// 4) Big at the top, the next one, remove it
 await j.reload();
-await j.getByRole("tab", { name: /Fotos/ }).click({ timeout: 15000 });
-await j.locator('img[alt="Foto 1"]').click();
-await j.getByRole("dialog").locator('img[alt="Foto 1 von 2"]').waitFor({ timeout: 10000 });
-await j.waitForFunction(() => document.querySelector('dialog img')?.naturalWidth > 0);
+await j.locator('[data-photo-strip] img[alt="Foto 1 von 2"]').waitFor({ timeout: 15000 });
+await j.waitForFunction(() => document.querySelector("[data-photo-strip] img")?.naturalWidth > 0);
 await j.screenshot({ path: `${OUT}m9-02-lightbox.png` });
-await j.getByRole("button", { name: "Nächstes Foto" }).click();
-await j.getByRole("dialog").locator('img[alt="Foto 2 von 2"]').waitFor();
-check("lightbox: next photo", true);
-await j.getByRole("button", { name: "Löschen" }).click();
-await j.getByRole("button", { name: "Wirklich löschen" }).click();
-await j.locator('img[alt="Foto 2"]').waitFor({ state: "detached", timeout: 10000 });
+await j.getByRole("button", { name: "Foto 2", exact: true }).click();
+await j.waitForTimeout(700);
+check(`the small photo makes the second one big (${await j.locator("[data-photo-count]").innerText()})`, (await j.locator("[data-photo-count]").innerText()) === "2 / 2");
+await j.getByRole("button", { name: "Dieses Foto entfernen" }).click();
+await j.getByRole("button", { name: "Ja", exact: true }).click();
+await j.getByRole("button", { name: "Foto 2", exact: true }).waitFor({ state: "detached", timeout: 10000 });
 // The photo is gone at once (optimistic) – the server may still be on it.
 let left = await db.query("SELECT count(*)::int AS c FROM date_photos");
 const filesGone = () => !existsSync(`${DATA}/${photos[1].full_path}`) && !existsSync(`${DATA}/${photos[1].thumb_path}`);
@@ -114,7 +112,7 @@ for (let i = 0; i < 40 && (left.rows[0].c > 1 || !filesGone()); i++) {
   left = await db.query("SELECT count(*)::int AS c FROM date_photos");
 }
 check(`deleted (${left.rows[0].c} left), files gone`, left.rows[0].c === 1 && !existsSync(`${DATA}/${photos[1].full_path}`) && !existsSync(`${DATA}/${photos[1].thumb_path}`));
-await j.screenshot({ path: `${OUT}m9-03-detail.png`, fullPage: true });
+await j.screenshot({ path: `${OUT}m9-03-detail.png` });
 
 // 5) Cover on the list (also for the partner), dark mode
 const sd = await pageFor((await db.query("SELECT 1")).rows && (await (async () => { const t = randomBytes(32).toString("base64url"); const { rows: [sam] } = await db.query("SELECT id FROM users WHERE name = 'Sam'"); await db.query("INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, now() + interval '1 day')", [createHash("sha256").update(t).digest("hex"), sam.id]); return t; })()), "dark");
