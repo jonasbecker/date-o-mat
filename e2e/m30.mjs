@@ -88,6 +88,46 @@ const swipe = async (shake = 0, at = 0.5) => {
   await touch(pts);
 };
 
+/**
+ * Halfway through a swipe (the finger still down): where the card was, the real next card shows – its title, not an
+ * empty shape. Then the finger goes back and lets go (the card springs back).
+ */
+const peek = async (shot) => {
+  const b = await card.boundingBox();
+  const y = b.y + b.height * 0.4;
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: b.x + 60, y }] });
+  for (let i = 1; i <= 8; i++) {
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: b.x + 60 + i * 20, y }] });
+    await j.waitForTimeout(16);
+  }
+  await j.waitForTimeout(100);
+  // The spot the card left (its left part): the top card is no longer there, the next card is (it takes no
+  // pointer, so elementFromPoint does not see it – the boxes do).
+  const seen = await j.evaluate(({ x, y }) => {
+    const inside = (el, px, py) => {
+      const r = el.getBoundingClientRect();
+      return px >= r.left && px <= r.right && py >= r.top && py <= r.bottom;
+    };
+    const top = document.querySelector('[aria-roledescription="Karte"]');
+    const behind = document.querySelector("[data-next-card]");
+    if (!top || !behind || inside(top, x, y) || !inside(behind, x, y) || getComputedStyle(behind).visibility === "hidden") return null;
+    return behind.querySelector("h2")?.textContent ?? "";
+  }, { x: b.x + 30, y: b.y + b.height * 0.3 });
+  if (shot) await j.screenshot({ path: `${OUT}${shot}` });
+  const next = await j.locator("[data-next-card] h2").textContent();
+  for (let i = 7; i >= 0; i--) {
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: b.x + 60 + i * 20, y }] });
+    await j.waitForTimeout(16);
+  }
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await j.waitForTimeout(400);
+  return { seen, next };
+};
+
+{
+  const p = await peek("m30-00-dahinter-klein.png");
+  check(`small: mid-swipe the next card shows behind (${JSON.stringify(p)})`, Boolean(p.seen) && p.seen === p.next);
+}
 {
   const before = await title();
   await swipe(0);
@@ -97,6 +137,10 @@ const swipe = async (shake = 0, at = 0.5) => {
   const b = await card.boundingBox();
   await touch([{ x: b.x + b.width / 2, y: b.y + 120 }]);
   check("a tap opens it to the full screen", await isFull());
+}
+{
+  const p = await peek("m30-00-dahinter-voll.png");
+  check(`full: mid-swipe the next card shows behind, full as well (${JSON.stringify(p)})`, Boolean(p.seen) && p.seen === p.next && (await j.locator("[data-next-card] [data-card-full]").count()) === 1 && (await isFull()));
 }
 for (const shake of [0, 3, 8]) {
   const before = await title();
@@ -110,15 +154,15 @@ for (const shake of [0, 3, 8]) {
   const pts = [];
   for (let i = 0; i <= 12; i++) pts.push({ x: b.x + b.width / 2, y: b.y + b.height * 0.75 - i * 25 });
   await touch(pts);
-  const scrolled = await j.locator("[data-card-full]").evaluate((el) => el.scrollTop);
+  const scrolled = await card.locator("[data-card-full]").evaluate((el) => el.scrollTop);
   check(`full: up and down the text scrolls, the card stays (${scrolled} px)`, scrolled > 20 && (await title()) === before && (await isFull()));
 }
 {
   // The map is only a picture: a tap on it makes the card small, it opens nothing.
-  const map = j.locator("[data-card-full] [data-map-embed]");
+  const map = card.locator("[data-card-full] [data-map-embed]");
   await map.scrollIntoViewIfNeeded();
   await j.waitForTimeout(300);
-  check("full: the map is no link", (await map.evaluate((el) => el.tagName)) === "DIV" && (await j.locator("[data-card-full] [data-maps-link]").count()) === 1);
+  check("full: the map is no link", (await map.evaluate((el) => el.tagName)) === "DIV" && (await card.locator("[data-card-full] [data-maps-link]").count()) === 1);
   await j.screenshot({ path: `${OUT}m30-01-vollbild-karte.png` });
   const pages = ctx.pages().length;
   const m = await map.boundingBox();
@@ -129,7 +173,7 @@ for (const shake of [0, 3, 8]) {
   // Maps has its own button.
   const b = await card.boundingBox();
   await touch([{ x: b.x + b.width / 2, y: b.y + 120 }]);
-  const link = j.locator("[data-card-full] [data-maps-link]");
+  const link = card.locator("[data-card-full] [data-maps-link]");
   await link.scrollIntoViewIfNeeded();
   const popup = ctx.waitForEvent("page", { timeout: 5000 }).catch(() => null);
   const l = await link.boundingBox();

@@ -13,7 +13,6 @@ import { pickQuip } from "@/core/card-art";
 import { matchesFilter, type DeckCardView } from "@/core/deck";
 import { activeFilterCount, filterSummary } from "@/core/filters";
 import { useIdeaFilter } from "@/components/idea-filter";
-import { cn } from "@/lib/cn";
 import { moreCardsAction, swipeAction, undoSwipeAction } from "./actions";
 import { useShareDeck } from "./deck-chrome";
 import { Card, Stamp, type Verdict } from "./swipe-card";
@@ -21,6 +20,9 @@ import { queuedSwipes, queueSwipe, SWIPE_SENT_EVENT, unqueueSwipe, type SwipeSen
 
 /** How far (share of the card's width) a swipe has to go – the stamp shows from here on. */
 const THRESHOLD = 0.3;
+/** The next card waits right behind, a little smaller and lower (it peeks out at the bottom). */
+const BEHIND = { y: 22, scale: 0.95 };
+const behindTransform = (p: number) => `translate3d(0, ${(BEHIND.y * (1 - p)).toFixed(1)}px, 0) scale(${(BEHIND.scale + (1 - BEHIND.scale) * p).toFixed(4)})`;
 const FLY_MS = 220;
 /** The flower is sad (or happy) for a moment, then waits again. */
 const REACTION_MS = 1600;
@@ -86,6 +88,11 @@ export function SwipeDeck({
       el.style.transition = "transform 180ms ease-out";
       el.style.transform = "none";
     }
+    const behind = nextEl.current;
+    if (springBack && behind) {
+      behind.style.transition = "transform 180ms ease-out";
+      behind.style.transform = behindTransform(0);
+    }
     setDragging(false);
     setDragStamp(null);
   }
@@ -99,6 +106,7 @@ export function SwipeDeck({
   const [full, setFull] = useState(false);
   const tap = useRef<{ x: number; y: number; on: boolean } | null>(null);
   const topEl = useRef<HTMLDivElement | null>(null);
+  const nextEl = useRef<HTMLDivElement | null>(null);
   // What this visit has done so far – the deck shows its progress.
   const [stats, setStats] = useState({ swiped: 0, liked: 0 });
   // The flower reacts to your last choice for a moment (happy / sad), then waits again.
@@ -337,6 +345,12 @@ export function SwipeDeck({
         if (!el || x === null) return;
         el.style.transition = "none";
         el.style.transform = `translate3d(${x}px, 0, 0) rotate(${Math.max(-9, Math.min(9, (x / width.current) * 18))}deg)`;
+        // The card behind comes forward as this one goes – it is all there by the time the swipe counts.
+        const behind = nextEl.current;
+        if (behind) {
+          behind.style.transition = "none";
+          behind.style.transform = behindTransform(Math.min(1, Math.abs(x) / (width.current * THRESHOLD)));
+        }
       });
     }
   }
@@ -367,6 +381,7 @@ export function SwipeDeck({
     flying && top && flying.id === top.id
       ? { transform: flyTransform(flying.verdict), transition: `transform ${FLY_MS}ms ease-in` }
       : { transform: "none", transition: "transform 180ms ease-out" };
+  const nextStyle = flying ? { transform: behindTransform(1), transition: `transform ${FLY_MS}ms ease-out` } : { transform: behindTransform(0), transition: "transform 180ms ease-out" };
   const stamp = dragging ? dragStamp : (flying?.verdict ?? null);
   // What the flower says: its reaction, or about the top card (another one with every tap).
   const quip = message ?? reaction?.quip ?? (top ? pickQuip(top.art.quips.neutral, top.id, quipTurn) : "");
@@ -381,19 +396,23 @@ export function SwipeDeck({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3" data-swipe-deck="page" data-full={full ? "" : undefined}>
-      {/* The card takes what the screen has left – no scrolling. A stack: the next one peeks out, tilted. */}
+      {/* The card takes what the screen has left – no scrolling. A stack: the real next card waits behind (it peeks out
+          at the bottom and comes forward while this one is swiped away – never an empty card). Both are one keyed list,
+          so the card behind is the very same element once it is on top (no new map, no flash). */}
       <div className="relative min-h-[280px] flex-1">
-        {next && (
-          <div aria-hidden="true" className={cn("absolute inset-x-3 inset-y-0 rotate-[3deg] rounded-[28px] bg-[#2A3830] transition-transform duration-200", flying && "inset-x-0 rotate-0")} />
-        )}
-        {top ? (
+        {[top, next].map((c, i) =>
+          !c ? null : i === 1 ? (
+            <div key={c.id} ref={nextEl} aria-hidden="true" inert data-next-card className="pointer-events-none absolute inset-0 z-[1] origin-center" style={nextStyle}>
+              <Card card={c} partnerName={partnerName} full={full} />
+            </div>
+          ) : (
           <div
-            key={top.id}
+            key={c.id}
             ref={topEl}
             role="group"
             aria-roledescription="Karte"
-            aria-label={top.title}
-            className="absolute inset-0 origin-bottom cursor-grab touch-pan-y select-none active:cursor-grabbing"
+            aria-label={c.title}
+            className="absolute inset-0 z-[2] origin-bottom cursor-grab touch-pan-y select-none active:cursor-grabbing"
             style={topStyle}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
@@ -404,7 +423,7 @@ export function SwipeDeck({
               endDrag(true);
             }}
           >
-            <Card card={top} partnerName={partnerName} full={full} />
+            <Card card={c} partnerName={partnerName} full={full} />
             {stamp && <Stamp verdict={stamp} />}
             {/* Swiping only – for the keyboard and screen readers the two choices stay as buttons, seen when focused. */}
             <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2">
@@ -430,7 +449,9 @@ export function SwipeDeck({
               </button>
             </div>
           </div>
-        ) : (
+          ),
+        )}
+        {!top && (
           <div className="flex h-full flex-col items-center justify-center gap-4 rounded-[28px] border-[1.5px] border-dashed border-line px-6 text-center">
             {generating || loading ? (
               <>

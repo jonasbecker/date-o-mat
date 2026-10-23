@@ -99,7 +99,10 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   makes it small again – the full card scrolls, and a scroll container starts a new touch-action, so it carries
   `touch-pan-y` itself (else the browser takes a sideways swipe: the drag is cancelled, Chrome even goes back). Its
   map is only a picture (a tap on it makes the card small too), "In Google Maps öffnen" is a button of its own.
-  e2e: m17, m30 (real touch events: small, full, shaky swipes, scrolling, map tap). Swiping only,
+  Behind the top card waits the real next card (`data-next-card`, inert, small or full like the top one) – it peeks out
+  at the bottom and comes forward with the swipe (`behindTransform`, written per frame with the drag), so a swipe never
+  shows an empty card; top and next are one keyed list, the card behind becomes the top one as the same element.
+  e2e: m17, m30 (real touch events: small, full, shaky swipes, mid-swipe peek, scrolling, map tap). Swiping only,
   with the EINPFLANZEN / KOMPOST stamp; the flower (a new quip every 10 s; tap = "sam hat n geswipt." + "deine likes ›" for 5 s – no line under the title) reacts happy / sad and also says what a swipe
   changed or what went wrong – no small text under the card. ⓘ next to the Matchlinge (how it works, "n geswipt · n
   übrig", Mehr Ideen, Euer Ding) and ↺ next to the filter live in `deck-chrome.tsx`. For keyboard / screen readers the
