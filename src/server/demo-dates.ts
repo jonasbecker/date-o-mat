@@ -3,17 +3,27 @@
 // checklists and photos go with them (foreign keys cascade). The round logic never sees them (server/cycles.ts).
 import "server-only";
 import { and, eq } from "drizzle-orm";
-import { demoPhotoPath, demoRounds } from "@/core/demo-dates";
+import { demoPhotoPath, demoPhotoSeed, demoRounds } from "@/core/demo-dates";
 import type { CoupleContext } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { cycles, datePhotos, datePlans, dateReviews, dateTasks } from "@/server/db/schema";
+import { photoStore } from "@/server/photos/store";
 
 export async function demoDatesOn(coupleId: string): Promise<boolean> {
   return (await db.$count(cycles, and(eq(cycles.coupleId, coupleId), eq(cycles.demo, true)))) > 0;
 }
 
 export async function removeDemoDates(coupleId: string): Promise<void> {
+  // Photos someone added to a test date are real files – they go too (the drawn ones are no files).
+  const added = await db
+    .select({ full: datePhotos.fullPath, thumb: datePhotos.thumbPath })
+    .from(datePhotos)
+    .innerJoin(datePlans, eq(datePlans.id, datePhotos.dateId))
+    .innerJoin(cycles, eq(cycles.id, datePlans.cycleId))
+    .where(and(eq(datePhotos.coupleId, coupleId), eq(cycles.demo, true)));
+  const files = added.flatMap((p) => [p.full, p.thumb]).filter((path) => demoPhotoSeed(path) === null);
   await db.delete(cycles).where(and(eq(cycles.coupleId, coupleId), eq(cycles.demo, true)));
+  if (files.length) await photoStore()?.remove(files).catch((error) => console.warn("[demo] removing photos failed", error instanceof Error ? error.message : error));
 }
 
 /** Writes the test dates (anew – an earlier set goes first). */
