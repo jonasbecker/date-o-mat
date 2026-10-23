@@ -285,3 +285,6 @@ solange die Blase dort sitzt; eine Spruchwahl pro Bewegung (statt eigener Sprüc
   Tippen macht sie wieder klein.
 - Die geplante Date-Karte auf dem Beet zeigt statt der gemalten Karte Google Maps (lädt erst, wenn die Karte offen
   ist; Tippen öffnet die Route).
+- Testdates: Einstellungen → Mehr → Testdates legt sieben vergangene Dates (Bewertungen, Notizen, Fotos, Checkliste)
+  und eine ausgefallene Runde ins Archiv – für euch beide, ohne Erinnerungen oder Rundenwechsel; ausschalten löscht
+  sie komplett.

@@ -1,0 +1,1 @@
+ALTER TABLE "cycles" ADD COLUMN "demo" boolean DEFAULT false NOT NULL;

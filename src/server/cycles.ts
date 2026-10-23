@@ -36,7 +36,7 @@ function buildCycle(coupleId: string, seq: number, start: Date, settings: Couple
 }
 
 async function latestCycle(coupleId: string): Promise<Cycle | undefined> {
-  const [cycle] = await db.select().from(cycles).where(eq(cycles.coupleId, coupleId)).orderBy(desc(cycles.seq)).limit(1);
+  const [cycle] = await db.select().from(cycles).where(and(eq(cycles.coupleId, coupleId), eq(cycles.demo, false))).orderBy(desc(cycles.seq)).limit(1);
   return cycle;
 }
 
@@ -117,7 +117,7 @@ async function cycleAt(coupleId: string, at: Date): Promise<Cycle | undefined> {
   const [cycle] = await db
     .select()
     .from(cycles)
-    .where(and(eq(cycles.coupleId, coupleId), lte(cycles.startsAt, at), gt(cycles.endsAt, at)))
+    .where(and(eq(cycles.coupleId, coupleId), eq(cycles.demo, false), lte(cycles.startsAt, at), gt(cycles.endsAt, at)))
     .orderBy(desc(cycles.seq))
     .limit(1);
   return cycle;
@@ -149,7 +149,7 @@ export async function cycleHistory(coupleId: string, now: Date, limit = 8): Prom
   const rows = await db
     .select()
     .from(cycles)
-    .where(and(eq(cycles.coupleId, coupleId), lte(cycles.startsAt, now)))
+    .where(and(eq(cycles.coupleId, coupleId), eq(cycles.demo, false), lte(cycles.startsAt, now)))
     .orderBy(desc(cycles.seq))
     .limit(limit);
   return rows.reverse();

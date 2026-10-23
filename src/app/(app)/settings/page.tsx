@@ -31,11 +31,13 @@ import { ShareShortcut, StartLocationForm } from "./on-the-go";
 import { SpecialDays, type SpecialDayView } from "./special-days";
 import { ExtrasForm } from "./extras-form";
 import { PageTitle } from "@/components/page-title";
+import { DemoDatesForm } from "./demo-dates-form";
 import { MoreList, Topic, type TopicTile } from "./fold";
 import { CycleQuick, EveningFrom, PushToggle } from "./setup-main";
 import { FlowerCard } from "./flower-card";
 import { GardenBanner } from "./garden-banner";
 import { countDoneDates } from "@/server/dates";
+import { demoDatesOn } from "@/server/demo-dates";
 import { overallLevel } from "@/core/system-status";
 import { upcomingDaysFor } from "@/server/special-days";
 import { inDaysLabel } from "@/core/special-days";
@@ -94,7 +96,7 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
     listSources(coupleId),
   ]);
   const now = coupleNow(settings);
-  const [status, sourcePages, lived] = await Promise.all([systemStatus(ctx, now), listSourcePages(sources.map((s) => s.id)), countDoneDates(coupleId)]);
+  const [status, sourcePages, lived, demo] = await Promise.all([systemStatus(ctx, now), listSourcePages(sources.map((s) => s.id)), countDoneDates(coupleId), demoDatesOn(coupleId)]);
   const specialDayViews: SpecialDayView[] = (await upcomingDaysFor(coupleId, now, 366)).map((d) => ({
     id: d.id,
     emoji: d.emoji,
@@ -127,6 +129,7 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
         { id: "budget", icon: "wallet", title: "Budget & Spartopf", hint: settings.monthlyBudgetEur ? `${settings.monthlyBudgetEur} € im Monat` : "Aus" },
         { id: "besondere-tage", icon: "gift", title: "Besondere Tage", hint: specialDayViews.length ? `${specialDayViews.length} eingetragen` : "Geburtstage, Jahrestag" },
         { id: "extras", icon: "sparkle", title: "Extras", hint: "An- und ausschalten" },
+        { id: "testdaten", icon: "story", title: "Testdates", hint: demo ? "An – im Archiv" : "Zum Ausprobieren" },
         ...(extraOn(settings, "story") ? [{ id: "story", icon: "story", title: "Date-Story", hint: "Euer Jahr zum Durchtippen", href: "/story" } as TopicTile] : []),
         ...(extraOn(settings, "cards") ? [{ id: "cards", icon: "cards", title: "Gesprächskarten", hint: "Fragen für unterwegs", href: "/fragen" } as TopicTile] : []),
       ] satisfies TopicTile[],
@@ -218,6 +221,11 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
     extras: (
       <Topic id="extras" title="Extras" hint="An- und ausschalten, was ihr nicht braucht">
         <Card><ExtrasForm hidden={settings.hiddenExtras} /></Card>
+      </Topic>
+    ),
+    testdaten: (
+      <Topic id="testdaten" title="Testdates" hint="Das Archiv ausprobieren, ohne echte Dates">
+        <Card><DemoDatesForm on={demo} /></Card>
       </Topic>
     ),
     konto: (

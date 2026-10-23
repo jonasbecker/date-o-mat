@@ -104,6 +104,12 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   (`color`, `illustrations`, `quips`): Claude writes them in the batch call, `server/card-art.ts` in one small call
   after an idea is created (kind `art`); empty → `core/card-art.ts` (category + cost/place/size). e2e fakes answer
   that call via `e2e/claude-art.mjs` (outside their call counts). "keimt!" for a match.
+- **Testdates (Einstellungen → Mehr → Testdates):** `server/demo-dates.ts` writes `core/demo-dates.ts` (seven past dates
+  with both / one / no reviews, notes, "nochmal?", a checklist, drawn photos – `demo/<n>.svg`, the photo route draws
+  them – and one round that fell through) as past rounds with `cycles.demo` and a negative seq; switching off deletes
+  those rounds (everything on them cascades). The round logic never sees them (`latestCycle`, `cycleAt`,
+  `cycleHistory`, the reminders' round filter `demo = false`), and they lie further back than the "wie war's?" window,
+  so no reminder or app icon number comes from them. They do count in the Archiv, the story and the stem. e2e: m29.
 - **Ideen / Archiv (Garten):** the seed shelf (`idea-tiles.tsx`, Matchlinge in pots; "Meine Likes" = `?ansicht=geswipt`
   shows only my likes + matches), the stem (`/dates`, titled "archiv.",
   `?ansicht=raster` is the old grid).

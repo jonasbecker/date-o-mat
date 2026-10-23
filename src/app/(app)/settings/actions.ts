@@ -18,6 +18,7 @@ import { destroySession } from "@/server/auth/session";
 import { listCalendars } from "@/server/google/calendar-api";
 import { disconnect, setBusyCalendars } from "@/server/google/connection";
 import { coupleNow } from "@/server/clock";
+import { addDemoDates, removeDemoDates } from "@/server/demo-dates";
 import { applySettingsToOpenCycle } from "@/server/cycles";
 import { env } from "@/server/env";
 import { getCoupleSettings, resetDevClock, setDeckEventMix, setDevClockOffset, setExtraShown, setFlower, updateCycleSettings, updateSlotSettings } from "@/server/settings";
@@ -174,6 +175,14 @@ export async function setExtraAction(extra: string, shown: boolean): Promise<voi
   const parsed = z.enum(EXTRAS).safeParse(extra);
   if (!parsed.success) return;
   await setExtraShown(coupleId, parsed.data, shown === true);
+  refresh();
+}
+
+/** Test dates in the Archiv on or off (for both of you; off deletes them with everything on them). */
+export async function setDemoDatesAction(on: boolean): Promise<void> {
+  const ctx = await requireCouple();
+  if (on === true) await addDemoDates(ctx, coupleNow(await getCoupleSettings(ctx.coupleId)));
+  else await removeDemoDates(ctx.coupleId);
   refresh();
 }
 

@@ -69,7 +69,7 @@ export async function sendDueReminders(coupleId: string, now: Date): Promise<num
   const [cycle] = await db
     .select()
     .from(cycles)
-    .where(and(eq(cycles.coupleId, coupleId), lte(cycles.startsAt, now)))
+    .where(and(eq(cycles.coupleId, coupleId), eq(cycles.demo, false), lte(cycles.startsAt, now)))
     .orderBy(desc(cycles.seq))
     .limit(1);
   const date = await upcomingDate(coupleId, now);

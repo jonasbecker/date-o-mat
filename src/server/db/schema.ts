@@ -216,6 +216,10 @@ export const cycles = pgTable(
     plannerId: uuid().references(() => users.id, { onDelete: "set null" }),
     status: text({ enum: CYCLE_STATUSES }).notNull().default("open"),
     closedAt: timestamptz(),
+    // Test dates for the Archiv (Einstellungen → Testdates, server/demo-dates.ts): past rounds with a negative seq. The
+    // round logic (the current / latest round, the history dots, reminders) never sees them; switching them off
+    // deletes them with everything on them.
+    demo: boolean().notNull().default(false),
     createdAt: createdAt(),
   },
   (t) => [unique("cycles_couple_seq_unique").on(t.coupleId, t.seq)],
