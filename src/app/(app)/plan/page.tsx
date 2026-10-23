@@ -176,6 +176,7 @@ async function Plan({ searchParams }: { searchParams: PageProps<"/plan">["search
       partnerName={ctx.partner.name}
       searchScopeLink={scopeLink}
       preselectIdeaId={typeof params.idea === "string" ? params.idea : undefined}
+      preselectStart={typeof params.start === "string" ? params.start : undefined}
       preselectSize={params.size === "large" ? "large" : undefined}
       aiEnabled={env().ai}
       surpriseEnabled={extraOn(settings, "surprise") && doneDates > 0}

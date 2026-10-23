@@ -3,10 +3,10 @@
 // ThIdeen (DESIGN-GARTEN.md §5.3), the seed shelf: the matches as "Matchlinge" in little pots, the kinds
 // of dates as tiles with a small plant each. A tap opens the list of that kind (a local view of the
 // wishlist, like Matches and Geswipt).
-import type { ListView } from "@/components/category-chips";
+import type { CategoryKind } from "@/core/idea-category";
 import { cn } from "@/lib/cn";
 
-export type TileCounts = Record<Exclude<ListView, "all" | "swiped" | "match">, number>;
+export type TileCounts = Record<Exclude<CategoryKind, "all" | "swiped" | "match">, number>;
 
 const POTS = 5;
 
@@ -19,7 +19,7 @@ const TILES: Array<{ view: keyof TileCounts; label: string; sub: string; classNa
   { view: "own", label: "Eigene", sub: "von euch gesät", className: "border-[1.5px] border-dashed border-[#3A4A40] bg-surface text-ink", subClass: "text-muted", art: <WateringCan /> },
 ];
 
-export function IdeaTiles({ counts, matches, onView }: { counts: TileCounts; matches: Array<{ id: string; title: string }>; onView: (view: ListView) => void }) {
+export function IdeaTiles({ counts, matches, onView }: { counts: TileCounts; matches: Array<{ id: string; title: string }>; onView: (view: CategoryKind) => void }) {
   const sprouted = Math.min(matches.length, POTS);
   return (
     <div className="grid shrink-0 grid-cols-2 gap-2.5">

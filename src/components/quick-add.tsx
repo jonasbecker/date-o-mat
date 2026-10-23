@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { createIdeaAction } from "@/app/(app)/ideas/actions";
 import { PlusIcon } from "./icons";
 import { IdeaForm } from "./idea-form";
@@ -20,8 +21,11 @@ export function QuickAdd({ look = "pill" }: { look?: "pill" | "link" | "field" }
 
   function openWithTyped() {
     const text = typed.trim();
-    setStart(/^https?:\/\//i.test(text) ? { link: text } : { title: text || undefined });
-    setFormKey((key) => key + 1);
+    // The new form first, then open: opening focuses the title field – of the form that stays.
+    flushSync(() => {
+      setStart(/^https?:\/\//i.test(text) ? { link: text } : { title: text || undefined });
+      setFormKey((key) => key + 1);
+    });
     sheet.current?.open();
   }
 

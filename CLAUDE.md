@@ -80,7 +80,7 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   own thing on the right (avatars, "36 Ideen", matches pill). The four dots are one path: the Beet is dot 1, the
   planning flow's filter / "was?" / "wann?" are dots 2–4 (`flowTop` in `plan-form.tsx`); once a date is proposed
   the Beet shows them as one lit bar (`StepDots all`). `/ideas` shows tiles; a tile opens `/ideas?ansicht=<kind>` (URL-driven, so the
-  Ideen tab brings you back); the one Filter button (incl. category) is the only filter.
+  Ideen tab brings you back); there the view's own chips filter (see Ideen-Kategorie), elsewhere the one Filter button.
 - **Setup (Garten):** `/settings` is the garden shed (`setup-main.tsx`: "Wer gießt?", Gießrhythmus, Gießzeit, push
   switch; calendars + "Freie Abende ab"; `flower-card.tsx`: the flower's name and pot – `couple_settings.flower_name`,
   `flower_pot`, pots unlock at 10/25 lived dates, `core/bloom.ts`). `garden-banner.tsx` shows only when something is
@@ -117,6 +117,18 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   those rounds (everything on them cascades). The round logic never sees them (`latestCycle`, `cycleAt`,
   `cycleHistory`, the reminders' round filter `demo = false`), and they lie further back than the "wie war's?" window,
   so no reminder or app icon number comes from them. They do count in the Archiv, the story and the stem. e2e: m29.
+- **Ideen-Kategorie (`docs/design/garten/ideen-kategorie/`, variante "e"):** `/ideas?ansicht=<kind>` is one component for
+  every tile, "alle.", the Matchlinge and "meine likes." (`ideas/category-view.tsx`; words, chips, tip order and groups
+  in `core/idea-category.ts`): its own head (back, title – long ones smaller, then an ellipsis –, subtitle, the flower
+  with a quip, tap = the next one; the bubble sits beside the flower for a short title on a wide screen, else up next to
+  the back button, never on the title), chips with counts (alle · gratis · ein Abend · drinnen · draußen; the view's
+  own dimension and empty ones left out), the flower's tip (what fits a free time in the next 7 days first, then what
+  the other one liked, never planned / planned longest ago, oldest; "anderer ↻" goes round; "Ins Beet pflanzen" =
+  `/plan?idea=…&start=…`, the plan flow picks that time when it is among its own) and the rest in "✓ passt diese
+  Woche" / "irgendwann" with like badges (a deck idea: who swiped it; a match: both). The free times come from
+  `server/idea-times.ts` (one FreeBusy per person via busy-cache, one slot search per length × ranking, daylight but
+  no weather) as a promise the view streams in (`<Suspense>` around tip and list – head and chips do not wait). New
+  ideas are added on the shelf (the field), not in a view. e2e: m31 (both sizes, every kind and chip).
 - **Ideen / Archiv (Garten):** the seed shelf (`idea-tiles.tsx`, Matchlinge in pots; "Meine Likes" = `?ansicht=geswipt`
   shows only my likes + matches), the stem (`/dates`, titled "archiv.",
   `?ansicht=raster` is the old grid).
@@ -152,8 +164,9 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   parameters (`core/outdoor.ts`, `core/sun.ts`); the one forecast request per search lives in
   `server/weather.ts`. Outdoor ideas (`ideas.setting`) use the outdoor ranking, see `core/slot-modes.ts`.
 - Lists of ideas/events filter with the one shared filter (`useIdeaFilter()`, `matchesIdeaFilter()`),
-  never with their own chips (the chips row above the wishlist only drives that filter's `category`
-  plus the local views Matches/Geswipt and the tiles of `/ideas`, see `idea-board.tsx` `inView`). Ideas without `ideas.category` use `categoryOf()`.
+  never with their own chips – one exception: a tile's view on `/ideas` (Ideen-Kategorie) has its own chips (by the
+  design), which do not touch the shared filter (which ideas a view holds: `idea-board.tsx` `inView`). Ideas without
+  `ideas.category` use `categoryOf()`.
   New extras go behind `extraOn(settings, …)` and show up only when they fit.
 
 ## Checks before pushing

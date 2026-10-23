@@ -140,7 +140,8 @@ check("the proposal state fits the screen", await fitsScreen(j));
 
 // 6) The idea form has "Wo?" and saves it
 await db.query("UPDATE couple_settings SET mode = 'alternating' WHERE couple_id = $1", [couple.id]);
-await j.goto(`${BASE}/ideas?ansicht=alle`);
+await j.goto(`${BASE}/ideas`);
+await j.waitForTimeout(800);
 await j.getByRole("button", { name: "Idee hinzufügen" }).click();
 await j.getByLabel("Was wollt ihr machen?").first().fill("Schlittschuhlaufen im Park");
 await j.locator("dialog[open] summary").click();

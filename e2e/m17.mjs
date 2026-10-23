@@ -280,13 +280,18 @@ check("matched again – still one idea", (await db.query("SELECT 1 FROM ideas W
 await s.getByRole("link", { name: "Direkt planen" }).click();
 await s.waitForURL(/\/plan\?idea=/, { timeout: 10000 });
 check("plan page opened from the match", new URL(s.url()).pathname === "/plan");
-await s.goto(`${BASE}/ideas?ansicht=alle`);
 const other = (await deckIdeas()).find((t) => t !== liked);
-const matchedCard = s.locator("li").filter({ has: s.getByRole("button", { name: liked }) });
-await matchedCard.waitFor({ timeout: 10000 });
-check("the wishlist marks the match", await matchedCard.getByText("💞 Match").isVisible());
-check("a single like is on the wishlist without the mark", (await s.locator("li").filter({ has: s.getByRole("button", { name: other }) }).getByText("💞 Match").count()) === 0);
-await s.getByRole("button", { name: other }).click();
+const ideasView = s.locator("[data-category-view]").filter({ visible: true });
+const titlesIn = async () => {
+  await ideasView.locator("[data-tip]").waitFor({ timeout: 15000 });
+  return ideasView.locator("[data-tip] h2, li > a span span:first-child").allTextContents();
+};
+await s.goto(`${BASE}/ideas?ansicht=match`);
+const matchlinge = await titlesIn();
+check(`the Matchlinge hold the match, not a single like (${matchlinge.join(", ")})`, matchlinge.includes(liked) && !matchlinge.includes(other));
+await s.goto(`${BASE}/ideas?ansicht=alle`);
+check("both likes are on the wishlist", (await titlesIn()).filter((t) => t === liked || t === other).length === 2);
+await ideasView.getByRole("link", { name: new RegExp(`^${other.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`) }).first().click();
 const planIt = s.locator("main").getByRole("link", { name: "Date damit planen" });
 check("tapping an idea offers to plan it", await planIt.waitFor({ timeout: 10000 }).then(() => true, () => false));
 await s.locator("main").getByRole("link", { name: "Date damit planen" }).click();

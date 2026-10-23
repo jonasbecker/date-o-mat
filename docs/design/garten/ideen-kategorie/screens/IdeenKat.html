@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Ideen Kategorie Kurz</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&amp;family=DM+Mono:wght@400;500&amp;family=Caveat:wght@600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}
+button{font:inherit;cursor:pointer}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hs{scrollbar-width:none}
+.hs::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #111A14; color: #E7EEDF; font-family: 'Bricolage Grotesque', system-ui, sans-serif; overflow: hidden">
+
+  <!-- Kopf -->
+  <div style="position: absolute; left: 16px; top: 16px; display: flex; align-items: center; gap: 10px">
+    <a href="ThIdeen.dc.html" aria-label="Zurück zu Ideen" style="width: 40px; height: 40px; border-radius: 50%; background: #1B2620; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 18px">←</a>
+    <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">ideen / regal</span>
+  </div>
+  <h1 style="position: absolute; left: 20px; top: 66px; margin: 0; font-weight: 800; font-size: 54px; line-height: 0.92; letter-spacing: -0.05em">kurz.</h1>
+  <div style="position: absolute; left: 20px; top: 126px; font-size: 14px; color: #9FB09C">keimt an einem Abend · {{ count }} Ideen</div>
+
+  <!-- Blume + Sprechblase -->
+  <div aria-hidden="true" style="position: absolute; left: 296px; top: 44px; width: 78px; height: 109px; overflow: visible">
+    <div style="width: 300px; height: 420px; transform: scale(0.26); transform-origin: top left">
+      <dc-import name="Bloom" stimmung="froh" blaetter="{{ 3 }}" welk="{{ -1 }}" grund="transparent" hint-size="300px,420px"></dc-import>
+    </div>
+  </div>
+  <div aria-hidden="true" style="position: absolute; left: 308px; top: 79px; width: 6px; height: 6px; border-radius: 50%; background: #E7EEDF"></div>
+  <div aria-hidden="true" style="position: absolute; left: 293px; top: 86px; width: 10px; height: 10px; border-radius: 50%; background: #E7EEDF"></div>
+  <div style="position: absolute; left: 156px; top: 72px; width: 134px; box-sizing: border-box; padding: 6px 10px 7px; border-radius: 18px; background: #E7EEDF; color: #1B2620; font-family: 'Caveat', cursive; font-weight: 600; font-size: 17px; line-height: 1.02; text-align: center; transform: rotate(-2deg)">{{ quip }}</div>
+
+  <!-- Filter-Chips (A, B, C) -->
+  <sc-if value="{{ showChips }}" hint-placeholder-val="{{ true }}">
+    <div class="hs" role="group" aria-label="Filter" style="position: absolute; left: 0; right: 0; top: 160px; height: 36px; display: flex; gap: 8px; padding: 0 16px; overflow-x: auto; box-sizing: border-box">
+      <sc-for list="{{ chips }}" as="c" hint-placeholder-count="5">
+        <button type="button" onClick="{{ c.pick }}" aria-pressed="{{ c.on }}" style="flex: none; height: 36px; padding: 0 14px; border-radius: 999px; border: 1.5px solid {{ c.border }}; background: {{ c.bg }}; color: {{ c.fg }}; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px">{{ c.label }}<span style="font-family: 'DM Mono', monospace; font-size: 11px; opacity: 0.7">{{ c.n }}</span></button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- E · Tipp der Blume (kompakt) über der Liste -->
+  <sc-if value="{{ isE }}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 16px; right: 16px; top: 208px; height: 164px; box-sizing: border-box; padding: 12px 12px 12px; border-radius: 24px; background: #E7EEDF; color: #1B2620; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 12px; align-items: center">
+        <span aria-hidden="true" style="position: relative; flex: none; width: 60px; height: 60px; border-radius: 16px; background: {{ tipE.farbe }}; overflow: hidden">
+          <span style="position: absolute; left: 10px; top: 10px; width: 40px; height: 40px">
+            <sc-for list="{{ tipE.shapes }}" as="s" hint-placeholder-count="3">
+              <span style="position: absolute; left: {{ s.l }}; top: {{ s.t }}; width: {{ s.w }}; height: {{ s.h }}; border-radius: {{ s.r }}; background: {{ s.bg }}; transform: rotate({{ s.rot }}); clip-path: {{ s.clip }}"></span>
+            </sc-for>
+          </span>
+        </span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+          <span style="font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.04em; color: #5A6656">TIPP DER BLUME</span>
+          <span class="ell" style="font-size: 18px; font-weight: 800; letter-spacing: -0.02em">{{ tipE.t }}</span>
+          <span class="ell" style="font-size: 13px; font-weight: 700; color: #2E7D46">Fr 30.10. · ab 19:30 · ✓ beide frei</span>
+          <span class="ell" style="font-family: 'DM Mono', monospace; font-size: 10px; color: #5A6656">{{ tipE.meta }}</span>
+        </span>
+      </div>
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px">
+        <a href="#" style="height: 44px; border-radius: 999px; background: #2E7D46; color: #FFFFFF; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700">Ins Beet pflanzen</a>
+        <button type="button" onClick="{{ next }}" style="height: 44px; padding: 0 16px; border-radius: 999px; border: 2px solid #C9D4C4; background: transparent; color: #1B2620; font-size: 15px; font-weight: 700">anderer ↻</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- A · Saatreihen (Liste) -->
+  <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+    <div style="position: absolute; left: 16px; right: 16px; top: {{ listTop }}; bottom: 66px; overflow: hidden; display: flex; flex-direction: column; gap: 8px">
+      <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 6px 4px 2px">
+          <span style="font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.04em; color: {{ g.col }}">{{ g.title }}</span>
+          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #75866F">{{ g.n }}</span>
+        </div>
+        <sc-for list="{{ g.items }}" as="i" hint-placeholder-count="3">
+          <a href="#" style="display: flex; align-items: center; gap: 12px; height: 72px; flex: none; padding: 8px 10px 8px 8px; box-sizing: border-box; border-radius: 20px; background: #1B2620; text-decoration: none">
+            <span aria-hidden="true" style="position: relative; flex: none; width: 56px; height: 56px; border-radius: 15px; background: {{ i.farbe }}; overflow: hidden">
+              <span style="position: absolute; left: 8px; top: 8px; width: 40px; height: 40px">
+                <sc-for list="{{ i.shapes }}" as="s" hint-placeholder-count="3">
+                  <span style="position: absolute; left: {{ s.l }}; top: {{ s.t }}; width: {{ s.w }}; height: {{ s.h }}; border-radius: {{ s.r }}; background: {{ s.bg }}; transform: rotate({{ s.rot }}); clip-path: {{ s.clip }}"></span>
+                </sc-for>
+              </span>
+            </span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px">
+              <span class="ell" style="font-size: 16px; font-weight: 700; letter-spacing: -0.01em">{{ i.t }}</span>
+              <span class="ell" style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">{{ i.meta }}</span>
+            </span>
+            <sc-if value="{{ i.hasVon }}" hint-placeholder-val="{{ false }}">
+              <span aria-label="{{ i.vonLabel }}" style="flex: none; height: 22px; padding: 0 7px; border-radius: 999px; background: {{ i.vonBg }}; color: #FFFFFF; font-size: 11px; font-weight: 700; display: flex; align-items: center">{{ i.von }} ♥</span>
+            </sc-if>
+            <span aria-hidden="true" style="flex: none; width: 36px; height: 36px; border-radius: 50%; background: #26332B; color: #E7EEDF; display: flex; align-items: center; justify-content: center; font-size: 18px">›</span>
+          </a>
+        </sc-for>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- B · Samentüten-Raster -->
+  <sc-if value="{{ isB }}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 16px; right: 16px; top: 212px; bottom: 66px; overflow: hidden">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+        <sc-for list="{{ items }}" as="i" hint-placeholder-count="6">
+          <a href="#" style="display: flex; flex-direction: column; height: 196px; border-radius: 22px; background: #1B2620; overflow: hidden; text-decoration: none">
+            <span aria-hidden="true" style="position: relative; height: 104px; background: {{ i.farbe }}; flex: none">
+              <span style="position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; transform: scale(1.6)">
+                <sc-for list="{{ i.shapes }}" as="s" hint-placeholder-count="3">
+                  <span style="position: absolute; left: {{ s.l }}; top: {{ s.t }}; width: {{ s.w }}; height: {{ s.h }}; border-radius: {{ s.r }}; background: {{ s.bg }}; transform: rotate({{ s.rot }}); clip-path: {{ s.clip }}"></span>
+                </sc-for>
+              </span>
+              <span style="position: absolute; left: 8px; top: 8px; height: 22px; padding: 0 8px; border-radius: 999px; background: #FFFFFF; color: #1B2620; font-family: 'DM Mono', monospace; font-size: 11px; display: flex; align-items: center">{{ i.preis }}</span>
+              <sc-if value="{{ i.hasVon }}" hint-placeholder-val="{{ false }}">
+                <span style="position: absolute; right: 8px; top: 8px; height: 22px; padding: 0 7px; border-radius: 999px; background: {{ i.vonBg }}; color: #FFFFFF; font-size: 11px; font-weight: 700; display: flex; align-items: center">{{ i.von }} ♥</span>
+              </sc-if>
+            </span>
+            <span style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 10px 12px 12px">
+              <span class="clamp2" style="font-size: 15px; font-weight: 700; line-height: 1.15">{{ i.t }}</span>
+              <span class="ell" style="font-family: 'DM Mono', monospace; font-size: 10px; color: #9FB09C">{{ i.metaKurz }}</span>
+            </span>
+          </a>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- C · Tipp der Blume + kompakte Liste -->
+  <sc-if value="{{ isC }}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 16px; right: 16px; top: 212px; bottom: 66px; overflow: hidden; display: flex; flex-direction: column; gap: 14px">
+      <div style="flex: none; border-radius: 26px; background: #E7EEDF; color: #1B2620; overflow: hidden">
+        <div aria-hidden="true" style="position: relative; height: 72px; background: {{ top.farbe }}">
+          <span style="position: absolute; right: 26px; top: 8px; width: 40px; height: 40px; transform: scale(1.3); transform-origin: top right">
+            <sc-for list="{{ top.shapes }}" as="s" hint-placeholder-count="3">
+              <span style="position: absolute; left: {{ s.l }}; top: {{ s.t }}; width: {{ s.w }}; height: {{ s.h }}; border-radius: {{ s.r }}; background: {{ s.bg }}; transform: rotate({{ s.rot }}); clip-path: {{ s.clip }}"></span>
+            </sc-for>
+          </span>
+          <span style="position: absolute; left: 16px; top: 14px; height: 24px; padding: 0 10px; border-radius: 999px; background: #FFFFFF; font-family: 'DM Mono', monospace; font-size: 11px; display: flex; align-items: center">TIPP DER BLUME</span>
+        </div>
+        <div style="padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px">
+          <span style="font-size: 22px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em">{{ top.t }}</span>
+          <span style="font-size: 15px; font-weight: 700; color: #2E7D46">Fr 30.10. · ab 19:30 · ✓ ihr habt beide Zeit</span>
+          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #5A6656">{{ top.meta }}</span>
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 4px">
+            <a href="#" style="height: 46px; border-radius: 999px; background: #2E7D46; color: #FFFFFF; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700">Ins Beet pflanzen</a>
+            <button type="button" onClick="{{ next }}" style="height: 46px; padding: 0 16px; border-radius: 999px; border: 2px solid #C9D4C4; background: transparent; color: #1B2620; font-size: 15px; font-weight: 700">anderer ↻</button>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 0 4px">
+        <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">ALLE {{ count }}</span>
+        <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #75866F">sortiert: passt bald</span>
+      </div>
+      <div style="display: flex; flex-direction: column; border-radius: 20px; background: #1B2620; overflow: hidden">
+        <sc-for list="{{ rest }}" as="i" hint-placeholder-count="4">
+          <a href="#" style="display: flex; align-items: center; gap: 12px; height: 54px; padding: 0 14px 0 10px; border-bottom: 1px solid #26332B; text-decoration: none">
+            <span aria-hidden="true" style="flex: none; width: 34px; height: 34px; border-radius: 10px; background: {{ i.farbe }}"></span>
+            <span class="ell" style="flex: 1; min-width: 0; font-size: 15px; font-weight: 600">{{ i.t }}</span>
+            <span style="flex: none; font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">{{ i.dauer }} · {{ i.preis }}</span>
+          </a>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- D · Regalbretter -->
+  <sc-if value="{{ isD }}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 0; right: 0; top: 164px; bottom: 66px; overflow: hidden; display: flex; flex-direction: column; gap: 14px">
+      <sc-for list="{{ shelves }}" as="sh" hint-placeholder-count="3">
+        <section style="flex: none">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 0 20px 8px">
+            <span style="font-size: 18px; font-weight: 800; letter-spacing: -0.02em">{{ sh.title }} <span style="font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400; color: #75866F">{{ sh.n }}</span></span>
+            <a href="#" style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C; text-decoration: none">alle →</a>
+          </div>
+          <div class="hs" style="display: flex; gap: 10px; padding: 0 16px; overflow-x: auto">
+            <sc-for list="{{ sh.items }}" as="i" hint-placeholder-count="3">
+              <a href="#" style="flex: none; position: relative; width: 132px; height: 150px; border-radius: 18px; background: {{ i.farbe }}; color: #1B2620; text-decoration: none; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; box-sizing: border-box">
+                <span aria-hidden="true" style="position: absolute; left: 12px; top: 12px; width: 40px; height: 40px; transform: scale(1.2); transform-origin: top left">
+                  <sc-for list="{{ i.shapes }}" as="s" hint-placeholder-count="3">
+                    <span style="position: absolute; left: {{ s.l }}; top: {{ s.t }}; width: {{ s.w }}; height: {{ s.h }}; border-radius: {{ s.r }}; background: {{ s.bg }}; transform: rotate({{ s.rot }}); clip-path: {{ s.clip }}"></span>
+                  </sc-for>
+                </span>
+                <sc-if value="{{ i.hasVon }}" hint-placeholder-val="{{ false }}">
+                  <span style="position: absolute; right: 8px; top: 8px; height: 20px; padding: 0 6px; border-radius: 999px; background: {{ i.vonBg }}; color: #FFFFFF; font-size: 10px; font-weight: 700; display: flex; align-items: center">{{ i.von }} ♥</span>
+                </sc-if>
+                <span class="clamp2" style="font-size: 14px; font-weight: 700; line-height: 1.12">{{ i.t }}</span>
+                <span class="ell" style="margin-top: 4px; font-family: 'DM Mono', monospace; font-size: 10px; opacity: 0.7">{{ i.dauer }} · {{ i.preis }}</span>
+              </a>
+            </sc-for>
+          </div>
+          <div aria-hidden="true" style="margin: 0 10px; height: 7px; border-radius: 4px; background: #6B4A33; box-shadow: 0 6px 10px rgba(0,0,0,0.4)"></div>
+        </section>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <nav style="position: absolute; left: 0; right: 0; bottom: 0; height: 66px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; color: #E7EEDF; background: #111A14; z-index: 6">
+    <a href="ThIdeen.dc.html" aria-label="Ideen" style="height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg><span style="width: 4px; height: 4px; border-radius: 50%; background: currentColor"></span></a>
+    <a href="ThSwipe.dc.html" aria-label="Swipen" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="12" height="16" rx="2.5" transform="rotate(8 13 11)"/><path d="M5.5 6.5L4 17.5a2 2 0 0 0 1.7 2.3l7.3 1"/></svg></a>
+    <a href="HomeB.dc.html" aria-label="Beet" style="justify-self: center; width: 60px; height: 60px; border-radius: 50%; background: #2E7D46; color: #FFFFFF; display: flex; align-items: center; justify-content: center; margin-top: -22px; box-shadow: 0 0 0 6px #111A14"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 14c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg></a>
+    <a href="ThArchiv.dc.html" aria-label="Archiv" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-7 8"/></svg></a>
+    <a href="ThSetup.dc.html" aria-label="Einstellungen" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"variante":{"editor":"enum","options":["a","b","c","d","e"],"default":"a"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { f: 'alle', tip: 0 };
+  }
+  renderVals() {
+    const v = this.props.variante ?? 'a';
+    const sh = (l, t, w, h, r, bg, rot, clip) => ({ l: l + 'px', t: t + 'px', w: w + 'px', h: h + 'px', r, bg, rot: (rot || 0) + 'deg', clip: clip || 'none' });
+    const ILL = {
+      crepes: [sh(4, 26, 32, 9, '50%', '#E3B868'), sh(6, 19, 28, 9, '50%', '#F0D08E'), sh(8, 12, 24, 9, '50%', '#E3B868'), sh(15, 3, 10, 10, '50%', '#E8708A')],
+      sonne: [sh(6, 6, 28, 28, '50%', '#F5A54B'), sh(0, 24, 40, 16, '2px', '#5E8FC4'), sh(6, 29, 14, 3, '2px', '#DCE7F5'), sh(22, 34, 12, 3, '2px', '#DCE7F5')],
+      karte: [sh(3, 6, 34, 28, '6px', '#FFFFFF', -6), sh(8, 18, 24, 3, '2px', '#C9D4C4', -6), sh(15, 6, 13, 13, '50% 50% 50% 0', '#E58FA6', -45)],
+      spiel: [sh(4, 10, 24, 24, '7px', '#FFFFFF', -12), sh(11, 17, 5, 5, '50%', '#2B1D12'), sh(18, 24, 5, 5, '50%', '#2B1D12'), sh(24, 4, 12, 12, '50%', '#4D63E8')],
+      ball: [sh(4, 4, 22, 22, '50%', '#E05A4F'), sh(17, 22, 6, 15, '3px', '#8A6440', -35), sh(28, 6, 9, 9, '50%', '#FFFFFF')],
+      topf: [sh(6, 18, 28, 16, '0 0 10px 10px', '#5E6E66'), sh(2, 15, 36, 5, '3px', '#3E4A44'), sh(13, 3, 4, 9, '2px', '#FFFFFF'), sh(22, 1, 4, 11, '2px', '#FFFFFF')],
+      eis: [sh(12, 3, 16, 16, '50%', '#F2A7BB'), sh(13, 15, 14, 22, '0', '#D9A55A', 0, 'polygon(0 0, 100% 0, 50% 100%)'), sh(18, 1, 5, 5, '50%', '#E8708A')],
+      kino: [sh(3, 7, 34, 23, '5px', '#2B1D12'), sh(7, 11, 26, 15, '2px', '#F5D76E'), sh(12, 32, 16, 4, '2px', '#2B1D12')]
+    };
+    const RAW = [
+      { t: 'Sonnenuntergang an den Kranhäusern', ort: 'Rheinauhafen', dauer: '1 Std', min: 60, preis: 'gratis', farbe: '#F7EBC4', ill: 'sonne', wo: 'draussen', von: 'L', bald: true },
+      { t: 'Crêpes & ABBA-Karaoke', ort: 'Ehrenfeld', dauer: '2 Std', min: 120, preis: '40 €', farbe: '#F6DFD3', ill: 'crepes', wo: 'drinnen', von: 'L', bald: true },
+      { t: 'Zweizeiler-Schnitzeljagd', ort: 'Altstadt', dauer: '2 Std', min: 120, preis: 'gratis', farbe: '#DCEBD9', ill: 'karte', wo: 'draussen', von: '', bald: true },
+      { t: 'Kochduell: 3 Zutaten, 30 Minuten', ort: 'bei dir', dauer: '2 Std', min: 120, preis: '20 €', farbe: '#F6DFD3', ill: 'topf', wo: 'drinnen', von: 'J', bald: true },
+      { t: 'Brettspielcafé-Abend', ort: 'Südstadt', dauer: '3 Std', min: 180, preis: '15 €', farbe: '#E6E0F2', ill: 'spiel', wo: 'drinnen', von: '', bald: false },
+      { t: 'Tischtennis im Volksgarten', ort: 'Volksgarten', dauer: '1,5 Std', min: 90, preis: 'gratis', farbe: '#DCE7F5', ill: 'ball', wo: 'draussen', von: 'J', bald: false },
+      { t: 'Eis & Belgisches Viertel', ort: 'Belgisches Viertel', dauer: '1 Std', min: 60, preis: '8 €', farbe: '#F7EBC4', ill: 'eis', wo: 'draussen', von: '', bald: false },
+      { t: 'Sneak Preview im Kino', ort: 'Rudolfplatz', dauer: '2,5 Std', min: 150, preis: '18 €', farbe: '#DCE7F5', ill: 'kino', wo: 'drinnen', von: 'L', bald: false }
+    ];
+    const all = RAW.map((r) => ({
+      ...r,
+      shapes: ILL[r.ill],
+      meta: (r.dauer + ' · ' + r.preis + ' · ' + r.ort).toUpperCase(),
+      metaKurz: (r.dauer + ' · ' + r.ort).toUpperCase(),
+      hasVon: r.von !== '',
+      vonBg: r.von === 'L' ? '#4D63E8' : '#E58FA6',
+      vonLabel: r.von === 'L' ? 'Lotte mag das' : 'Jonas mag das'
+    }));
+    const tests = {
+      alle: () => true,
+      gratis: (i) => i.preis === 'gratis',
+      kurz: (i) => i.min <= 90,
+      drinnen: (i) => i.wo === 'drinnen',
+      draussen: (i) => i.wo === 'draussen'
+    };
+    const CH = [['alle', 'alle'], ['gratis', 'gratis'], ['kurz', '≤ 1,5 Std'], ['drinnen', 'drinnen'], ['draussen', 'draußen']];
+    const f = this.state.f;
+    const chips = CH.map(([k, label]) => {
+      const on = f === k;
+      return {
+        label, n: String(all.filter(tests[k]).length), on: on ? 'true' : 'false',
+        bg: on ? '#E4ECDD' : 'transparent', fg: on ? '#111A14' : '#E7EEDF', border: on ? '#E4ECDD' : '#3A4A40',
+        pick: () => this.setState({ f: k })
+      };
+    });
+    const items = all.filter(tests[f]);
+    const tipPool = (items.filter((i) => i.bald).length ? items.filter((i) => i.bald) : items);
+    const tipE = tipPool.length ? tipPool[this.state.tip % tipPool.length] : null;
+    const listItems = v === 'e' && tipE ? items.filter((i) => i !== tipE) : items;
+    const soon = listItems.filter((i) => i.bald), later = listItems.filter((i) => !i.bald);
+    const groups = [];
+    if (soon.length) groups.push({ title: '✓ PASST DIESE WOCHE', col: '#6DBA74', n: String(soon.length), items: soon });
+    if (later.length) groups.push({ title: 'IRGENDWANN', col: '#9FB09C', n: String(later.length), items: later });
+    const ti = this.state.tip % all.length;
+    const top = all[ti];
+    const quips = { a: 'kurz & gut. so wie ich.', b: 'so viele sorten. ich nehm alle.', c: 'den da unten würd ich nehmen.', d: 'regal sortiert. bitte, gern.', e: 'mein tipp liegt ganz oben.' };
+    return {
+      isA: v === 'a', isE: v === 'e' && !!tipE, isList: v === 'a' || v === 'e', listTop: v === 'e' && tipE ? '380px' : '212px',
+      tipE: tipE || { t: '', farbe: '#1B2620', shapes: [], meta: '' }, isB: v === 'b', isC: v === 'c', isD: v === 'd',
+      showChips: v !== 'd',
+      count: String(all.length), quip: quips[v],
+      chips, groups, items,
+      top: { ...top, meta: top.meta },
+      rest: all.filter((_, k) => k !== ti),
+      next: () => this.setState({ tip: this.state.tip + 1 }),
+      shelves: [
+        { title: 'gratis', items: all.filter((i) => i.preis === 'gratis') },
+        { title: 'lotte mag’s', items: all.filter((i) => i.von === 'L') },
+        { title: 'für nach der arbeit', items: all.filter((i) => i.min <= 90) }
+      ].map((x) => ({ ...x, n: String(x.items.length) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

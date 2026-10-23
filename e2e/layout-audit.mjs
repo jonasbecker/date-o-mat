@@ -32,7 +32,12 @@ export async function layoutAudit(page) {
       const r = el.getBoundingClientRect();
       const ellipsis = s.textOverflow === "ellipsis" || s.webkitLineClamp !== "none";
       if (!ellipsis && s.overflowX !== "visible" && el.scrollWidth > el.clientWidth + 1) issues.push(`text too wide: "${name(el)}"`);
-      if (r.left < -1 || r.right > W + 1) issues.push(`text off screen: "${name(el)}"`);
+      // A row that scrolls sideways (chips) may run past the edge – that is how it shows there is more.
+      const sideways = (() => {
+        for (let a = el.parentElement; a && a !== root; a = a.parentElement) if (/auto|scroll/.test(getComputedStyle(a).overflowX) && a.scrollWidth > a.clientWidth + 1) return true;
+        return false;
+      })();
+      if (!sideways && (r.left < -1 || r.right > W + 1)) issues.push(`text off screen: "${name(el)}"`);
       for (let a = el.parentElement; a && a !== root; a = a.parentElement) {
         const as = getComputedStyle(a);
         if (as.overflow === "visible") continue;

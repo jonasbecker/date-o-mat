@@ -66,6 +66,7 @@ export function PlanFlow({
   partnerName,
   searchScopeLink,
   preselectIdeaId,
+  preselectStart,
   preselectSize,
   aiEnabled = false,
   surpriseEnabled = false,
@@ -84,6 +85,8 @@ export function PlanFlow({
   searchScopeLink?: ReactNode;
   /** From "Date damit planen" / a match: start at the time with this idea. */
   preselectIdeaId?: string;
+  /** From the flower's tip in a tile's view: this time is picked once the free times are there (if it is one of them). */
+  preselectStart?: string;
   /** "Großes Date planen" (special days): long ideas and dates. */
   preselectSize?: IdeaSize;
   /** Show "✨ Ideen von der KI" (Claude is configured). */
@@ -134,6 +137,17 @@ export function PlanFlow({
   const slotKey = chosenSlot && slots.some((s) => s.key === chosenSlot) ? chosenSlot : (slots[0]?.key ?? null);
   // Three times at a time – "Weitere Zeiten" turns the page instead of scrolling.
   const [slotPage, setSlotPage] = useState(0);
+  // The tip's time: picked (and its page shown) once, when the times arrive – not one of them, the Top-Tipp stays.
+  const [wishedStart, setWishedStart] = useState(preselected ? preselectStart : undefined);
+  if (wishedStart && ok) {
+    const at = Date.parse(wishedStart);
+    const index = slots.findIndex((s) => Date.parse(s.startIso) === at);
+    setWishedStart(undefined);
+    if (index >= 0) {
+      setSlotKey(slots[index].key);
+      setSlotPage(Math.floor(index / SLOTS_PER_PAGE));
+    }
+  }
   const moreSheet = useRef<SheetHandle>(null);
   const swapSheet = useRef<SheetHandle>(null);
   const editSheet = useRef<SheetHandle>(null);

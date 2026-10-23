@@ -63,35 +63,35 @@ const shortTile = j.getByRole("button", { name: /^Kurz: \d+$/ });
 const shortCount = Number((await shortTile.getAttribute("aria-label")).replace(/\D/g, ""));
 await shortTile.click();
 await j.getByRole("heading", { name: "kurz." }).waitFor({ timeout: 10000 });
-check(`a tile opens its list (${shortCount} kurze)`, (await j.locator("li.animate-pop-in").filter({ visible: true }).count()) === shortCount);
-await j.getByRole("link", { name: "Zurück zu den Kacheln" }).click();
+// A tile's view: the flower's tip and the rows under it (the tip is not listed again).
+const shown = j.locator("[data-category-view]").filter({ visible: true });
+const entries = shown.locator("[data-tip], ul[data-scroll] li:has(> a)");
+const entry = (title) => entries.filter({ has: j.getByRole("link", { name: new RegExp(`^${title}`) }) });
+await shown.locator("[data-tip]").waitFor({ timeout: 20000 });
+check(`a tile opens its view (${shortCount} kurze = tip + rows ${await entries.count()})`, (await entries.count()) === shortCount);
+await j.getByRole("link", { name: "Zurück zum Regal" }).click();
 await j.getByRole("heading", { name: "ideen." }).waitFor({ timeout: 10000 });
 
-// 1) The wishlist: chips with counts, origin tags, category emoji
+// 1) "alle.": chips instead of the Filter button, who liked what
 await j.goto(`${BASE}/ideas?ansicht=alle`);
-const items = j.locator("li.animate-pop-in").filter({ visible: true });
-await items.first().waitFor({ timeout: 20000 });
-check("no chip row above the list any more (only the Filter button)", (await j.getByRole("group", { name: "Ideen ansehen nach" }).count()) === 0 && (await j.getByRole("button", { name: "Filter", exact: true }).isVisible()));
-check("origin tags: von dir geswipt / Sam hat's geliked", (await items.filter({ hasText: "💚 von dir geswipt" }).count()) === 1 && (await items.filter({ hasText: "💚 Sam hat's geliked" }).count()) === 1);
+await shown.locator("[data-tip]").waitFor({ timeout: 20000 });
+check("chips above the list, no Filter button", (await shown.getByRole("group", { name: "Filter" }).getByRole("button", { pressed: true }).count()) === 1 && (await shown.getByRole("button", { name: /^Filter/ }).count()) === 0);
+const tipTitle = await shown.locator("[data-tip] h2").textContent();
+check(`the tip is what Sam liked (${tipTitle})`, tipTitle === "Pizza backen");
+check("like badges: Jonas mag das on his like, none on own ideas", (await entry("Wanderung im Siebengebirge").getByRole("img", { name: "Jonas mag das" }).count()) === 1 && (await entry("Töpferkurs").getByRole("img").count()) === 0 && (await entry("Sushi-Abend").getByRole("img").count()) === 0);
 await j.screenshot({ path: `${OUT}m23-01-wishlist.png` });
 
-// 2) Geswipt ("Meine Likes") shows what I swiped – not Sam's like (blind swiping stays blind)
+// 2) "meine likes." shows what I swiped – not Sam's like (blind swiping stays blind)
 await j.goto(`${BASE}/ideas?ansicht=geswipt`);
-await items.first().waitFor({ timeout: 20000 });
-check("Geswipt: only my swiped idea, not Sam's", (await items.count()) === 1 && (await items.filter({ hasText: "Sam hat's geliked" }).count()) === 0);
+await shown.locator("[data-tip]").waitFor({ timeout: 20000 });
+check("meine likes: only my swiped idea, not Sam's", (await entries.count()) === 1 && (await entry("Wanderung im Siebengebirge").count()) === 1 && (await shown.getByRole("img", { name: "Sam mag das" }).count()) === 0);
 
-// 3) The category is a question in the one Filter
+// 3) A chip filters tip and list
 await j.goto(`${BASE}/ideas?ansicht=alle`);
-await items.first().waitFor({ timeout: 20000 });
-await j.waitForTimeout(800);
-await j.getByRole("button", { name: "Filter", exact: true }).click();
-await j.locator("dialog[open]").getByRole("button", { name: /Kreativ/ }).click();
-await j.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
-check("category Kreativ (in the Filter): only the Töpferkurs", (await items.count()) === 1 && (await items.filter({ hasText: "Töpferkurs" }).count()) === 1);
-await j.getByRole("button", { name: /^Filter: / }).click();
-await j.locator("dialog[open]").getByRole("button", { name: "Zurücksetzen" }).click();
-await j.locator("dialog[open]").getByRole("button", { name: "Fertig" }).click();
-check("Zurücksetzen clears the category", (await items.count()) === 4);
+await shown.locator("[data-tip]").waitFor({ timeout: 20000 });
+await j.waitForTimeout(500);
+await shown.getByRole("button", { name: /^ein Abend/ }).click();
+check("ein Abend: all four are short", (await entries.count()) === 4);
 
 // 4) The deck page: the 💡 counts up with a like, the progress line follows
 await j.goto(`${BASE}/ideas/entdecken`);
@@ -127,14 +127,14 @@ await status.waitFor({ state: "detached", timeout: 8000 }).catch(() => {});
 check("after a few seconds it goes back to its quips", (await status.count()) === 0);
 await j.getByRole("button", { name: "Blume antippen: wie weit seid ihr?" }).click();
 await j.getByRole("link", { name: "deine likes ›" }).click();
-await items.first().waitFor({ timeout: 20000 });
-check(`"deine likes" opens the wishlist on Geswipt (${await items.count()})`, (await j.getByRole("heading", { name: "geswipt." }).isVisible()) && (await items.count()) === 2);
+await shown.locator("[data-tip]").waitFor({ timeout: 20000 });
+check(`"deine likes" opens "meine likes." (${await entries.count()})`, (await j.getByRole("heading", { name: "meine likes." }).isVisible()) && (await entries.count()) === 2);
 await j.screenshot({ path: `${OUT}m23-03-my-likes.png` });
 
 // 6) Dark mode
 const jd = await pageFor(jonas.token, "dark");
 await jd.goto(`${BASE}/ideas?ansicht=alle`);
-await jd.locator("li.animate-pop-in").filter({ visible: true }).first().waitFor({ timeout: 20000 });
+await jd.locator("[data-category-view] [data-tip]").filter({ visible: true }).waitFor({ timeout: 20000 });
 await jd.screenshot({ path: `${OUT}m23-04-wishlist-dark.png` });
 
 await browser.close();

@@ -127,8 +127,8 @@ async function pasteInto(locator, text) {
 
 // 1) Paste a TikTok share text into the title → Claude makes the idea
 const j = await pageFor(jonas.token);
-await j.goto(`${BASE}/ideas?ansicht=alle`);
-await j.getByText("Picknick im Stadtwald").first().waitFor({ timeout: 15000 });
+await j.goto(`${BASE}/ideas`);
+await j.getByRole("link", { name: /^Alle \d+ ›$/ }).waitFor({ timeout: 15000 });
 await j.waitForTimeout(1000); // hydration
 await openQuickAdd(j);
 check("hint about links under the title", await sheet(j).getByText(/Link von TikTok, Instagram, YouTube/).isVisible());
@@ -198,7 +198,8 @@ check("non-link paste: no analysis", linkCalls.length === callsBefore && !(await
 await j.keyboard.press("Escape");
 
 // 5) Editing an existing idea: no link import
-await j.getByRole("button", { name: "Kino: Dune", exact: true }).click();
+await j.goto(`${BASE}/ideas?ansicht=alle`);
+await j.getByRole("link", { name: /^Kino: Dune/ }).filter({ visible: true }).first().click();
 await j.locator("main").getByRole("button", { name: "Bearbeiten" }).click();
 await sheet(j).getByLabel("Was wollt ihr machen?").waitFor();
 check("edit form has no link button", (await sheet(j).getByRole("button", { name: "🔗 Link einfügen" }).count()) === 0);
@@ -226,7 +227,7 @@ check("share without link: text as title", (await j.getByLabel("Was wollt ihr ma
 // 8) Daily limit: Claude is not asked, the caption becomes the title
 await db.query("INSERT INTO ai_requests (couple_id, kind, model) SELECT $1, 'links', 'claude-haiku-5-5' FROM generate_series(1, 30)", [couple.id]);
 const beforeLimit = claudeCalls.length;
-await j.goto(`${BASE}/ideas?ansicht=alle`);
+await j.goto(`${BASE}/ideas`);
 await j.waitForTimeout(1000);
 await openQuickAdd(j);
 await sheet(j).getByLabel("Was wollt ihr machen?").fill("");

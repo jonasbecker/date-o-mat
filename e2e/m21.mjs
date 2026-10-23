@@ -177,7 +177,7 @@ check(`moved, still the same secret (${moved.title})`, moved.title === "Sushi-Ab
 
 // Sam on the wishlist: tapping an idea cannot touch Jonas' surprise – and does not give it away
 await s.goto(`${BASE}/ideas?ansicht=alle`);
-await s.getByRole("button", { name: "Sushi-Abend" }).click();
+await s.getByRole("link", { name: /^Sushi-Abend/ }).filter({ visible: true }).first().click();
 const samMenu = s.locator("main"); // the idea opens full screen
 await samMenu.getByText("das kann nur Jonas ändern", { exact: false }).waitFor({ timeout: 10000 });
 check("Sam: no swap for Jonas' surprise", (await samMenu.getByRole("button", { name: /Statt/ }).count()) === 0 && (await samMenu.getByRole("button", { name: "Bearbeiten" }).isVisible()));
@@ -232,7 +232,7 @@ check("deleted key → 401", (await share(shareKey, { text: "https://www.tiktok.
 
 // 7b) Tapping an idea: do it instead of the next date – after a question; the time stays
 await j.goto(`${BASE}/ideas?ansicht=alle`);
-await j.getByRole("button", { name: "Kino: Dune" }).click();
+await j.getByRole("link", { name: /^Kino: Dune/ }).filter({ visible: true }).first().click();
 const menu = j.locator("main"); // the idea opens full screen
 await menu.getByRole("button", { name: "Statt „Sushi-Abend“ machen" }).click();
 await menu.getByText("Willst du das ändern?", { exact: false }).waitFor({ timeout: 10000 });
@@ -246,7 +246,7 @@ const event3 = [...googleEvents["token-jonas"].values()].at(-1);
 check(`Google event updated, surprise kept (${event3?.summary})`, event3?.summary === "💞 Date: 🎁 Überraschung von Jonas" && !JSON.stringify(event3).includes("Sushi") && !JSON.stringify(event3).includes("Dune"));
 await j.locator("[data-next-step] [data-date-card]").filter({ visible: true }).getByText("Kino: Dune", { exact: true }).waitFor({ timeout: 10000 });
 await j.goto(`${BASE}/ideas?ansicht=alle`);
-await j.getByRole("button", { name: "Kino: Dune" }).click();
+await j.getByRole("link", { name: /^Kino: Dune/ }).filter({ visible: true }).first().click();
 await menu.getByText("📅 Das ist euer nächstes Date", { exact: false }).waitFor({ timeout: 10000 });
 check("the date's own idea offers no swap", (await menu.getByRole("button", { name: /Statt/ }).count()) === 0);
 await j.keyboard.press("Escape");
