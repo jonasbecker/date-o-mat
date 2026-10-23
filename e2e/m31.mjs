@@ -208,6 +208,13 @@ for (let n = 0; n < 3; n++) {
   tips.push(await view().locator("[data-tip] h2").textContent());
 }
 check(`"anderer ↻" shows the next tip each time (${tips.join(" → ")})`, new Set(tips).size === 4);
+// Every idea once as the tip (long titles too): nothing cut off or overlapping
+const tipIssues = [];
+for (let n = 4; n < IDEAS.length; n++) {
+  await view().getByRole("button", { name: "anderer ↻" }).click();
+  tipIssues.push(...(await layoutAudit(j)).issues);
+}
+check(`every idea as the tip fits${tipIssues.length ? `: ${[...new Set(tipIssues)].join("; ")}` : ""}`, tipIssues.length === 0);
 const quip = await view().locator("[data-bubble] p").textContent();
 await view().getByRole("button", { name: /^Blume antippen/ }).click();
 check("tapping the flower: a new quip", (await view().locator("[data-bubble] p").textContent()) !== quip);

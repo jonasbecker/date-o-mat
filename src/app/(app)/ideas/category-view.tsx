@@ -192,8 +192,10 @@ function Tip({
         <Art idea={idea} size="tip" />
         <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
           <span className="font-mono text-[10px] uppercase tracking-[0.04em] text-[#5A6656]">Tipp der Blume</span>
-          <h2 className="truncate text-lg font-extrabold leading-tight">
-            <Link href={detailHref(idea.id)}>{idea.title}</Link>
+          <h2 className="text-lg font-extrabold leading-tight">
+            <Link href={detailHref(idea.id)} className="block truncate">
+              {idea.title}
+            </Link>
           </h2>
           {week ? (
             <span data-tip-when className="truncate text-[13px] font-bold text-[#2E7D46]">
