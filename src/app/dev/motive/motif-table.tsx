@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Banner } from "@/components/banner";
-import { BANNERS, MOTIFS } from "@/core/banners";
+import { BANNERS, MOTIFS, bannerView } from "@/core/banners";
 import { applyMotifSuggestionsAction, setIdeaMotifAction } from "./actions";
 
 export type MotifRow = { id: string; title: string; stored: string | null; suggestion: string; sure: boolean };
@@ -58,7 +58,7 @@ export function MotifTable({ rows }: { rows: MotifRow[] }) {
                   </select>
                 </td>
                 <td>
-                  <Banner motiv={shown} hoehe={28} breite={88} className="rounded-[8px]" />
+                  <Banner scene={bannerView(shown)} hoehe={28} breite={88} className="rounded-[8px]" />
                 </td>
               </tr>
             );

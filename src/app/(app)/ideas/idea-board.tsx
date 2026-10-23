@@ -11,6 +11,7 @@ import { TicketIcon } from "@/components/icons";
 import { QuickAdd } from "@/components/quick-add";
 import { IdeaDetail } from "./idea-detail";
 import { IdeaTiles, type TileCounts } from "./idea-tiles";
+import type { SceneView } from "@/core/banner-scene";
 import type { IdeaTimes } from "@/core/idea-category";
 import { CategoryView } from "./category-view";
 import type { UserColor } from "@/lib/domain";
@@ -26,6 +27,7 @@ export type BoardIdea = IdeaFormDefaults & {
   /** Its banner scene and pastel (stored, or core/card-art.ts from its words). */
   hex: string;
   motif: string;
+  scene: SceneView;
   likedBy: string[];
   lastPlannedAt: number | null;
   createdAt: number;

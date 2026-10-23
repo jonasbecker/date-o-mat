@@ -17,7 +17,7 @@ async function Wilt({ params }: { params: PageProps<"/dates/runde/[id]">["params
   const ctx = await requireCouple();
   await connection();
   const { id } = await params;
-  const archive = /^[0-9a-f-]{36}$/.test(id) ? await archiveData(ctx) : undefined;
+  const archive = /^[0-9a-f-]{36}$/.test(id) ? await archiveData(ctx, id) : undefined;
   const round = archive?.wilts.get(id);
   const leaf = archive?.leaves.find((l) => l.kind === "wilt" && l.id === id);
   if (!round || !leaf) notFound();

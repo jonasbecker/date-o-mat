@@ -7,6 +7,7 @@ import { buttonClass } from "@/components/button";
 import { requireCouple } from "@/server/auth/dal";
 import { env } from "@/server/env";
 import { dayLabel } from "@/core/archive";
+import { bannerView } from "@/core/banners";
 import { visibleReviews } from "@/core/reviews";
 import { formatShortDate, formatTimeRange } from "@/lib/format";
 import { archiveData } from "@/server/archive";
@@ -73,7 +74,7 @@ async function DateDetail({ params }: { params: PageProps<"/dates/[id]">["params
   // Over but nobody said yes: the Beet asks "habt ihr's gemacht?".
   if (upcoming?.status === "planned") redirect("/plan");
   // A date that happened: its leaf (ARCHIV.md §2).
-  const archive = valid ? await archiveData(ctx) : undefined;
+  const archive = valid ? await archiveData(ctx, id) : undefined;
   const entry = archive?.dates.get(id);
   const leaf = archive?.leaves.find((l) => l.kind === "date" && l.id === id);
   if (!entry || !leaf) notFound();
@@ -90,7 +91,7 @@ async function DateDetail({ params }: { params: PageProps<"/dates/[id]">["params
         title={entry.title}
         meta={meta}
         planner={people.get(entry.plannerId ?? "")}
-        motif={entry.motif}
+        scene={bannerView(entry.motif)}
         photoIds={entry.photoIds}
         canUpload={env().photoStorage !== null}
         myAnswerMissing={!mine}

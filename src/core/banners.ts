@@ -1,18 +1,17 @@
 // The banner library (docs/design/garten/swipe-karte-v2/, banners.json): 76 scenes, each a list of plain shapes on a
 // 350 × 110 stage – no SVG, no images. An idea has one `motif` (a key); its pastel is the scene's own `bg`.
 // Which scene fits an idea when none is stored: suggestMotif() – a title that matches nothing gets "herz".
+import { type BannerShape, type SceneView } from "./banner-scene";
 import type { IdeaCategory } from "./categories";
 import data from "./banners.json";
 
-export type BannerShape = { l: number; t: number; w: number; h: number; c: string; r: string; rot: number; op: number; clip: string };
+export { bannerScale, STAGE, type BannerShape, type SceneView } from "./banner-scene";
 export type BannerScene = { name: string; bg: string; shapes: BannerShape[] };
 
 export const BANNERS = data as Record<string, BannerScene>;
 export type Motif = string;
 export const MOTIFS: readonly Motif[] = Object.keys(BANNERS);
 export const FALLBACK_MOTIF: Motif = "herz";
-
-export const STAGE = { width: 350, height: 110 } as const;
 
 export function isMotif(value: unknown): value is Motif {
   return typeof value === "string" && Object.hasOwn(BANNERS, value);
@@ -23,9 +22,10 @@ export function bannerOf(motif: string | null | undefined): BannerScene {
   return BANNERS[isMotif(motif) ? motif : FALLBACK_MOTIF];
 }
 
-/** Fills the box: scaled until both width and height are covered, anchored bottom center (the sides are cut). */
-export function bannerScale(width: number, height: number): number {
-  return Math.max(height / STAGE.height, width / STAGE.width);
+/** What the phone gets for one motif: just that scene (unknown → herz). */
+export function bannerView(motif: string | null | undefined): SceneView {
+  const key = isMotif(motif) ? motif : FALLBACK_MOTIF;
+  return { key, bg: BANNERS[key].bg, shapes: BANNERS[key].shapes };
 }
 
 // What a title (or note) says → its scene. First match wins, so the specific ones come before the broad ones

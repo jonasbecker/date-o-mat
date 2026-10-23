@@ -27,8 +27,9 @@ export default function DiscoverPage() {
 async function Discover() {
   const ctx = await requireCouple();
   await connection();
-  const now = coupleNow(await getCoupleSettings(ctx.coupleId));
-  const [deck, taste] = await Promise.all([deckFor(ctx, now), deckTaste(ctx)]);
+  const settings = await getCoupleSettings(ctx.coupleId);
+  const now = coupleNow(settings);
+  const [deck, taste] = await Promise.all([deckFor(ctx, now, settings), deckTaste(ctx)]);
   // Running low: the next batch is made in the background, AutoRefresh brings it in.
   // (Without the AI the hand-picked Köln ideas still come in.)
   const refilling = !deck.generating && deck.cards.length < DECK_REFILL_BELOW;

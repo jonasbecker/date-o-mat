@@ -3,7 +3,7 @@
 // Claude picks the scene and writes the quips when a card or idea is made; whatever is missing comes from the words
 // (suggestMotif – nothing clear: herz) and from the category and the idea's own details (cost, place, size). Pure.
 
-import { bannerOf, isMotif, motifPrompt, suggestMotif, type Motif } from "./banners";
+import { bannerOf, bannerView, isMotif, motifPrompt, suggestMotif, type Motif, type SceneView } from "./banners";
 import { categoryOf, type IdeaCategory } from "./categories";
 import type { IdeaSize } from "@/lib/domain";
 
@@ -115,7 +115,7 @@ function detailQuips(card: ArtInput): string[] {
   return out.filter((q) => q.length <= QUIP_MAX);
 }
 
-export type CardArt = { motif: Motif; hex: string; quips: CardQuips };
+export type CardArt = { motif: Motif; hex: string; scene: SceneView; quips: CardQuips };
 
 /** The stored scene and quips, with whatever is missing filled from the words, category and details. */
 export function cardArt(card: ArtInput): CardArt {
@@ -128,16 +128,10 @@ export function cardArt(card: ArtInput): CardArt {
     like: own("like").length ? own("like") : generic.like,
     nope: own("nope").length ? own("nope") : generic.nope,
   };
-  return { motif, hex: bannerOf(motif).bg, quips };
+  return { motif, hex: bannerOf(motif).bg, scene: bannerView(motif), quips };
 }
 
-/** The n-th quip of a list, starting at a fixed place per card (no flicker on reload). */
-export function pickQuip(list: string[], seed: string, n = 0): string {
-  if (list.length === 0) return "";
-  let h = 0;
-  for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return list[(h + n) % list.length];
-}
+export { pickQuip } from "./pick-quip";
 
 // --- One idea at a time (ideas they add themselves) -----------------------------------------------
 

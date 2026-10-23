@@ -1,7 +1,7 @@
 "use client";
 
 import { useOptimistic, useTransition } from "react";
-import { EVENT_MIX_LABEL } from "@/core/deck";
+import { EVENT_MIX_LABEL } from "@/core/deck-filter";
 import { cn } from "@/lib/cn";
 import { EVENT_MIXES, type EventMix } from "@/lib/domain";
 import { setEventMixAction } from "./actions";

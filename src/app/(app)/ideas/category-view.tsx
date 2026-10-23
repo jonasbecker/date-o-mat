@@ -9,6 +9,7 @@ import { Suspense, use, useState } from "react";
 import { Bloom } from "@/components/bloom";
 import { BackIcon } from "@/components/icons";
 import { Banner } from "@/components/banner";
+import type { SceneView } from "@/core/banner-scene";
 import {
   CATEGORY_VIEW,
   CHIP_LABEL,
@@ -35,6 +36,8 @@ export type CategoryIdea = {
   setting?: PlaceSetting | null;
   hex: string;
   motif: string;
+  /** Its banner, drawn as it comes (the server picks it – the library stays there). */
+  scene: SceneView;
   /** Who liked it in the deck (both: a match). */
   likedBy: string[];
   lastPlannedAt: number | null;
@@ -266,7 +269,7 @@ function Group({ title, tone, ideas, people, detailHref }: { title: string; tone
 /** The idea's banner in a small square: the scene scaled to cover it, its middle shown. */
 function Art({ idea, size }: { idea: CategoryIdea; size: "tip" | "row" }) {
   const px = size === "tip" ? 60 : 56;
-  return <Banner motiv={idea.motif} hoehe={px} breite={px} className={cn("shrink-0", size === "tip" ? "rounded-2xl" : "rounded-[15px]")} />;
+  return <Banner scene={idea.scene} hoehe={px} breite={px} className={cn("shrink-0", size === "tip" ? "rounded-2xl" : "rounded-[15px]")} />;
 }
 
 function Empty({ onReset }: { onReset: (() => void) | null }) {

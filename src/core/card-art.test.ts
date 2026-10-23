@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BANNERS, MOTIFS } from "./banners";
+import { BANNERS, MOTIFS, bannerView } from "./banners";
 import { ART_SYSTEM_PROMPT, QUIP_MAX, cardArt, cleanCardArt, pickQuip } from "./card-art";
 
 describe("cleanCardArt", () => {
@@ -21,7 +21,7 @@ describe("cleanCardArt", () => {
 describe("cardArt", () => {
   it("uses what is stored – the pastel comes from the scene", () => {
     const art = cardArt({ id: "a", title: "Crêpes und ABBA", motif: "konzert", quips: { neutral: ["n"], like: ["l"], nope: ["x"] } });
-    expect(art).toEqual({ motif: "konzert", hex: BANNERS.konzert.bg, quips: { neutral: ["n"], like: ["l"], nope: ["x"] } });
+    expect(art).toEqual({ motif: "konzert", hex: BANNERS.konzert.bg, scene: bannerView("konzert"), quips: { neutral: ["n"], like: ["l"], nope: ["x"] } });
   });
 
   it("falls back to the scene its words ask for, else herz", () => {

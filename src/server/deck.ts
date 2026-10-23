@@ -25,7 +25,7 @@ import { cachedBusy } from "@/server/busy-cache";
 import { getConnection } from "@/server/google/connection";
 import type { CoupleContext } from "@/server/auth/dal";
 import { db } from "@/server/db";
-import { datePlans, deckCards, deckSwipes, ideas, suggestions, type DeckCard } from "@/server/db/schema";
+import { datePlans, deckCards, deckSwipes, ideas, suggestions, type CoupleSettings, type DeckCard } from "@/server/db/schema";
 import { env } from "@/server/env";
 import { getCoupleSettings, slotRulesFrom } from "@/server/settings";
 
@@ -89,11 +89,11 @@ export type DeckState = {
   partnerSwiped: number;
 };
 
-export async function deckFor(ctx: CoupleContext, now: Date): Promise<DeckState> {
+export async function deckFor(ctx: CoupleContext, now: Date, known?: CoupleSettings): Promise<DeckState> {
   const [{ cards, partner }, lastSuper, settings, matches, maybes, partnerSwiped] = await Promise.all([
     openCardsFor(ctx, now),
     lastSuperLike(ctx.user.id),
-    getCoupleSettings(ctx.coupleId),
+    known ?? getCoupleSettings(ctx.coupleId),
     // Only matches still on the wishlist – the same number as the Matchlinge tile on /ideas.
     db.$count(
       deckCards,
@@ -107,10 +107,9 @@ export async function deckFor(ctx: CoupleContext, now: Date): Promise<DeckState>
     maybeCount(ctx, now),
     db.$count(deckSwipes, eq(deckSwipes.userId, ctx.partner.id)),
   ]);
-  const since = await waitingSinceLabels(cards, now);
-  const views = cards.map((card) => ({ ...cardView(card, partner.get(card.id)), waitingSince: since.get(card.id) ?? null }));
   // The day on every card: the event (and whether both are free then) or the next free evening.
-  const times = await deckTimes(ctx, now, cards);
+  const [since, times] = await Promise.all([waitingSinceLabels(cards, now), deckTimes(ctx, now, cards, settings)]);
+  const views = cards.map((card) => ({ ...cardView(card, partner.get(card.id)), waitingSince: since.get(card.id) ?? null }));
   for (const view of views) {
     const card = cards.find((c) => c.id === view.id)!;
     if (card.kind === "combo" && card.eventStartsAt) {
@@ -156,10 +155,9 @@ const FREE_LOOKAHEAD_DAYS = 14;
  * One FreeBusy query per person for the whole deck: is each combo's event free for both, and the next
  * free evening (small) and half day (large) for every other card. Calendars missing or failing → unknown.
  */
-async function deckTimes(ctx: CoupleContext, now: Date, cards: DeckCard[]): Promise<{ calendars: boolean; eventFree: Map<string, boolean>; free: Record<IdeaSize, Slot | null> }> {
+async function deckTimes(ctx: CoupleContext, now: Date, cards: DeckCard[], settings: CoupleSettings): Promise<{ calendars: boolean; eventFree: Map<string, boolean>; free: Record<IdeaSize, Slot | null> }> {
   const none = { calendars: false, eventFree: new Map<string, boolean>(), free: { small: null, large: null } };
   if (cards.length === 0) return none;
-  const settings = await getCoupleSettings(ctx.coupleId);
   const spans = cards.flatMap((c) => {
     const span = c.kind === "combo" ? eventSpan({ startsAt: c.eventStartsAt, endsAt: c.eventEndsAt, allDay: c.eventAllDay }) : null;
     return span ? [{ id: c.id, span }] : [];

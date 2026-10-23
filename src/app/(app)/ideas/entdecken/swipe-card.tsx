@@ -144,7 +144,7 @@ export const Card = memo(function Card({ card, partnerName, full = false, nr, to
       <div ref={box} data-card-dense={0} className="swipe-card relative flex h-full flex-col overflow-hidden rounded-[28px] bg-[#E7EEDF] text-[#1B2620] shadow-[0_18px_30px_rgba(0,0,0,0.4)]">
         {/* The banner takes what the content leaves (no place, no map: more banner, never an empty card). */}
         <div className="relative min-h-[150px] flex-[1_0_150px]">
-          <Banner motiv={card.art.motif} className="absolute inset-0" />
+          <Banner scene={card.art.scene} className="absolute inset-0" />
           {pills}
           {onClose && (
             <button type="button" onClick={onClose} aria-label="Schließen" className="press absolute right-3 top-2.5 flex size-9 items-center justify-center rounded-full bg-[rgba(17,26,20,0.6)] text-[#E7EEDF]">
@@ -237,7 +237,7 @@ export const Card = memo(function Card({ card, partnerName, full = false, nr, to
     <div ref={box} data-card-dense={0} className="swipe-card @container relative flex h-full flex-col overflow-hidden rounded-[28px] bg-[#E7EEDF] text-[#1B2620] shadow-[0_18px_30px_rgba(0,0,0,0.4)]">
       {/* The banner takes the room the text leaves – on a tall phone more than 170, on a short one less. */}
       <div className="sc-banner relative min-h-[72px] flex-[1_1_170px]">
-        <Banner motiv={card.art.motif} className="absolute inset-0" />
+        <Banner scene={card.art.scene} className="absolute inset-0" />
         {pills}
         {counter && <span className={cn(PILL, "absolute right-3.5 top-3.5 bg-[rgba(17,26,20,0.55)] text-[#E7EEDF]")}>{counter}</span>}
       </div>

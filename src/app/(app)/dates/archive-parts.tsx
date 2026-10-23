@@ -3,6 +3,7 @@
 // archive-views.tsx.
 import Link from "next/link";
 import { Banner } from "@/components/banner";
+import { bannerView } from "@/core/banners";
 import { monthGroups, stemLayout, type Leaf } from "@/core/archive";
 import { cn } from "@/lib/cn";
 import { PERSON_HEX, type UserColor } from "@/lib/domain";
@@ -31,7 +32,7 @@ export function LeafPicture({ leaf, className }: { leaf: Leaf; className?: strin
     // eslint-disable-next-line @next/next/no-img-element -- private photo route
     <img src={`/api/photos/${photo}?size=thumb`} alt="" loading="lazy" className={cn("absolute inset-0 size-full object-cover", className)} />
   ) : (
-    <Banner motiv={leaf.motif} className={cn("absolute inset-0", className)} />
+    <Banner scene={bannerView(leaf.motif)} className={cn("absolute inset-0", className)} />
   );
 }
 

@@ -7,26 +7,35 @@ import { archiveLeaves, type ArchiveDateIn, type ArchiveWiltIn, type Leaf } from
 import { isMotif, suggestMotif } from "@/core/banners";
 import type { CoupleContext } from "@/server/auth/dal";
 import { db } from "@/server/db";
-import { cycles, datePhotos, datePlans, ideas, type Cycle, type DatePlan } from "@/server/db/schema";
+import { cycles, datePhotos, datePlans, dateReviews, ideas, type Cycle, type DatePlan } from "@/server/db/schema";
 import { createIdea } from "@/server/ideas";
-import { pastDates } from "@/server/reviews";
 import type { WiltReason } from "@/lib/domain";
 
 export type ArchiveData = { leaves: Leaf[]; dates: Map<string, ArchiveDateIn & { ideaId: string | null; date: DatePlan }>; wilts: Map<string, WiltRound> };
 export type WiltRound = ArchiveWiltIn & { cycle: Cycle; date: DatePlan | null };
 
-export async function archiveData(ctx: CoupleContext): Promise<ArchiveData> {
+/**
+ * The whole stem – or, with `focus` (a leaf's page), the order of all leaves (for its Nº) but reviews, photos and the
+ * idea's banner only for that one date: a leaf's page does not read every review and photo of the archive.
+ */
+export async function archiveData(ctx: CoupleContext, focus?: string): Promise<ArchiveData> {
   const [done, skipped] = await Promise.all([
-    pastDates(ctx.coupleId),
+    db
+      .select()
+      .from(datePlans)
+      .where(and(eq(datePlans.coupleId, ctx.coupleId), eq(datePlans.status, "done")))
+      .orderBy(desc(datePlans.startsAt)),
     db
       .select()
       .from(cycles)
       .where(and(eq(cycles.coupleId, ctx.coupleId), eq(cycles.status, "skipped"), isNull(cycles.leafRemovedAt)))
       .orderBy(desc(cycles.startsAt)),
   ]);
-  const dateIds = done.map((d) => d.id);
-  const ideaIds = done.flatMap((d) => (d.ideaId ? [d.ideaId] : []));
-  const [photos, motifs, called] = await Promise.all([
+  const detailed = focus ? done.filter((d) => d.id === focus) : done;
+  const dateIds = detailed.map((d) => d.id);
+  const ideaIds = detailed.flatMap((d) => (d.ideaId ? [d.ideaId] : []));
+  const [reviews, photos, motifs, called] = await Promise.all([
+    dateIds.length ? db.select().from(dateReviews).where(inArray(dateReviews.dateId, dateIds)) : [],
     dateIds.length
       ? db.select({ id: datePhotos.id, dateId: datePhotos.dateId }).from(datePhotos).where(inArray(datePhotos.dateId, dateIds)).orderBy(asc(datePhotos.createdAt))
       : [],
@@ -53,7 +62,7 @@ export async function archiveData(ctx: CoupleContext): Promise<ArchiveData> {
           plannerId: d.organizerId,
           location: d.location,
           costEur: d.actualCostEur ?? d.estimatedCostEur,
-          reviews: d.reviews,
+          reviews: reviews.filter((r) => r.dateId === d.id),
           photoIds: photos.filter((p) => p.dateId === d.id).map((p) => p.id),
           motif,
           ideaId: d.ideaId,

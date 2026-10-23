@@ -6,6 +6,7 @@
 import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
 import { Banner } from "@/components/banner";
+import type { SceneView } from "@/core/banner-scene";
 import { cn } from "@/lib/cn";
 import { AGAIN_LABEL, type AgainAnswer } from "@/lib/domain";
 import { PersonDot, type ArchivePerson } from "../archive-parts";
@@ -20,7 +21,7 @@ export function LeafDetail({
   title,
   meta,
   planner,
-  motif,
+  scene,
   photoIds,
   answers,
   myAnswerMissing,
@@ -31,7 +32,7 @@ export function LeafDetail({
   title: string;
   meta: string;
   planner?: ArchivePerson;
-  motif: string;
+  scene: SceneView;
   photoIds: string[];
   /** Me first, then the partner (their answer hidden until mine is there). */
   answers: LeafAnswer[];
@@ -81,12 +82,20 @@ export function LeafDetail({
             className="flex size-full snap-x snap-mandatory overflow-x-auto [scrollbar-width:none]"
           >
             {photoIds.map((id, i) => (
-              // eslint-disable-next-line @next/next/no-img-element -- private photo route
-              <img key={id} src={`/api/photos/${id}`} alt={`Foto ${i + 1} von ${photoIds.length}`} className="size-full shrink-0 snap-center object-cover" loading={i ? "lazy" : "eager"} />
+              // The small one (already there for the row below) shows at once; the big one is asked for only for the
+              // photo in view and its neighbours, and covers it once it has arrived.
+              <div key={id} className="relative size-full shrink-0 snap-center bg-surface">
+                {/* eslint-disable-next-line @next/next/no-img-element -- private photo route */}
+                <img src={`/api/photos/${id}?size=thumb`} alt="" aria-hidden="true" className="absolute inset-0 size-full object-cover" />
+                {Math.abs(i - index) <= 1 && (
+                  // eslint-disable-next-line @next/next/no-img-element -- private photo route
+                  <img src={`/api/photos/${id}`} alt={`Foto ${i + 1} von ${photoIds.length}`} decoding="async" className="absolute inset-0 size-full object-cover" />
+                )}
+              </div>
             ))}
           </div>
         ) : (
-          <Banner motiv={motif} className="absolute inset-0" />
+          <Banner scene={scene} className="absolute inset-0" />
         )}
         <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-[170px] bg-[linear-gradient(180deg,rgba(17,26,20,0)_0%,var(--bg)_92%)]" />
         {photoIds.length > 1 && (

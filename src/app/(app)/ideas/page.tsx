@@ -77,6 +77,7 @@ async function Ideas({ searchParams }: { searchParams: PageProps<"/ideas">["sear
       matched: matched.has(idea.id),
       hex: art.hex,
       motif: art.motif,
+      scene: art.scene,
       // A deck idea was liked by whoever swiped it; a match by both.
       likedBy: matched.has(idea.id) ? [user.id, partner.id] : idea.source === "deck" && idea.createdById ? [idea.createdById] : [],
       lastPlannedAt: lastPlanned.get(idea.id)?.getTime() ?? null,

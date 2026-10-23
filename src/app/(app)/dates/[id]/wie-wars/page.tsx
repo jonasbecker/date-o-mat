@@ -17,7 +17,7 @@ async function WieWars({ params }: { params: PageProps<"/dates/[id]/wie-wars">["
   const ctx = await requireCouple();
   await connection();
   const { id } = await params;
-  const archive = /^[0-9a-f-]{36}$/.test(id) ? await archiveData(ctx) : undefined;
+  const archive = /^[0-9a-f-]{36}$/.test(id) ? await archiveData(ctx, id) : undefined;
   const entry = archive?.dates.get(id);
   const leaf = archive?.leaves.find((l) => l.kind === "date" && l.id === id);
   if (!entry || !leaf) notFound();
