@@ -148,7 +148,8 @@ for (const shake of [0, 3, 8]) {
   check(`full: a swipe by finger (${shake} px shaky) goes on to the next card, still full (${before} → ${await title()}), the page stays`, (await title()) !== before && (await isFull()) && j.url() === `${BASE}/ideas/entdecken`);
 }
 {
-  // Straight up: the long text scrolls, nothing is swiped.
+  // Straight up: the long text (all of it shown) scrolls, nothing is swiped.
+  await card.getByRole("button", { name: "ganzer Text" }).click();
   const before = await title();
   const b = await card.boundingBox();
   const pts = [];

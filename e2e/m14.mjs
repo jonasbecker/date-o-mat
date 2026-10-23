@@ -160,10 +160,10 @@ check(`usage logged (${usage.n} request, ${usage.t} tokens)`, usage.n === 1 && u
 // SWIPE-KARTE.md §4: right after saving, one small call gives the idea its look and quips (stored, not made again)
 let painted = null;
 for (let i = 0; i < 20 && !painted?.quips; i++) {
-  ({ rows: [painted] } = await db.query("SELECT color, illustrations, quips FROM ideas WHERE title = 'Kino: Dune'"));
+  ({ rows: [painted] } = await db.query("SELECT motif, quips FROM ideas WHERE title = 'Kino: Dune'"));
   if (!painted?.quips) await j.waitForTimeout(250);
 }
-check(`saved idea gets its card look and quips (${JSON.stringify(painted)})`, painted?.color === "lilac" && painted.illustrations.join(",") === "rahmen" && painted.quips.neutral[0] === "kino: dune? ich komm mit." && artCalls.length === 1);
+check(`saved idea gets its card look and quips (${JSON.stringify(painted)})`, painted?.motif === "museum" && painted.quips.neutral[0] === "kino: dune? ich komm mit." && artCalls.length === 1);
 check("…its prompt is only the idea", /^Idea: Kino: Dune/.test(artCalls[0]?.messages[0].content ?? "") && !/Jonas|Sam|example\.com/.test(artCalls[0]?.messages[0].content ?? ""));
 
 // 2) "🔗 Link einfügen" reads the clipboard; Claude fails → title from the page itself

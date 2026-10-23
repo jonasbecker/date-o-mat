@@ -1,38 +1,36 @@
 import { describe, expect, it } from "vitest";
-import { CARD_COLOR_HEX, ILLUSTRATIONS, QUIP_MAX, cardArt, cleanCardArt, illustrationPrompt, pickQuip } from "./card-art";
+import { BANNERS, MOTIFS } from "./banners";
+import { ART_SYSTEM_PROMPT, QUIP_MAX, cardArt, cleanCardArt, pickQuip } from "./card-art";
 
 describe("cleanCardArt", () => {
-  it("keeps a known color, up to two known illustrations and short lower-case quips", () => {
+  it("keeps a known scene and short lower-case quips", () => {
     const art = cleanCardArt({
-      color: "rose",
-      illustrations: ["crepes", "mikro", "baum", "einhorn"],
+      motif: "crepes",
       quips: { neutral: ["Crêpes UND ABBA? ich wär dabei.", "x".repeat(QUIP_MAX + 1)], like: ["jaaa!"], nope: [] },
     });
-    expect(art.color).toBe("rose");
-    expect(art.illustrations).toEqual(["crepes", "mikro"]);
+    expect(art.motif).toBe("crepes");
     expect(art.quips).toEqual({ neutral: ["crêpes und abba? ich wär dabei."], like: ["jaaa!"], nope: [] });
   });
 
   it("drops what is unknown or empty", () => {
-    expect(cleanCardArt({ color: "#ff0000", illustrations: ["einhorn"], quips: { neutral: [""] } })).toEqual({ color: null, illustrations: null, quips: null });
-    expect(cleanCardArt({})).toEqual({ color: null, illustrations: null, quips: null });
+    expect(cleanCardArt({ motif: "einhorn", quips: { neutral: [""] } })).toEqual({ motif: null, quips: null });
+    expect(cleanCardArt({})).toEqual({ motif: null, quips: null });
   });
 });
 
 describe("cardArt", () => {
-  it("uses what is stored", () => {
-    const art = cardArt({ id: "a", title: "Crêpes und ABBA", color: "sky", illustrations: ["crepes", "mikro"], quips: { neutral: ["n"], like: ["l"], nope: ["x"] } });
-    expect(art).toEqual({ color: "sky", hex: CARD_COLOR_HEX.sky, illustrations: ["crepes", "mikro"], quips: { neutral: ["n"], like: ["l"], nope: ["x"] } });
+  it("uses what is stored – the pastel comes from the scene", () => {
+    const art = cardArt({ id: "a", title: "Crêpes und ABBA", motif: "konzert", quips: { neutral: ["n"], like: ["l"], nope: ["x"] } });
+    expect(art).toEqual({ motif: "konzert", hex: BANNERS.konzert.bg, quips: { neutral: ["n"], like: ["l"], nope: ["x"] } });
   });
 
-  it("falls back to the title's picture, the category's color and quips", () => {
+  it("falls back to the scene its words ask for, else herz", () => {
     const art = cardArt({ id: "a", title: "Tretboot auf dem Decksteiner Weiher" });
-    expect(art.illustrations).toEqual(["boot"]);
+    expect(art.motif).toBe("kajak");
     expect(art.quips.like.length).toBeGreaterThan(0);
     expect(art.quips.nope.length).toBeGreaterThan(0);
-    const food = cardArt({ id: "b", title: "Sushi-Abend" });
-    expect(food.color).toBe("rose");
-    expect(food.illustrations).toEqual(["teller"]);
+    expect(cardArt({ id: "b", title: "Sushi-Abend" }).motif).toBe("sushi");
+    expect(cardArt({ id: "c", title: "Irgendwas Schönes", motif: "einhorn" }).motif).toBe("herz");
   });
 
   it("makes detail quips from cost, place and size", () => {
@@ -64,6 +62,6 @@ describe("pickQuip", () => {
   });
 });
 
-it("the prompt lists every illustration", () => {
-  for (const key of ILLUSTRATIONS) expect(illustrationPrompt()).toContain(key);
+it("the prompt lists every scene", () => {
+  for (const key of MOTIFS) expect(ART_SYSTEM_PROMPT).toContain(key);
 });

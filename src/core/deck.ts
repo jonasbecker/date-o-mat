@@ -4,7 +4,8 @@
 
 import type { CuratedIdea } from "./curated-ideas";
 import { categoryFromTheme, inferCategory, type IdeaCategory } from "./categories";
-import { cleanCardArt, illustrationPrompt, QUIP_MAX, type CardArt, type CardColor, type CardQuips, type Illustration } from "./card-art";
+import { cleanCardArt, motifInstruction, QUIP_MAX, type CardArt, type CardQuips } from "./card-art";
+import type { Motif } from "./banners";
 import type { CardWhen } from "./card-when";
 import { filterPrompt, matchesIdeaFilter, type IdeaFilter } from "./filters";
 import { DateTime } from "luxon";
@@ -139,8 +140,7 @@ export const DECK_SYSTEM_PROMPT = [
   "best_season: when the idea fits best (spring, summer, autumn, winter) or any.",
   "Combo cards build on one of the listed real events: event_index is its number, the idea adds something that fits before or after (e.g. dinner nearby, a walk, a drink). For normal ideas event_index is null.",
   "Never repeat an idea from the exclude list, not even reworded.",
-  "Each card also gets its look on the swipe card: color is one of rose, green, butter, sky, lilac (a pastel that suits it).",
-  `illustrations: one or two keys from this list that show what they do (two for a combination, e.g. crepes + mikro): ${illustrationPrompt()}.`,
+  `Each card also gets its banner on the swipe card – ${motifInstruction()}`,
   `quips: what a cheeky little flower says about the card – German, all lower case, max ${QUIP_MAX - 3} characters each, playful.`,
   "Every quip refers to a detail of this idea (the place, the cost, the time, the activity), never generic. neutral: 3 for just looking at it, like: 2 for when they plant it (swipe right), nope: 1–2 for the compost (swipe left).",
   'Example for "Crêpes im Belgischen Viertel, dann ABBA": neutral "crêpes UND abba? ich wär dabei.", "40 € sind 8 säcke blumenerde. nur so."; like "dancing queen, young and … gegossen!"; nope "kompost? die crêpes weinen jetzt."',
@@ -188,8 +188,7 @@ export type RawDeckCard = {
   wildcard: boolean;
   event_index: number | null;
   best_season?: string | null;
-  color?: string | null;
-  illustrations?: string[] | null;
+  motif?: string | null;
   quips?: Partial<CardQuips> | null;
 };
 
@@ -208,8 +207,7 @@ export type CardDraft = {
   dedupeKey: string;
   /** Index into the events given to the prompt (combo cards). */
   eventIndex: number | null;
-  color: CardColor | null;
-  illustrations: Illustration[] | null;
+  motif: Motif | null;
   quips: CardQuips | null;
 };
 
@@ -357,8 +355,7 @@ export function curatedForDeck(curated: readonly CuratedIdea[], existingKeys: st
       dedupeKey: key,
       eventIndex: null,
       // Look and quips come from the fallback (core/card-art.ts).
-      color: null,
-      illustrations: null,
+      motif: null,
       quips: null,
     });
   }

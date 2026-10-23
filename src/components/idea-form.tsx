@@ -1,5 +1,7 @@
 "use client";
 
+import { Banner } from "./banner";
+import { BANNERS, MOTIFS } from "@/core/banners";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import type { IdeaFormState } from "@/app/(app)/ideas/actions";
 import { analyzeLinkAction } from "@/app/(app)/ideas/link-actions";
@@ -21,6 +23,8 @@ export type IdeaFormDefaults = {
   location: string | null;
   setting?: PlaceSetting | null;
   category?: IdeaCategory | null;
+  /** Its banner (core/banners.ts); empty = picked from its words. */
+  motif?: string | null;
 };
 
 type Action = (prev: IdeaFormState, formData: FormData) => Promise<IdeaFormState>;
@@ -302,6 +306,26 @@ export function IdeaForm({
                 >
                   <input type="radio" name="category" value={option.value} defaultChecked={(value("category") || "") === option.value} className="sr-only" />
                   {option.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          {/* The banner on its card: a row of small scenes, scrolling sideways. */}
+          <fieldset className="flex min-w-0 flex-col gap-1">
+            <legend className="mb-1 text-[13px] font-extrabold text-muted">Bild auf der Karte</legend>
+            <div data-motif-row className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
+              {["", ...MOTIFS].map((motif) => (
+                <label
+                  key={motif}
+                  title={motif ? BANNERS[motif].name : "Automatisch"}
+                  className="flex shrink-0 cursor-pointer flex-col items-center gap-1 rounded-[12px] p-1 text-[11px] font-bold has-checked:bg-ink has-checked:text-bg has-focus-visible:outline-3 has-focus-visible:outline-himbeere"
+                >
+                  <input type="radio" name="motif" value={motif} defaultChecked={(value("motif") || "") === motif} aria-label={motif ? BANNERS[motif].name : "Automatisch"} className="sr-only" />
+                  {motif ? (
+                    <Banner motiv={motif} hoehe={28} breite={88} className="rounded-[8px]" />
+                  ) : (
+                    <span className="flex h-7 w-[88px] items-center justify-center rounded-[8px] bg-soft">✨ Auto</span>
+                  )}
                 </label>
               ))}
             </div>

@@ -73,10 +73,9 @@ const claude = createServer((req, res) => {
     const ideas = Number(/Make (\d+) normal ideas/.exec(prompt)?.[1] ?? 0);
     const combos = Number(/Also make (\d+) combo cards/.exec(prompt)?.[1] ?? 0);
     const themes = ["food", "nature", "culture", "active", "creative", "cozy"];
-    // The card's look and quips (SWIPE-KARTE.md §4) – one unknown illustration and an overlong quip get dropped.
+    // The card's banner and quips (SWIPE-KARTE-V2.md §3) – an unknown scene and an overlong quip get dropped.
     const art = (i) => ({
-      color: ["rose", "green", "butter", "sky", "lilac"][i % 5],
-      illustrations: i === 0 ? ["crepes", "mikro", "einhorn"] : [["teller", "baum", "rahmen", "ball", "pinsel", "tasse"][i % 6]],
+      motif: i === 1 ? "einhorn" : ["crepes", "yoga", "zoo", "stadion", "freizeitpark", "shoppen"][i % 6],
       quips: { neutral: [`spruch ${i} zum anschauen`, "x".repeat(80)], like: [`spruch ${i} fürs beet`], nope: [`spruch ${i} für den kompost`] },
     });
     const cards = [{ title: "Stadtwald: Picknick", description: "Schon auf der Liste.", emoji: "🧺", size: "small", cost_eur: 5, location: "Stadtwald", setting: "outdoor", theme: "nature", wildcard: false, event_index: null, best_season: "any", ...art(99) }];
@@ -137,11 +136,12 @@ const prompt = call?.messages[0].content ?? "";
 check(`model + schema (${call?.model})`, call?.model === "claude-haiku-5-5" && call?.output_config?.format?.type === "json_schema");
 check("prompt: season, events, exclude list, wildcards", /\((spring|summer|autumn|winter)\)/.test(prompt) && prompt.includes("0: Konzert: Annenmaykantereit") && prompt.includes("Exclude list (already seen or on their list): Picknick im Stadtwald") && prompt.includes("wildcards"));
 check("prompt: no names or e-mails", !/Jonas|Sam|example\.com/.test(prompt + call.system));
-check("system prompt asks for color, illustrations and detail quips", /illustrations: one or two keys/.test(call.system) && /crepes/.test(call.system) && /refers to a detail of this idea/.test(call.system));
-const { rows: [painted] } = await db.query("SELECT color, illustrations, quips FROM deck_cards WHERE title = 'Ramen Runde1'");
-check(`card art stored and cleaned (${JSON.stringify(painted)})`, painted?.color === "rose" && painted.illustrations.join(",") === "crepes,mikro" && painted.quips.neutral.length === 1 && painted.quips.like[0] === "spruch 0 fürs beet");
-// SWIPE-KARTE.md §2: picture strip, the day, no ✕/♥ buttons to see – only the flower and its quip
-check("card: picture strip, a day and the quip", (await topCard(j).locator("[data-illustrations]").count()) === 1 && (await topCard(j).locator("[data-card-when]").count()) === 1 && /\S/.test(await j.locator("[data-quip]").innerText()));
+check("system prompt asks for a banner scene and detail quips", /motif: the one key from this banner library/.test(call.system) && /freizeitpark/.test(call.system) && /refers to a detail of this idea/.test(call.system));
+const { rows: [painted] } = await db.query("SELECT motif, quips FROM deck_cards WHERE title = 'Ramen Runde1'");
+const { rows: [unknown] } = await db.query("SELECT motif FROM deck_cards WHERE title LIKE '% Runde1' AND motif IS NULL");
+check(`card art stored and cleaned (${JSON.stringify(painted)}, unknown scene dropped: ${Boolean(unknown)})`, painted?.motif === "crepes" && Boolean(unknown) && painted.quips.neutral.length === 1 && painted.quips.like[0] === "spruch 0 fürs beet");
+// SWIPE-KARTE-V2.md §2: banner, the day, no ✕/♥ buttons to see – only the flower and its quip
+check("card: banner, a day and the quip", (await topCard(j).locator("[data-banner]").count()) === 1 && (await topCard(j).locator("[data-card-when]").count()) === 1 && /\S/.test(await j.locator("[data-quip]").innerText()));
 check("no ✕/♥ buttons – swiping only (the two stay for the keyboard)", (await j.getByRole("button", { name: "Einpflanzen" }).evaluate((b) => b.offsetWidth <= 1)) && (await j.getByText("wischen", { exact: true }).count()) === 0);
 await j.screenshot({ path: `${OUT}m17-01-deck.png` });
 check("swipe deck fits the screen", await fitsScreen(j));
@@ -219,8 +219,8 @@ check("nope passes the card for both", (await db.query("SELECT status FROM deck_
 const deckIdeas = async () => (await db.query("SELECT title FROM ideas WHERE source = 'deck' AND archived_at IS NULL ORDER BY title")).rows.map((r) => r.title);
 let saved = await deckIdeas();
 check(`a like alone puts the card on the wishlist (${saved.join(", ")})`, [...saved].sort().join("|") === [first, third, fourth].sort().join("|"));
-const { rows: [plantedIdea] } = await db.query("SELECT color, illustrations, quips FROM ideas WHERE title = $1", [first]);
-check("the idea keeps the card's look and quips", Boolean(plantedIdea?.color && plantedIdea.illustrations?.length && plantedIdea.quips?.like?.length));
+const { rows: [plantedIdea] } = await db.query("SELECT motif, quips FROM ideas WHERE title = $1", [first]);
+check(`the idea keeps the card's banner and quips (${plantedIdea?.motif})`, Boolean(plantedIdea?.quips?.like?.length) && plantedIdea.motif !== undefined);
 check("…and the card stays open for Sam", (await db.query("SELECT status FROM deck_cards WHERE title = $1", [first])).rows[0].status === "open");
 
 // 3) Undo – twice: the drag-like and the like before it come back

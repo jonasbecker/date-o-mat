@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition, type PointerEvent as ReactPointerEvent } from "react";
 import { Bloom } from "@/components/bloom";
 import { Button, buttonClass } from "@/components/button";
 import { useCelebrate } from "@/components/celebration";
@@ -320,7 +320,6 @@ export function SwipeDeck({
     // A tap on a link or the map does what it says – it does not open or close the card.
     tap.current = { x: event.clientX, y: event.clientY, on: !(event.target as Element).closest("a, button") };
     width.current = event.currentTarget.getBoundingClientRect().width || 320;
-    event.currentTarget.setPointerCapture(event.pointerId);
   }
   function onPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
     if (!start.current) return;
@@ -332,7 +331,11 @@ export function SwipeDeck({
       start.current = null;
       return;
     }
-    if (dragX.current === null) setDragging(true);
+    // Captured only once it is a drag: a tap on a button inside (✕, "ganzer Text", Kompost / Einpflanzen) stays its click.
+    if (dragX.current === null) {
+      setDragging(true);
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
     dragX.current = dx;
     const threshold = width.current * THRESHOLD;
     setDragStamp(dx > threshold ? "like" : dx < -threshold ? "nope" : null);
@@ -371,6 +374,16 @@ export function SwipeDeck({
     else endDrag(true);
   }
 
+  // The full card's ✕ and its bar: stable callbacks, so the memoized card does not render with every drag frame.
+  const decideRef = useRef(decide);
+  useLayoutEffect(() => {
+    decideRef.current = decide;
+  });
+  const onDecide = useCallback((verdict: Verdict) => decideRef.current(verdict), []);
+  const onClose = useCallback(() => setFull(false), []);
+  // "Nº 5 / 74": this visit's swipes plus what is left.
+  const total = stats.swiped + cards.length;
+
   useShareDeck({ swiped: stats.swiped, left: cards.length, canUndo, undo, more: ai ? more : null, loading });
 
   const flyTransform = (verdict: Verdict) =>
@@ -403,7 +416,7 @@ export function SwipeDeck({
         {[top, next].map((c, i) =>
           !c ? null : i === 1 ? (
             <div key={c.id} ref={nextEl} aria-hidden="true" inert data-next-card className="pointer-events-none absolute inset-0 z-[1] origin-center" style={nextStyle}>
-              <Card card={c} partnerName={partnerName} full={full} />
+              <Card card={c} partnerName={partnerName} full={full} nr={stats.swiped + 2} total={total} />
             </div>
           ) : (
           <div
@@ -423,7 +436,7 @@ export function SwipeDeck({
               endDrag(true);
             }}
           >
-            <Card card={c} partnerName={partnerName} full={full} />
+            <Card card={c} partnerName={partnerName} full={full} nr={stats.swiped + 1} total={total} onClose={onClose} onDecide={onDecide} />
             {stamp && <Stamp verdict={stamp} />}
             {/* Swiping only – for the keyboard and screen readers the two choices stay as buttons, seen when focused. */}
             <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2">

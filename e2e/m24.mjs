@@ -234,12 +234,12 @@ await bp.goto(`${BASE}/dev/blume`);
 await bp.waitForTimeout(600);
 await bp.screenshot({ path: `${OUT}m24-blume.png` });
 check("all seven moods on /dev/blume", (await bp.locator("[data-bloom]").count()) === 7);
-// The picture strip's drawings on all pastels (SWIPE-KARTE.md §4)
+// The banner library (SWIPE-KARTE-V2.md §3): every scene, big and small
 await bp.setViewportSize({ width: 1200, height: 900 });
-await bp.goto(`${BASE}/dev/illustrationen`);
-await bp.waitForTimeout(500);
-await bp.screenshot({ path: `${OUT}m24-illustrationen.png`, fullPage: true });
-check("every illustration on /dev/illustrationen", (await bp.locator("[data-dev-illustration]").count()) >= 20);
+await bp.goto(`${BASE}/dev/banner`);
+await bp.waitForTimeout(800);
+await bp.screenshot({ path: `${OUT}m24-banner.png`, fullPage: true });
+check("all 76 banners on /dev/banner, each drawn", (await bp.locator("[data-dev-banner]").count()) === 76 && (await bp.locator("[data-dev-banner] [data-banner] div > div").count()) > 76 * 4);
 await wide.close();
 
 // Logged out

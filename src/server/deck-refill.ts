@@ -23,7 +23,6 @@ import {
   type CardDraft,
 } from "@/core/deck";
 import { APP_TIMEZONE } from "@/lib/domain";
-import { CARD_COLORS } from "@/core/card-art";
 import { aiRequestsToday, anthropic, recordAiUsage, reserveAiRequest } from "@/server/anthropic";
 import { budgetState } from "@/server/budget";
 import { specialDayPrompt } from "@/core/special-days";
@@ -56,9 +55,8 @@ const ResultSchema = z.object({
       wildcard: z.boolean(),
       event_index: z.number().int().nullable(),
       best_season: z.enum(["any", "spring", "summer", "autumn", "winter"]),
-      color: z.enum(CARD_COLORS),
       // Checked against the library afterwards (cleanCardArt): one unknown key must not lose the whole batch.
-      illustrations: z.array(z.string()),
+      motif: z.string(),
       quips: z.object({ neutral: z.array(z.string()), like: z.array(z.string()), nope: z.array(z.string()) }),
     }),
   ),
@@ -216,8 +214,7 @@ async function insertCards(coupleId: string, drafts: CardDraft[], events: EventW
           setting: d.setting,
           theme: d.theme,
           emoji: d.emoji,
-          color: d.color,
-          illustrations: d.illustrations,
+          motif: d.motif,
           quips: d.quips,
           wildcard: d.wildcard,
           bestSeason: d.bestSeason,

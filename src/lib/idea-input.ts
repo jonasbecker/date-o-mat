@@ -1,3 +1,4 @@
+import { isMotif } from "@/core/banners";
 import { isCategory, type IdeaCategory } from "@/core/categories";
 import { IDEA_SIZES, PLACE_SETTINGS, type IdeaSize, type PlaceSetting } from "./domain";
 
@@ -14,6 +15,8 @@ export type IdeaInput = {
   setting: PlaceSetting | null;
   /** Empty = guessed from the words (core/categories.ts). */
   category: IdeaCategory | null;
+  /** The banner picked in the editor (core/banners.ts) – left out when none was sent, so a save keeps the stored one. */
+  motif?: string;
 };
 
 export type IdeaField = keyof IdeaInput;
@@ -87,7 +90,7 @@ export function parseIdeaInput(raw: Record<string, unknown>): IdeaParseResult {
   if (Object.keys(errors).length > 0 || !size) return { ok: false, errors };
   const setting = PLACE_SETTINGS.find((s) => s === raw.setting) ?? null;
   const category = isCategory(raw.category) ? raw.category : null;
-  return { ok: true, data: { title, size, note, url, costEur, location, setting, category } };
+  return { ok: true, data: { title, size, note, url, costEur, location, setting, category, ...(isMotif(raw.motif) ? { motif: raw.motif } : {}) } };
 }
 
 export function formatCost(costEur: number | null): string | null {

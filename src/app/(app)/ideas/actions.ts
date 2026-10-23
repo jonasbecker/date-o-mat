@@ -22,7 +22,7 @@ export type IdeaFormState = {
   savedAt?: number;
 };
 
-const FIELDS = ["title", "size", "note", "url", "costEur", "location", "setting", "category"] as const;
+const FIELDS = ["title", "size", "note", "url", "costEur", "location", "setting", "category", "motif"] as const;
 
 function readValues(formData: FormData): Record<string, string> {
   return Object.fromEntries(FIELDS.map((field) => [field, String(formData.get(field) ?? "")]));

@@ -485,17 +485,14 @@
   animation: leaf-glow 2.4s ease-in-out infinite;
 }
 
-/* The swipe card tightens step by step until it fits (swipe-card.tsx, fitCard sets data-d1 … data-d5).
+/* The swipe card tightens step by step once its banner has given way (swipe-card.tsx, fitCard sets data-d1 … data-d4).
    Later steps come later in the file, so they win. */
-.swipe-card[data-d1] .sc-strip { flex-basis: 64px; }
-.swipe-card[data-d1] .sc-body { gap: 0.5rem; padding: 1rem; }
+.swipe-card[data-d1] .sc-tile { height: 76px; }
+.swipe-card[data-d1] .sc-tiles { margin-top: 0.75rem; }
+.swipe-card[data-d1] .sc-body { padding-top: 0.875rem; padding-bottom: 0.875rem; }
 .swipe-card[data-d2] .sc-note { -webkit-line-clamp: 1; line-clamp: 1; }
-.swipe-card[data-d3] .sc-strip { flex-basis: 40px; }
-.swipe-card[data-d3] .sc-title { font-size: 1.5rem; }
-.swipe-card[data-d4] .sc-strip,
-.swipe-card[data-d4] .sc-sorte { display: none; }
-.swipe-card[data-d5] .sc-note { display: none; }
-.swipe-card[data-d5] .sc-title { -webkit-line-clamp: 2; line-clamp: 2; }
+.swipe-card[data-d3] .sc-note { display: none; }
+.swipe-card[data-d4] .sc-title { -webkit-line-clamp: 1; line-clamp: 1; font-size: 1.5rem; }
 
 /* The swipe card opened to the full screen (swipe-deck.tsx, data-full): "swipen." and its row go up, the flower
    down – both fold away so the card takes their room – and ↺ comes up into the header's top right. */

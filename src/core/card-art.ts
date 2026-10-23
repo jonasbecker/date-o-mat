@@ -1,49 +1,21 @@
-// What a swipe card looks like and what the flower says about it (SWIPE-KARTE.md §4): a pastel for the
-// picture strip, one or two illustrations from a fixed library, and quips for "just looking", a like
-// and a nope. Claude writes them when a card or idea is made; whatever is missing comes from the
-// category and the idea's own details (cost, place, size). Pure.
+// What a swipe card looks like and what the flower says about it (SWIPE-KARTE-V2.md §3, SWIPE-KARTE.md §4): a banner
+// scene from the library (core/banners.ts – its pastel comes with it) and quips for "just looking", a like and a nope.
+// Claude picks the scene and writes the quips when a card or idea is made; whatever is missing comes from the words
+// (suggestMotif – nothing clear: herz) and from the category and the idea's own details (cost, place, size). Pure.
 
+import { bannerOf, isMotif, motifPrompt, suggestMotif, type Motif } from "./banners";
 import { categoryOf, type IdeaCategory } from "./categories";
 import type { IdeaSize } from "@/lib/domain";
 
-/** The five tile pastels – stored as a key, so nothing else can end up on a card. */
+/** The old card pastels (ideas.color / deck_cards.color, no longer written – the banner brings its own). */
 export const CARD_COLORS = ["rose", "green", "butter", "sky", "lilac"] as const;
 export type CardColor = (typeof CARD_COLORS)[number];
-export const CARD_COLOR_HEX: Record<CardColor, string> = {
-  rose: "#F6DFD3",
-  green: "#DCEBD9",
-  butter: "#F7EBC4",
-  sky: "#DCE7F5",
-  lilac: "#E6E0F2",
-};
-
-/** The illustration library (components/illustrations.tsx draws them), grouped as in the start set. */
-export const ILLUSTRATION_GROUPS = {
-  essen: ["crepes", "teller", "glaeser"],
-  musik: ["mikro", "gitarre"],
-  draussen: ["baum", "sonne"],
-  wasser: ["welle", "boot"],
-  kultur: ["rahmen", "maske"],
-  kreativ: ["pinsel", "ton"],
-  sport: ["ball", "berg"],
-  abends: ["mond", "kerze"],
-  wellness: ["tasse", "dampf"],
-  sonst: ["blume", "zug"],
-} as const;
-export type Illustration = (typeof ILLUSTRATION_GROUPS)[keyof typeof ILLUSTRATION_GROUPS][number];
-export const ILLUSTRATIONS: readonly Illustration[] = Object.values(ILLUSTRATION_GROUPS).flat();
 
 export type CardQuips = { neutral: string[]; like: string[]; nope: string[] };
 
 /** What the flower may say: short, lower case. */
 export const QUIP_MAX = 48;
 
-export function isCardColor(value: unknown): value is CardColor {
-  return (CARD_COLORS as readonly unknown[]).includes(value);
-}
-export function isIllustration(value: unknown): value is Illustration {
-  return (ILLUSTRATIONS as readonly unknown[]).includes(value);
-}
 
 function cleanQuip(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -52,64 +24,23 @@ function cleanQuip(value: unknown): string | null {
   return s;
 }
 
-/** Claude's answer for one card or idea, checked: a known color, 1–2 known illustrations, short quips. */
-export function cleanCardArt(raw: { color?: unknown; illustrations?: unknown; quips?: unknown }): {
-  color: CardColor | null;
-  illustrations: Illustration[] | null;
-  quips: CardQuips | null;
-} {
-  const illustrations = Array.isArray(raw.illustrations) ? [...new Set(raw.illustrations.filter(isIllustration))].slice(0, 2) : [];
+/** Claude's answer for one card or idea, checked: a known scene, short quips. */
+export function cleanCardArt(raw: { motif?: unknown; quips?: unknown }): { motif: Motif | null; quips: CardQuips | null } {
   const q = (raw.quips ?? {}) as Record<string, unknown>;
   const list = (v: unknown) => (Array.isArray(v) ? v.map(cleanQuip).filter((s): s is string => s !== null).slice(0, 4) : []);
   const quips = { neutral: list(q.neutral), like: list(q.like), nope: list(q.nope) };
   return {
-    color: isCardColor(raw.color) ? raw.color : null,
-    illustrations: illustrations.length ? illustrations : null,
+    motif: isMotif(raw.motif) ? raw.motif : null,
     quips: quips.neutral.length + quips.like.length + quips.nope.length ? quips : null,
   };
 }
 
-/** For the prompt: the keys Claude may pick from. */
-export function illustrationPrompt(): string {
-  return Object.entries(ILLUSTRATION_GROUPS)
-    .map(([group, keys]) => `${group}: ${keys.join(", ")}`)
-    .join("; ");
+/** For the prompts: how Claude picks the scene. */
+export function motifInstruction(): string {
+  return `motif: the one key from this banner library that shows best what they do (use "herz" only if nothing fits): ${motifPrompt()}.`;
 }
 
 // --- Fallback --------------------------------------------------------------------------------------
-
-const CATEGORY_ART: Record<IdeaCategory, { color: CardColor; illustrations: Illustration[] }> = {
-  food: { color: "rose", illustrations: ["teller"] },
-  nature: { color: "green", illustrations: ["baum"] },
-  culture: { color: "lilac", illustrations: ["rahmen"] },
-  active: { color: "sky", illustrations: ["ball"] },
-  creative: { color: "butter", illustrations: ["pinsel"] },
-  cozy: { color: "butter", illustrations: ["tasse"] },
-  trip: { color: "sky", illustrations: ["zug"] },
-  events: { color: "lilac", illustrations: ["mikro"] },
-  other: { color: "green", illustrations: ["blume"] },
-};
-
-// A closer picture from the title, before the category's own one (first match wins).
-const ART_KEYWORDS: Array<[RegExp, Illustration]> = [
-  [/crêpe|crepe|waffel|pfannkuchen|pancake|kuchen|backen/iu, "crepes"],
-  [/karaoke|konzert|singen|mitsing|live ?musik|band\b|abba/iu, "mikro"],
-  [/gitarre|musik machen|jam\b|open mic/iu, "gitarre"],
-  [/wein|cocktail|bar\b|kölsch|bier|drink|weinprobe/iu, "glaeser"],
-  [/boot|tretboot|kanu|kajak|paddeln|rudern|fähre|schiff/iu, "boot"],
-  [/schwimm|freibad|see\b|rhein|baden|strand|wasser/iu, "welle"],
-  [/sonnenuntergang|sonnenaufgang|picknick|wiese|sonne/iu, "sonne"],
-  [/sterne|nacht|mond|abendspaziergang|planetarium/iu, "mond"],
-  [/kerze|candle|dinner|romantisch/iu, "kerze"],
-  [/theater|oper|kabarett|comedy|impro/iu, "maske"],
-  [/museum|galerie|ausstellung|kunst/iu, "rahmen"],
-  [/töpfer|keramik|ton\b/iu, "ton"],
-  [/malen|zeichnen|pinsel|aquarell/iu, "pinsel"],
-  [/wandern|klettern|bouldern|berg|siebengebirge|eifel/iu, "berg"],
-  [/sauna|therme|wellness|massage|spa\b/iu, "dampf"],
-  [/tee\b|kaffee|café|cafe|brunch|frühstück/iu, "tasse"],
-  [/zug|tagesausflug|ausflug|trip\b/iu, "zug"],
-];
 
 const CATEGORY_QUIPS: Record<IdeaCategory, CardQuips> = {
   food: {
@@ -167,8 +98,7 @@ type ArtInput = {
   costEur?: number | null;
   location?: string | null;
   size?: IdeaSize;
-  color?: string | null;
-  illustrations?: string[] | null;
+  motif?: string | null;
   quips?: Partial<CardQuips> | null;
 };
 
@@ -185,16 +115,12 @@ function detailQuips(card: ArtInput): string[] {
   return out.filter((q) => q.length <= QUIP_MAX);
 }
 
-export type CardArt = { color: CardColor; hex: string; illustrations: Illustration[]; quips: CardQuips };
+export type CardArt = { motif: Motif; hex: string; quips: CardQuips };
 
-/** The stored look and quips, with whatever is missing filled from category and details. */
+/** The stored scene and quips, with whatever is missing filled from the words, category and details. */
 export function cardArt(card: ArtInput): CardArt {
   const category = categoryOf(card);
-  const base = CATEGORY_ART[category];
-  const stored = (card.illustrations ?? []).filter(isIllustration).slice(0, 2);
-  const keyword = ART_KEYWORDS.find(([pattern]) => pattern.test(card.title))?.[1];
-  const illustrations = stored.length ? stored : [keyword ?? base.illustrations[0]];
-  const color = isCardColor(card.color) ? card.color : base.color;
+  const motif = isMotif(card.motif) ? card.motif : suggestMotif(card);
   const generic = CATEGORY_QUIPS[category];
   const own = (kind: keyof CardQuips) => (card.quips?.[kind] ?? []).filter((q) => typeof q === "string" && q.trim());
   const quips = {
@@ -202,7 +128,7 @@ export function cardArt(card: ArtInput): CardArt {
     like: own("like").length ? own("like") : generic.like,
     nope: own("nope").length ? own("nope") : generic.nope,
   };
-  return { color, hex: CARD_COLOR_HEX[color], illustrations, quips };
+  return { motif, hex: bannerOf(motif).bg, quips };
 }
 
 /** The n-th quip of a list, starting at a fixed place per card (no flicker on reload). */
@@ -217,8 +143,7 @@ export function pickQuip(list: string[], seed: string, n = 0): string {
 
 export const ART_SYSTEM_PROMPT = [
   "You give a date idea of a young couple in Cologne its look on a swipe card and write what a cheeky little flower says about it.",
-  "color: one of rose, green, butter, sky, lilac – a pastel that suits the idea.",
-  `illustrations: one or two keys from this list that show what they do (two for a combination): ${illustrationPrompt()}.`,
+  motifInstruction(),
   `quips: German, all lower case, max ${QUIP_MAX - 3} characters each, playful and a little cheeky. Every quip refers to a detail of this idea (the place, the cost, the time, the activity), never generic.`,
   "neutral: 3 for just looking at it, like: 2 for when they plant it (swipe right), nope: 1–2 for the compost (swipe left).",
 ].join("\n");

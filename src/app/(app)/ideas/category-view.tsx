@@ -8,8 +8,7 @@ import Link from "next/link";
 import { Suspense, use, useState } from "react";
 import { Bloom } from "@/components/bloom";
 import { BackIcon } from "@/components/icons";
-import { IllustrationArt } from "@/components/illustrations";
-import type { Illustration } from "@/core/card-art";
+import { Banner } from "@/components/banner";
 import {
   CATEGORY_VIEW,
   CHIP_LABEL,
@@ -35,7 +34,7 @@ export type CategoryIdea = {
   location: string | null;
   setting?: PlaceSetting | null;
   hex: string;
-  illustration: Illustration;
+  motif: string;
   /** Who liked it in the deck (both: a match). */
   likedBy: string[];
   lastPlannedAt: number | null;
@@ -264,17 +263,10 @@ function Group({ title, tone, ideas, people, detailHref }: { title: string; tone
   );
 }
 
+/** The idea's banner in a small square: the scene scaled to cover it, its middle shown. */
 function Art({ idea, size }: { idea: CategoryIdea; size: "tip" | "row" }) {
-  return (
-    <span
-      aria-hidden="true"
-      data-art={idea.illustration}
-      className={cn("flex shrink-0 items-center justify-center", size === "tip" ? "size-[60px] rounded-2xl" : "size-14 rounded-[15px]")}
-      style={{ background: idea.hex }}
-    >
-      <IllustrationArt name={idea.illustration} className={size === "tip" ? "size-11" : "size-10"} />
-    </span>
-  );
+  const px = size === "tip" ? 60 : 56;
+  return <Banner motiv={idea.motif} hoehe={px} breite={px} className={cn("shrink-0", size === "tip" ? "rounded-2xl" : "rounded-[15px]")} />;
 }
 
 function Empty({ onReset }: { onReset: (() => void) | null }) {

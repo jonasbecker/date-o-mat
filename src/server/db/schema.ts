@@ -185,6 +185,8 @@ export const ideas = pgTable(
     // made; empty = core/card-art.ts fills in from category and details.
     color: text({ enum: CARD_COLORS }),
     illustrations: text().array(),
+    // Its banner (core/banners.ts, SWIPE-KARTE-V2.md §3) – the pastel comes from the scene. Empty = suggestMotif().
+    motif: text(),
     quips: jsonb().$type<CardQuips>(),
     source: text({ enum: IDEA_SOURCES }).notNull().default("wishlist"),
     // V2: id of the idea in an external source (curated list, AI run)
@@ -506,6 +508,8 @@ export const deckCards = pgTable(
     // made; empty = core/card-art.ts fills in from category and details.
     color: text({ enum: CARD_COLORS }),
     illustrations: text().array(),
+    // Its banner (core/banners.ts, SWIPE-KARTE-V2.md §3) – the pastel comes from the scene. Empty = suggestMotif().
+    motif: text(),
     quips: jsonb().$type<CardQuips>(),
     // Deliberately outside their usual taste ("Mal was anderes").
     wildcard: boolean().notNull().default(false),

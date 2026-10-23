@@ -5,7 +5,7 @@ import "server-only";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { ART_SYSTEM_PROMPT, buildArtPrompt, CARD_COLORS, cleanCardArt } from "@/core/card-art";
+import { ART_SYSTEM_PROMPT, buildArtPrompt, cleanCardArt } from "@/core/card-art";
 import { anthropic, recordAiUsage, reserveAiRequest } from "@/server/anthropic";
 import { db } from "@/server/db";
 import { ideas } from "@/server/db/schema";
@@ -14,9 +14,8 @@ import { env } from "@/server/env";
 export const ART_MODEL = "claude-haiku-5-5";
 
 const ArtSchema = z.object({
-  color: z.enum(CARD_COLORS),
   // Checked against the library afterwards (cleanCardArt).
-  illustrations: z.array(z.string()),
+  motif: z.string(),
   quips: z.object({ neutral: z.array(z.string()), like: z.array(z.string()), nope: z.array(z.string()) }),
 });
 
@@ -40,7 +39,8 @@ export async function paintIdea(coupleId: string, ideaId: string, now = new Date
     const art = cleanCardArt(response.parsed_output);
     await db
       .update(ideas)
-      .set({ color: art.color, illustrations: art.illustrations, quips: art.quips })
+      // A scene picked in the editor stays.
+      .set({ motif: idea.motif ?? art.motif, quips: art.quips })
       .where(and(eq(ideas.id, ideaId), eq(ideas.coupleId, coupleId)));
   } catch (error) {
     console.warn("[art] painting the idea failed", error instanceof Error ? error.message : error);

@@ -11,7 +11,6 @@ import { TicketIcon } from "@/components/icons";
 import { QuickAdd } from "@/components/quick-add";
 import { IdeaDetail } from "./idea-detail";
 import { IdeaTiles, type TileCounts } from "./idea-tiles";
-import type { Illustration } from "@/core/card-art";
 import type { IdeaTimes } from "@/core/idea-category";
 import { CategoryView } from "./category-view";
 import type { UserColor } from "@/lib/domain";
@@ -24,9 +23,9 @@ export type BoardIdea = IdeaFormDefaults & {
   updatedById: string | null;
   matched: boolean;
   source: string;
-  /** The pastel and the drawing (stored, or core/card-art.ts by category). */
+  /** Its banner scene and pastel (stored, or core/card-art.ts from its words). */
   hex: string;
-  illustration: Illustration;
+  motif: string;
   likedBy: string[];
   lastPlannedAt: number | null;
   createdAt: number;

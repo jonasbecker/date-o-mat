@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Swipe-Karte mit Banner</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&amp;family=DM+Mono:wght@400;500&amp;family=Caveat:wght@600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}
+button{font:inherit;cursor:pointer}
+.c2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.c3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pill{height:26px;padding:0 10px;border-radius:999px;display:inline-flex;align-items:center;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.03em}
+.chip{height:32px;padding:0 12px;border-radius:999px;background:#FFFFFF;font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:6px;color:#1B2620}
+.chip i{font-style:normal;font-size:12px;color:#6A7566}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #111A14; color: #E7EEDF; font-family: 'Bricolage Grotesque', system-ui, sans-serif; overflow: hidden">
+
+  <!-- Kopf -->
+  <div style="position: absolute; left: 18px; right: 18px; top: 18px; height: 36px; display: flex; justify-content: space-between; align-items: center">
+    <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em">zweisamen</span>
+    <span style="display: flex; gap: 8px; align-items: center">
+      <span style="height: 34px; padding: 0 14px; border-radius: 999px; background: #1B2620; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6DBA74" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 14c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg>2 Matchlinge</span>
+      <span aria-hidden="true" style="width: 34px; height: 34px; border-radius: 50%; background: #1B2620; font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center">i</span>
+    </span>
+  </div>
+
+  <sc-if value="{{ isKarte }}" hint-placeholder-val="{{ true }}">
+    <h1 style="position: absolute; left: 20px; top: 62px; margin: 0; font-weight: 800; font-size: 40px; line-height: 0.95; letter-spacing: -0.045em">swipen.</h1>
+    <div style="position: absolute; right: 20px; top: 64px; display: flex; gap: 8px">
+      <span aria-label="Rückgängig" style="width: 44px; height: 44px; border-radius: 50%; background: #1B2620; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E7EEDF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></span>
+      <span aria-label="Filter" style="width: 44px; height: 44px; border-radius: 50%; background: #1B2620; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E7EEDF" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4"/></svg></span>
+    </div>
+
+    <div aria-hidden="true" style="position: absolute; left: 34px; top: 134px; width: 326px; height: 518px; border-radius: 28px; background: #2A3830; transform: rotate(3deg)"></div>
+
+    <div style="position: absolute; left: 20px; top: 124px; width: 350px; height: 518px; border-radius: 28px; background: #E7EEDF; color: #1B2620; overflow: hidden; box-shadow: 0 18px 30px rgba(0,0,0,0.4)">
+
+      <!-- Variante 1 · Plakat -->
+      <sc-if value="{{ v1 }}" hint-placeholder-val="{{ true }}">
+        <div style="position: relative; height: 184px">
+          <dc-import name="Banner" motiv="{{ motiv }}" hoehe="{{ 184 }}" breite="{{ 350 }}" hint-size="350px,184px"></dc-import>
+          <span class="pill" style="position: absolute; left: 14px; top: 14px; background: rgba(255,255,255,0.9); color: #1B2620">{{ kat }}</span>
+          <span class="pill" style="position: absolute; right: 14px; top: 14px; background: rgba(17,26,20,0.55); color: #E7EEDF">Nº {{ nr }} / 74</span>
+        </div>
+        <div style="height: 334px; box-sizing: border-box; padding: 18px 20px 20px; display: flex; flex-direction: column; justify-content: space-between">
+          <div>
+            <div style="font-size: 38px; font-weight: 800; line-height: 0.95; letter-spacing: -0.055em">{{ datum }}</div>
+            <div style="margin-top: 6px; font-size: 15px; font-weight: 700; color: #2E7D46">{{ uhr }} · ✓ ihr habt beide Zeit</div>
+          </div>
+          <div>
+            <div class="c2" style="font-size: 28px; font-weight: 800; line-height: 1.04; letter-spacing: -0.03em">{{ titel }}</div>
+            <div class="c3" style="margin-top: 8px; font-size: 15px; line-height: 1.4; color: #4A5547">{{ beschr }}</div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: nowrap">
+            <span class="chip"><i>⌖</i>{{ wo }}</span><span class="chip"><i>◷</i>{{ dauer }}</span><span class="chip"><i>€</i>{{ kosten }}</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- Variante 2 · Kacheln -->
+      <sc-if value="{{ v2 }}" hint-placeholder-val="{{ false }}">
+        <div style="position: relative; height: 170px">
+          <dc-import name="Banner" motiv="{{ motiv }}" hoehe="{{ 170 }}" breite="{{ 350 }}" hint-size="350px,170px"></dc-import>
+          <span class="pill" style="position: absolute; left: 14px; top: 14px; background: rgba(255,255,255,0.9); color: #1B2620">{{ kat }}</span>
+          <span class="pill" style="position: absolute; right: 14px; top: 14px; background: rgba(17,26,20,0.55); color: #E7EEDF">Nº {{ nr }} / 74</span>
+        </div>
+        <div style="height: 348px; box-sizing: border-box; padding: 18px 20px 18px; display: flex; flex-direction: column">
+          <div class="c2" style="font-size: 28px; font-weight: 800; line-height: 1.04; letter-spacing: -0.03em">{{ titel }}</div>
+          <div class="c2" style="margin-top: 8px; font-size: 15px; line-height: 1.4; color: #4A5547">{{ beschr }}</div>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 16px">
+            <div style="height: 92px; box-sizing: border-box; padding: 10px 12px; border-radius: 18px; background: #DCEBD9; color: #163A22; display: flex; flex-direction: column; justify-content: space-between">
+              <span style="display: flex; justify-content: space-between; align-items: center"><span style="font-family: 'DM Mono', monospace; font-size: 10px; opacity: .7">WO</span><span aria-hidden="true" style="width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800">⌖</span></span>
+              <span class="c2" style="font-size: 16px; font-weight: 800; line-height: 1.08">{{ wo }}</span>
+            </div>
+            <div style="height: 92px; box-sizing: border-box; padding: 10px 12px; border-radius: 18px; background: #F7EBC4; color: #3A2E10; display: flex; flex-direction: column; justify-content: space-between">
+              <span style="display: flex; justify-content: space-between; align-items: center"><span style="font-family: 'DM Mono', monospace; font-size: 10px; opacity: .7">DAUER</span><span aria-hidden="true" style="width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800">◷</span></span>
+              <span class="c2" style="font-size: 16px; font-weight: 800; line-height: 1.08">{{ dauer }}</span>
+            </div>
+            <div style="height: 92px; box-sizing: border-box; padding: 10px 12px; border-radius: 18px; background: #DCE7F5; color: #16283E; display: flex; flex-direction: column; justify-content: space-between">
+              <span style="display: flex; justify-content: space-between; align-items: center"><span style="font-family: 'DM Mono', monospace; font-size: 10px; opacity: .7">KOSTEN</span><span aria-hidden="true" style="width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800">€</span></span>
+              <span class="c2" style="font-size: 16px; font-weight: 800; line-height: 1.08">{{ kosten }}</span>
+            </div>
+          </div>
+          <div style="margin-top: auto; height: 58px; box-sizing: border-box; padding: 0 12px 0 18px; border-radius: 20px; background: #163A22; color: #E7EEDF; display: flex; align-items: center; justify-content: space-between">
+            <span style="display: flex; align-items: baseline; gap: 10px"><span style="font-size: 22px; font-weight: 800; letter-spacing: -0.03em">{{ datum }}</span><span style="font-family: 'DM Mono', monospace; font-size: 12px; color: #C9D4C4">{{ uhr }}</span></span>
+            <span style="height: 32px; padding: 0 12px; border-radius: 999px; background: #2E7D46; color: #FFFFFF; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center">✓ beide frei</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- Variante 3 · Datum-Sticker -->
+      <sc-if value="{{ v3 }}" hint-placeholder-val="{{ false }}">
+        <div style="position: relative; height: 200px">
+          <dc-import name="Banner" motiv="{{ motiv }}" hoehe="{{ 200 }}" breite="{{ 350 }}" hint-size="350px,200px"></dc-import>
+          <span class="pill" style="position: absolute; left: 14px; top: 14px; background: rgba(255,255,255,0.9); color: #1B2620">{{ kat }}</span>
+          <span class="pill" style="position: absolute; right: 14px; top: 14px; background: rgba(17,26,20,0.55); color: #E7EEDF">Nº {{ nr }} / 74</span>
+        </div>
+        <div style="position: absolute; left: 20px; top: 158px; width: 88px; height: 96px; border-radius: 16px; background: #FFFFFF; transform: rotate(-3deg); box-shadow: 0 8px 16px rgba(27,38,32,0.22); overflow: hidden; text-align: center">
+          <div style="height: 26px; background: #E58FA6; color: #2B1218; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; display: flex; align-items: center; justify-content: center">{{ monat }}</div>
+          <div style="font-size: 46px; font-weight: 800; line-height: 1; letter-spacing: -0.05em; padding-top: 6px">{{ tag }}</div>
+          <div style="font-size: 13px; font-weight: 700">{{ wtag }}</div>
+        </div>
+        <div style="position: absolute; left: 124px; right: 20px; top: 212px; display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 24px; font-weight: 800; line-height: 1; letter-spacing: -0.04em">{{ uhr }}</span>
+          <span style="font-size: 14px; font-weight: 700; color: #2E7D46">✓ ihr habt beide Zeit</span>
+        </div>
+        <div style="height: 318px; box-sizing: border-box; padding: 62px 20px 18px; display: flex; flex-direction: column">
+          <div class="c2" style="font-size: 27px; font-weight: 800; line-height: 1.04; letter-spacing: -0.03em">{{ titel }}</div>
+          <div class="c2" style="margin-top: 8px; font-size: 15px; line-height: 1.4; color: #4A5547">{{ beschr }}</div>
+          <div style="margin-top: auto; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; font-family: 'DM Mono', monospace; font-size: 10px; text-align: center">
+              <sc-for list="{{ woche }}" as="d" hint-placeholder-count="7">
+                <span style="height: 26px; border-radius: 999px; background: {{ d.bg }}; color: {{ d.fg }}; display: flex; align-items: center; justify-content: center; font-weight: {{ d.fw }}">{{ d.t }}</span>
+              </sc-for>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: nowrap">
+              <span class="chip"><i>⌖</i>{{ wo }}</span><span class="chip"><i>◷</i>{{ dauer }}</span><span class="chip"><i>€</i>{{ kosten }}</span>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div aria-hidden="true" style="position: absolute; left: 4px; top: 650px; width: 92px; height: 129px">
+      <div style="width: 300px; height: 420px; transform: scale(0.3); transform-origin: top left">
+        <dc-import name="Bloom" stimmung="{{ mood }}" blaetter="{{ 2 }}" welk="{{ -1 }}" grund="transparent" hint-size="300px,420px"></dc-import>
+      </div>
+    </div>
+    <div aria-hidden="true" style="position: absolute; left: 82px; top: 690px; width: 6px; height: 6px; border-radius: 50%; background: #F5EFC6"></div>
+    <div aria-hidden="true" style="position: absolute; left: 92px; top: 680px; width: 10px; height: 10px; border-radius: 50%; background: #F5EFC6"></div>
+    <div style="position: absolute; left: 108px; top: 662px; max-width: 262px; box-sizing: border-box; padding: 8px 14px 10px; border-radius: 18px; background: #F5EFC6; color: #2B1D12; font-family: 'Caveat', cursive; font-weight: 600; font-size: 20px; line-height: 1.02; transform: rotate(-2deg)">{{ spruch }}</div>
+  </sc-if>
+
+  <!-- Vollbild -->
+  <sc-if value="{{ isVoll }}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 12px; right: 12px; top: 62px; height: 700px; border-radius: 28px; background: #E7EEDF; color: #1B2620; overflow: hidden; box-shadow: 0 18px 30px rgba(0,0,0,0.4)">
+      <div style="position: relative; height: 150px">
+        <dc-import name="Banner" motiv="{{ motiv }}" hoehe="{{ 150 }}" breite="{{ 366 }}" hint-size="366px,150px"></dc-import>
+        <span class="pill" style="position: absolute; left: 14px; top: 14px; background: rgba(255,255,255,0.9); color: #1B2620">{{ kat }}</span>
+        <span aria-label="Schließen" style="position: absolute; right: 12px; top: 10px; width: 36px; height: 36px; border-radius: 50%; background: rgba(17,26,20,0.6); display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E7EEDF" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      </div>
+      <div style="position: absolute; left: 0; right: 0; top: 150px; bottom: 82px; box-sizing: border-box; padding: 18px 20px 0; overflow: hidden">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end">
+          <span style="font-size: 36px; font-weight: 800; line-height: 0.95; letter-spacing: -0.055em">{{ datum }}</span>
+          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #6A7566; padding-bottom: 4px">Nº {{ nr }} / 74</span>
+        </div>
+        <div style="margin-top: 6px; font-size: 15px; font-weight: 700; color: #2E7D46">{{ uhr }} · ✓ ihr habt beide Zeit</div>
+        <div class="c2" style="margin-top: 14px; font-size: 28px; font-weight: 800; line-height: 1.04; letter-spacing: -0.03em">{{ titel }}</div>
+        <div class="c3" style="margin-top: 8px; font-size: 15px; line-height: 1.4; color: #4A5547">{{ beschr }}</div>
+        <div style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: nowrap">
+          <span class="chip"><i>⌖</i>{{ wo }}</span><span class="chip"><i>◷</i>{{ dauer }}</span><span class="chip"><i>€</i>{{ kosten }}</span>
+        </div>
+        <div aria-hidden="true" style="position: relative; margin-top: 16px; height: 124px; border-radius: 18px; background: #EEF2E6; overflow: hidden">
+          <span style="position: absolute; left: 190px; top: 30px; width: 220px; height: 170px; border-radius: 80px; background: #BFD6EE"></span>
+          <span style="position: absolute; left: 0; top: 76px; width: 110px; height: 70px; border-radius: 30px; background: #D6E8CB"></span>
+          <span style="position: absolute; left: -20px; top: 60px; width: 380px; height: 9px; border-radius: 4px; background: #FFFFFF; transform: rotate(-16deg)"></span>
+          <span style="position: absolute; left: 100px; top: -10px; width: 8px; height: 190px; border-radius: 4px; background: #FFFFFF; transform: rotate(18deg)"></span>
+          <span style="position: absolute; left: 20px; top: 20px; width: 150px; height: 5px; border-radius: 3px; background: #FFFFFF; transform: rotate(8deg)"></span>
+          <span style="position: absolute; left: 150px; top: 24px; width: 26px; height: 26px; border-radius: 50% 50% 50% 0; background: #E05A4F; transform: rotate(-45deg)"></span>
+          <span style="position: absolute; left: 159px; top: 33px; width: 8px; height: 8px; border-radius: 50%; background: #FFFFFF"></span>
+          <span style="position: absolute; left: 186px; top: 30px; height: 24px; padding: 0 10px; border-radius: 999px; background: #FFFFFF; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; box-shadow: 0 2px 6px rgba(27,38,32,0.2)">{{ wo }}</span>
+          <span style="position: absolute; left: 10px; bottom: 8px; font-family: 'DM Mono', monospace; font-size: 9px; color: #6A7566">Kartenvorschau · Google Maps</span>
+        </div>
+        <div style="margin-top: 10px; height: 46px; border-radius: 999px; border: 2px solid #1B2620; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; font-weight: 700"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>In Google Maps öffnen</div>
+      </div>
+      <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 82px; box-sizing: border-box; padding: 14px 16px 16px; background: linear-gradient(180deg, rgba(231,238,223,0) 0%, #E7EEDF 28%); display: flex; gap: 10px; align-items: flex-end">
+        <span style="flex: 1; height: 52px; border-radius: 999px; border: 2px solid #8A6440; color: #6A4A2E; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700">Kompost</span>
+        <span style="flex: 1.5; height: 52px; border-radius: 999px; background: #2E7D46; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 700"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 14c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg>Einpflanzen</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Navigation -->
+  <nav style="position: absolute; left: 0; right: 0; bottom: 0; height: 66px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; color: #E7EEDF; background: #111A14; z-index: 6">
+    <a href="#" aria-label="Archiv" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-7 8"/></svg></a>
+    <a href="#" aria-label="Swipen" style="height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="12" height="16" rx="2.5" transform="rotate(8 13 11)"/><path d="M5.5 6.5L4 17.5a2 2 0 0 0 1.7 2.3l7.3 1"/></svg><span style="width: 4px; height: 4px; border-radius: 50%; background: currentColor"></span></a>
+    <a href="#" aria-label="Beet" style="justify-self: center; width: 60px; height: 60px; border-radius: 50%; background: #2E7D46; color: #FFFFFF; display: flex; align-items: center; justify-content: center; margin-top: -22px; box-shadow: 0 0 0 6px #111A14"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 14c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg></a>
+    <a href="#" aria-label="Ideen" style="position: relative; height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg><span style="position: absolute; left: 50%; top: -2px; margin-left: 2px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: #8A5A68; color: #FFFFFF; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center">56</span></a>
+    <a href="#" aria-label="Einstellungen" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"variante": {"editor": "enum", "options": ["1", "2", "3"], "default": "2"}, "ansicht": {"editor": "enum", "options": ["karte", "voll"], "default": "karte"}, "motiv": {"editor": "enum", "options": ["crepes", "pizza", "burger", "sushi", "eis", "kaffee", "cocktail", "wein", "kochen", "picknick", "grill", "biergarten", "karaoke", "konzert", "kino", "theater", "museum", "lesen", "tanzen", "sonnenuntergang", "wandern", "fahrrad", "park", "see", "stadt", "sterne", "strand", "camping", "markt", "tischtennis", "bouldern", "schwimmen", "minigolf", "eislaufen", "bowling", "malen", "toepfern", "basteln", "foto", "spiele", "filmabend", "wellness", "badewanne", "gaertnern", "schnitzeljagd", "escape", "winter", "ueberraschung", "tiere", "herz", "sprosse", "yoga", "shoppen", "stadion", "zoo", "freizeitpark", "aquarium", "botanik", "arcade", "quiz", "kajak", "roadtrip", "reise", "burg", "brunch", "streetfood", "fussball", "rodeln", "hund", "planetarium", "zirkus", "plattenladen", "blumen", "dinner", "wasserpark", "flaschenpost"], "default": "flaschenpost"}, "stimmung": {"editor": "enum", "options": ["wartet", "froh", "traurig", "blueht"], "default": "wartet"}, "kat": {"editor": "string", "default": "NATUR"}, "titel": {"editor": "string", "default": "Flaschenpost ans Rheinufer werfen"}, "beschr": {"editor": "string", "default": "Ihr schreibt einen Zettel mit einer Frage an den anderen, steckt ihn in eine Flasche und wartet gespannt auf Antwort."}, "wo": {"editor": "string", "default": "Rheinufer"}, "dauer": {"editor": "string", "default": "ein Abend"}, "kosten": {"editor": "string", "default": "gratis"}, "datum": {"editor": "string", "default": "Mo 26.10."}, "uhr": {"editor": "string", "default": "ab 19:30"}, "nr": {"editor": "string", "default": "5"}, "monat": {"editor": "string", "default": "OKT"}, "tag": {"editor": "string", "default": "26"}, "wtag": {"editor": "string", "default": "Montag"}, "wochentag": {"editor": "string", "default": "0"}, "spruch": {"editor": "string", "default": "da wachsen meine cousins."}, "$preview": {"width": 390, "height": 844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const v = String(p.variante ?? '1');
+    const voll = (p.ansicht ?? 'karte') === 'voll';
+    const tage = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'];
+    const woche = tage.map((t, i) => {
+      const on = i === Number(p.wochentag ?? 0);
+      const frei = [0, 1, 0, 1, 1, 1, 1][i];
+      return { t, bg: on ? '#2E7D46' : (frei ? '#FFFFFF' : 'transparent'), fg: on ? '#FFFFFF' : (frei ? '#1B2620' : '#8A9486'), fw: on ? '700' : '400' };
+    });
+    return {
+      isKarte: !voll, isVoll: voll, v1: v === '1', v2: v === '2', v3: v === '3',
+      motiv: p.motiv ?? 'flaschenpost', kat: p.kat ?? 'NATUR', titel: p.titel ?? '', beschr: p.beschr ?? '',
+      wo: p.wo ?? '', dauer: p.dauer ?? '', kosten: p.kosten ?? '', datum: p.datum ?? '', uhr: p.uhr ?? '', nr: p.nr ?? '',
+      monat: p.monat ?? 'OKT', tag: p.tag ?? '26', wtag: p.wtag ?? 'Montag', woche,
+      spruch: p.spruch ?? '', mood: p.stimmung ?? 'wartet'
+    };
+  }
+}
+</script>
+</body>
+</html>
