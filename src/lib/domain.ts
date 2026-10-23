@@ -101,7 +101,13 @@ export const EVENT_KINDS = ["event", "tip"] as const;
 export type EventKind = (typeof EVENT_KINDS)[number];
 
 /** Photos after a date: resized in the browser, stored privately. */
-export const PHOTO_LIMITS = { perDate: 24, fullEdge: 1600, thumbEdge: 480, maxBytes: 3 * 1024 * 1024 } as const;
+/** Up to 10 per date (ARCHIV.md §5 – older dates may hold more), the long edge about 2000 px, thumbnails for stem and grid. */
+export const PHOTO_LIMITS = { perDate: 10, fullEdge: 2000, thumbEdge: 480, maxBytes: 4 * 1024 * 1024 } as const;
+
+/** Why a date fell through (the wilted leaf, ARCHIV.md §4). */
+export const WILT_REASONS = ["sick", "no_time", "weather", "other"] as const;
+export type WiltReason = (typeof WILT_REASONS)[number];
+export const WILT_LABEL: Record<WiltReason, string> = { sick: "krank", no_time: "keine Zeit", weather: "Wetter", other: "anderes" };
 
 export const AI_REQUEST_KINDS = ["ideas", "events", "links", "deck", "art"] as const;
 export type AiRequestKind = (typeof AI_REQUEST_KINDS)[number];

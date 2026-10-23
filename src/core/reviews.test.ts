@@ -19,22 +19,19 @@ describe("reviewAskAt", () => {
 });
 
 describe("parseReview", () => {
-  it("accepts 1–5 hearts and trims the note", () => {
-    expect(parseReview({ rating: "4", note: "  schön  " })).toEqual({ rating: 4, note: "schön", again: null });
+  it("needs nochmal?, trims the note, hearts are optional", () => {
+    expect(parseReview({ note: "  schön  ", again: "yes" })).toEqual({ rating: null, note: "schön", again: "yes" });
+    expect(parseReview({ rating: "4", note: "", again: "maybe" })).toEqual({ rating: 4, note: null, again: "maybe" });
   });
-  it("turns an empty note into null", () => {
-    expect(parseReview({ rating: 5, note: "   " })).toEqual({ rating: 5, note: null, again: null });
-    expect(parseReview({ rating: 5, note: "", again: "yes" })?.again).toBe("yes");
-    expect(parseReview({ rating: 5, note: "", again: "egal" })?.again).toBeNull();
+  it("without a valid nochmal? there is nothing to save", () => {
+    expect(parseReview({ rating: 5, note: "toll" })).toBeNull();
+    expect(parseReview({ note: "", again: "egal" })).toBeNull();
   });
-  it("rejects ratings out of range or not whole", () => {
-    expect(parseReview({ rating: "0", note: "" })).toBeNull();
-    expect(parseReview({ rating: "6", note: "" })).toBeNull();
-    expect(parseReview({ rating: "3.5", note: "" })).toBeNull();
-    expect(parseReview({ rating: "", note: "" })).toBeNull();
+  it("hearts out of range or not whole are dropped, not an error", () => {
+    for (const rating of ["0", "6", "3.5", ""]) expect(parseReview({ rating, note: "", again: "no" })?.rating).toBeNull();
   });
   it("cuts very long notes", () => {
-    expect(parseReview({ rating: 3, note: "x".repeat(900) })?.note).toHaveLength(500);
+    expect(parseReview({ note: "x".repeat(900), again: "yes" })?.note).toHaveLength(500);
   });
 });
 

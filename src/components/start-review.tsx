@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { formatShortDate, formatTimeRange } from "@/lib/format";
-import { RATING_MAX } from "@/lib/domain";
 import type { DatePlan } from "@/server/db/schema";
-import { HeartShape } from "./hearts";
+import { OpenReviewOnce } from "./open-review-once";
 
 /**
- * "Wie war's?" inside the step card: the date (with its first photo, if there is one) and
- * five hearts. A tap on a heart opens the review with that number already chosen.
+ * "wie war's?" on the Beet (ARCHIV.md §3): the date (with its first photo, if there is one) and the way to the page.
+ * The first time the app is opened after the date it goes there by itself (`OpenReviewOnce`); the hint stays here
+ * until it is filled in.
  */
 export function StartReview({ date, photoId, small = false }: { date: Pick<DatePlan, "id" | "title" | "startsAt" | "endsAt" | "location">; photoId?: string; small?: boolean }) {
   return (
@@ -22,17 +22,11 @@ export function StartReview({ date, photoId, small = false }: { date: Pick<DateP
             {formatShortDate(date.startsAt)} · {formatTimeRange(date.startsAt, date.endsAt)} Uhr
           </p>
         </div>
-        <div className="flex" role="group" aria-label="Wie viele Herzen?">
-          {Array.from({ length: RATING_MAX }, (_, i) => {
-            const value = i + 1;
-            return (
-              <Link key={value} href={`/dates/${date.id}?herzen=${value}`} aria-label={`${value} ${value === 1 ? "Herz" : "Herzen"}`} className="press rounded-full p-1.5">
-                <HeartShape filled={false} size={small ? 30 : 34} />
-              </Link>
-            );
-          })}
-        </div>
+        <Link href={`/dates/${date.id}/wie-wars`} className="tap inline-flex h-10 items-center self-start rounded-full bg-cta px-4 text-[15px] font-bold text-[#111A14]">
+          wie war’s? ›
+        </Link>
       </div>
+      <OpenReviewOnce dateId={date.id} />
     </div>
   );
 }

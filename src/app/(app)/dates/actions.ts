@@ -4,37 +4,81 @@ import { refresh } from "next/cache";
 import { after } from "next/server";
 import { z } from "zod";
 import { parseReview } from "@/core/reviews";
+import { redirect } from "next/navigation";
+import { NOTE_MAX } from "@/core/archive";
+import { WILT_REASONS } from "@/lib/domain";
 import { parseCost } from "@/lib/idea-input";
-import { requireCouple } from "@/server/auth/dal";
 import { setActualCost } from "@/server/budget";
+import { requireCouple } from "@/server/auth/dal";
+import { ideaForDate, ideaForWilt, removeWiltLeaf, setWilt } from "@/server/archive";
 import { notifyPartnerReviewed } from "@/server/notifications";
 import { pastDate, saveReview } from "@/server/reviews";
 import { addPhoto, deletePhoto } from "@/server/photos";
 
 export type ReviewFormState = { status: "idle" | "saved" | "error"; message?: string; savedAt?: number };
 
+/** "wie war's?" (ARCHIV.md §3): "nochmal?" and a sentence for later; the leaf grows from the first save. */
 export async function saveReviewAction(_prev: ReviewFormState, formData: FormData): Promise<ReviewFormState> {
   const ctx = await requireCouple();
   const id = z.uuid().safeParse(formData.get("dateId"));
-  const input = parseReview({ rating: formData.get("rating"), note: formData.get("note"), again: formData.get("again") });
+  const note = String(formData.get("note") ?? "").slice(0, NOTE_MAX);
   if (!id.success) return { status: "error", message: "Dieses Date gibt es nicht mehr." };
-  if (!input) return { status: "error", message: "Tipp auf 1 bis 5 Herzen." };
+  const before = await pastDate(ctx.coupleId, id.data);
+  if (!before) return { status: "error", message: "Dieses Date kann man (noch) nicht festhalten." };
+  // Old hearts stay as they were.
+  const mine = before.reviews.find((r) => r.userId === ctx.user.id);
+  const input = parseReview({ rating: mine?.rating ?? null, note, again: formData.get("again") });
+  if (!input) return { status: "error", message: "Erst wählen: nochmal?" };
+  // What it really cost (for the budget) – prefilled with the estimate.
   const cost = parseCost(String(formData.get("cost") ?? ""));
   if (Number.isNaN(cost) || (cost !== null && cost > 10_000)) return { status: "error", message: "Die Kosten bitte als Zahl, z. B. 25." };
-
-  const before = await pastDate(ctx.coupleId, id.data);
-  if (!before || !(await saveReview(ctx, id.data, input))) {
-    return { status: "error", message: "Dieses Date kann man (noch) nicht bewerten." };
-  }
+  if (!(await saveReview(ctx, id.data, input))) return { status: "error", message: "Dieses Date kann man (noch) nicht festhalten." };
   const costChanged = String(formData.get("cost") ?? "").trim() !== String(formData.get("costBefore") ?? "").trim();
   if (formData.has("cost") && costChanged) await setActualCost(ctx.coupleId, id.data, cost);
-  // Only the first review is news for the partner – later edits are not.
-  if (!before.reviews.some((r) => r.userId === ctx.user.id)) {
+  // Only the first answer is news for the partner – later edits are not.
+  if (!mine) {
     const partnerDone = before.reviews.some((r) => r.userId === ctx.partner.id);
     after(() => notifyPartnerReviewed(ctx, before, partnerDone));
   }
   refresh();
   return { status: "saved", savedAt: Date.now() };
+}
+
+/** "Nochmal pflanzen": the date's idea goes into the planning flow (back on the wishlist if it had left it). */
+export async function replantAction(dateId: string): Promise<void> {
+  const ctx = await requireCouple();
+  const id = z.uuid().safeParse(dateId);
+  const ideaId = id.success ? await ideaForDate(ctx, id.data) : null;
+  refresh();
+  redirect(ideaId ? `/plan?idea=${ideaId}` : "/plan?pick=1");
+}
+
+/** A wilted leaf: why it fell through (a chip) and a note. */
+export async function setWiltAction(cycleId: string, reason: string | null, note: string | null): Promise<void> {
+  const ctx = await requireCouple();
+  const id = z.uuid().safeParse(cycleId);
+  if (!id.success) return;
+  await setWilt(ctx, id.data, WILT_REASONS.find((r) => r === reason) ?? null, note?.trim().slice(0, NOTE_MAX) || null);
+  refresh();
+}
+
+/** "Neuen Termin finden" (to the planning flow with its idea) or "Zurück ins Regal legen" (the idea back on the wishlist). */
+export async function wiltIdeaAction(cycleId: string, to: "plan" | "shelf"): Promise<void> {
+  const ctx = await requireCouple();
+  const id = z.uuid().safeParse(cycleId);
+  const ideaId = id.success ? await ideaForWilt(ctx, id.data) : null;
+  refresh();
+  if (to === "plan") redirect(ideaId ? `/plan?idea=${ideaId}` : "/plan?pick=1");
+  redirect(ideaId ? `/ideas?ansicht=alle&idee=${ideaId}` : "/ideas");
+}
+
+/** "Blatt entfernen" (after a question): the wilted leaf leaves the stem; the round itself stays. */
+export async function removeLeafAction(cycleId: string): Promise<void> {
+  const ctx = await requireCouple();
+  const id = z.uuid().safeParse(cycleId);
+  if (id.success) await removeWiltLeaf(ctx, id.data);
+  refresh();
+  redirect("/dates");
 }
 
 const PHOTO_ERRORS = {

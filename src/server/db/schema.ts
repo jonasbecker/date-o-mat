@@ -25,6 +25,7 @@ import {
   AI_REQUEST_KINDS,
   CONNECTION_STATUSES,
   CYCLE_STATUSES,
+  WILT_REASONS,
   DATE_STATUSES,
   DECK_CARD_KINDS,
   DECK_CARD_STATUSES,
@@ -222,6 +223,10 @@ export const cycles = pgTable(
     // round logic (the current / latest round, the history dots, reminders) never sees them; switching them off
     // deletes them with everything on them.
     demo: boolean().notNull().default(false),
+    // A round that fell through is a wilted leaf in the Archiv (ARCHIV.md §4): why, a note, and "Blatt entfernen".
+    wiltReason: text({ enum: WILT_REASONS }),
+    wiltNote: text(),
+    leafRemovedAt: timestamptz(),
     createdAt: createdAt(),
   },
   (t) => [unique("cycles_couple_seq_unique").on(t.coupleId, t.seq)],
@@ -306,7 +311,8 @@ export const dateReviews = pgTable(
     userId: uuid()
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    rating: smallint().notNull(),
+    // The old 1–5 hearts – kept for the reviews that have them; "wie war's?" (ARCHIV.md §3) asks only "nochmal?" + a note.
+    rating: smallint(),
     note: text(),
     /** "Nochmal machen?" – nö / vielleicht / unbedingt (null = not answered). */
     again: text({ enum: AGAIN_ANSWERS }),

@@ -142,76 +142,80 @@ async function pageFor(token, options = {}) {
 }
 const OUT = new URL("./shots/", import.meta.url).pathname;
 
-// 2) Home asks Sam; Sam reviews first
+// 2) The first time Sam opens the app after the date, "wie war's?" opens by itself; the Beet keeps a hint
 const s = await pageFor(sam.token);
 await s.goto(`${BASE}/`);
-// The box shows the date, its first photo and five hearts – a tap on a heart is the answer.
-// (Sam's turn to plan: the box says "Du bist dran!", the review has its own card; otherwise it is the box.)
+await s.waitForURL(`${BASE}/dates/${d1.id}/wie-wars`, { timeout: 20000 });
+check("the first visit after the date opens „wie war's?“ by itself", await s.getByRole("heading", { name: "wie war’s?" }).isVisible());
+await s.goto(`${BASE}/plan`);
 const reviewBox = s.locator("[data-review-start]").filter({ visible: true });
 await reviewBox.waitFor({ timeout: 15000 });
-check("the start page asks for the review", s.url() === `${BASE}/plan`);
-check("\"Wie war's?\" shows title, date, first photo and five hearts", (await reviewBox.getByText("Picknick im Stadtwald", { exact: true }).isVisible()) && (await reviewBox.locator(`img[src^="/api/photos/${photo.id}"]`).count()) === 1 && (await reviewBox.getByRole("link", { name: /Herz/ }).count()) === 5);
+await s.waitForTimeout(800);
+check("…only once: the Beet then keeps the hint", s.url() === `${BASE}/plan`);
+check("the hint shows title, first photo and the way there", (await reviewBox.getByText("Picknick im Stadtwald", { exact: true }).isVisible()) && (await reviewBox.locator(`img[src^="/api/photos/${photo.id}"]`).count()) === 1 && (await reviewBox.getByRole("link", { name: "wie war’s? ›" }).isVisible()));
 check("…on the Beet (its own line when another step heads it)", (await s.locator('[data-next-step] [data-bloom], [data-review-card]').count()) >= 1);
 check("the review state fits the screen", await fitsScreen(s));
 await s.screenshot({ path: `${OUT}m8-01-home-prompt.png` });
-await reviewBox.getByRole("link", { name: "4 Herzen" }).click();
-await s.waitForURL(new RegExp(`/dates/${d1.id}\\?herzen=4`), { timeout: 10000 });
-await s.getByRole("heading", { name: "Wie war's für dich?" }).waitFor({ timeout: 10000 });
-check("a tap on a heart opens the review with that number chosen", await s.getByRole("radio", { name: "4 Herzen" }).isChecked());
-await s.getByText("Richtig schön 🥰").waitFor();
-await s.getByLabel("Was war besonders?").fill("Das Eis am Weiher!");
-await s.getByRole("button", { name: "unbedingt" }).click();
+await reviewBox.getByRole("link", { name: "wie war’s? ›" }).click();
+await s.waitForURL(`${BASE}/dates/${d1.id}/wie-wars`, { timeout: 10000 });
+const anheften = s.getByRole("button", { name: "Blatt anheften" });
+await anheften.waitFor({ timeout: 10000 });
+check("„Blatt anheften“ waits for the answer", await anheften.isDisabled());
+await s.getByRole("radio", { name: "unbedingt" }).click();
+check("the flower blooms with it", (await s.locator("[data-flower-quip]").innerText()) === "JAAA! ich blüh gleich mit.");
+await s.getByLabel("EIN SATZ FÜR SPÄTER").fill("Das Eis am Weiher!");
 await s.screenshot({ path: `${OUT}m8-02-review-form.png` });
-await s.getByRole("button", { name: "Blatt speichern" }).click();
-await s.getByRole("heading", { name: "Deine Herzen" }).waitFor({ timeout: 10000 });
-const { rows: [samReview] } = await db.query("SELECT again FROM date_reviews r JOIN users u ON u.id = r.user_id WHERE u.name = 'Sam'");
-check(`Sam's review saved, "Nochmal machen? unbedingt" too (${samReview?.again})`, samReview?.again === "yes");
+await anheften.click();
+await s.waitForURL(`${BASE}/dates/${d1.id}`, { timeout: 10000 });
+await s.locator("[data-leaf-detail]").waitFor({ timeout: 10000 });
+const { rows: [samReview] } = await db.query("SELECT again, note, rating FROM date_reviews r JOIN users u ON u.id = r.user_id WHERE u.name = 'Sam'");
+check(`Sam's answer saved: unbedingt, the note, no hearts (${JSON.stringify(samReview)})`, samReview?.again === "yes" && samReview.note === "Das Eis am Weiher!" && samReview.rating === null);
 await new Promise((r) => setTimeout(r, 800));
 check(`Jonas is told (${titles("jonas-phone")})`, titles("jonas-phone").some((t) => t.startsWith("Sam hat verraten")));
-await s.goto(`${BASE}/dates`);
-await s.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 10000 });
-check("review prompt gone after reviewing", (await s.getByRole("link", { name: /Wie war „Picknick/ }).count()) === 0);
+await s.goto(`${BASE}/plan`);
+await s.locator("[data-next-step]").filter({ visible: true }).first().waitFor({ timeout: 10000 });
+check("review prompt gone after answering", (await s.locator("[data-review-start]").filter({ visible: true }).count()) === 0);
 
-// 3) Jonas: Sam's hearts are hidden until he reviews
+// 3) Jonas: Sam's answer stays hidden until his own
 const j = await pageFor(jonas.token);
 await j.goto(`${BASE}/dates`);
-await j.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 15000 });
-check("list: Sam's review is locked", await j.getByText("hat bewertet 🔒").isVisible());
-check("the Archiv shows no hearts or averages that could give Sam's hidden review away", (await j.locator("dl").count()) === 0 && !(await j.locator("main").innerText()).includes("Ø"));
-await j.getByRole("link", { name: /Picknick im Stadtwald/ }).last().click();
-await j.getByText("Sam hat schon bewertet").waitFor({ timeout: 10000 });
-check("detail: note not visible yet", !(await j.getByText("Das Eis am Weiher!").isVisible()));
-// Tap the heart itself (the radio is visually hidden inside the label).
-await j.getByLabel("5 Herzen").locator("xpath=..").click();
-await j.getByRole("button", { name: "Blatt speichern" }).click();
-await j.getByText("Deine Herzen", { exact: true }).waitFor({ timeout: 10000 });
-await j.getByRole("tab", { name: "Sams Herzen" }).click();
+await j.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 15000 });
+const leaf = j.locator("[data-stem] [data-leaf]").first();
+check("the stem does not give Sam's hidden „unbedingt“ away", (await leaf.innerText()).includes("nochmal: vielleicht"));
+await j.getByRole("link", { name: /Picknick im Stadtwald/ }).first().click();
+await j.locator("[data-leaf-detail]").waitFor({ timeout: 10000 });
+check("leaf: Sam's answer locked, the note not visible yet", (await j.locator("[data-again]").innerText()).includes("🔒") && !(await j.getByText("Das Eis am Weiher!").isVisible()));
+await j.getByRole("link", { name: /jetzt antworten/ }).click();
+await j.waitForURL(`${BASE}/dates/${d1.id}/wie-wars`, { timeout: 10000 });
+check("„Sam hat schon geantwortet“", await j.getByText("Sam hat schon geantwortet – du siehst es nach dir.").isVisible());
+await j.getByRole("radio", { name: "unbedingt" }).click();
+await j.getByRole("button", { name: "Blatt anheften" }).click();
+await j.waitForURL(`${BASE}/dates/${d1.id}`, { timeout: 10000 });
 await j.getByText("Das Eis am Weiher!").waitFor({ timeout: 10000 });
-check("after reviewing, Sam's note is visible", true);
-await j.screenshot({ path: `${OUT}m8-03-detail.png`, fullPage: true });
-check("date page (review) fits the screen", await fitsScreen(j));
+check("after answering, Sam's answer and note are visible", (await j.locator("[data-again]").innerText()).toLowerCase().split("unbedingt").length === 3);
+await j.screenshot({ path: `${OUT}m8-03-detail.png` });
 await new Promise((r) => setTimeout(r, 800));
 check(`Sam is told both are in (${titles("sam-phone")})`, titles("sam-phone").some((t) => t.includes("bewertet 💞")));
 
-// 4) Change the review: no new push
+// 4) Change the answer: no new push
 const before = inbox.length;
-await j.getByRole("tab", { name: "💗 Herzen" }).click();
-await j.getByText("Meine Bewertung ändern").click();
-await j.locator("label", { has: j.locator('input[value="3"]') }).click();
-await j.getByRole("button", { name: "Speichern" }).click();
-await j.getByRole("img", { name: "3 von 5 Herzen" }).first().waitFor({ timeout: 10000 });
+await j.goto(`${BASE}/dates/${d1.id}/wie-wars`);
+await j.getByRole("radio", { name: "vielleicht" }).click();
+await j.getByRole("button", { name: "Blatt anheften" }).click();
+await j.waitForURL(`${BASE}/dates/${d1.id}`, { timeout: 10000 });
 await new Promise((r) => setTimeout(r, 800));
-check("editing works and does not push again", inbox.length === before);
+const { rows: [jonasReview] } = await db.query("SELECT again FROM date_reviews r JOIN users u ON u.id = r.user_id WHERE u.name = 'Jonas'");
+check(`editing works (${jonasReview?.again}) and does not push again`, jonasReview?.again === "maybe" && inbox.length === before);
 
 // 5) Stats + nav
 await j.goto(`${BASE}/dates`);
-await j.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 10000 });
+await j.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 10000 });
 check("the Archiv counts its dates in the header", await j.locator("header").filter({ visible: true }).first().getByText(/1 Blatt/).isVisible());
 await j.screenshot({ path: `${OUT}m8-04-list.png`, fullPage: true });
 check("dates history fits the screen", await fitsScreen(j));
 const jd = await pageFor(jonas.token, { colorScheme: "dark" });
 await jd.goto(`${BASE}/dates`);
-await jd.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 10000 });
+await jd.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 10000 });
 await jd.screenshot({ path: `${OUT}m8-05-list-dark.png`, fullPage: true });
 await j.goto(`${BASE}/`);
 await j.getByRole("link", { name: "Einstellungen" }).click();

@@ -4,9 +4,10 @@
 import { DateTime } from "luxon";
 import { AGAIN_ANSWERS, APP_TIMEZONE, RATING_MAX, RATING_MIN, REVIEW_NOTE_MAX, type AgainAnswer } from "@/lib/domain";
 
-export type ReviewInput = { rating: number; note: string | null; again: AgainAnswer | null };
+/** "wie war's?" (ARCHIV.md §3): "nochmal?" and a sentence for later. Hearts (1–5) only on old reviews. */
+export type ReviewInput = { rating: number | null; note: string | null; again: AgainAnswer };
 
-export type ReviewView = { userId: string; rating: number; note: string | null; again?: AgainAnswer | null };
+export type ReviewView = { userId: string; rating: number | null; note: string | null; again?: AgainAnswer | null };
 
 /** How long the home screen keeps asking "Wie war's?" after a date. */
 export const REVIEW_PROMPT_DAYS = 14;
@@ -26,11 +27,13 @@ export function reviewAskAt(date: { startsAt: Date; endsAt: Date }, zone = APP_T
   return nextDay > afterEnd ? nextDay : afterEnd;
 }
 
-export function parseReview(raw: { rating: unknown; note: unknown; again?: unknown }): ReviewInput | null {
-  const rating = Number(raw.rating);
-  if (!Number.isInteger(rating) || rating < RATING_MIN || rating > RATING_MAX) return null;
+/** "Nochmal?" is needed; the note is short (one sentence for later); hearts stay as they were (or none). */
+export function parseReview(raw: { rating?: unknown; note: unknown; again?: unknown }): ReviewInput | null {
+  const again = AGAIN_ANSWERS.find((a) => a === raw.again);
+  if (!again) return null;
+  const hearts = raw.rating === null || raw.rating === undefined || raw.rating === "" ? null : Number(raw.rating);
+  const rating = hearts !== null && Number.isInteger(hearts) && hearts >= RATING_MIN && hearts <= RATING_MAX ? hearts : null;
   const note = typeof raw.note === "string" ? raw.note.trim().slice(0, REVIEW_NOTE_MAX) : "";
-  const again = AGAIN_ANSWERS.find((a) => a === raw.again) ?? null;
   return { rating, note: note || null, again };
 }
 
@@ -47,7 +50,7 @@ export function visibleReviews(reviews: ReviewView[], viewerId: string): { mine:
 /** The ratings this viewer may see – feeds the stats and the AI, so nothing hidden leaks through an average. */
 export function visibleRatings(reviews: ReviewView[], viewerId: string): number[] {
   const { mine, partner } = visibleReviews(reviews, viewerId);
-  return [mine, partner].filter((r): r is ReviewView => r !== null).map((r) => r.rating);
+  return [mine, partner].flatMap((r) => (r && r.rating !== null ? [r.rating] : []));
 }
 
 export type StatsDate = { id: string; title: string; startsAt: Date; ratings: number[] };

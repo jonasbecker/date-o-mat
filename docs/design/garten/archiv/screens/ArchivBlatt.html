@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Archiv Blatt Detail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&amp;family=DM+Mono:wght@400;500&amp;family=Caveat:wght@600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #111A14; color: #E7EEDF; font-family: 'Bricolage Grotesque', system-ui, sans-serif; overflow: hidden">
+
+  <!-- ============ A · Foto groß ============ -->
+  <sc-if value="{{ isA }}" hint-placeholder-val="{{ true }}">
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 390px; height: 440px; overflow: hidden; background: {{ cur.bg }}">
+      <sc-for list="{{ cur.s }}" as="s" hint-placeholder-count="4">
+        <span style="position: absolute; left: {{ s.l }}; top: {{ s.t }}; width: {{ s.w }}; height: {{ s.h }}; aspect-ratio: {{ s.ar }}; border-radius: {{ s.r }}; background: {{ s.bg }}; transform: rotate({{ s.rot }}); opacity: {{ s.op }}"></span>
+      </sc-for>
+      <span style="position: absolute; left: 0; right: 0; bottom: 0; height: 170px; background: linear-gradient(180deg, rgba(17,26,20,0) 0%, #111A14 92%)"></span>
+    </div>
+    <div style="position: absolute; left: 0; right: 0; top: 300px; display: flex; justify-content: center; gap: 6px">
+      <sc-for list="{{ dots }}" as="d" hint-placeholder-count="4">
+        <span aria-hidden="true" style="width: {{ d.w }}; height: 6px; border-radius: 3px; background: #E7EEDF; opacity: {{ d.op }}"></span>
+      </sc-for>
+    </div>
+
+    <div style="position: absolute; left: 20px; right: 20px; top: 352px; display: flex; flex-direction: column; gap: 8px">
+      <span style="display: flex; align-items: center; gap: 8px; font-family: 'DM Mono', monospace; font-size: 11px; color: #C9D4C4"><span style="width: 22px; height: 22px; border-radius: 50%; background: #4D63E8; color: #FFFFFF; font-family: 'Bricolage Grotesque', sans-serif; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center">L</span>LOTTE HAT GEPLANT · Nº8</span>
+      <h1 style="margin: 0; font-size: 30px; font-weight: 800; line-height: 1.02; letter-spacing: -0.035em">{{ titel }}</h1>
+      <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">{{ meta }}</span>
+    </div>
+
+    <div style="position: absolute; left: 16px; right: 16px; top: 492px; display: flex; gap: 8px">
+      <sc-for list="{{ thumbs }}" as="t" hint-placeholder-count="4">
+        <button type="button" onClick="{{ t.pick }}" aria-label="{{ t.label }}" aria-pressed="{{ t.on }}" style="position: relative; flex: none; width: 60px; height: 60px; padding: 0; border: 0; border-radius: 20px 6px 20px 6px; overflow: hidden; background: {{ t.bg }}; box-shadow: {{ t.ring }}">
+          <sc-for list="{{ t.s }}" as="s" hint-placeholder-count="3">
+            <span aria-hidden="true" style="position: absolute; left: {{ s.l }}; top: {{ s.t }}; width: {{ s.w }}; height: {{ s.h }}; aspect-ratio: {{ s.ar }}; border-radius: {{ s.r }}; background: {{ s.bg }}; transform: rotate({{ s.rot }}); opacity: {{ s.op }}"></span>
+          </sc-for>
+        </button>
+      </sc-for>
+      <button type="button" aria-label="Foto hinzufügen" style="flex: none; width: 60px; height: 60px; border: 2px dashed #3A4A40; border-radius: 20px 6px 20px 6px; background: transparent; color: #9FB09C; font-size: 24px">+</button>
+    </div>
+
+    <div style="position: absolute; left: 16px; right: 16px; top: 568px; height: 56px; box-sizing: border-box; padding: 0 8px 0 16px; border-radius: 20px; background: #1B2620; display: flex; align-items: center; justify-content: space-between">
+      <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">NOCHMAL?</span>
+      <span style="display: flex; gap: 6px">
+        <span style="height: 36px; padding: 0 12px 0 4px; border-radius: 999px; background: #26332B; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700"><span style="width: 28px; height: 28px; border-radius: 50%; background: #E58FA6; color: #111A14; font-size: 11px; display: flex; align-items: center; justify-content: center">J</span>unbedingt</span>
+        <span style="height: 36px; padding: 0 12px 0 4px; border-radius: 999px; background: #26332B; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700"><span style="width: 28px; height: 28px; border-radius: 50%; background: #4D63E8; color: #FFFFFF; font-size: 11px; display: flex; align-items: center; justify-content: center">L</span>unbedingt</span>
+      </span>
+    </div>
+
+    <div style="position: absolute; left: 16px; right: 16px; top: 636px; padding: 12px 14px; box-sizing: border-box; border-radius: 20px; background: #1B2620; display: flex; flex-direction: column; gap: 10px">
+      <sc-for list="{{ notes }}" as="n" hint-placeholder-count="2">
+        <div style="display: flex; gap: 10px; align-items: flex-start">
+          <span style="flex: none; width: 22px; height: 22px; margin-top: 2px; border-radius: 50%; background: {{ n.bg }}; color: {{ n.fg }}; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{ n.who }}</span>
+          <span style="font-family: 'Caveat', cursive; font-weight: 600; font-size: 20px; line-height: 1.05; color: #F5EFC6">{{ n.text }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- ============ B · Blatt am Stiel ============ -->
+  <sc-if value="{{ isB }}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" style="position: absolute; left: 34px; top: 300px; width: 5px; height: 600px; border-radius: 3px; background: #3E8E52"></div>
+    <div aria-hidden="true" style="position: absolute; left: 44px; top: 82px; width: 300px; height: 250px; border-radius: 0 90% 0 90%; overflow: hidden; transform: rotate(-4deg); box-shadow: 0 0 0 5px #4FA25E; background: {{ cur.bg }}">
+      <sc-for list="{{ cur.s }}" as="s" hint-placeholder-count="4">
+        <span style="position: absolute; left: {{ s.l }}; top: {{ s.t }}; width: {{ s.w }}; height: {{ s.h }}; aspect-ratio: {{ s.ar }}; border-radius: {{ s.r }}; background: {{ s.bg }}; transform: rotate({{ s.rot }}); opacity: {{ s.op }}"></span>
+      </sc-for>
+    </div>
+    <div aria-hidden="true" style="position: absolute; left: 36px; top: 300px; width: 30px; height: 4px; background: #3E8E52; transform: rotate(-40deg); transform-origin: left center"></div>
+
+    <div style="position: absolute; left: 60px; right: 20px; top: 360px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">Nº8 · DO 22.10. · VON LOTTE</span>
+      <h1 style="margin: 0; font-size: 28px; font-weight: 800; line-height: 1.02; letter-spacing: -0.035em">{{ titel }}</h1>
+    </div>
+
+    <div style="position: absolute; left: 56px; right: 14px; top: 448px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+      <div style="position: relative; padding: 20px 12px 14px; background: #F7C1CF; color: #3A1E26; transform: rotate(-2deg); border-radius: 4px">
+        <span aria-hidden="true" style="position: absolute; left: 50%; top: -8px; width: 56px; height: 16px; margin-left: -28px; background: rgba(231,238,223,0.55); transform: rotate(3deg)"></span>
+        <span style="display: block; font-family: 'DM Mono', monospace; font-size: 10px; opacity: 0.7">JONAS</span>
+        <span style="display: block; margin-top: 4px; font-family: 'Caveat', cursive; font-weight: 600; font-size: 20px; line-height: 1.02">{{ noteJ }}</span>
+      </div>
+      <div style="position: relative; padding: 20px 12px 14px; background: #F5EFC6; color: #3A2E10; transform: rotate(2.5deg); border-radius: 4px; margin-top: 10px">
+        <span aria-hidden="true" style="position: absolute; left: 50%; top: -8px; width: 56px; height: 16px; margin-left: -28px; background: rgba(231,238,223,0.55); transform: rotate(-4deg)"></span>
+        <span style="display: block; font-family: 'DM Mono', monospace; font-size: 10px; opacity: 0.7">LOTTE</span>
+        <span style="display: block; margin-top: 4px; font-family: 'Caveat', cursive; font-weight: 600; font-size: 20px; line-height: 1.02">{{ noteL }}</span>
+      </div>
+    </div>
+
+    <div style="position: absolute; left: 60px; right: 16px; top: 600px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">{{ meta }}</span>
+      <span style="align-self: flex-start; height: 28px; padding: 0 12px; border-radius: 999px; background: #F5EFC6; color: #3A2E10; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center">♥ beide: unbedingt nochmal</span>
+    </div>
+
+    <div style="position: absolute; left: 60px; right: 0; top: 680px; display: flex; gap: 8px">
+      <sc-for list="{{ thumbs }}" as="t" hint-placeholder-count="4">
+        <button type="button" onClick="{{ t.pick }}" aria-label="{{ t.label }}" aria-pressed="{{ t.on }}" style="position: relative; flex: none; width: 56px; height: 56px; padding: 0; border: 0; border-radius: 0 70% 0 70%; overflow: hidden; background: {{ t.bg }}; box-shadow: {{ t.ring }}">
+          <sc-for list="{{ t.s }}" as="s" hint-placeholder-count="3">
+            <span aria-hidden="true" style="position: absolute; left: {{ s.l }}; top: {{ s.t }}; width: {{ s.w }}; height: {{ s.h }}; aspect-ratio: {{ s.ar }}; border-radius: {{ s.r }}; background: {{ s.bg }}; transform: rotate({{ s.rot }}); opacity: {{ s.op }}"></span>
+          </sc-for>
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- ============ C · Polaroid-Stapel ============ -->
+  <sc-if value="{{ isC }}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" style="position: absolute; left: 60px; top: 92px; width: 270px; height: 318px; background: #E7EEDF; transform: rotate(7deg); border-radius: 6px; opacity: 0.5"></div>
+    <div aria-hidden="true" style="position: absolute; left: 60px; top: 92px; width: 270px; height: 318px; background: #E7EEDF; transform: rotate(-6deg); border-radius: 6px; opacity: 0.75"></div>
+    <button type="button" onClick="{{ next }}" aria-label="Nächstes Foto" style="position: absolute; left: 60px; top: 88px; width: 270px; height: 318px; padding: 12px 12px 0; border: 0; border-radius: 6px; background: #FFFFFF; transform: rotate(-1.5deg); box-shadow: 0 16px 30px rgba(0,0,0,0.45); box-sizing: border-box; display: flex; flex-direction: column">
+      <span aria-hidden="true" style="position: relative; display: block; width: 246px; height: 246px; overflow: hidden; background: {{ cur.bg }}">
+        <sc-for list="{{ cur.s }}" as="s" hint-placeholder-count="4">
+          <span style="position: absolute; left: {{ s.l }}; top: {{ s.t }}; width: {{ s.w }}; height: {{ s.h }}; aspect-ratio: {{ s.ar }}; border-radius: {{ s.r }}; background: {{ s.bg }}; transform: rotate({{ s.rot }}); opacity: {{ s.op }}"></span>
+        </sc-for>
+      </span>
+      <span style="flex: 1; display: flex; align-items: center; justify-content: center; font-family: 'Caveat', cursive; font-weight: 700; font-size: 24px; color: #1B2620">{{ cur.cap }}</span>
+    </button>
+    <div style="position: absolute; left: 0; right: 0; top: 424px; text-align: center; font-family: 'DM Mono', monospace; font-size: 10px; color: #75866F">{{ pos }} · antippen oder wischen</div>
+
+    <div style="position: absolute; left: 16px; right: 16px; top: 452px; padding: 16px; box-sizing: border-box; border-radius: 24px; background: #1B2620; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">Nº8 · DO 22.10. · VON LOTTE</span>
+      <span style="font-size: 24px; font-weight: 800; line-height: 1.05; letter-spacing: -0.03em">{{ titel }}</span>
+      <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">RHEINAUHAFEN · 1,5 STD · 6 €</span>
+      <div style="height: 1px; background: #26332B"></div>
+      <sc-for list="{{ notes }}" as="n" hint-placeholder-count="2">
+        <div style="display: flex; gap: 10px; align-items: flex-start">
+          <span style="flex: none; width: 22px; height: 22px; margin-top: 2px; border-radius: 50%; background: {{ n.bg }}; color: {{ n.fg }}; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{ n.who }}</span>
+          <span style="font-family: 'Caveat', cursive; font-weight: 600; font-size: 20px; line-height: 1.05; color: #F5EFC6">{{ n.text }}</span>
+        </div>
+      </sc-for>
+      <span style="align-self: flex-start; height: 28px; padding: 0 12px; border-radius: 999px; background: #F5EFC6; color: #3A2E10; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center">♥ beide: unbedingt nochmal</span>
+    </div>
+  </sc-if>
+
+  <!-- Kopf (alle) -->
+  <div style="position: absolute; left: 16px; right: 16px; top: 16px; display: flex; justify-content: space-between; align-items: center; z-index: 3">
+    <a href="Archiv.dc.html" aria-label="Zurück zum Archiv" style="width: 42px; height: 42px; border-radius: 50%; background: rgba(17,26,20,0.72); display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 18px">←</a>
+    <span style="height: 32px; padding: 0 12px; border-radius: 999px; background: rgba(17,26,20,0.72); font-family: 'DM Mono', monospace; font-size: 11px; color: #C9D4C4; display: flex; align-items: center">{{ kopf }}</span>
+  </div>
+
+  <!-- Aktionen (alle) -->
+  <div style="position: absolute; left: 16px; right: 16px; bottom: 22px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px">
+    <a href="#" style="height: 54px; border-radius: 999px; background: #E4ECDD; color: #111A14; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700">Nochmal pflanzen</a>
+    <a href="#" style="height: 54px; padding: 0 18px; border-radius: 999px; border: 2px solid #3A4A40; color: #E7EEDF; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700">Teilen</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"variante":{"editor":"enum","options":["a","b","c"],"default":"a"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { f: 0 };
+  }
+  renderVals() {
+    const v = this.props.variante ?? 'a';
+    const S = (l, t, w, h, bg, r, rot, op) => ({ l: l + '%', t: t + '%', w: w + '%', h: h === 'o' ? 'auto' : h + '%', ar: h === 'o' ? '1' : 'auto', bg, r: r || (h === 'o' ? '50%' : '0'), rot: (rot || 0) + 'deg', op: op ?? 1 });
+    const FOTOS = [
+      { cap: 'kranhäuser in rosa', bg: 'linear-gradient(180deg, #F9D29B 0%, #F2A07B 40%, #C9708A 62%, #3B4E7A 62%, #2C3A5E 100%)', s: [S(38, 30, 24, 'o', '#FCE3A8'), S(10, 36, 14, 26, '#2B2A3A'), S(10, 36, 26, 7, '#2B2A3A'), S(56, 40, 12, 22, '#2B2A3A'), S(56, 40, 24, 6, '#2B2A3A'), S(82, 44, 10, 18, '#2B2A3A'), S(30, 72, 40, 2, '#F2A07B', '2px', 0, 0.8), S(40, 82, 20, 2, '#F2A07B', '2px', 0, 0.6)] },
+      { cap: 'möwe 1 : wir 0', bg: '#F7EBC4', s: [S(30, 42, 40, 50, '#E05A4F', '0 0 30% 30%'), S(34, 20, 6, 30, '#F5D76E', '2px', -8), S(44, 16, 6, 32, '#F5D76E', '2px', 4), S(54, 20, 6, 28, '#F5D76E', '2px', 10), S(70, 10, 18, 8, '#FFFFFF', '50%', -10)] },
+      { cap: 'wir, leicht verwackelt', bg: 'linear-gradient(180deg, #F2A07B, #C9708A)', s: [S(18, 26, 28, 'o', '#2B1D12'), S(50, 22, 30, 'o', '#3A2A22'), S(10, 58, 42, 44, '#2B1D12', '40% 40% 0 0'), S(44, 56, 46, 46, '#3A2A22', '40% 40% 0 0')] },
+      { cap: 'severinsbrücke, später', bg: 'linear-gradient(180deg, #C9708A 0%, #3B4E7A 50%, #2C3A5E 100%)', s: [S(0, 40, 100, 5, '#2B2A3A'), S(12, 44, 4, 22, '#2B2A3A'), S(46, 44, 4, 22, '#2B2A3A'), S(80, 44, 4, 22, '#2B2A3A'), S(22, 36, 3, 'o', '#F5D76E'), S(58, 36, 3, 'o', '#F5D76E'), S(10, 78, 80, 2, '#F5D76E', '2px', 0, 0.4)] }
+    ];
+    const f = this.state.f % FOTOS.length;
+    const cur = FOTOS[f];
+    const thumbs = FOTOS.map((p, k) => ({
+      bg: p.bg, s: p.s, label: 'Foto ' + (k + 1), on: k === f ? 'true' : 'false',
+      ring: k === f ? '0 0 0 3px #E7EEDF' : 'none',
+      pick: () => this.setState({ f: k })
+    }));
+    return {
+      isA: v === 'a', isB: v === 'b', isC: v === 'c',
+      cur, thumbs,
+      dots: FOTOS.map((_, k) => ({ w: k === f ? '18px' : '6px', op: k === f ? 1 : 0.5 })),
+      pos: (f + 1) + ' / ' + FOTOS.length,
+      next: () => this.setState({ f: this.state.f + 1 }),
+      kopf: v === 'a' ? (f + 1) + ' / ' + FOTOS.length : 'Blatt Nº8',
+      titel: 'Sonnenuntergang an den Kranhäusern',
+      meta: 'DO 22.10. · 19:10–20:40 · RHEINAUHAFEN · 6 €',
+      noteJ: 'die möwe wollte unsere pommes. sie hat gewonnen.',
+      noteL: 'nächstes mal decke mit!',
+      notes: [
+        { who: 'J', bg: '#E58FA6', fg: '#111A14', text: 'die möwe wollte unsere pommes. sie hat gewonnen.' },
+        { who: 'L', bg: '#4D63E8', fg: '#FFFFFF', text: 'nächstes mal decke mit!' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

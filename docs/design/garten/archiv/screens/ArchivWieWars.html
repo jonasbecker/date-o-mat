@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Wie wars Nachbereitung</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&amp;family=DM+Mono:wght@400;500&amp;family=Caveat:wght@600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}
+button{font:inherit;cursor:pointer}
+textarea::placeholder{color:#75866F}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #111A14; color: #E7EEDF; font-family: 'Bricolage Grotesque', system-ui, sans-serif; overflow: hidden">
+
+  <div style="position: absolute; left: 16px; right: 16px; top: 16px; display: flex; justify-content: space-between; align-items: center">
+    <a href="HomeB.dc.html" aria-label="Schließen" style="width: 42px; height: 42px; border-radius: 50%; background: #1B2620; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 18px">✕</a>
+    <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">Nº9 · FR 30.10.</span>
+  </div>
+  <h1 style="position: absolute; left: 20px; top: 70px; margin: 0; font-weight: 800; font-size: 54px; line-height: 0.92; letter-spacing: -0.05em">wie war’s?</h1>
+  <div style="position: absolute; left: 20px; top: 128px; font-size: 16px; color: #9FB09C">Zweizeiler-Schnitzeljagd durch die Altstadt</div>
+
+  <!-- Fotos -->
+  <button type="button" style="position: absolute; left: 16px; right: 16px; top: 166px; height: 190px; border: 2px dashed #3A4A40; border-radius: 0 90px 0 90px; background: #151F18; color: #E7EEDF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px">
+    <span aria-hidden="true" style="width: 56px; height: 56px; border-radius: 50%; background: #1B2620; display: flex; align-items: center; justify-content: center">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+    <span style="font-size: 17px; font-weight: 700">Fotos aufs Blatt</span>
+    <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">bis zu 10 · Lotte sieht sie auch</span>
+  </button>
+
+  <!-- Nochmal? -->
+  <div style="position: absolute; left: 20px; top: 374px; font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">NOCHMAL?</div>
+  <div role="radiogroup" aria-label="Nochmal machen?" style="position: absolute; left: 16px; right: 16px; top: 396px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+    <sc-for list="{{ opts }}" as="o" hint-placeholder-count="3">
+      <button type="button" role="radio" aria-checked="{{ o.on }}" onClick="{{ o.pick }}" style="height: 98px; border: 0; border-radius: 22px; background: {{ o.bg }}; color: {{ o.fg }}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px">
+        <span aria-hidden="true" style="position: relative; width: 40px; height: 34px">
+          <sc-for list="{{ o.icon }}" as="s" hint-placeholder-count="2">
+            <span style="position: absolute; left: {{ s.l }}; top: {{ s.t }}; width: {{ s.w }}; height: {{ s.h }}; border-radius: {{ s.r }}; background: {{ s.bg }}; border: {{ s.b }}; box-sizing: border-box; transform: rotate({{ s.rot }})"></span>
+          </sc-for>
+        </span>
+        <span style="font-size: 15px; font-weight: 700">{{ o.label }}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <!-- Blume reagiert -->
+  <div aria-hidden="true" style="position: absolute; left: 12px; top: 502px; width: 90px; height: 126px">
+    <div style="width: 300px; height: 420px; transform: scale(0.3); transform-origin: top left">
+      <dc-import name="Bloom" stimmung="{{ mood }}" blaetter="{{ 3 }}" welk="{{ welk }}" grund="transparent" hint-size="300px,420px"></dc-import>
+    </div>
+  </div>
+  <div aria-hidden="true" style="position: absolute; left: 84px; top: 532px; width: 6px; height: 6px; border-radius: 50%; background: #E7EEDF"></div>
+  <div aria-hidden="true" style="position: absolute; left: 94px; top: 522px; width: 10px; height: 10px; border-radius: 50%; background: #E7EEDF"></div>
+  <div style="position: absolute; left: 110px; top: 506px; max-width: 262px; box-sizing: border-box; padding: 8px 14px 10px; border-radius: 18px; background: #E7EEDF; color: #1B2620; font-family: 'Caveat', cursive; font-weight: 600; font-size: 21px; line-height: 1.02; transform: rotate(-1.5deg)">{{ quip }}</div>
+
+  <!-- Notiz -->
+  <label for="notiz" style="position: absolute; left: 20px; top: 640px; font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">EIN SATZ FÜR SPÄTER</label>
+  <textarea id="notiz" rows="2" placeholder="was soll auf dem Blatt stehen?" style="position: absolute; left: 16px; right: 16px; top: 660px; width: 358px; height: 58px; box-sizing: border-box; padding: 10px 14px; border: 0; border-radius: 18px; background: #1B2620; color: #F5EFC6; font-family: 'Caveat', cursive; font-weight: 600; font-size: 21px; line-height: 1.05; resize: none; outline: 0"></textarea>
+  <div style="position: absolute; left: 20px; right: 20px; top: 726px; font-family: 'DM Mono', monospace; font-size: 10px; color: #75866F">Lotte hat schon geantwortet – du siehst es nach dir.</div>
+
+  <a href="ArchivBlatt.dc.html" style="position: absolute; left: 16px; right: 16px; bottom: 22px; height: 56px; border-radius: 999px; background: {{ saveBg }}; color: {{ saveFg }}; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700">Blatt anheften</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"wahl":{"editor":"enum","options":["keine","noe","vielleicht","unbedingt"],"default":"keine"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { w: props.wahl ?? 'keine' };
+  }
+  renderVals() {
+    const w = this.state.w;
+    const px = (n) => n + 'px';
+    const I = (l, t, wd, h, bg, r, rot, b) => ({ l: px(l), t: px(t), w: px(wd), h: px(h), bg, r, rot: (rot || 0) + 'deg', b: b || '0' });
+    const icons = {
+      noe: [I(4, 8, 32, 18, '#8A6440', '0 90% 0 90%', 35), I(14, 15, 14, 2, '#5A4128', '1px', 35)],
+      vielleicht: [I(18, 14, 4, 20, '#3E8E52', '2px'), I(12, 2, 16, 18, '#F2A7BB', '50% 50% 45% 45%'), I(22, 18, 12, 7, '#4FA25E', '0 90% 0 90%', -20)],
+      unbedingt: [I(7, 4, 13, 13, '#F2A7BB', '50%'), I(20, 4, 13, 13, '#F7C1CF', '50%'), I(7, 16, 13, 13, '#F7C1CF', '50%'), I(20, 16, 13, 13, '#F2A7BB', '50%'), I(14, 10, 12, 12, '#F5D76E', '50%')]
+    };
+    const L = { noe: 'nö', vielleicht: 'vielleicht', unbedingt: 'unbedingt' };
+    const opts = ['noe', 'vielleicht', 'unbedingt'].map((k) => {
+      const on = w === k;
+      return { label: L[k], icon: icons[k], on: on ? 'true' : 'false', bg: on ? '#E4ECDD' : '#1B2620', fg: on ? '#111A14' : '#E7EEDF', pick: () => this.setState({ w: k }) };
+    });
+    const R = {
+      keine: { mood: 'wartet', welk: -1, quip: 'und? erzähl! ich war ja nicht dabei.' },
+      noe: { mood: 'traurig', welk: 1, quip: 'okay. kompost. passiert den besten.' },
+      vielleicht: { mood: 'froh', welk: -1, quip: 'solide. 7 von 10 blättern.' },
+      unbedingt: { mood: 'blueht', welk: -1, quip: 'JAAA! ich blüh gleich mit.' }
+    }[w];
+    return {
+      opts, mood: R.mood, welk: R.welk, quip: R.quip,
+      saveBg: w === 'keine' ? '#26332B' : '#E4ECDD', saveFg: w === 'keine' ? '#75866F' : '#111A14'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -169,6 +169,13 @@
       "when": 1792756921898,
       "tag": "0023_melodic_brood",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792761239587,
+      "tag": "0024_pink_wallow",
+      "breakpoints": true
     }
   ]
 }

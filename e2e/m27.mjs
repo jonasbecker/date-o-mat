@@ -155,7 +155,7 @@ for (let i = 0; i < 2; i++) {
   check(`the swipe page is kept for offline (${kept.seconds}s)`, kept.ok);
 }
 await j.goto(`${BASE}/dates`);
-await j.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 20000 });
+await j.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 20000 });
 await j.goto(`${BASE}/plan`);
 await j.locator("[data-date-sheet] [data-sheet-flower]").waitFor({ timeout: 20000 });
 // The copies are written after the page: wait until the page and all its code files are kept (slower in CI) –
@@ -192,8 +192,8 @@ check("…and says it is offline", saysOffline);
 if (!saysOffline) console.log("    offline page:", await j.evaluate(() => ({ onLine: navigator.onLine, hydrated: Boolean(document.querySelector("main [data-date-sheet]") && Object.keys(document.querySelector("main") ?? {}).some((k) => k.startsWith("__react"))) })).catch((e) => e.message));
 await j.screenshot({ path: `${OUT}m27-01-offline.png` });
 await j.goto(`${BASE}/dates`).catch(() => {});
-await j.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 10000 }).catch(() => {});
-check("offline, the Archiv opens too", await j.getByRole("heading", { name: "archiv." }).isVisible().catch(() => false));
+await j.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 10000 }).catch(() => {});
+check("offline, the Archiv opens too", await j.getByRole("heading", { name: "unser beet." }).isVisible().catch(() => false));
 // Swiping offline: the swipe is kept on the phone, the card stays gone (also after a reload) and goes out with the network
 // (A navigation can be overtaken by the page's own reload while the network is gone – so: until we are there.)
 let navError = null;

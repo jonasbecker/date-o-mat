@@ -98,12 +98,12 @@ await j.screenshot({ path: `${OUT}m29-03-raster.png` });
 const { rows: [hike] } = await db.query("SELECT id FROM date_plans WHERE couple_id = $1 AND title = 'Wanderung im Siebengebirge'", [couple.id]);
 await j.goto(`${BASE}/dates/${hike.id}`);
 await j.getByText("Oben war die Aussicht der Hammer.").first().waitFor({ timeout: 15000 });
-await j.getByRole("tab", { name: /Fotos/ }).or(j.getByRole("button", { name: /Fotos/ })).first().click();
-const photos = j.locator('img[src*="/api/photos/"]').filter({ visible: true });
+// The leaf page: the photos big at the top and small in a row.
+const photos = j.locator('[data-leaf-detail] button[aria-label^="Foto "] img');
 await photos.first().waitFor({ timeout: 10000 });
 await j.waitForTimeout(800);
 const loaded = await photos.evaluateAll((imgs) => imgs.map((img) => img.complete && img.naturalWidth > 0));
-check(`a test date's page: the reviews, and its drawn photos under Fotos (${loaded.length}, loaded ${loaded.filter(Boolean).length})`, loaded.length === 3 && loaded.every(Boolean));
+check(`a test date's leaf: the notes, and its drawn photos (${loaded.length}, loaded ${loaded.filter(Boolean).length})`, loaded.length === 3 && loaded.every(Boolean));
 await j.screenshot({ path: `${OUT}m29-04-date.png` });
 
 // The Beet and the app icon do not notice them

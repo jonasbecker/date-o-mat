@@ -113,7 +113,7 @@ async function tap(label, ready) {
 }
 
 const TABS = [
-  ["Archiv", 'h1:text-is("archiv.")'],
+  ["Archiv", 'h1:text-is("unser beet.")'],
   ["Ideen", 'h1:text-is("ideen.")'],
   ["Einstellungen", 'h1:text-is("einstellungen.")'],
   ["Swipen", "[data-swipe-deck]"],

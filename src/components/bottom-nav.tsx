@@ -44,7 +44,10 @@ function TabMark({ active, badge, children }: { active: boolean; badge?: React.R
  * `wishlistBadge` is the count on Ideen.
  */
 export function BottomNav({ wishlistBadge }: { wishlistBadge?: React.ReactNode }) {
-  return <BottomNavBar path={usePathname()} wishlistBadge={wishlistBadge} />;
+  const path = usePathname();
+  // A leaf, "wie war's?" and a wilted leaf are full screen (ARCHIV.md §2–4): back by the arrow or the gesture.
+  if (/^\/dates\/[^/?]+/.test(path)) return null;
+  return <BottomNavBar path={path} wishlistBadge={wishlistBadge} />;
 }
 
 /** The bar itself – also what shows while the current path is still unknown (prerender). */

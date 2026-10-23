@@ -139,7 +139,7 @@ export function StartNotices({ o, ctx }: { o: Overview; ctx: CoupleContext }) {
 
       {/* "Letztes Mal ist ausgefallen" is said by the plant (a speech bubble on the Beet). */}
 
-      {/* Another step heads the page (e.g. my turn to plan): the review still gets its own line, hearts and all. */}
+      {/* Another step heads the page (e.g. my turn to plan): "wie war's?" still gets its own line. */}
       {o.toReview && step?.kind !== "review" && (
         <div data-review-card className="flex flex-col gap-1.5 rounded-[18px] bg-surface px-3.5 py-2.5 text-sm">
           <h3 className="text-base font-bold leading-tight">Wie war&apos;s?</h3>

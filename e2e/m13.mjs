@@ -199,7 +199,7 @@ const bar = j.getByRole("navigation", { name: "Hauptmenü" });
 check("Beet is the current tab on the start", (await bar.getByRole("link", { name: "Beet", exact: true }).getAttribute("aria-current")) === "page");
 await bar.getByRole("link", { name: "Archiv", exact: true }).click();
 await j.waitForURL(`${BASE}/dates`, { timeout: 10000 });
-await j.getByRole("heading", { name: "archiv." }).waitFor({ timeout: 10000 });
+await j.getByRole("heading", { name: "unser beet." }).waitFor({ timeout: 10000 });
 check("Archiv opens the history, marked as the current page", (await bar.getByRole("link", { name: "Archiv", exact: true }).getAttribute("aria-current")) === "page");
 await j.screenshot({ path: `${OUT}m13-13-panel.png` });
 await bar.getByRole("link", { name: "Swipen", exact: true }).click();

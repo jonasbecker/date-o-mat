@@ -2,42 +2,31 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { Avatar } from "@/components/avatar";
-import { Hearts } from "@/components/hearts";
-import { BackIcon, CloseIcon } from "@/components/icons";
+import { BackIcon } from "@/components/icons";
 import { buttonClass } from "@/components/button";
-import { AGAIN_LABEL } from "@/lib/domain";
-import { visibleReviews, type ReviewView } from "@/core/reviews";
-import { formatShortDate, formatTimeRange, genitive } from "@/lib/format";
 import { requireCouple } from "@/server/auth/dal";
-import type { User } from "@/server/db/schema";
-import { pastDate } from "@/server/reviews";
-import { ReviewForm } from "../review-form";
-import { NextTimeIdeas } from "../next-time-ideas";
-import type { IdeaCardView } from "@/components/idea-card";
-import { listIdeas } from "@/server/ideas";
-import { PhotoSection } from "../photo-section";
-import { listPhotos } from "@/server/photos";
 import { env } from "@/server/env";
+import { dayLabel } from "@/core/archive";
+import { visibleReviews } from "@/core/reviews";
+import { formatShortDate, formatTimeRange } from "@/lib/format";
+import { archiveData } from "@/server/archive";
+import { dateForViewer, getDate } from "@/server/dates";
+import { type ArchivePerson } from "../archive-parts";
+import { LeafDetail } from "./leaf-detail";
 import { DateCard } from "@/components/date-card";
-import { Tabs } from "@/components/tabs";
 import { coupleNow } from "@/server/clock";
-import { countDoneDatesUntil, dateForViewer, getDate } from "@/server/dates";
 import { getCoupleSettings } from "@/server/settings";
 import { dateExtrasFor } from "../../overview";
 
-export default function DatePage({ params, searchParams }: PageProps<"/dates/[id]">) {
-  return <DateDetail params={params} searchParams={searchParams} />;
+export default function DatePage({ params }: PageProps<"/dates/[id]">) {
+  return <DateDetail params={params} />;
 }
 
-async function DateDetail({ params, searchParams }: { params: PageProps<"/dates/[id]">["params"]; searchParams: PageProps<"/dates/[id]">["searchParams"] }) {
+async function DateDetail({ params }: { params: PageProps<"/dates/[id]">["params"] }) {
   const ctx = await requireCouple();
   const { user, partner, coupleId } = ctx;
   await connection();
   const { id } = await params;
-  const { herzen } = await searchParams;
-  // A tap on a heart on the start page: that many hearts are chosen already.
-  const initialHearts = typeof herzen === "string" && /^[1-5]$/.test(herzen) ? Number(herzen) : 0;
   const valid = /^[0-9a-f-]{36}$/.test(id);
   const settings = await getCoupleSettings(coupleId);
   const now = coupleNow(settings);
@@ -83,112 +72,33 @@ async function DateDetail({ params, searchParams }: { params: PageProps<"/dates/
   }
   // Over but nobody said yes: the Beet asks "habt ihr's gemacht?".
   if (upcoming?.status === "planned") redirect("/plan");
-  const date = valid ? await pastDate(coupleId, id) : undefined;
-  if (!date) notFound();
-  const { mine, partner: theirs, partnerHidden } = visibleReviews(date.reviews, user.id);
-  // Nº of the leaf: the how-manyth date this was.
-  const leafNo = (await countDoneDatesUntil(coupleId, date.startsAt)) || null;
-  const photos = await listPhotos(coupleId, date.id);
-  // Reviewed: what's next? The three ideas that have waited longest (not this one).
-  const nextTime: IdeaCardView[] = mine
-    ? (await listIdeas(coupleId))
-        .filter((idea) => idea.id !== date.ideaId)
-        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-        .slice(0, 3)
-        .map((idea) => ({ id: idea.id, title: idea.title, size: idea.size, costEur: idea.costEur, location: idea.location }))
-    : [];
-
+  // A date that happened: its leaf (ARCHIV.md §2).
+  const archive = valid ? await archiveData(ctx) : undefined;
+  const entry = archive?.dates.get(id);
+  const leaf = archive?.leaves.find((l) => l.kind === "date" && l.id === id);
+  if (!entry || !leaf) notFound();
+  const people = new Map<string, ArchivePerson>([user, partner].map((p) => [p.id, { id: p.id, name: p.name, color: p.color }]));
+  const { mine, partner: theirs, partnerHidden } = visibleReviews(entry.reviews, user.id);
+  const cost = entry.costEur === null ? null : entry.costEur === 0 ? "gratis" : `${entry.costEur} €`;
+  const meta = [dayLabel(entry.startsAt), formatTimeRange(entry.startsAt, entry.endsAt).replace(" – ", "–"), entry.location?.split(",")[0], cost].filter(Boolean).join(" · ");
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
+    <>
       <AutoRefresh />
-      <div className="flex items-center justify-between">
-        <Link href="/dates" aria-label="Schließen" className="tap flex size-11 items-center justify-center rounded-full bg-surface">
-          <CloseIcon width={20} height={20} />
-        </Link>
-        <span className="font-mono text-[11px]">
-          {leafNo ? `Nº${leafNo} · ` : ""}
-          {formatShortDate(date.startsAt)}
-        </span>
-      </div>
-      <div>
-        <h1 className="headline text-[clamp(40px,12vw,54px)]">{mine ? "euer blatt." : "wie war’s?"}</h1>
-        <p className="mt-2 text-base text-muted">
-          <span className="font-semibold text-ink">{date.title}</span> · {formatTimeRange(date.startsAt, date.endsAt)}
-          {date.location ? ` · ${date.location}` : ""}
-        </p>
-      </div>
-
-      {/* One part at a time instead of a long page. */}
-      <Tabs
-        label="Zum Date"
-        tabs={[
-          {
-            key: "mine",
-            label: mine ? "💗 Herzen" : "💗 Bewerten",
-            content: (
-              <>
-              <section aria-labelledby="review-heading" className="flex flex-col gap-3 rounded-[22px] bg-surface p-4">
-                <h2 id="review-heading" className="text-lg font-bold">
-                  {mine ? "Deine Herzen" : "Wie war's für dich?"}
-                </h2>
-                {mine && <ReviewBlock person={user} review={mine} />}
-                {!mine && partnerHidden && (
-                  <p className="text-sm text-muted">🔒 {partner.name} hat schon bewertet – nach deinen Herzen siehst du {genitive(partner.name)}.</p>
-                )}
-                <ReviewForm
-                  key={mine?.rating ?? initialHearts}
-                  initialHearts={initialHearts}
-                  dateId={date.id}
-                  rating={mine?.rating ?? null}
-                  note={mine?.note ?? null}
-                  again={mine?.again ?? null}
-                  cost={date.actualCostEur ?? date.estimatedCostEur}
-                />
-              </section>
-              <NextTimeIdeas ideas={nextTime} />
-              </>
-            ),
-          },
-          {
-            key: "photos",
-            label: photos.length ? `📸 Fotos (${photos.length})` : "📸 Fotos",
-            content: <PhotoSection dateId={date.id} photos={photos.map((p) => ({ id: p.id, width: p.width, height: p.height }))} enabled={env().photoStorage !== null} />,
-          },
-          {
-            key: "partner",
-            label: `${genitive(partner.name)} Herzen`,
-            content: (
-              <section aria-labelledby="partner-heading" className="flex flex-col gap-3 rounded-[22px] bg-surface p-4">
-                <h2 id="partner-heading" className="text-lg font-bold">
-                  So war&apos;s für {partner.name}
-                </h2>
-                {theirs ? (
-                  <ReviewBlock person={partner} review={theirs} />
-                ) : partnerHidden ? (
-                  <p className="flex flex-wrap items-center gap-2 text-muted">
-                    🔒 Verdeckt, bis du selbst bewertet hast – dann siehst du {genitive(partner.name)} Herzen.
-                  </p>
-                ) : (
-                  <p className="text-muted">{partner.name} hat noch nicht bewertet.</p>
-                )}
-              </section>
-            ),
-          },
+      <LeafDetail
+        dateId={entry.id}
+        nr={leaf.nr}
+        title={entry.title}
+        meta={meta}
+        planner={people.get(entry.plannerId ?? "")}
+        motif={entry.motif}
+        photoIds={entry.photoIds}
+        canUpload={env().photoStorage !== null}
+        myAnswerMissing={!mine}
+        answers={[
+          { person: people.get(user.id)!, again: mine?.again ?? null, note: mine?.note ?? null, hidden: false },
+          { person: people.get(partner.id)!, again: theirs?.again ?? null, note: theirs?.note ?? null, hidden: partnerHidden },
         ]}
       />
-    </div>
-  );
-}
-
-function ReviewBlock({ person, review }: { person: User; review: ReviewView }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2.5">
-        <Avatar person={person} size={30} />
-        <Hearts rating={review.rating} size={24} />
-      </div>
-      {review.again && <p className="text-sm text-muted">Nochmal machen? <b className="font-semibold text-ink">{AGAIN_LABEL[review.again]}</b></p>}
-      {review.note && <p className="whitespace-pre-line">„{review.note}“</p>}
-    </div>
+    </>
   );
 }

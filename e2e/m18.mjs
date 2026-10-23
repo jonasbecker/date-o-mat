@@ -112,14 +112,15 @@ check("plan bar: 50 von 80 €, noch 30 €", (await bar.innerText()).includes("
 await j.screenshot({ path: `${OUT}m18-01-home.png` });
 
 // 4) Review: the real amount (prefilled with the estimate)
-await j.goto(`${BASE}/dates/${kino}`);
+await j.goto(`${BASE}/dates/${kino}/wie-wars`);
 const cost = j.getByLabel("Kosten in Euro");
+await cost.waitFor({ timeout: 15000 });
 check(`cost prefilled with the estimate (${await cost.inputValue()})`, (await cost.inputValue()) === "30");
 await j.waitForTimeout(800); // hydration
-await j.locator("label").filter({ has: j.getByLabel("4 Herzen") }).click();
+await j.getByRole("radio", { name: "vielleicht" }).click();
 await cost.fill("45");
-await j.getByRole("button", { name: "Blatt speichern" }).click();
-await j.getByText("Meine Bewertung ändern").waitFor({ timeout: 10000 });
+await j.getByRole("button", { name: "Blatt anheften" }).click();
+await j.waitForURL(`${BASE}/dates/${kino}`, { timeout: 10000 });
 check("real amount saved", (await db.query("SELECT actual_cost_eur FROM date_plans WHERE id = $1", [kino])).rows[0].actual_cost_eur === 45);
 
 // 5) Budget page: list with real and planned amounts

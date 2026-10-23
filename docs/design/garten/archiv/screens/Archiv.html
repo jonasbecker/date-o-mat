@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Archiv Beet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&amp;family=DM+Mono:wght@400;500&amp;family=Caveat:wght@600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}
+button{font:inherit;cursor:pointer}
+.clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.clamp3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #111A14; color: #E7EEDF; font-family: 'Bricolage Grotesque', system-ui, sans-serif; overflow: hidden">
+
+  <div style="position: absolute; left: 18px; right: 18px; top: 18px; height: 36px; display: flex; justify-content: space-between; align-items: center">
+    <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em">date-o-mat</span>
+    <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">{{ blaetter }} Blätter · seit August</span>
+  </div>
+  <h1 style="position: absolute; left: 20px; top: 62px; margin: 0; font-weight: 800; font-size: 54px; line-height: 0.92; letter-spacing: -0.05em">unser beet.</h1>
+  <div role="group" aria-label="Ansicht" style="position: absolute; left: 20px; top: 128px; display: inline-flex; padding: 3px; border-radius: 999px; background: #1B2620">
+    <button type="button" onClick="{{ toStiel }}" aria-pressed="{{ stielOn }}" style="height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: {{ stielBg }}; color: {{ stielFg }}; font-size: 13px; font-weight: 700">Stiel</button>
+    <button type="button" onClick="{{ toRaster }}" aria-pressed="{{ rasterOn }}" style="height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: {{ rasterBg }}; color: {{ rasterFg }}; font-size: 13px; font-weight: 700">Raster</button>
+  </div>
+  <span style="position: absolute; right: 20px; top: 138px; font-family: 'DM Mono', monospace; font-size: 11px; color: #F5EFC6">♥ {{ nochmal }}× nochmal</span>
+
+  <!-- Stiel -->
+  <sc-if value="{{ isStiel }}" hint-placeholder-val="{{ true }}">
+    <div style="position: absolute; left: 0; right: 0; top: 0; bottom: 66px; overflow: hidden">
+      <div aria-hidden="true" style="position: absolute; left: 193px; top: 196px; width: 5px; height: 700px; border-radius: 3px; background: #3E8E52"></div>
+      <div aria-hidden="true" style="position: absolute; left: 177px; top: 176px; width: 36px; height: 36px; border-radius: 50%; border: 2px dashed #6DBA74; box-sizing: border-box; background: #111A14"></div>
+      <div style="position: absolute; left: 222px; top: 178px; font-family: 'Caveat', cursive; font-weight: 600; font-size: 20px; color: #F5EFC6; transform: rotate(-3deg)">Nº9 · Fr 30.10. – wächst noch</div>
+
+      <sc-for list="{{ marks }}" as="m" hint-placeholder-count="1">
+        <span style="position: absolute; left: 140px; top: {{ m.top }}; width: 110px; height: 24px; border-radius: 999px; background: #111A14; border: 1.5px solid #3E8E52; box-sizing: border-box; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: #9FB09C; display: flex; align-items: center; justify-content: center">{{ m.label }}</span>
+      </sc-for>
+
+      <sc-for list="{{ leaves }}" as="i" hint-placeholder-count="3">
+        <div aria-hidden="true" style="position: absolute; left: {{ i.twigX }}; top: {{ i.twigY }}; width: 22px; height: 3px; background: #3E8E52"></div>
+        <a href="{{ i.href }}" aria-label="{{ i.aria }}" style="position: absolute; left: {{ i.leafX }}; top: {{ i.top }}; width: 168px; height: {{ i.h }}; border-radius: {{ i.leafR }}; overflow: hidden; transform: rotate({{ i.rot }}); box-shadow: {{ i.ring }}; border: {{ i.dash }}; box-sizing: border-box; background: {{ i.bg }}; display: flex; align-items: center; justify-content: center; text-decoration: none">
+          <sc-for list="{{ i.scene }}" as="s" hint-placeholder-count="3">
+            <span style="position: absolute; left: {{ s.l }}; top: {{ s.t }}; width: {{ s.w }}; height: {{ s.h }}; aspect-ratio: {{ s.ar }}; border-radius: {{ s.r }}; background: {{ s.bg }}; transform: rotate({{ s.rot }}); opacity: {{ s.op }}"></span>
+          </sc-for>
+          <sc-if value="{{ i.welk }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size: 12px; color: #9FB09C">welk</span>
+          </sc-if>
+          <sc-if value="{{ i.fotoN }}" hint-placeholder-val="{{ true }}">
+            <span style="position: absolute; left: 50%; bottom: 12px; margin-left: -18px; width: 36px; height: 20px; border-radius: 999px; background: rgba(17,26,20,0.7); color: #E7EEDF; font-family: 'DM Mono', monospace; font-size: 10px; display: flex; align-items: center; justify-content: center">{{ i.fotos }}</span>
+          </sc-if>
+        </a>
+        <div style="position: absolute; left: {{ i.textX }}; top: {{ i.textY }}; width: 160px; display: flex; flex-direction: column; align-items: {{ i.align }}; text-align: {{ i.talign }}; gap: 4px">
+          <span aria-label="{{ i.vonLabel }}" style="width: 24px; height: 24px; border-radius: 50%; background: {{ i.vonBg }}; color: {{ i.vonFg }}; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{ i.von }}</span>
+          <span class="clamp3" style="font-size: 16px; font-weight: 700; line-height: 1.15; color: {{ i.tCol }}">{{ i.t }}</span>
+          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #9FB09C">{{ i.datum }}</span>
+          <span style="margin-top: 4px; height: 24px; padding: 0 10px; border-radius: 999px; background: {{ i.chipBg }}; color: {{ i.chipFg }}; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center">{{ i.chip }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- Raster -->
+  <sc-if value="{{ isRaster }}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 16px; right: 16px; top: 180px; bottom: 66px; overflow: hidden; display: flex; flex-direction: column; gap: 10px">
+      <sc-for list="{{ months }}" as="g" hint-placeholder-count="2">
+        <div style="display: flex; justify-content: space-between; padding: 6px 4px 0">
+          <span style="font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: #9FB09C">{{ g.label }}</span>
+          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #75866F">{{ g.n }}</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+          <sc-for list="{{ g.items }}" as="i" hint-placeholder-count="2">
+            <a href="{{ i.href }}" style="display: flex; flex-direction: column; gap: 8px; text-decoration: none">
+              <span style="position: relative; aspect-ratio: 1; border-radius: 30px 8px 30px 8px; overflow: hidden; background: {{ i.tileBg }}; border: {{ i.dash }}; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+                <sc-for list="{{ i.scene }}" as="s" hint-placeholder-count="3">
+                  <span aria-hidden="true" style="position: absolute; left: {{ s.l }}; top: {{ s.t }}; width: {{ s.w }}; height: {{ s.h }}; aspect-ratio: {{ s.ar }}; border-radius: {{ s.r }}; background: {{ s.bg }}; transform: rotate({{ s.rot }}); opacity: {{ s.op }}"></span>
+                </sc-for>
+                <sc-if value="{{ i.welk }}" hint-placeholder-val="{{ false }}">
+                  <span style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+                    <span aria-hidden="true" style="width: 44px; height: 26px; border-radius: 0 90% 0 90%; border: 2px dashed #6DBA74; transform: rotate(30deg)"></span>
+                    <span style="font-family: 'DM Mono', monospace; font-size: 10px; color: #9FB09C">AUSGEFALLEN</span>
+                  </span>
+                </sc-if>
+                <sc-if value="{{ i.beide }}" hint-placeholder-val="{{ false }}">
+                  <span style="position: absolute; right: 8px; top: 8px; height: 22px; padding: 0 8px; border-radius: 999px; background: #F5EFC6; color: #3A2E10; font-size: 11px; font-weight: 700; display: flex; align-items: center">♥ nochmal</span>
+                </sc-if>
+                <sc-if value="{{ i.fotoN }}" hint-placeholder-val="{{ true }}">
+                  <span style="position: absolute; left: 8px; bottom: 8px; height: 20px; padding: 0 7px; border-radius: 999px; background: rgba(17,26,20,0.7); color: #E7EEDF; font-family: 'DM Mono', monospace; font-size: 10px; display: flex; align-items: center">{{ i.fotos }}</span>
+                </sc-if>
+              </span>
+              <span class="clamp2" style="font-size: 14px; font-weight: 700; line-height: 1.15; color: {{ i.tCol }}">{{ i.t }}</span>
+              <span style="display: flex; align-items: center; gap: 6px; margin-top: -2px; font-family: 'DM Mono', monospace; font-size: 10px; color: #9FB09C"><span aria-label="{{ i.vonLabel }}" style="width: 16px; height: 16px; border-radius: 50%; background: {{ i.vonBg }}; color: {{ i.vonFg }}; font-family: 'Bricolage Grotesque', sans-serif; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{ i.von }}</span>{{ i.datum }}</span>
+            </a>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <nav style="position: absolute; left: 0; right: 0; bottom: 0; height: 66px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; color: #E7EEDF; background: #111A14; z-index: 6">
+    <a href="ThIdeen.dc.html" aria-label="Ideen" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></a>
+    <a href="ThSwipe.dc.html" aria-label="Swipen" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="12" height="16" rx="2.5" transform="rotate(8 13 11)"/><path d="M5.5 6.5L4 17.5a2 2 0 0 0 1.7 2.3l7.3 1"/></svg></a>
+    <a href="HomeB.dc.html" aria-label="Beet" style="justify-self: center; width: 60px; height: 60px; border-radius: 50%; background: #2E7D46; color: #FFFFFF; display: flex; align-items: center; justify-content: center; margin-top: -22px; box-shadow: 0 0 0 6px #111A14"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 14c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg></a>
+    <a href="Archiv.dc.html" aria-label="Archiv" style="height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-7 8"/></svg><span style="width: 4px; height: 4px; border-radius: 50%; background: currentColor"></span></a>
+    <a href="ThSetup.dc.html" aria-label="Einstellungen" style="height: 52px; display: flex; align-items: center; justify-content: center; opacity: 0.6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"ansicht":{"editor":"enum","options":["stiel","raster"],"default":"stiel"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { a: props.ansicht ?? 'stiel' };
+  }
+  renderVals() {
+    // ---- gemeinsame Szenen (Foto-Platzhalter) ----
+    const S = (l, t, w, h, bg, r, rot, op) => ({ l: l + '%', t: t + '%', w: w + '%', h: h === 'o' ? 'auto' : h + '%', ar: h === 'o' ? '1' : 'auto', bg, r: r || (h === 'o' ? '50%' : '0'), rot: (rot || 0) + 'deg', op: op ?? 1 });
+    const SCENES = {
+      sunset: { bg: 'linear-gradient(180deg, #F9D29B 0%, #F2A07B 40%, #C9708A 62%, #3B4E7A 62%, #2C3A5E 100%)', s: [S(38, 30, 24, 'o', '#FCE3A8'), S(10, 36, 14, 26, '#2B2A3A'), S(10, 36, 26, 7, '#2B2A3A'), S(56, 40, 12, 22, '#2B2A3A'), S(56, 40, 24, 6, '#2B2A3A'), S(82, 44, 10, 18, '#2B2A3A'), S(30, 72, 40, 2, '#F2A07B', '2px', 0, 0.8), S(40, 82, 20, 2, '#F2A07B', '2px', 0, 0.6)] },
+      collage: { bg: '#E6E0F2', s: [S(6, 8, 48, 40, '#F6DFD3', '3px', -8), S(42, 20, 46, 36, '#F5D76E', '3px', 10), S(12, 50, 40, 34, '#4D63E8', '3px', 6), S(54, 56, 34, 30, '#E58FA6', '3px', -12), S(24, 22, 16, 'o', '#2E7D46'), S(58, 32, 22, 3, '#2B1D12', '2px', 10)] },
+      crepes: { bg: 'radial-gradient(circle at 30% 30%, #FBE6DA, #F2C2AE)', s: [S(14, 44, 56, 'o', '#FFFFFF'), S(22, 58, 40, 10, '#E3B868', '50%'), S(25, 51, 34, 10, '#F0D08E', '50%'), S(28, 44, 28, 10, '#E3B868', '50%'), S(37, 36, 9, 'o', '#E8708A'), S(72, 12, 13, 'o', '#2B1D12'), S(76, 22, 5, 40, '#2B1D12', '3px', 14)] },
+      park: { bg: 'linear-gradient(180deg, #BFD6EE 0%, #DCE7F5 55%, #8FB46A 55%, #6E9A52 100%)', s: [S(10, 14, 38, 'o', '#4FA25E'), S(26, 46, 6, 20, '#8A6440', '2px'), S(52, 60, 40, 5, '#2E5D8A', '2px'), S(56, 64, 3, 14, '#2E5D8A'), S(85, 64, 3, 14, '#2E5D8A'), S(68, 48, 7, 'o', '#FFFFFF')] },
+      kueche: { bg: '#F7EBC4', s: [S(0, 72, 100, 28, '#D9B98A'), S(24, 42, 46, 30, '#5E6E66', '0 0 40% 40%'), S(20, 38, 54, 6, '#3E4A44', '4px'), S(38, 14, 4, 18, '#FFFFFF', '4px', 0, 0.8), S(50, 10, 4, 22, '#FFFFFF', '4px', 0, 0.8), S(76, 58, 13, 'o', '#E05A4F')] },
+      kino: { bg: '#1B1B24', s: [S(10, 10, 80, 40, '#F5D76E', '4px'), S(10, 10, 80, 40, '#FFFFFF', '4px', 0, 0.25), S(4, 68, 92, 12, '#3A2E44', '8px'), S(0, 84, 100, 16, '#2E2438', '8px'), S(28, 58, 11, 'o', '#0E0E14'), S(58, 58, 11, 'o', '#0E0E14')] },
+      picknick: { bg: 'linear-gradient(180deg, #F6DFD3 0%, #DCE7F5 45%, #8FB46A 45%)', s: [S(10, 56, 62, 28, 'repeating-conic-gradient(#E05A4F 0 25%, #FFFFFF 0 50%) 0 0 / 16px 16px', '4px', -6), S(58, 44, 24, 18, '#B9875A', '5px'), S(76, 8, 13, 'o', '#F5D76E')] }
+    };
+    // ---- Beispieldaten ----
+    const RAW = [
+      { n: 8, t: 'Sonnenuntergang an den Kranhäusern', datum: 'Do 22.10.', monat: 'OKTOBER', von: 'L', scene: 'sunset', j: 'unbedingt', l: 'unbedingt', fotos: 4 },
+      { n: 7, t: 'Collage-Abend aus alten Zeitschriften', datum: 'Fr 16.10.', monat: 'OKTOBER', von: 'J', scene: 'collage', j: 'unbedingt', l: 'vielleicht', fotos: 3 },
+      { n: 6, t: 'Bouldern im Kletterwerk', datum: 'Woche 41', monat: 'OKTOBER', von: 'L', welk: true },
+      { n: 5, t: 'Crêpes & ABBA-Karaoke', datum: 'Sa 03.10.', monat: 'OKTOBER', von: 'L', scene: 'crepes', j: 'unbedingt', l: 'unbedingt', fotos: 6 },
+      { n: 4, t: 'Tischtennis im Volksgarten', datum: 'Fr 25.09.', monat: 'SEPTEMBER', von: 'J', scene: 'park', j: 'vielleicht', l: 'unbedingt', fotos: 2 },
+      { n: 3, t: 'Kochduell: 3 Zutaten, 30 Minuten', datum: 'Sa 12.09.', monat: 'SEPTEMBER', von: 'J', scene: 'kueche', j: 'unbedingt', l: 'vielleicht', fotos: 5 },
+      { n: 2, t: 'Sneak Preview im Kino', datum: 'Fr 29.08.', monat: 'AUGUST', von: 'L', scene: 'kino', j: 'nö', l: 'vielleicht', fotos: 1 },
+      { n: 1, t: 'Picknick auf der Rheinwiese', datum: 'Sa 16.08.', monat: 'AUGUST', von: 'J', scene: 'picknick', j: 'unbedingt', l: 'unbedingt', fotos: 3 }
+    ];
+    const base = RAW.map((r) => {
+      const sc = r.welk ? { bg: 'transparent', s: [] } : SCENES[r.scene];
+      const beide = r.j === 'unbedingt' && r.l === 'unbedingt';
+      const noe = r.j === 'nö' || r.l === 'nö';
+      return {
+        ...r, welk: !!r.welk, beide, scene: sc.s, sceneBg: sc.bg,
+        href: r.welk ? 'ArchivWelk.dc.html' : 'ArchivBlatt.dc.html',
+        aria: 'Nº' + r.n + ' ' + r.t,
+        fotoN: !r.welk && r.fotos > 1, fotos: '1/' + (r.fotos || 0),
+        vonBg: r.von === 'L' ? '#4D63E8' : '#E58FA6', vonFg: r.von === 'L' ? '#FFFFFF' : '#111A14',
+        vonLabel: r.von === 'L' ? 'Lotte hat geplant' : 'Jonas hat geplant',
+        tCol: r.welk ? '#9FB09C' : '#E7EEDF',
+        chip: r.welk ? 'ausgefallen' : beide ? '♥ nochmal: beide' : noe ? 'einmal reicht' : 'nochmal: vielleicht',
+        chipBg: r.welk ? '#1B2620' : beide ? '#F5EFC6' : '#26332B',
+        chipFg: r.welk ? '#75866F' : beide ? '#3A2E10' : '#C9D4C4'
+      };
+    });
+    // ---- Stiel-Layout ----
+    let y = 232, last = '', k = 0;
+    const marks = [], leaves = [];
+    base.forEach((r) => {
+      if (r.monat !== last) { marks.push({ top: y + 'px', label: r.monat }); y += 38; last = r.monat; }
+      const h = r.welk ? 96 : 150;
+      const left = k % 2 === 0;
+      leaves.push({
+        ...r, top: y + 'px', h: h + 'px',
+        leafX: left ? '14px' : '208px', rot: left ? '6deg' : '-6deg',
+        leafR: left ? '90% 0 90% 0' : '0 90% 0 90%',
+        ring: r.welk ? 'none' : '0 0 0 4px #4FA25E', dash: r.welk ? '2px dashed #5A6E5E' : '0',
+        bg: r.welk ? 'transparent' : r.sceneBg,
+        twigX: left ? '172px' : '196px', twigY: (y + h / 2) + 'px',
+        textX: left ? '212px' : '18px', textY: (y + h / 2 - 54) + 'px',
+        align: left ? 'flex-start' : 'flex-end', talign: left ? 'left' : 'right'
+      });
+      y += h + 26; k++;
+    });
+    // ---- Raster ----
+    const months = [];
+    base.forEach((r) => {
+      let g = months.find((m) => m.label === r.monat);
+      if (!g) { g = { label: r.monat, items: [] }; months.push(g); }
+      g.items.push({ ...r, tileBg: r.welk ? 'transparent' : r.sceneBg, dash: r.welk ? '2px dashed #3A4A40' : '0' });
+    });
+    months.forEach((m) => { m.n = m.items.length + (m.items.length === 1 ? ' Blatt' : ' Blätter'); });
+    const st = this.state.a === 'stiel';
+    return {
+      blaetter: String(base.length), nochmal: String(base.filter((b) => b.beide).length),
+      isStiel: st, isRaster: !st,
+      stielOn: st ? 'true' : 'false', rasterOn: st ? 'false' : 'true',
+      stielBg: st ? '#E4ECDD' : 'transparent', stielFg: st ? '#111A14' : '#E7EEDF',
+      rasterBg: st ? 'transparent' : '#E4ECDD', rasterFg: st ? '#E7EEDF' : '#111A14',
+      toStiel: () => this.setState({ a: 'stiel' }), toRaster: () => this.setState({ a: 'raster' }),
+      marks, leaves, months
+    };
+  }
+}
+</script>
+</body>
+</html>
