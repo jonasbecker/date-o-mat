@@ -19,6 +19,7 @@ import { listCalendars } from "@/server/google/calendar-api";
 import { disconnect, setBusyCalendars } from "@/server/google/connection";
 import { coupleNow } from "@/server/clock";
 import { addDemoDates, removeDemoDates } from "@/server/demo-dates";
+import { DEV_DATE_STATES, setDevDate, type DevDateResult, type DevDateState } from "@/server/dev-date";
 import { applySettingsToOpenCycle } from "@/server/cycles";
 import { env } from "@/server/env";
 import { getCoupleSettings, resetDevClock, setDeckEventMix, setDevClockOffset, setExtraShown, setFlower, updateCycleSettings, updateSlotSettings } from "@/server/settings";
@@ -98,6 +99,15 @@ export async function devClockAction(formData: FormData) {
   }
   await tickCouple(coupleId);
   refresh();
+}
+
+/** Dev tools: the round's date state without planning one together (server/dev-date.ts). */
+export async function devDateAction(state: DevDateState): Promise<DevDateResult> {
+  const ctx = await requireCouple();
+  if (!env().devTools || !DEV_DATE_STATES.includes(state)) return { ok: true };
+  const result = await setDevDate(ctx, state, coupleNow(await getCoupleSettings(ctx.coupleId)));
+  refresh();
+  return result;
 }
 
 // --- Push ---------------------------------------------------------------------------

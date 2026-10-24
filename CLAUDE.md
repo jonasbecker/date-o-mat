@@ -128,6 +128,10 @@ Date planner PWA for exactly one couple. Plan and decisions: `docs/PLAN.md`. Set
   those rounds (everything on them cascades). The round logic never sees them (`latestCycle`, `cycleAt`,
   `cycleHistory`, the reminders' round filter `demo = false`), and they lie further back than the "wie war's?" window,
   so no reminder or app icon number comes from them. They do count in the Archiv, the story and the stem. e2e: m29.
+- **Test-Date (dev tools, Einstellungen → Ihr zwei & Konto, `ENABLE_DEV_TOOLS=1`):** `server/dev-date.ts` puts the
+  current round into "Kein Date" / "Ich schlage vor" / "<Partner> schlägt vor" / "Date steht" without planning together –
+  the date (an idea from the list, `core/dev-date.ts`: 19:00 inside the round) is written as synced without an event id,
+  so nothing goes to Google; "Kein Date" deletes test dates and cancels a real one the normal way. e2e: m34.
 - **Ideen-Kategorie (`docs/design/garten/ideen-kategorie/`, variante "e"):** `/ideas?ansicht=<kind>` is one component for
   every tile, "alle.", the Matchlinge and "meine likes." (`ideas/category-view.tsx`; words, chips, tip order and groups
   in `core/idea-category.ts`): its own head (back, title – long ones smaller, then an ellipsis –, subtitle, the flower

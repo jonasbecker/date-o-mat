@@ -32,12 +32,14 @@ import { SpecialDays, type SpecialDayView } from "./special-days";
 import { ExtrasForm } from "./extras-form";
 import { PageTitle } from "@/components/page-title";
 import { DemoDatesForm } from "./demo-dates-form";
+import { DevDateForm } from "./dev-date-form";
 import { MoreList, Topic, type TopicTile } from "./fold";
 import { CycleQuick, EveningFrom, PushToggle } from "./setup-main";
 import { FlowerCard } from "./flower-card";
 import { GardenBanner } from "./garden-banner";
 import { countDoneDates } from "@/server/dates";
 import { demoDatesOn } from "@/server/demo-dates";
+import { devDateState } from "@/server/dev-date";
 import { overallLevel } from "@/core/system-status";
 import { upcomingDaysFor } from "@/server/special-days";
 import { inDaysLabel } from "@/core/special-days";
@@ -96,7 +98,13 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
     listSources(coupleId),
   ]);
   const now = coupleNow(settings);
-  const [status, sourcePages, lived, demo] = await Promise.all([systemStatus(ctx, now), listSourcePages(sources.map((s) => s.id)), countDoneDates(coupleId), demoDatesOn(coupleId)]);
+  const [status, sourcePages, lived, demo, devDate] = await Promise.all([
+    systemStatus(ctx, now),
+    listSourcePages(sources.map((s) => s.id)),
+    countDoneDates(coupleId),
+    demoDatesOn(coupleId),
+    env().devTools ? devDateState(ctx, now) : null,
+  ]);
   const specialDayViews: SpecialDayView[] = (await upcomingDaysFor(coupleId, now, 366)).map((d) => ({
     id: d.id,
     emoji: d.emoji,
@@ -139,7 +147,7 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
       tiles: [
         { id: "push", icon: "bell", title: "Erinnerungen im Detail", hint: "Was aufs Handy kommt" },
         { id: "unterwegs", icon: "compass", title: "Unterwegs & Teilen", hint: "Startort, iPhone-Kurzbefehl" },
-        { id: "konto", icon: "user", title: "Ihr zwei & Konto", hint: "Abmelden" },
+        { id: "konto", icon: "user", title: "Ihr zwei & Konto", hint: env().devTools ? "Abmelden · Dev-Werkzeuge" : "Abmelden" },
         { id: "welcome", icon: "intro", title: "Einführung", href: "/welcome" },
       ] satisfies TopicTile[],
     },
@@ -279,6 +287,11 @@ async function Settings({ searchParams }: { searchParams: PageProps<"/settings">
               </form>
             </div>
             <p className="text-sm font-semibold text-muted">Nur sichtbar mit ENABLE_DEV_TOOLS=1. Jeder Klick führt auch den Tick aus. „Alles zurücksetzen“ stellt die echte Zeit ein und löscht alle Runden.</p>
+          </Card>
+        )}
+        {devDate && (
+          <Card>
+            <DevDateForm state={devDate} partnerName={partner.name} />
           </Card>
         )}
       </Topic>
